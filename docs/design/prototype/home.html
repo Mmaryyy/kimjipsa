@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta
+      name="theme-color"
+      content="#F6F6F8"
+      media="(prefers-color-scheme: light)"
+    />
+    <meta
+      name="theme-color"
+      content="#1A1A1C"
+      media="(prefers-color-scheme: dark)"
+    />
+    <title>오늘 · 김집사</title>
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <style>
+      /* Week strip (홈 뷰 = 주간, ACC-12) */
+      .week {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        margin-top: 4px;
+      }
+      .week button {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        padding: 8px 0 10px;
+        min-height: 64px;
+      }
+      .week .dow {
+        font-size: var(--text-caption1);
+        color: var(--label-secondary);
+        letter-spacing: 0.02em;
+      }
+      .week .d {
+        width: 32px;
+        height: 32px;
+        display: grid;
+        place-items: center;
+        font-size: var(--text-callout);
+        font-weight: var(--fw-medium);
+        font-variant-numeric: tabular-nums;
+        border-radius: var(--r-round);
+      }
+      .week .dots {
+        display: flex;
+        gap: 3px;
+        height: 5px;
+      }
+      .week .dots i {
+        width: 5px;
+        height: 5px;
+        border-radius: var(--r-round);
+        background: var(--c);
+      }
+      .week .today .d {
+        color: var(--accent);
+        font-weight: var(--fw-bold);
+      }
+      .week [aria-pressed="true"] .d {
+        background: var(--label);
+        color: var(--bg);
+      }
+      .week .sun .dow {
+        color: var(--sys-red-ic);
+      }
+      /* D-day */
+      .dday {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+      }
+      .dday .n {
+        margin-left: auto;
+        font-size: var(--text-title2);
+        font-weight: var(--fw-bold);
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.01em;
+      }
+      .dday.soon .n {
+        color: var(--celebrate-text);
+      }
+      .hl-soon .title {
+        font-weight: var(--fw-semibold);
+      }
+      .hl-soon .trail {
+        color: var(--celebrate-text);
+        font-weight: var(--fw-semibold);
+      }
+    </style>
+  </head>
+  <body data-page="home">
+    <div class="app">
+      <main class="main wide" data-od-id="home-main">
+        <header class="page-head" data-od-id="home-header">
+          <div class="sub">10월 14일 수요일 · 도토리네</div>
+          <h1 class="t-large" data-od-id="home-title">오늘</h1>
+        </header>
+
+        <nav class="week" aria-label="이번 주" data-od-id="week-strip"></nav>
+
+        <div class="cols">
+          <div>
+            <section class="section" data-od-id="today-schedule">
+              <div class="section-head">
+                <h2 id="day-title" data-od-id="today-schedule-title">
+                  오늘 일정
+                </h2>
+                <a href="calendar.html" data-od-id="today-schedule-more"
+                  >캘린더</a
+                >
+              </div>
+              <ul class="list" id="day-list"></ul>
+            </section>
+
+            <section class="section" data-od-id="upcoming-widget">
+              <div class="section-head">
+                <h2 data-od-id="upcoming-title">다가오는 일정</h2>
+                <span class="secondary t-footnote">5개</span>
+              </div>
+              <div id="upcoming"></div>
+            </section>
+          </div>
+
+          <div>
+            <section class="section" data-od-id="dday-section">
+              <div class="section-head">
+                <h2 data-od-id="dday-title">D-day</h2>
+              </div>
+              <ul class="list">
+                <li class="dday soon" data-od-id="dday-birthday">
+                  <span class="cat clinic" style="--c: var(--celebrate)"></span>
+                  <div class="grow">
+                    <div class="title">민호 생일</div>
+                    <div class="meta">10월 19일 · 축하</div>
+                  </div>
+                  <span class="n">D-5</span>
+                </li>
+                <li class="dday" data-od-id="dday-anniversary">
+                  <span class="cat home"></span>
+                  <div class="grow">
+                    <div class="title">결혼기념일</div>
+                    <div class="meta">2027년 10월 11일 · 1주년</div>
+                  </div>
+                  <span class="n">D-362</span>
+                </li>
+              </ul>
+            </section>
+
+            <section class="section" data-od-id="stock-summary">
+              <div class="section-head">
+                <h2 data-od-id="stock-title">확인할 재고</h2>
+                <a href="inventory.html" data-od-id="stock-more">재고</a>
+              </div>
+              <ul class="list" id="stock"></ul>
+            </section>
+
+            <section class="section" data-od-id="cart-summary">
+              <div class="section-head">
+                <h2 data-od-id="cart-title">장바구니</h2>
+                <a href="cart.html" data-od-id="cart-more">열기</a>
+              </div>
+              <ul class="list">
+                <li data-od-id="cart-progress">
+                  <div class="grow">
+                    <div class="title">7개 중 <b>2개</b> 담음</div>
+                    <div class="meta">민호님이 18분 전에 두부를 담았어요</div>
+                  </div>
+                </li>
+                <li data-od-id="cart-next-1">
+                  <span class="secondary t-footnote" style="width: 72px"
+                    >채소·과일</span
+                  >
+                  <div class="grow">대파 1단 · 양파 1망</div>
+                </li>
+                <li data-od-id="cart-next-2">
+                  <span class="secondary t-footnote" style="width: 72px"
+                    >유제품·계란</span
+                  >
+                  <div class="grow">우유 2팩</div>
+                </li>
+                <li data-od-id="cart-next-3">
+                  <span class="secondary t-footnote" style="width: 72px"
+                    >생활용품</span
+                  >
+                  <div class="grow">세탁세제 1통</div>
+                </li>
+              </ul>
+            </section>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+      /* ---------- Home data (오늘 = 2026-10-14 수) ------------------------ */
+      var DAYS = [12, 13, 14, 15, 16, 17, 18],
+        DOW = ["월", "화", "수", "목", "금", "토", "일"];
+      var EVENTS = {
+        12: [{ t: "09:00", title: "주간 회의", cat: "work", who: "지수" }],
+        14: [
+          {
+            t: "10:30",
+            title: "치과 정기검진",
+            cat: "clinic",
+            meta: "연세바른치과 · 지수",
+          },
+          {
+            t: "14:00",
+            title: "개인 일정",
+            priv: true,
+            meta: "민호님 · 16:00까지",
+          },
+          {
+            t: "19:30",
+            title: "성수동 저녁 약속",
+            cat: "meet",
+            meta: "대림창고 근처 · 둘 다",
+          },
+        ],
+        15: [
+          { t: "종일", title: "아파트 방역 소독", cat: "home", meta: "둘 다" },
+        ],
+        17: [
+          {
+            t: "12:00",
+            title: "부모님 댁 점심",
+            cat: "family",
+            meta: "분당 · 둘 다",
+          },
+          {
+            t: "15:00",
+            title: "이케아 가구 보기",
+            cat: "meet",
+            meta: "광명점 · 둘 다",
+          },
+        ],
+        18: [{ t: "10:00", title: "개인 일정", priv: true, meta: "민호님" }],
+      };
+      var selected = 14;
+
+      function rowHTML(e, i) {
+        if (e.priv) {
+          return (
+            '<li class="is-private" data-od-id="event-private-' +
+            i +
+            '"><span class="time">' +
+            e.t +
+            '</span><span class="cat private"></span>' +
+            '<div class="grow"><div class="title">' +
+            e.title +
+            '</div><div class="meta">' +
+            e.meta +
+            '</div></div><span class="trail">' +
+            KJ.icon("lock", "chev") +
+            "</span></li>"
+          );
+        }
+        return (
+          '<li data-od-id="event-' +
+          i +
+          '"><span class="time">' +
+          e.t +
+          '</span><span class="cat ' +
+          e.cat +
+          '"></span>' +
+          '<div class="grow"><div class="title">' +
+          e.title +
+          '</div><div class="meta">' +
+          (e.meta || "") +
+          "</div></div></li>"
+        );
+      }
+
+      function renderWeek() {
+        document.querySelector(".week").innerHTML = DAYS.map(function (d, i) {
+          var ev = EVENTS[d] || [];
+          return (
+            '<button type="button" class="' +
+            (d === 14 ? "today " : "") +
+            (i === 6 ? "sun" : "") +
+            '" aria-pressed="' +
+            (d === selected) +
+            '" data-day="' +
+            d +
+            '" data-od-id="week-day-' +
+            d +
+            '">' +
+            '<span class="dow">' +
+            DOW[i] +
+            '</span><span class="d">' +
+            d +
+            '</span><span class="dots">' +
+            ev
+              .slice(0, 3)
+              .map(function (e) {
+                return (
+                  '<i style="--c: ' +
+                  (e.priv ? "var(--sys-gray3)" : "var(--cat-" + e.cat + ")") +
+                  '"></i>'
+                );
+              })
+              .join("") +
+            "</span></button>"
+          );
+        }).join("");
+      }
+      function renderDay() {
+        var ev = EVENTS[selected] || [];
+        document.getElementById("day-title").textContent =
+          selected === 14 ? "오늘 일정" : "10월 " + selected + "일 일정";
+        document.getElementById("day-list").innerHTML = ev.length
+          ? ev.map(rowHTML).join("")
+          : '<li><div class="grow secondary">등록된 일정이 없어요</div><a class="text-btn sm" href="calendar.html#new" data-od-id="day-add">일정 추가</a></li>';
+      }
+      document.querySelector(".week").addEventListener("click", function (e) {
+        var b = e.target.closest("[data-day]");
+        if (!b) return;
+        selected = +b.getAttribute("data-day");
+        renderWeek();
+        renderDay();
+      });
+
+      /* 다가오는 일정 위젯 (CAL-13): 일정 있는 날짜만, 가까운 순, 5개 */
+      var UPCOMING = [
+        {
+          date: "10월 15일 목요일",
+          rows: [{ t: "종일", title: "아파트 방역 소독", cat: "home" }],
+        },
+        {
+          date: "10월 17일 토요일",
+          rows: [
+            { t: "12:00", title: "부모님 댁 점심", cat: "family" },
+            { t: "15:00", title: "이케아 가구 보기", cat: "meet" },
+          ],
+        },
+        {
+          date: "10월 19일 월요일",
+          rows: [{ t: "D-5", title: "민호 생일", cat: "clinic", soon: true }],
+        },
+        {
+          date: "10월 21일 수요일",
+          rows: [{ t: "09:00", title: "하반기 워크숍", cat: "work" }],
+        },
+      ];
+      document.getElementById("upcoming").innerHTML = UPCOMING.map(
+        function (g, gi) {
+          return (
+            '<div class="group-label">' +
+            g.date +
+            '</div><ul class="list">' +
+            g.rows
+              .map(function (r, ri) {
+                return (
+                  '<li class="' +
+                  (r.soon ? "hl-soon" : "") +
+                  '" data-od-id="upcoming-' +
+                  gi +
+                  "-" +
+                  ri +
+                  '">' +
+                  (r.soon
+                    ? '<span class="time"></span><span class="cat" style="--c: var(--celebrate)"></span><div class="grow"><div class="title">' +
+                      r.title +
+                      '</div></div><span class="trail">' +
+                      r.t +
+                      "</span>"
+                    : '<span class="time">' +
+                      r.t +
+                      '</span><span class="cat ' +
+                      r.cat +
+                      '"></span><div class="grow"><div class="title">' +
+                      r.title +
+                      "</div></div>") +
+                  "</li>"
+                );
+              })
+              .join("") +
+            "</ul>"
+          );
+        },
+      ).join("");
+
+      /* 재고 요약 (INV-13): 없음 · 부족 · 임박. 푸시 없음 */
+      var STOCK = [
+        {
+          name: "세탁세제",
+          tone: "none",
+          label: "없음",
+          meta: "욕실·세탁실",
+          cart: true,
+        },
+        {
+          name: "우유",
+          tone: "low",
+          label: "부족",
+          meta: "1팩 남음 · 냉장실",
+          cart: true,
+        },
+        {
+          name: "두부",
+          tone: "expiring",
+          label: "내일까지",
+          meta: "1모 · 냉장실",
+        },
+        {
+          name: "달걀",
+          tone: "expiring",
+          label: "3일 남음",
+          meta: "4개 · 냉장실",
+        },
+      ];
+      document.getElementById("stock").innerHTML = STOCK.map(function (s, i) {
+        return (
+          '<li data-od-id="stock-' +
+          i +
+          '"><div class="grow"><div class="title">' +
+          s.name +
+          '</div><div class="meta">' +
+          s.meta +
+          "</div></div>" +
+          '<span class="status" data-tone="' +
+          s.tone +
+          '">' +
+          s.label +
+          "</span>" +
+          (s.cart
+            ? '<button type="button" class="text-btn sm" data-add="' +
+              s.name +
+              '" data-od-id="stock-add-' +
+              i +
+              '">담기</button>'
+            : '<span style="width:30px"></span>') +
+          "</li>"
+        );
+      }).join("");
+      document.getElementById("stock").addEventListener("click", function (e) {
+        var b = e.target.closest("[data-add]");
+        if (!b) return;
+        b.disabled = true;
+        b.textContent = "담음";
+        KJ.toast(
+          KJ.josa(b.getAttribute("data-add"), "을/를") + " 장바구니에 담았어요",
+        );
+      });
+
+      renderWeek();
+      renderDay();
+      KJ.init();
+    </script>
+  </body>
+</html>

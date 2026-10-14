@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>김데비 · 김집사</title>
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <style>
+      @media (max-width: 1023px) {
+        .main.chat-main {
+          padding: 0;
+          max-width: none;
+        }
+        .main.chat-main .chat-panel.inline {
+          height: calc(100dvh - 66px - env(safe-area-inset-bottom));
+        }
+      }
+      @media (min-width: 1024px) {
+        .main.chat-main {
+          max-width: 760px;
+        }
+      }
+    </style>
+  </head>
+  <body data-page="chat">
+    <div class="app">
+      <main class="main chat-main" id="chat-root" data-od-id="chat-main"></main>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+      KJ.init();
+      var root = document.getElementById("chat-root");
+      root.innerHTML = KJ.chatMarkup(true);
+      var chat = new KJ.Chat(root.querySelector(".chat-panel"));
+
+      /* 대화 예시 — SCN-BOT-4 (조회·개인 일정), SCN-BOT-5 (직접 요청), SCN-BOT-6/7 (판단 변경·만료) */
+      chat.me("이번 주 토요일에 뭐 있어?");
+      chat.bot(
+        '토요일(10월 17일) 일정이에요.<ul><li>12:00 부모님 댁 점심 · 분당</li><li>15:00 이케아 가구 보기 · 광명점</li><li>15:00 치과 스케일링 · 지수님</li></ul><div class="note">민호님의 개인 일정도 등록되어 있습니다.</div>',
+        true,
+      );
+      chat.me("계란이랑 두부 장바구니에 담아줘");
+      chat.bot("장바구니에 계란과 두부를 담았어요.");
+      chat.pending(
+        "토요일 15:00에 ‘이케아 가구 보기’와 ‘치과 스케일링’이 겹쳐요. ‘치과 스케일링’ 일정을 삭제해 드릴까요?",
+        4 * 60 + 12,
+        "치과 스케일링",
+      );
+    </script>
+  </body>
+</html>

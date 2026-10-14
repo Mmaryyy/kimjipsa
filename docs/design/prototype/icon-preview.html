@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>김집사 앱 아이콘</title>
+    <link rel="stylesheet" href="css/tokens.css" />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--label);
+        font: 17px/1.5 var(--font-sans);
+      }
+      main {
+        max-width: 1000px;
+        margin: auto;
+        padding: 40px;
+      }
+      .intro {
+        padding-bottom: 24px;
+      }
+      h1 {
+        font: 600 34px/1.2 var(--font-display);
+        letter-spacing: -0.02em;
+        margin: 0 0 12px;
+      }
+      p {
+        margin: 0;
+        color: var(--label-secondary);
+      }
+      .character {
+        margin: 24px auto;
+        max-width: 480px;
+      }
+      .character img {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+      .bottom {
+        display: flex;
+        justify-content: space-between;
+        gap: 32px;
+        align-items: center;
+        padding-top: 24px;
+      }
+      .sizes {
+        display: flex;
+        gap: 24px;
+        align-items: end;
+      }
+      .sizes figure {
+        margin: 0;
+        text-align: center;
+      }
+      .sizes img {
+        display: block;
+        object-fit: contain;
+      }
+      .sizes figcaption {
+        font-size: 12px;
+        letter-spacing: 0.02em;
+        margin-top: 8px;
+        color: var(--label-secondary);
+      }
+      nav {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      a {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        color: var(--label);
+        font-size: 15px;
+        letter-spacing: 0.02em;
+        text-underline-offset: 5px;
+      }
+      @media (max-width: 600px) {
+        main {
+          padding: 28px 20px;
+        }
+        h1 {
+          font-size: 28px;
+        }
+        .character {
+          max-width: 340px;
+        }
+        .bottom {
+          align-items: flex-start;
+          flex-direction: column;
+          gap: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main data-od-id="cute-butler-main">
+      <header class="intro" data-od-id="cute-butler-header">
+        <h1 data-od-id="cute-butler-title">김집사 앱 아이콘</h1>
+        <p data-od-id="cute-butler-description">
+          기존 김집사의 얼굴과 어깨 위 노란 새를 담았습니다.
+        </p>
+      </header>
+      <figure class="character" data-od-id="cute-butler-art">
+        <img
+          src="assets/kimjipsa-app-icon-1024.png"
+          alt="기존 김집사 캐릭터의 얼굴과 어깨 위 노란 새를 크롭한 앱 아이콘"
+          data-od-id="cute-butler-image"
+        />
+      </figure>
+      <footer class="bottom" data-od-id="cute-butler-footer">
+        <div class="sizes" data-od-id="cute-butler-sizes">
+          <figure>
+            <img
+              src="assets/kimjipsa-app-icon-1024.png"
+              width="48"
+              height="48"
+              alt="48픽셀 김집사 앱 아이콘"
+            />
+            <figcaption>48px</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="assets/kimjipsa-app-icon-1024.png"
+              width="80"
+              height="80"
+              alt="80픽셀 김집사 앱 아이콘"
+            />
+            <figcaption>80px</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="assets/kimjipsa-app-icon-1024.png"
+              width="120"
+              height="120"
+              alt="120픽셀 김집사 앱 아이콘"
+            />
+            <figcaption>120px</figcaption>
+          </figure>
+        </div>
+        <nav
+          aria-label="캐릭터 파일과 시작 화면"
+          data-od-id="cute-butler-links"
+        >
+          <a
+            href="assets/kimjipsa-app-icon-1024.png"
+            download
+            data-od-id="cute-butler-download"
+            >앱 아이콘 PNG 내려받기</a
+          ><a href="splash-logo.html" data-od-id="cute-butler-splash"
+            >시작 화면 보기 →</a
+          >
+        </nav>
+      </footer>
+    </main>
+  </body>
+</html>

@@ -61,7 +61,8 @@ Tailwind와 CVA를 쓰는 경우에 적용한다.
 - JSX 안에서 variant 스타일을 긴 삼항이나 조건부 클래스 조합으로 반복하지 않는다.
 - CVA는 외형을 정하고, 문구와 행동은 props나 도메인 매핑이 정한다.
 - 클래스 합치기는 `cn()`(`clsx` + `tailwind-merge`)을 쓴다.
-- 색·간격은 디자인 토큰 파일의 토큰만 쓰고, TSX나 별도 CSS에 값을 중복 정의하지 않는다. 토큰 파일 경로는 디자인이 나온 뒤 여기에 적는다.
+- 색·간격은 디자인 토큰 파일의 토큰만 쓰고, TSX나 별도 CSS에 값을 중복 정의하지 않는다. 토큰 원본은 `docs/design/tokens.css`이고, 앱 안의 토큰 파일 경로는 프로젝트 초기화 때 여기에 적는다.
+- 상태 색은 `variant`(`success · info · warning · error`), 글자 스타일은 타이포 `variant`(`docs/design/HANDOFF.md` §3)로 고른다.
 
 ## 7. UI 작성
 

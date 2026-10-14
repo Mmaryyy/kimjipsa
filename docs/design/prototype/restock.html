@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>재고 반영 · 김집사</title>
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <style>
+      .rs-item {
+        padding: 14px 0 8px;
+      }
+      .rs-item + .rs-item {
+        margin-top: 12px;
+      }
+      .rs-top {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+      }
+      .rs-top h2 {
+        font-size: var(--text-headline);
+        font-weight: var(--fw-semibold);
+      }
+      .rs-top .status {
+        margin-left: auto;
+      }
+      .rs-item .field-row > label,
+      .rs-item .field-row > .label {
+        color: var(--label-secondary);
+        font-size: var(--text-subhead);
+      }
+      .rs-item .field-row::before {
+        left: 0;
+      }
+      .actions-bottom {
+        display: grid;
+        gap: 8px;
+        margin-top: 24px;
+      }
+      .result li .trail {
+        color: var(--status-ok-text);
+        font-weight: var(--fw-semibold);
+      }
+    </style>
+  </head>
+  <body data-page="cart">
+    <div class="app">
+      <main class="main" data-od-id="restock-main">
+        <header class="page-head" data-od-id="restock-header">
+          <div class="bar">
+            <a
+              class="text-btn"
+              href="cart.html"
+              id="back"
+              data-od-id="restock-back"
+              ><i data-icon="back"></i>장바구니</a
+            >
+          </div>
+          <h1 class="t-large" id="rs-title" data-od-id="restock-title">
+            재고 반영
+          </h1>
+          <div class="sub" id="rs-sub">
+            구매한 품목을 재고에 반영하기 전에 확인해 주세요.
+          </div>
+        </header>
+
+        <form id="rs-form" novalidate data-od-id="restock-form">
+          <div id="rs-list" style="margin-top: 12px"></div>
+          <div class="actions-bottom">
+            <button
+              type="submit"
+              class="btn block"
+              id="apply"
+              data-od-id="restock-apply"
+            >
+              재고에 반영
+            </button>
+            <button
+              type="button"
+              class="btn block gray"
+              id="skip"
+              data-od-id="restock-skip"
+            >
+              반영 없이 닫기
+            </button>
+          </div>
+        </form>
+
+        <section id="done" hidden data-od-id="restock-done">
+          <ul class="list result" id="result" style="margin-top: 16px"></ul>
+          <div class="actions-bottom">
+            <a
+              class="btn block"
+              href="inventory.html"
+              data-od-id="restock-go-inventory"
+              >재고 보기</a
+            >
+            <a
+              class="btn block gray"
+              href="cart.html"
+              data-od-id="restock-go-cart"
+              >장바구니로</a
+            >
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+      var LOCS = [
+        "냉장실",
+        "냉동실",
+        "실온 식품장·팬트리",
+        "욕실·세탁실",
+        "서랍·수납장",
+      ];
+      var CATS = [
+        "채소·과일",
+        "정육·수산",
+        "유제품·계란",
+        "가공식품",
+        "음료",
+        "양념·소스",
+        "생활용품",
+        "건강·뷰티",
+        "기타",
+      ];
+      /* 재고에 이미 있는 품목 (CART-08 병합 기준) */
+      var STOCK = {
+        우유: { qty: 1, unit: "팩", loc: "냉장실" },
+        달걀: { qty: 4, unit: "개", loc: "냉장실" },
+        두부: { qty: 1, unit: "모", loc: "냉장실" },
+        대파: { qty: 1, unit: "단", loc: "냉장실" },
+        세탁세제: { status: true, loc: "욕실·세탁실" },
+      };
+      var bought;
+      try {
+        bought = JSON.parse(sessionStorage.getItem("kj:purchased") || "null");
+      } catch (_) {}
+      if (!bought || !bought.length)
+        bought = [
+          { name: "달걀", qty: 1, unit: "판", cat: "유제품·계란" },
+          { name: "두부", qty: 2, unit: "모", cat: "가공식품" },
+          { name: "돼지 앞다리살", qty: 600, unit: "g", cat: "정육·수산" },
+        ];
+      var UNITS = [
+        "개",
+        "팩",
+        "병",
+        "봉지",
+        "캔",
+        "박스",
+        "롤",
+        "g",
+        "kg",
+        "ml",
+        "L",
+        "판",
+        "모",
+        "단",
+        "망",
+        "통",
+      ];
+      function opts(list, sel, placeholder) {
+        return (
+          (placeholder ? '<option value="">' + placeholder + "</option>" : "") +
+          list
+            .map(function (v) {
+              return (
+                "<option" +
+                (v === sel ? " selected" : "") +
+                ">" +
+                v +
+                "</option>"
+              );
+            })
+            .join("")
+        );
+      }
+
+      document.getElementById("rs-list").innerHTML = bought
+        .map(function (b, i) {
+          var ex = STOCK[b.name];
+          var head =
+            '<div class="rs-top"><h2>' +
+            b.name +
+            '</h2><span class="secondary t-subhead num">' +
+            b.qty +
+            b.unit +
+            " 구매</span>" +
+            (ex
+              ? '<span class="status" data-tone="info">기존 재고에 더함</span>'
+              : '<span class="status" data-tone="ok">새 품목</span>') +
+            "</div>" +
+            (ex
+              ? '<div class="meta secondary t-footnote" style="margin-top:2px">지금 ' +
+                (ex.status ? "상태 품목" : ex.qty + ex.unit) +
+                " · " +
+                ex.loc +
+                "</div>"
+              : "");
+          var qty =
+            ex && ex.status
+              ? '<div class="field-row"><span class="label">상태</span><span class="control secondary">충분으로 바꿔요</span></div>'
+              : '<div class="field-row"><span class="label">더할 수량</span><span class="control" style="display:flex;gap:8px;align-items:center">' +
+                '<span class="stepper" data-i="' +
+                i +
+                '"><button type="button" data-d="-1" aria-label="빼기">' +
+                KJ.icon("minus") +
+                '</button><output id="q' +
+                i +
+                '">' +
+                b.qty +
+                '</output><button type="button" data-d="1" aria-label="더하기">' +
+                KJ.icon("plus") +
+                "</button></span>" +
+                '<select id="u' +
+                i +
+                '" aria-label="단위" style="flex:none;text-align:right">' +
+                opts(UNITS, ex ? ex.unit : b.unit) +
+                "</select></span></div>";
+          var cat = ex
+            ? ""
+            : '<div class="field-row" id="rc' +
+              i +
+              '"><label for="c' +
+              i +
+              '">카테고리</label><select id="c' +
+              i +
+              '">' +
+              opts(CATS, b.cat) +
+              "</select></div>";
+          var loc =
+            '<div class="field-row" id="rl' +
+            i +
+            '"><label for="l' +
+            i +
+            '">보관 장소</label><select id="l' +
+            i +
+            '">' +
+            opts(LOCS, ex ? ex.loc : "", ex ? "" : "선택") +
+            "</select></div>";
+          var exp =
+            '<div class="field-row"><label for="e' +
+            i +
+            '">유통기한</label><input id="e' +
+            i +
+            '" type="date"></div>';
+          return (
+            '<div class="rs-item" data-od-id="restock-item-' +
+            i +
+            '">' +
+            head +
+            qty +
+            cat +
+            loc +
+            exp +
+            "</div>"
+          );
+        })
+        .join("");
+
+      document
+        .getElementById("rs-list")
+        .addEventListener("click", function (e) {
+          var b = e.target.closest("[data-d]");
+          if (!b) return;
+          var i = b.closest("[data-i]").dataset.i,
+            o = document.getElementById("q" + i);
+          o.value = Math.max(1, +o.value + +b.dataset.d);
+        });
+      document
+        .getElementById("rs-list")
+        .addEventListener("change", function (e) {
+          var r = e.target.closest(".field-row");
+          if (r) r.classList.remove("invalid");
+        });
+
+      /* 반영 (INV-12, CART-08) */
+      document
+        .getElementById("rs-form")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+          var bad = null;
+          bought.forEach(function (b, i) {
+            if (!STOCK[b.name] && !document.getElementById("l" + i).value) {
+              document.getElementById("rl" + i).classList.add("invalid");
+              bad = bad || document.getElementById("l" + i);
+            }
+          });
+          if (bad) {
+            bad.focus();
+            return;
+          }
+          document.getElementById("result").innerHTML = bought
+            .map(function (b, i) {
+              var ex = STOCK[b.name],
+                q = document.getElementById("q" + i),
+                u = document.getElementById("u" + i);
+              var after =
+                ex && ex.status
+                  ? "충분"
+                  : ex && u && u.value === ex.unit
+                    ? ex.qty + +q.value + ex.unit
+                    : (q ? q.value : b.qty) + (u ? u.value : b.unit);
+              return (
+                '<li data-od-id="restock-result-' +
+                i +
+                '"><div class="grow"><div class="title">' +
+                b.name +
+                '</div><div class="meta">' +
+                (ex
+                  ? "기존 재고에 더함"
+                  : "새 품목 · " + document.getElementById("l" + i).value) +
+                '</div></div><span class="trail num">' +
+                after +
+                "</span></li>"
+              );
+            })
+            .join("");
+          this.hidden = true;
+          document.getElementById("done").hidden = false;
+          document.getElementById("rs-title").textContent = "반영했어요";
+          document.getElementById("rs-sub").textContent =
+            "구매한 " +
+            bought.length +
+            "개 품목이 장바구니에서 빠지고 구매 기록에 남았어요.";
+          try {
+            sessionStorage.removeItem("kj:purchased");
+          } catch (_) {}
+          window.scrollTo(0, 0);
+        });
+
+      /* 반영 없이 닫기 (SCN-CART-5) */
+      document.getElementById("skip").onclick = function () {
+        KJ.confirm({
+          title: "반영하지 않고 닫을까요?",
+          body: "재고는 바뀌지 않고, 담은 항목은 장바구니에 그대로 남아요.",
+          confirmLabel: "닫기",
+        }).then(function (ok) {
+          if (ok) location.href = "cart.html";
+        });
+      };
+
+      KJ.init();
+    </script>
+  </body>
+</html>

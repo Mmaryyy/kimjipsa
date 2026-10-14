@@ -1,0 +1,503 @@
+/* =====================================================================
+   김집사 — Design tokens
+   Apple Human Interface Guidelines system colors (iOS UIKit dynamic
+   colors), light + dark, with "Increased Contrast" variants used for
+   status text on light surfaces.
+
+   Layers
+     1. Raw Apple palette        --sys-*            (light / dark)
+     2. Apple semantic colors    --label-*, --bg-*, --fill-*, --separator-*
+     3. 김집사 semantic aliases   --accent, --status-*, --cat-*, --bot
+   Mode switching
+     - default: follows prefers-color-scheme
+     - html[data-theme="light" | "dark"] forces a mode (설정 > 화면 모드)
+   ===================================================================== */
+
+/* ---------- 0. Webfont: 스위트 (https://noonnu.cc/font_page/1150) ---- */
+@font-face {
+  font-family: "Sweet";
+  src: url("https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2304-2@1.0/SUITE-Regular.woff2")
+    format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Sweet";
+  src: url("https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2304-2@1.0/SUITE-Medium.woff2")
+    format("woff2");
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Sweet";
+  src: url("https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2304-2@1.0/SUITE-SemiBold.woff2")
+    format("woff2");
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Sweet";
+  src: url("https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2304-2@1.0/SUITE-Bold.woff2")
+    format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+
+/* ---------- 0.5 Status color codes (mode-fixed) --------------------
+   구현용 원본 값. 모드와 상관없이 고정된 이름으로 둔다.
+     --{v}-light / --{v}-dark            채우기 (Apple 시스템 컬러)
+     --{v}-text-light / --{v}-text-dark  글자 (Apple 대비 강화 값)
+     --{v}-soft-light / --{v}-soft-dark  배경 틴트 (라이트 14% · 다크 20%)
+   화면에서는 아래 모드별 시맨틱 토큰(--{v}, --{v}-text …)을 쓴다. */
+:root {
+  --success-light: #34c759;
+  --success-dark: #30d158;
+  --success-text-light: #248a3d;
+  --success-text-dark: #30db5b;
+  --success-soft-light: rgba(52, 199, 89, 0.14);
+  --success-soft-dark: rgba(48, 209, 88, 0.2);
+  --info-light: #007aff;
+  --info-dark: #0a84ff;
+  --info-text-light: #0040dd;
+  --info-text-dark: #409cff;
+  --info-soft-light: rgba(0, 122, 255, 0.14);
+  --info-soft-dark: rgba(10, 132, 255, 0.2);
+  --warning-light: #ff9500;
+  --warning-dark: #ff9f0a;
+  --warning-text-light: #c93400;
+  --warning-text-dark: #ffb340;
+  --warning-soft-light: rgba(255, 149, 0, 0.14);
+  --warning-soft-dark: rgba(255, 159, 10, 0.2);
+  --error-light: #ff3b30;
+  --error-dark: #ff453a;
+  --error-text-light: #d70015;
+  --error-text-dark: #ff6961;
+  --error-soft-light: rgba(255, 59, 48, 0.14);
+  --error-soft-dark: rgba(255, 69, 58, 0.2);
+}
+
+/* ---------- 1+2. LIGHT ---------------------------------------------- */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  /* System colors — iOS light */
+  --sys-red: #ff3b30;
+  --sys-orange: #ff9500;
+  --sys-yellow: #ffcc00;
+  --sys-green: #34c759;
+  --sys-mint: #00c7be;
+  --sys-teal: #30b0c7;
+  --sys-cyan: #32ade6;
+  --sys-blue: #007aff;
+  --sys-indigo: #5856d6;
+  --sys-purple: #af52de;
+  --sys-pink: #ff2d55;
+  --sys-brown: #a2845e;
+
+  /* Increased-contrast variants (accessible text on light surfaces) */
+  --sys-red-ic: #d70015;
+  --sys-orange-ic: #c93400;
+  --sys-yellow-ic: #b25000;
+  --sys-green-ic: #248a3d;
+  --sys-mint-ic: #0c817b;
+  --sys-teal-ic: #008299;
+  --sys-cyan-ic: #0071a4;
+  --sys-blue-ic: #0040dd;
+  --sys-indigo-ic: #3634a3;
+  --sys-purple-ic: #8944ab;
+  --sys-pink-ic: #d30f45;
+  --sys-brown-ic: #7f6545;
+
+  /* System grays */
+  --sys-gray: #8e8e93;
+  --sys-gray2: #aeaeb2;
+  --sys-gray3: #c7c7cc;
+  --sys-gray4: #d1d1d6;
+  --sys-gray5: #e5e5ea;
+  --sys-gray6: #f2f2f7;
+
+  /* Labels */
+  --label: #1d1d1f; /* Apple #000000 → 김집사 조정 */
+  --label-secondary: rgba(60, 60, 67, 0.6);
+  --label-tertiary: rgba(60, 60, 67, 0.3);
+  --label-quaternary: rgba(60, 60, 67, 0.18);
+  --label-placeholder: rgba(60, 60, 67, 0.3);
+  --link: #007aff;
+
+  /* Backgrounds */
+  --bg: #f6f6f8; /* Apple #FFFFFF → 약간 탁한 쿨 그레이 */
+  --bg-secondary: #ededf0;
+  --bg-tertiary: #fbfbfc;
+  --bg-grouped: #ededf0;
+  --bg-grouped-secondary: #f6f6f8;
+  --bg-grouped-tertiary: #ededf0;
+
+  /* Fills */
+  --fill: rgba(120, 120, 128, 0.2);
+  --fill-secondary: rgba(120, 120, 128, 0.16);
+  --fill-tertiary: rgba(118, 118, 128, 0.12);
+  --fill-quaternary: rgba(116, 116, 128, 0.08);
+
+  /* Separators */
+  --separator: rgba(60, 60, 67, 0.29);
+  --separator-opaque: #c6c6c8;
+
+  /* Materials (bars, sheets) */
+  --material-bar: rgba(246, 246, 248, 0.94);
+  --shadow-sheet: 0 10px 40px rgba(0, 0, 0, 0.18);
+  --shadow-fab: 0 6px 20px rgba(0, 0, 0, 0.16);
+
+  /* Status variants — 라이트: 버튼은 채운 색 + 흰 글자 */
+  --success: var(--success-light);
+  --success-text: var(--success-text-light);
+  --success-soft: var(--success-soft-light);
+  --success-button-bg: var(--success-light);
+  --success-button-fg: #ffffff;
+  --info: var(--info-light);
+  --info-text: var(--info-text-light);
+  --info-soft: var(--info-soft-light);
+  --info-button-bg: var(--info-light);
+  --info-button-fg: #ffffff;
+  --warning: var(--warning-light);
+  --warning-text: var(--warning-text-light);
+  --warning-soft: var(--warning-soft-light);
+  --warning-button-bg: var(--warning-light);
+  --warning-button-fg: #ffffff;
+  --error: var(--error-light);
+  --error-text: var(--error-text-light);
+  --error-soft: var(--error-soft-light);
+  --error-button-bg: var(--error-light);
+  --error-button-fg: #ffffff;
+}
+
+/* ---------- 1+2. DARK ----------------------------------------------- */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --sys-red: #ff453a;
+  --sys-orange: #ff9f0a;
+  --sys-yellow: #ffd60a;
+  --sys-green: #30d158;
+  --sys-mint: #63e6e2;
+  --sys-teal: #40cbe0;
+  --sys-cyan: #64d2ff;
+  --sys-blue: #0a84ff;
+  --sys-indigo: #5e5ce6;
+  --sys-purple: #bf5af2;
+  --sys-pink: #ff375f;
+  --sys-brown: #ac8e68;
+
+  --sys-red-ic: #ff6961;
+  --sys-orange-ic: #ffb340;
+  --sys-yellow-ic: #ffd426;
+  --sys-green-ic: #30db5b;
+  --sys-mint-ic: #66d4cf;
+  --sys-teal-ic: #5de6ff;
+  --sys-cyan-ic: #70d7ff;
+  --sys-blue-ic: #409cff;
+  --sys-indigo-ic: #7d7aff;
+  --sys-purple-ic: #da8fff;
+  --sys-pink-ic: #ff6482;
+  --sys-brown-ic: #b59469;
+
+  --sys-gray: #8e8e93;
+  --sys-gray2: #636366;
+  --sys-gray3: #48484a;
+  --sys-gray4: #3a3a3c;
+  --sys-gray5: #2c2c2e;
+  --sys-gray6: #1c1c1e;
+
+  --label: #e5e5ea; /* Apple #FFFFFF → 김집사 조정 */
+  --label-secondary: rgba(235, 235, 245, 0.6);
+  --label-tertiary: rgba(235, 235, 245, 0.3);
+  --label-quaternary: rgba(235, 235, 245, 0.16);
+  --label-placeholder: rgba(235, 235, 245, 0.3);
+  --link: #0984ff;
+
+  --bg: #1a1a1c; /* Apple #000000 → 살짝 띄운 차콜 */
+  --bg-secondary: #222225;
+  --bg-tertiary: #2c2c2f;
+  --bg-grouped: #1a1a1c;
+  --bg-grouped-secondary: #222225;
+  --bg-grouped-tertiary: #2c2c2f;
+
+  --fill: rgba(120, 120, 128, 0.36);
+  --fill-secondary: rgba(120, 120, 128, 0.32);
+  --fill-tertiary: rgba(118, 118, 128, 0.24);
+  --fill-quaternary: rgba(116, 116, 128, 0.18);
+
+  --separator: rgba(84, 84, 88, 0.6);
+  --separator-opaque: #3a3a3d;
+
+  --material-bar: rgba(26, 26, 28, 0.94);
+  --shadow-sheet: 0 10px 40px rgba(0, 0, 0, 0.6);
+  --shadow-fab: 0 6px 20px rgba(0, 0, 0, 0.5);
+
+  /* Status variants — 다크: 버튼은 Apple tinted 스타일 (틴트 배경 + 색 글자) */
+  --success: var(--success-dark);
+  --success-text: var(--success-text-dark);
+  --success-soft: var(--success-soft-dark);
+  --success-button-bg: var(--success-soft-dark);
+  --success-button-fg: var(--success-text-dark);
+  --info: var(--info-dark);
+  --info-text: var(--info-text-dark);
+  --info-soft: var(--info-soft-dark);
+  --info-button-bg: var(--info-soft-dark);
+  --info-button-fg: var(--info-text-dark);
+  --warning: var(--warning-dark);
+  --warning-text: var(--warning-text-dark);
+  --warning-soft: var(--warning-soft-dark);
+  --warning-button-bg: var(--warning-soft-dark);
+  --warning-button-fg: var(--warning-text-dark);
+  --error: var(--error-dark);
+  --error-text: var(--error-text-dark);
+  --error-soft: var(--error-soft-dark);
+  --error-button-bg: var(--error-soft-dark);
+  --error-button-fg: var(--error-text-dark);
+}
+
+/* Follow the OS unless the user forced a mode */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --sys-red: #ff453a;
+    --sys-orange: #ff9f0a;
+    --sys-yellow: #ffd60a;
+    --sys-green: #30d158;
+    --sys-mint: #63e6e2;
+    --sys-teal: #40cbe0;
+    --sys-cyan: #64d2ff;
+    --sys-blue: #0a84ff;
+    --sys-indigo: #5e5ce6;
+    --sys-purple: #bf5af2;
+    --sys-pink: #ff375f;
+    --sys-brown: #ac8e68;
+    --sys-red-ic: #ff6961;
+    --sys-orange-ic: #ffb340;
+    --sys-yellow-ic: #ffd426;
+    --sys-green-ic: #30db5b;
+    --sys-mint-ic: #66d4cf;
+    --sys-teal-ic: #5de6ff;
+    --sys-cyan-ic: #70d7ff;
+    --sys-blue-ic: #409cff;
+    --sys-indigo-ic: #7d7aff;
+    --sys-purple-ic: #da8fff;
+    --sys-pink-ic: #ff6482;
+    --sys-brown-ic: #b59469;
+    --sys-gray: #8e8e93;
+    --sys-gray2: #636366;
+    --sys-gray3: #48484a;
+    --sys-gray4: #3a3a3c;
+    --sys-gray5: #2c2c2e;
+    --sys-gray6: #1c1c1e;
+    --label: #e5e5ea;
+    --label-secondary: rgba(235, 235, 245, 0.6);
+    --label-tertiary: rgba(235, 235, 245, 0.3);
+    --label-quaternary: rgba(235, 235, 245, 0.16);
+    --label-placeholder: rgba(235, 235, 245, 0.3);
+    --link: #0984ff;
+    --bg: #1a1a1c;
+    --bg-secondary: #222225;
+    --bg-tertiary: #2c2c2f;
+    --bg-grouped: #1a1a1c;
+    --bg-grouped-secondary: #222225;
+    --bg-grouped-tertiary: #2c2c2f;
+    --fill: rgba(120, 120, 128, 0.36);
+    --fill-secondary: rgba(120, 120, 128, 0.32);
+    --fill-tertiary: rgba(118, 118, 128, 0.24);
+    --fill-quaternary: rgba(116, 116, 128, 0.18);
+    --separator: rgba(84, 84, 88, 0.6);
+    --separator-opaque: #3a3a3d;
+    --material-bar: rgba(26, 26, 28, 0.94);
+    --shadow-sheet: 0 10px 40px rgba(0, 0, 0, 0.6);
+    --shadow-fab: 0 6px 20px rgba(0, 0, 0, 0.5);
+    /* Status variants — 다크: 버튼은 Apple tinted 스타일 (틴트 배경 + 색 글자) */
+    --success: var(--success-dark);
+    --success-text: var(--success-text-dark);
+    --success-soft: var(--success-soft-dark);
+    --success-button-bg: var(--success-soft-dark);
+    --success-button-fg: var(--success-text-dark);
+    --info: var(--info-dark);
+    --info-text: var(--info-text-dark);
+    --info-soft: var(--info-soft-dark);
+    --info-button-bg: var(--info-soft-dark);
+    --info-button-fg: var(--info-text-dark);
+    --warning: var(--warning-dark);
+    --warning-text: var(--warning-text-dark);
+    --warning-soft: var(--warning-soft-dark);
+    --warning-button-bg: var(--warning-soft-dark);
+    --warning-button-fg: var(--warning-text-dark);
+    --error: var(--error-dark);
+    --error-text: var(--error-text-dark);
+    --error-soft: var(--error-soft-dark);
+    --error-button-bg: var(--error-soft-dark);
+    --error-button-fg: var(--error-text-dark);
+  }
+}
+
+/* ---------- 3. 김집사 semantic aliases ------------------------------
+   Declared on every theme scope so nested [data-theme] blocks
+   (components.html side-by-side preview) resolve their own values. */
+:root,
+[data-theme] {
+  /* Status variants — success · info · warning · error.
+     값은 모드 블록(LIGHT / DARK)에서 정한다. 여기서는 --on-{v}만 둔다.
+       --{v} 채우기 · --{v}-text 글자 · --{v}-soft 배경
+       --{v}-button-bg / --{v}-button-fg 버튼 (다크는 tinted) */
+  --on-success: #ffffff;
+  --on-info: #ffffff;
+  --on-warning: #ffffff;
+  --on-error: #ffffff;
+
+  /* Action */
+  --accent: var(--sys-blue);
+  --accent-text: var(--sys-blue);
+  --accent-soft: color-mix(in srgb, var(--sys-blue) 14%, transparent);
+  --on-accent: #ffffff;
+  --destructive: var(--error);
+
+  /* 도메인 상태 (재고·장보기·연결) — 위 4개 variant의 별칭.
+     expiring·private는 4종 밖의 김집사 전용 상태다. */
+  --status-none: var(--error); /* 없음 → error */
+  --status-none-text: var(--error-text);
+  --status-low: var(--warning); /* 부족 → warning */
+  --status-low-text: var(--warning-text);
+  --status-expiring: var(--sys-yellow); /* 유통기한 임박 (전용) */
+  --status-expiring-text: var(--sys-yellow-ic);
+  --status-ok: var(--success); /* 충분 · 완료 · 반영됨 → success */
+  --status-ok-text: var(--success-text);
+  --status-info: var(--info); /* 정보 · 공유 → info */
+  --status-info-text: var(--info-text);
+  --status-private: var(--sys-gray); /* 배우자 개인 일정 (전용) */
+  --status-private-text: var(--label-secondary);
+
+  /* Product roles */
+  --bot: var(--sys-indigo); /* 집사 챗봇 */
+  --bot-text: var(--sys-indigo-ic);
+  --celebrate: var(--sys-pink); /* 축하 D-day */
+  --celebrate-text: var(--sys-pink-ic);
+
+  /* Calendar categories (CAL-08 기본값) */
+  --cat-home: var(--sys-teal); /* {우리집 이름} */
+  --cat-work: var(--sys-blue); /* 회사 */
+  --cat-family: var(--sys-green); /* 가족 */
+  --cat-meet: var(--sys-purple); /* 약속 */
+  --cat-clinic: var(--sys-pink); /* 병원 */
+  --cat-etc: var(--sys-brown); /* 기타 */
+
+  /* Typography — 스위트(Sweet / SUITE, 눈누 1150) on Apple text-style sizes.
+     One family, weights 400 / 500 / 600 / 700 only. */
+  --font-sans: "Sweet", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+    system-ui, "Segoe UI", sans-serif;
+  --font-display: var(--font-sans);
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  --text-large-title: 34px;
+  --lh-large-title: 41px;
+  --text-title1: 28px;
+  --lh-title1: 34px;
+  --text-title2: 22px;
+  --lh-title2: 28px;
+  --text-title3: 20px;
+  --lh-title3: 25px;
+  --text-headline: 17px;
+  --lh-headline: 22px;
+  --text-body: 17px;
+  --lh-body: 22px;
+  --text-callout: 16px;
+  --lh-callout: 21px;
+  --text-subhead: 15px;
+  --lh-subhead: 20px;
+  --text-footnote: 13px;
+  --lh-footnote: 18px;
+  --text-caption1: 12px;
+  --lh-caption1: 16px;
+  --text-caption2: 11px;
+  --lh-caption2: 13px;
+
+  /* Type variants — 개발에서 <Text variant="…">로 쓰는 단계.
+     variant마다 size · lh · weight · tracking 4개 토큰을 같은 규칙으로 둔다.
+     위 --text-* 값(Apple 텍스트 스타일)을 그대로 가리킨다. */
+  --type-display-size: var(--text-large-title);
+  --type-display-lh: var(--lh-large-title);
+  --type-display-weight: var(--fw-bold);
+  --type-display-tracking: -0.01em;
+  --type-title-lg-size: var(--text-title1);
+  --type-title-lg-lh: var(--lh-title1);
+  --type-title-lg-weight: var(--fw-bold);
+  --type-title-lg-tracking: -0.01em;
+  --type-title-size: var(--text-title2);
+  --type-title-lh: var(--lh-title2);
+  --type-title-weight: var(--fw-bold);
+  --type-title-tracking: 0;
+  --type-title-sm-size: var(--text-title3);
+  --type-title-sm-lh: var(--lh-title3);
+  --type-title-sm-weight: var(--fw-bold);
+  --type-title-sm-tracking: 0;
+  --type-headline-size: var(--text-headline);
+  --type-headline-lh: var(--lh-headline);
+  --type-headline-weight: var(--fw-semibold);
+  --type-headline-tracking: 0;
+  --type-body-lg-size: var(--text-body);
+  --type-body-lg-lh: var(--lh-body);
+  --type-body-lg-weight: var(--fw-regular);
+  --type-body-lg-tracking: 0;
+  --type-body-size: var(--text-callout);
+  --type-body-lh: var(--lh-callout);
+  --type-body-weight: var(--fw-regular);
+  --type-body-tracking: 0;
+  --type-body-sm-size: var(--text-subhead);
+  --type-body-sm-lh: var(--lh-subhead);
+  --type-body-sm-weight: var(--fw-regular);
+  --type-body-sm-tracking: 0;
+  --type-label-size: var(--text-subhead);
+  --type-label-lh: var(--lh-subhead);
+  --type-label-weight: var(--fw-semibold);
+  --type-label-tracking: 0.01em;
+  --type-caption-size: var(--text-footnote);
+  --type-caption-lh: var(--lh-footnote);
+  --type-caption-weight: var(--fw-regular);
+  --type-caption-tracking: 0.01em;
+  --type-caption-sm-size: var(--text-caption1);
+  --type-caption-sm-lh: var(--lh-caption1);
+  --type-caption-sm-weight: var(--fw-medium);
+  --type-caption-sm-tracking: 0.02em;
+  --type-caption-xs-size: var(--text-caption2);
+  --type-caption-xs-lh: var(--lh-caption2);
+  --type-caption-xs-weight: var(--fw-medium);
+  --type-caption-xs-tracking: 0.02em;
+
+  /* Spacing (4pt grid) & shape */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  /* Shape — no cards, no rounded containers.
+     Lists / sections / sheets: 0. Buttons / inputs: 4px.
+     --r-round is reserved for native round controls only (switch knob, status dot). */
+  --r-none: 0;
+  --r-control: 4px;
+  --r-round: 999px;
+  --hairline: 0.5px solid var(--separator);
+  --hit: 44px; /* 터치 영역 기준 (보이는 크기는 아래 컴팩트 토큰) */
+  /* Compact control sizes — 보이는 높이. 작은 컨트롤은 ::after로 터치 영역을 44px까지 넓힌다. */
+  --ctl-h-sm: 28px;
+  --ctl-h: 34px;
+  --ctl-h-lg: 42px;
+  --row-min: 40px;
+  --content-max: 720px;
+
+  /* Motion */
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-fast: 160ms;
+  --dur: 280ms;
+}

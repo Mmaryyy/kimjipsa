@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>장바구니 · 김집사</title>
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <style>
+      .add-row {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      .add-row .input {
+        flex: 1;
+      }
+      .freq {
+        display: flex;
+        gap: 4px 16px;
+        flex-wrap: wrap;
+        padding: 4px 0 10px;
+      }
+      .freq button {
+        min-height: 32px;
+        color: var(--link);
+        font-size: var(--text-subhead);
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+      }
+      .freq button .icon {
+        width: 14px;
+        height: 14px;
+      }
+      .done .title {
+        color: var(--label-tertiary);
+        text-decoration: line-through;
+      }
+      .by {
+        font-size: var(--text-caption1);
+        color: var(--label-secondary);
+        white-space: nowrap;
+      }
+      .del {
+        color: var(--destructive);
+        width: 32px;
+        height: 32px;
+        display: none;
+        place-items: center;
+      }
+      .editing .del {
+        display: grid;
+      }
+      .ext {
+        color: var(--link);
+        font-size: var(--text-footnote);
+        display: inline-flex;
+        gap: 2px;
+        align-items: center;
+      }
+      .ext .icon {
+        width: 13px;
+        height: 13px;
+      }
+      .buy-bar {
+        position: sticky;
+        bottom: calc(66px + env(safe-area-inset-bottom));
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 0;
+        margin-top: 16px;
+        background: var(--bg);
+        box-shadow: 0 -12px 16px -4px var(--bg);
+      }
+      .buy-bar .grow {
+        font-size: var(--text-subhead);
+        color: var(--label-secondary);
+      }
+      @media (min-width: 1024px) {
+        .buy-bar {
+          bottom: 0;
+        }
+      }
+      .offline [data-edit],
+      .offline .check,
+      .offline .freq button,
+      .offline .add-row * {
+        pointer-events: none;
+        opacity: 0.45;
+      }
+      .order li {
+        gap: 8px;
+      }
+      .order .icon-btn {
+        width: 36px;
+        height: 36px;
+      }
+      .order .icon-btn .icon {
+        width: 18px;
+        height: 18px;
+      }
+      .up .icon {
+        transform: rotate(-90deg);
+      }
+      .down .icon {
+        transform: rotate(90deg);
+      }
+    </style>
+  </head>
+  <body data-page="cart">
+    <div class="app">
+      <main class="main" id="cart-main" data-od-id="cart-main">
+        <header class="page-head" data-od-id="cart-header">
+          <div class="bar">
+            <button
+              type="button"
+              class="text-btn sm"
+              id="order-btn"
+              data-od-id="cart-reorder"
+            >
+              코너 순서
+            </button>
+            <div class="actions">
+              <button
+                type="button"
+                class="text-btn"
+                id="edit-btn"
+                data-edit
+                data-od-id="cart-edit"
+              >
+                편집
+              </button>
+            </div>
+          </div>
+          <h1 class="t-large" data-od-id="cart-title">장바구니</h1>
+          <div class="sub" id="live">민호님과 함께 보는 중</div>
+        </header>
+
+        <div
+          class="banner warn"
+          id="offline"
+          hidden
+          data-od-id="cart-offline-banner"
+        >
+          <i data-icon="offline"></i>
+          <div class="grow">
+            <b>연결이 끊겼어요.</b> 마지막으로 받은 목록을 보여 드려요. 연결되면
+            바로 최신 목록으로 맞출게요.
+          </div>
+        </div>
+
+        <form class="add-row" id="add-form" data-od-id="cart-add-form">
+          <label class="sr-only" for="add-name">항목 추가</label>
+          <input
+            class="input"
+            id="add-name"
+            placeholder="항목 추가 (예: 두부 2모)"
+            autocomplete="off"
+          />
+          <button type="submit" class="btn sm" data-od-id="cart-add-submit">
+            추가
+          </button>
+        </form>
+
+        <section
+          class="section"
+          style="margin-top: 16px"
+          data-od-id="cart-frequent"
+        >
+          <div class="group-label" style="padding-top: 0">자주 사는 품목</div>
+          <div class="freq" id="freq"></div>
+        </section>
+
+        <div id="groups" data-od-id="cart-list"></div>
+
+        <section class="section" id="done-wrap" data-od-id="cart-checked">
+          <div class="section-head">
+            <h2 data-od-id="cart-checked-title">담은 항목</h2>
+            <button
+              type="button"
+              class="text-btn sm danger"
+              id="clear-checked"
+              data-edit
+              data-od-id="cart-clear-checked"
+            >
+              일괄 삭제
+            </button>
+          </div>
+          <ul class="list" id="done"></ul>
+        </section>
+
+        <div class="buy-bar" data-od-id="cart-buy-bar">
+          <div class="grow" id="buy-count"></div>
+          <button
+            type="button"
+            class="btn"
+            id="buy"
+            data-edit
+            data-od-id="cart-purchase-complete"
+          >
+            구매 완료
+          </button>
+        </div>
+      </main>
+    </div>
+
+    <!-- 코너 순서 (CART-04) -->
+    <dialog class="sheet" id="sheet-order" data-od-id="sheet-corner-order">
+      <div class="sheet-head">
+        <span></span>
+        <h2>코너 순서</h2>
+        <button
+          type="button"
+          class="text-btn"
+          data-close
+          style="font-weight: 600"
+          data-od-id="order-done"
+        >
+          완료
+        </button>
+      </div>
+      <p class="section-note">
+        마트 동선에 맞춰 바꿔 두면 장보기 목록도 이 순서로 묶여요.
+      </p>
+      <ul class="list order" id="order-list"></ul>
+    </dialog>
+
+    <script src="js/app.js"></script>
+    <script>
+      var ORDER = [
+        "채소·과일",
+        "정육·수산",
+        "유제품·계란",
+        "가공식품",
+        "음료",
+        "양념·소스",
+        "생활용품",
+        "건강·뷰티",
+        "기타",
+      ];
+      var ITEMS = [
+        { id: 1, name: "대파", qty: 1, unit: "단", cat: "채소·과일" },
+        { id: 2, name: "양파", qty: 1, unit: "망", cat: "채소·과일" },
+        {
+          id: 3,
+          name: "돼지 앞다리살",
+          qty: 600,
+          unit: "g",
+          cat: "정육·수산",
+          memo: "수육용",
+        },
+        { id: 4, name: "우유", qty: 2, unit: "팩", cat: "유제품·계란" },
+        {
+          id: 5,
+          name: "달걀",
+          qty: 1,
+          unit: "판",
+          cat: "유제품·계란",
+          by: "지수",
+        },
+        {
+          id: 6,
+          name: "두부",
+          qty: 2,
+          unit: "모",
+          cat: "가공식품",
+          by: "민호",
+        },
+        {
+          id: 7,
+          name: "세탁세제",
+          qty: 1,
+          unit: "통",
+          cat: "생활용품",
+          link: "https://www.coupang.com",
+        },
+      ];
+      var FREQ = [
+        ["우유", "유제품·계란", "팩"],
+        ["달걀", "유제품·계란", "판"],
+        ["두부", "가공식품", "모"],
+        ["바나나", "채소·과일", "송이"],
+        ["생수", "음료", "묶음"],
+        ["키친타월", "생활용품", "롤"],
+      ];
+      var nextId = 8,
+        editing = false;
+
+      function rowHTML(it, done) {
+        return (
+          '<li class="' +
+          (done ? "done" : "") +
+          '" data-od-id="cart-item-' +
+          it.id +
+          '">' +
+          '<input type="checkbox" class="check" data-id="' +
+          it.id +
+          '" ' +
+          (done ? "checked " : "") +
+          'aria-label="' +
+          it.name +
+          ' 담음">' +
+          '<div class="grow"><div class="title">' +
+          it.name +
+          ' <span class="secondary num">' +
+          it.qty +
+          it.unit +
+          "</span></div>" +
+          (it.memo || it.link
+            ? '<div class="meta">' +
+              (it.memo || "") +
+              (it.link
+                ? (it.memo ? " · " : "") +
+                  '<a class="ext" href="' +
+                  it.link +
+                  '" target="_blank" rel="noopener">쇼핑몰 링크 ' +
+                  KJ.icon("link") +
+                  "</a>"
+                : "") +
+              "</div>"
+            : "") +
+          "</div>" +
+          (done ? '<span class="by">' + it.by + " 담음</span>" : "") +
+          '<button type="button" class="del" data-del="' +
+          it.id +
+          '" aria-label="' +
+          it.name +
+          ' 삭제">' +
+          KJ.icon("minus") +
+          "</button></li>"
+        );
+      }
+      function render() {
+        var open = ITEMS.filter(function (i) {
+            return !i.by;
+          }),
+          done = ITEMS.filter(function (i) {
+            return i.by;
+          });
+        document.getElementById("groups").innerHTML =
+          ORDER.map(function (c, ci) {
+            var rows = open.filter(function (i) {
+              return i.cat === c;
+            });
+            if (!rows.length) return "";
+            return (
+              '<div class="group-label" data-od-id="corner-' +
+              ci +
+              '">' +
+              c +
+              '</div><ul class="list">' +
+              rows
+                .map(function (r) {
+                  return rowHTML(r, false);
+                })
+                .join("") +
+              "</ul>"
+            );
+          }).join("") ||
+          '<div class="empty">' +
+            KJ.icon("cart") +
+            "<p>살 것을 모두 담았어요</p></div>";
+        document.getElementById("done").innerHTML = done
+          .map(function (r) {
+            return rowHTML(r, true);
+          })
+          .join("");
+        document.getElementById("done-wrap").hidden = !done.length;
+        document.getElementById("buy-count").textContent =
+          ITEMS.length + "개 중 " + done.length + "개 담음";
+        document.getElementById("buy").disabled = !done.length;
+        document.getElementById("freq").innerHTML = FREQ.map(function (f, i) {
+          return (
+            '<button type="button" data-freq="' +
+            i +
+            '" data-od-id="freq-' +
+            i +
+            '">' +
+            KJ.icon("plus") +
+            f[0] +
+            "</button>"
+          );
+        }).join("");
+      }
+
+      /* ---------- Add + duplicate notice (CART-01, 05, 12) --------------- */
+      function addItem(name, qty, unit, cat) {
+        var dup = ITEMS.find(function (i) {
+          return i.name === name && !i.by;
+        });
+        if (dup) {
+          return KJ.confirm({
+            title:
+              "이미 ‘" + dup.name + " " + dup.qty + dup.unit + "’이 있어요",
+            body: "수량을 더할까요, 따로 추가할까요?",
+            cancelLabel: "따로 추가",
+            confirmLabel: "수량 더하기",
+          }).then(function (merge) {
+            if (merge) {
+              dup.qty += qty;
+              KJ.toast(dup.name + " " + dup.qty + dup.unit + "로 바꿨어요");
+            } else
+              ITEMS.push({
+                id: nextId++,
+                name: name,
+                qty: qty,
+                unit: unit,
+                cat: cat,
+              });
+            render();
+          });
+        }
+        ITEMS.push({
+          id: nextId++,
+          name: name,
+          qty: qty,
+          unit: unit,
+          cat: cat,
+        });
+        render();
+        KJ.toast(KJ.josa(name, "을/를") + " 담았어요");
+      }
+      document
+        .getElementById("add-form")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+          var v = document.getElementById("add-name").value.trim();
+          if (!v) return document.getElementById("add-name").focus();
+          var m = v.match(/^(.+?)\s*(\d+)\s*(\D*)$/);
+          addItem(
+            m ? m[1].trim() : v,
+            m ? +m[2] : 1,
+            m && m[3] ? m[3].trim() : "개",
+            "기타",
+          );
+          document.getElementById("add-name").value = "";
+        });
+      document.getElementById("freq").addEventListener("click", function (e) {
+        var b = e.target.closest("[data-freq]");
+        if (!b) return;
+        var f = FREQ[+b.dataset.freq];
+        addItem(f[0], 1, f[2], f[1]);
+      });
+
+      /* ---------- Check / delete (CART-03, 13) --------------------------- */
+      document.querySelector("main").addEventListener("change", function (e) {
+        if (!e.target.matches(".check")) return;
+        var it = ITEMS.find(function (i) {
+          return i.id === +e.target.dataset.id;
+        });
+        it.by = e.target.checked ? "지수" : undefined;
+        render();
+      });
+      document.querySelector("main").addEventListener("click", function (e) {
+        var d = e.target.closest("[data-del]");
+        if (!d) return;
+        var idx = ITEMS.findIndex(function (i) {
+            return i.id === +d.dataset.del;
+          }),
+          removed = ITEMS.splice(idx, 1)[0];
+        render();
+        KJ.toast(KJ.josa(removed.name, "을/를") + " 지웠어요", {
+          label: "되돌리기",
+          onClick: function () {
+            ITEMS.splice(idx, 0, removed);
+            render();
+          },
+        });
+      });
+      document.getElementById("edit-btn").onclick = function () {
+        editing = !editing;
+        document
+          .getElementById("cart-main")
+          .classList.toggle("editing", editing);
+        this.textContent = editing ? "완료" : "편집";
+      };
+      document.getElementById("clear-checked").onclick = function () {
+        var n = ITEMS.filter(function (i) {
+          return i.by;
+        }).length;
+        KJ.confirm({
+          title: "담은 항목 " + n + "개를 삭제할까요?",
+          body: "재고에는 반영되지 않아요.",
+          confirmLabel: "삭제",
+          destructive: true,
+        }).then(function (ok) {
+          if (ok) {
+            ITEMS = ITEMS.filter(function (i) {
+              return !i.by;
+            });
+            render();
+          }
+        });
+      };
+
+      /* ---------- 구매 완료 → 재고 반영 확인 (CART-07) ------------------- */
+      document.getElementById("buy").onclick = function () {
+        try {
+          sessionStorage.setItem(
+            "kj:purchased",
+            JSON.stringify(
+              ITEMS.filter(function (i) {
+                return i.by;
+              }),
+            ),
+          );
+        } catch (_) {}
+        location.href = "restock.html";
+      };
+
+      /* ---------- 코너 순서 ---------------------------------------------- */
+      var sheetOrder = document.getElementById("sheet-order");
+      function renderOrder() {
+        document.getElementById("order-list").innerHTML = ORDER.map(
+          function (c, i) {
+            return (
+              '<li data-od-id="order-' +
+              i +
+              '"><span class="grow">' +
+              c +
+              "</span>" +
+              '<button type="button" class="icon-btn up" data-mv="-1" data-i="' +
+              i +
+              '" aria-label="' +
+              c +
+              ' 위로"' +
+              (i === 0 ? " disabled" : "") +
+              ">" +
+              KJ.icon("chevron") +
+              "</button>" +
+              '<button type="button" class="icon-btn down" data-mv="1" data-i="' +
+              i +
+              '" aria-label="' +
+              c +
+              ' 아래로"' +
+              (i === ORDER.length - 1 ? " disabled" : "") +
+              ">" +
+              KJ.icon("chevron") +
+              "</button></li>"
+            );
+          },
+        ).join("");
+      }
+      document.getElementById("order-btn").onclick = function () {
+        renderOrder();
+        sheetOrder.showModal();
+      };
+      document
+        .getElementById("order-list")
+        .addEventListener("click", function (e) {
+          var b = e.target.closest("[data-mv]");
+          if (!b) return;
+          var i = +b.dataset.i,
+            j = i + +b.dataset.mv;
+          var t = ORDER[i];
+          ORDER[i] = ORDER[j];
+          ORDER[j] = t;
+          renderOrder();
+          render();
+        });
+      document.querySelectorAll("[data-close]").forEach(function (b) {
+        b.onclick = function () {
+          b.closest("dialog").close();
+        };
+      });
+
+      /* ---------- Realtime (CART-02) + offline (CART-14) ----------------- */
+      setTimeout(function () {
+        var p = ITEMS.find(function (i) {
+          return i.name === "대파" && !i.by;
+        });
+        if (!p || !navigator.onLine) return;
+        p.by = "민호";
+        render();
+        document.getElementById("live").textContent =
+          "방금 민호님이 대파를 담았어요";
+      }, 6000);
+      function setOnline() {
+        var off = !navigator.onLine;
+        document.getElementById("offline").hidden = !off;
+        document.getElementById("cart-main").classList.toggle("offline", off);
+        document.querySelectorAll(".check").forEach(function (c) {
+          c.disabled = off;
+        });
+        if (!off && setOnline.wasOff) KJ.toast("최신 목록으로 맞췄어요");
+        setOnline.wasOff = off;
+      }
+      window.addEventListener("online", setOnline);
+      window.addEventListener("offline", setOnline);
+
+      render();
+      setOnline();
+      KJ.init({
+        bot: {
+          onCartAdd: function (names) {
+            names.forEach(function (n) {
+              ITEMS.push({
+                id: nextId++,
+                name: n,
+                qty: 1,
+                unit: "개",
+                cat: "기타",
+              });
+            });
+            render();
+          },
+        },
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>김집사</title>
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <style>
+      .launch {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 48px 20px 80px;
+      }
+      .launch .lead {
+        margin-top: 8px;
+        color: var(--label-secondary);
+        max-width: 52ch;
+      }
+      .launch .num-col {
+        width: 28px;
+        flex: none;
+        color: var(--label-tertiary);
+        font-variant-numeric: tabular-nums;
+        font-size: var(--text-subhead);
+      }
+      .launch a.row .title {
+        color: var(--label);
+      }
+    </style>
+  </head>
+  <body data-page="launcher">
+    <div class="app" data-no-nav>
+      <main class="launch" data-od-id="launcher-main">
+        <h1 class="t-large" data-od-id="launcher-title">김집사</h1>
+        <p class="lead">
+          신혼부부가 일정, 재고, 장바구니를 함께 관리하는 우리 집 공간
+        </p>
+
+        <section class="section" data-od-id="launcher-screens">
+          <div class="section-head">
+            <h2>화면</h2>
+            <span class="secondary t-footnote"
+              >모바일 우선 · 데스크톱 대응</span
+            >
+          </div>
+          <nav>
+            <a class="row" href="splash.html" data-od-id="go-splash"
+              ><span class="num-col">00</span>
+              <div class="grow">
+                <div class="title">앱 실행</div>
+                <div class="meta">
+                  스플래시 → 로그인 상태에 따라 오늘 또는 시작하기
+                </div>
+              </div>
+              <i data-icon="chevron" class="chev"></i
+            ></a>
+            <a class="row" href="onboarding.html" data-od-id="go-onboarding"
+              ><span class="num-col">01</span>
+              <div class="grow">
+                <div class="title">시작하기</div>
+                <div class="meta">로그인 · 약관 · 우리 집 만들기 · 초대</div>
+              </div>
+              <i data-icon="chevron" class="chev"></i
+            ></a>
+            <a class="row" href="home.html" data-od-id="go-home"
+              ><span class="num-col">02</span>
+              <div class="grow">
+                <div class="title">오늘</div>
+                <div class="meta">
+                  오늘 일정 · 다가오는 일정 · D-day · 확인할 재고 · 장바구니
+                </div>
+              </div>
+              <i data-icon="chevron" class="chev"></i
+            ></a>
+            <a class="row" href="calendar.html" data-od-id="go-calendar"
+              ><span class="num-col">03</span>
+              <div class="grow">
+                <div class="title">일정</div>
+                <div class="meta">월 · 주 · 일 · 새 일정 · 개인 일정</div>
+              </div>
+              <i data-icon="chevron" class="chev"></i
+            ></a>
+            <a class="row" href="inventory.html" data-od-id="go-inventory"
+              ><span class="num-col">04</span>
+              <div class="grow">
+                <div class="title">재고</div>
+                <div class="meta">보관 장소별 · +/- · 다 썼어요</div>
+              </div>
+              <i data-icon="chevron" class="chev"></i
+            ></a>
+            <a class="row" href="cart.html" data-od-id="go-cart"
+              ><span class="num-col">05</span>
+              <div class="grow">
+                <div class="title">장바구니</div>
+                <div class="meta">코너별 · 함께 체크 · 구매 완료</div>
+              </div>
+              <i data-icon="chevron" class="chev"></i
+            ></a>
+            <a class="row" href="restock.html" data-od-id="go-restock"
+              ><span class="num-col">06</span>
+              <div class="grow">
+                <div class="title">재고 반영</div>
+                <div class="meta">구매한 품목을 재고에 더하기</div>
+              </div>
+              <i data-icon="chevron" class="chev"></i
+            ></a>
+            <a class="row" href="chat.html" data-od-id="go-chat"
+              ><span class="num-col">07</span>
+              <div class="grow">
+                <div class="title">김데비</div>
+                <div class="meta">집사 대화 · 확인 요청</div>
+              </div>
+              <i data-icon="chevron" class="chev"></i
+            ></a>
+            <a class="row" href="settings.html" data-od-id="go-settings"
+              ><span class="num-col">08</span>
+              <div class="grow">
+                <div class="title">설정</div>
+                <div class="meta">알림 · 가정 · AI 키 · 기억 · 화면 모드</div>
+              </div>
+              <i data-icon="chevron" class="chev"></i
+            ></a>
+            <a class="row" href="lists.html" data-od-id="go-lists"
+              ><span class="num-col">09</span>
+              <div class="grow">
+                <div class="title">가정 목록 관리</div>
+                <div class="meta">
+                  일정 카테고리 · 재고 카테고리 · 보관 장소 · 단위
+                </div>
+              </div>
+              <i data-icon="chevron" class="chev"></i
+            ></a>
+          </nav>
+        </section>
+
+        <section class="section" data-od-id="launcher-system">
+          <div class="section-head"><h2>디자인 시스템</h2></div>
+          <nav>
+            <a class="row" href="components.html" data-od-id="go-components"
+              ><div class="grow">
+                <div class="title">컴포넌트</div>
+                <div class="meta">
+                  Apple 시스템 컬러 · 상태 매핑 · 타이포그래피 · 컨트롤
+                </div>
+              </div>
+              <i data-icon="chevron" class="chev"></i
+            ></a>
+          </nav>
+        </section>
+      </main>
+    </div>
+    <script src="js/app.js"></script>
+    <script>
+      KJ.init();
+    </script>
+  </body>
+</html>

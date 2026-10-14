@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>시작하기 · 김집사</title>
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <style>
+      .ob {
+        min-height: 100dvh;
+        max-width: 440px;
+        margin: 0 auto;
+        padding: 12px 20px calc(24px + env(safe-area-inset-bottom));
+        display: flex;
+        flex-direction: column;
+      }
+      .ob-top {
+        display: flex;
+        align-items: center;
+        min-height: 40px;
+        gap: 8px;
+      }
+      .ob-top .step {
+        margin-left: auto;
+        font-size: var(--text-footnote);
+        color: var(--label-secondary);
+        font-variant-numeric: tabular-nums;
+      }
+      .progress {
+        height: 2px;
+        background: var(--fill-tertiary);
+        margin-top: 4px;
+      }
+      .progress i {
+        display: block;
+        height: 100%;
+        background: var(--label);
+        transition: width var(--dur) var(--ease);
+      }
+      .ob-body {
+        flex: 1;
+        padding-top: 40px;
+      }
+      .ob-body h1 {
+        font-size: var(--text-title1);
+        line-height: var(--lh-title1);
+        font-weight: var(--fw-bold);
+        letter-spacing: -0.01em;
+      }
+      .ob-body .lead {
+        margin-top: 8px;
+        color: var(--label-secondary);
+        font-size: var(--text-callout);
+        line-height: 1.5;
+      }
+      .ob-foot {
+        display: grid;
+        gap: 8px;
+        padding-top: 24px;
+      }
+      .wordmark {
+        font-size: 40px;
+        line-height: 1.1;
+        font-weight: var(--fw-bold);
+        letter-spacing: -0.02em;
+      }
+      .what {
+        margin-top: 32px;
+      }
+      .what li {
+        align-items: flex-start;
+      }
+      .what .t {
+        font-weight: var(--fw-semibold);
+        width: 72px;
+        flex: none;
+      }
+      .btn.kakao {
+        background: #fee500;
+        color: rgba(0, 0, 0, 0.85);
+      }
+      .btn.google {
+        background: var(--bg);
+        color: var(--label);
+        box-shadow: inset 0 0 0 1px var(--separator-opaque);
+      }
+      .agree li label {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+        cursor: pointer;
+        min-height: 32px;
+      }
+      .agree .all {
+        font-weight: var(--fw-semibold);
+      }
+      .agree a {
+        font-size: var(--text-footnote);
+      }
+      .home-input {
+        margin-top: 32px;
+        padding: 6px 12px;
+        background: var(--fill-tertiary);
+        border-radius: var(--r-control);
+        display: flex;
+        align-items: baseline;
+        gap: 4px;
+      }
+      .home-input input {
+        flex: 1;
+        border: 0;
+        outline: none;
+        background: transparent;
+        padding: 10px 0;
+        font-size: var(--text-title2);
+        font-weight: var(--fw-semibold);
+      }
+      .home-input.invalid {
+        box-shadow: inset 0 0 0 1.5px var(--destructive);
+      }
+      .preview {
+        margin-top: 20px;
+        font-size: var(--text-subhead);
+        color: var(--label-secondary);
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .link-box {
+        margin-top: 32px;
+        padding: 14px;
+        background: var(--fill-quaternary);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .link-box code {
+        flex: 1;
+        font-family: var(--font-mono);
+        font-size: var(--text-subhead);
+        word-break: break-all;
+      }
+      .rules {
+        margin-top: 16px;
+      }
+      .rules li {
+        font-size: var(--text-subhead);
+        color: var(--label-secondary);
+        min-height: 0;
+        padding: 4px 0;
+      }
+      .rules li::before {
+        display: none;
+      }
+      [data-step-panel] {
+        display: none;
+      }
+      [data-step-panel].on {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+      }
+    </style>
+  </head>
+  <body data-page="onboarding">
+    <div class="app" data-no-nav>
+      <main class="ob" data-od-id="onboarding-main">
+        <div class="ob-top">
+          <button
+            type="button"
+            class="text-btn"
+            id="back"
+            hidden
+            data-od-id="ob-back"
+          >
+            <i data-icon="back"></i>이전
+          </button>
+          <span class="step" id="step-label"></span>
+        </div>
+        <div class="progress" aria-hidden="true"><i id="bar"></i></div>
+
+        <!-- 1. 로그인 (ACC-01) -->
+        <section data-step-panel="1" data-od-id="ob-step-login">
+          <div class="ob-body">
+            <div class="wordmark">김집사</div>
+            <p class="lead">
+              일정, 재고, 장바구니를 둘이 함께 관리하는 우리 집 공간이에요.
+            </p>
+            <ul class="list what">
+              <li>
+                <span class="t">일정</span
+                ><span class="secondary t-subhead"
+                  >함께 보고, 개인 일정은 나만 보게</span
+                >
+              </li>
+              <li>
+                <span class="t">재고</span
+                ><span class="secondary t-subhead"
+                  >떨어진 것, 유통기한 임박한 것 한눈에</span
+                >
+              </li>
+              <li>
+                <span class="t">장바구니</span
+                ><span class="secondary t-subhead"
+                  >마트에서 같이 체크하고 바로 재고에 반영</span
+                >
+              </li>
+            </ul>
+          </div>
+          <div class="ob-foot">
+            <button
+              type="button"
+              class="btn block kakao"
+              data-next
+              data-od-id="ob-login-kakao"
+            >
+              카카오로 시작하기
+            </button>
+            <button
+              type="button"
+              class="btn block google"
+              data-next
+              data-od-id="ob-login-google"
+            >
+              Google로 시작하기
+            </button>
+          </div>
+        </section>
+
+        <!-- 2. 약관 동의 (ACC-02) -->
+        <section data-step-panel="2" data-od-id="ob-step-terms">
+          <div class="ob-body">
+            <h1>약관에 동의해 주세요</h1>
+            <ul class="list agree" style="margin-top: 32px">
+              <li>
+                <label class="all"
+                  ><input
+                    type="checkbox"
+                    class="check"
+                    id="agree-all"
+                    data-od-id="ob-agree-all"
+                  />모두 동의</label
+                >
+              </li>
+              <li>
+                <label
+                  ><input
+                    type="checkbox"
+                    class="check"
+                    data-agree
+                    data-od-id="ob-agree-terms"
+                  />이용약관 동의 (필수)</label
+                ><a href="#" data-od-id="ob-terms-view">보기</a>
+              </li>
+              <li>
+                <label
+                  ><input
+                    type="checkbox"
+                    class="check"
+                    data-agree
+                    data-od-id="ob-agree-privacy"
+                  />개인정보 처리방침 동의 (필수)</label
+                ><a href="#" data-od-id="ob-privacy-view">보기</a>
+              </li>
+            </ul>
+          </div>
+          <div class="ob-foot">
+            <button
+              type="button"
+              class="btn block"
+              id="agree-next"
+              data-next
+              disabled
+              data-od-id="ob-terms-next"
+            >
+              동의하고 계속
+            </button>
+          </div>
+        </section>
+
+        <!-- 3. 우리 집 만들기 (ACC-03) -->
+        <section data-step-panel="3" data-od-id="ob-step-home">
+          <div class="ob-body">
+            <h1>우리 집 이름을 정해 주세요</h1>
+            <p class="lead">이 이름은 일정의 첫 카테고리로도 쓰여요.</p>
+            <label class="home-input" id="home-wrap"
+              ><span class="sr-only">우리 집 이름</span
+              ><input
+                id="home-name"
+                maxlength="12"
+                placeholder="도토리네"
+                autocomplete="off"
+                data-od-id="ob-home-name"
+            /></label>
+            <div class="preview">
+              <span class="cat home"></span
+              ><span id="home-preview">도토리네</span
+              ><span class="tertiary">· 일정 카테고리</span>
+            </div>
+          </div>
+          <div class="ob-foot">
+            <button
+              type="button"
+              class="btn block"
+              id="make-home"
+              data-od-id="ob-home-create"
+            >
+              우리 집 만들기
+            </button>
+          </div>
+        </section>
+
+        <!-- 4. 초대 (ACC-04, ACC-05) -->
+        <section data-step-panel="4" data-od-id="ob-step-invite">
+          <div class="ob-body">
+            <h1 id="invite-title">함께 쓸 사람을 초대해 주세요</h1>
+            <p class="lead">
+              링크를 받은 사람이 로그인하고 수락하면 바로 합류해요.
+            </p>
+            <div class="link-box" data-od-id="ob-invite-link">
+              <code id="link">kimjipsa.app/j/7Q2-KX9</code
+              ><button
+                type="button"
+                class="text-btn sm"
+                id="copy"
+                data-od-id="ob-copy"
+              >
+                복사
+              </button>
+            </div>
+            <ul class="list rules">
+              <li>한 번 사용하면 링크가 닫혀요</li>
+              <li>10월 17일 14:20에 만료돼요 (3일)</li>
+              <li>다른 가정에 속한 사람은 합류할 수 없어요</li>
+            </ul>
+          </div>
+          <div class="ob-foot">
+            <button
+              type="button"
+              class="btn block"
+              id="share"
+              data-od-id="ob-share"
+            >
+              카카오톡으로 보내기
+            </button>
+            <a class="btn block gray" href="home.html" data-od-id="ob-later"
+              >나중에 할게요</a
+            >
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+      var step = 1,
+        TOTAL = 4;
+      function go(n) {
+        step = n;
+        document.querySelectorAll("[data-step-panel]").forEach(function (p) {
+          p.classList.toggle("on", +p.dataset.stepPanel === n);
+        });
+        document.getElementById("step-label").textContent = n + " / " + TOTAL;
+        document.getElementById("bar").style.width = (n / TOTAL) * 100 + "%";
+        document.getElementById("back").hidden = n === 1 || n === 4;
+      }
+      document.addEventListener("click", function (e) {
+        if (e.target.closest("[data-next]") && !e.target.closest("[disabled]"))
+          go(step + 1);
+      });
+      document.getElementById("back").onclick = function () {
+        go(step - 1);
+      };
+
+      /* 약관 */
+      var items = document.querySelectorAll("[data-agree]"),
+        all = document.getElementById("agree-all");
+      function syncAgree() {
+        var ok = Array.prototype.every.call(items, function (c) {
+          return c.checked;
+        });
+        all.checked = ok;
+        document.getElementById("agree-next").disabled = !ok;
+      }
+      all.onchange = function () {
+        items.forEach(function (c) {
+          c.checked = all.checked;
+        });
+        syncAgree();
+      };
+      items.forEach(function (c) {
+        c.onchange = syncAgree;
+      });
+
+      /* 우리 집 */
+      var nameIn = document.getElementById("home-name");
+      nameIn.oninput = function () {
+        document.getElementById("home-wrap").classList.remove("invalid");
+        document.getElementById("home-preview").textContent =
+          nameIn.value.trim() || "도토리네";
+      };
+      document.getElementById("make-home").onclick = function () {
+        var v = nameIn.value.trim();
+        if (!v) {
+          document.getElementById("home-wrap").classList.add("invalid");
+          nameIn.setAttribute("aria-invalid", "true");
+          nameIn.focus();
+          return;
+        }
+        try {
+          localStorage.setItem("kj:signedIn", "1");
+        } catch (_) {}
+        document.getElementById("invite-title").textContent =
+          v + "에 함께할 사람을 초대해 주세요";
+        go(4);
+      };
+
+      /* 초대 링크 */
+      document.getElementById("copy").onclick = function () {
+        var t = "https://" + document.getElementById("link").textContent;
+        (navigator.clipboard
+          ? navigator.clipboard.writeText(t)
+          : Promise.reject()
+        ).then(
+          function () {
+            KJ.toast("링크를 복사했어요");
+          },
+          function () {
+            KJ.toast("링크를 길게 눌러 복사해 주세요");
+          },
+        );
+      };
+      document.getElementById("share").onclick = function () {
+        var url = "https://" + document.getElementById("link").textContent;
+        if (navigator.share)
+          navigator
+            .share({
+              title: "김집사 초대",
+              text: "우리 집 김집사에 같이 들어와요",
+              url: url,
+            })
+            .catch(function () {});
+        else KJ.toast("공유할 앱을 열 수 없어요. 링크를 복사해 보내 주세요");
+      };
+
+      KJ.init();
+      go(location.hash === "#invite" ? 4 : 1);
+    </script>
+  </body>
+</html>

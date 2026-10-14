@@ -1,0 +1,966 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>재고 · 김집사</title>
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <style>
+      .inv-tools {
+        display: grid;
+        gap: 12px;
+        margin-top: 8px;
+      }
+      .summary-line {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        padding: 12px 0 4px;
+      }
+      .item .grow {
+        cursor: pointer;
+      }
+      .tri {
+        display: inline-flex;
+        background: var(--fill-tertiary);
+        border-radius: var(--r-control);
+        padding: 2px;
+      }
+      .tri button {
+        min-height: 28px;
+        padding: 0 8px;
+        border-radius: 3px;
+        font-size: var(--text-caption1);
+        font-weight: var(--fw-medium);
+        color: var(--label-secondary);
+      }
+      .tri button[aria-pressed="true"] {
+        background: var(--bg);
+        color: var(--label);
+        font-weight: var(--fw-semibold);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+      }
+      .tri button[aria-pressed="true"][data-state="low"] {
+        color: var(--status-low-text);
+      }
+      .tri button[aria-pressed="true"][data-state="none"] {
+        color: var(--status-none-text);
+      }
+      .item .status {
+        min-width: 0;
+      }
+      .filters .edit {
+        flex: none;
+        display: inline-flex;
+        align-items: center;
+        min-height: 34px;
+        margin-left: auto;
+        padding-left: 4px;
+        font-size: var(--text-subhead);
+        color: var(--link);
+      }
+      .detail-head {
+        padding: 18px 0 6px;
+      }
+      .similar {
+        margin: 12px 0 0;
+        padding: 12px 14px;
+        background: var(--fill-quaternary);
+        font-size: var(--text-subhead);
+      }
+      .similar .btns {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      @media (max-width: 380px) {
+        .item .meta {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body data-page="inventory">
+    <div class="app">
+      <main class="main" data-od-id="inventory-main">
+        <header class="page-head" data-od-id="inventory-header">
+          <div class="bar">
+            <div class="actions">
+              <button
+                type="button"
+                class="text-btn"
+                id="manage"
+                data-od-id="inv-manage"
+              >
+                관리</button
+              ><button
+                type="button"
+                class="icon-btn"
+                id="add"
+                aria-label="품목 추가"
+                data-od-id="inv-add"
+              >
+                <i data-icon="plus"></i>
+              </button>
+            </div>
+          </div>
+          <h1 class="t-large" data-od-id="inventory-title">재고</h1>
+        </header>
+
+        <div class="inv-tools">
+          <label class="search" data-od-id="inv-search"
+            ><i data-icon="search"></i><span class="sr-only">품목 검색</span
+            ><input class="input" id="q" type="search" placeholder="품목 검색"
+          /></label>
+          <div
+            class="segmented"
+            role="group"
+            aria-label="묶어 보기"
+            data-od-id="inv-group-by"
+          >
+            <button
+              type="button"
+              data-by="loc"
+              aria-pressed="true"
+              data-od-id="by-location"
+            >
+              보관 장소별
+            </button>
+            <button
+              type="button"
+              data-by="cat"
+              aria-pressed="false"
+              data-od-id="by-category"
+            >
+              카테고리별
+            </button>
+          </div>
+          <div
+            class="filters"
+            id="filters"
+            role="group"
+            aria-label="필터"
+            data-od-id="inv-filters"
+          ></div>
+        </div>
+
+        <div class="summary-line" id="summary" data-od-id="inv-summary"></div>
+        <div id="groups" data-od-id="inv-list"></div>
+      </main>
+    </div>
+
+    <!-- 품목 상세 -->
+    <dialog class="sheet" id="sheet-item" data-od-id="sheet-item-detail">
+      <div class="sheet-head">
+        <span></span>
+        <h2>품목</h2>
+        <button
+          type="button"
+          class="text-btn"
+          data-close
+          data-od-id="item-done"
+        >
+          완료
+        </button>
+      </div>
+      <div class="detail-head">
+        <h3 class="t-title2" id="i-name"></h3>
+        <div class="secondary t-subhead" id="i-meta"></div>
+      </div>
+      <ul class="list" id="i-rows"></ul>
+      <div style="margin-top: 20px; display: grid; gap: 8px">
+        <button
+          type="button"
+          class="btn block"
+          id="i-used"
+          data-od-id="item-used-up"
+        >
+          다 썼어요
+        </button>
+        <button
+          type="button"
+          class="btn block gray"
+          id="i-cart"
+          data-od-id="item-to-cart"
+        >
+          장바구니에 담기
+        </button>
+      </div>
+      <div style="margin-top: 28px">
+        <button
+          type="button"
+          class="text-btn danger"
+          id="i-del"
+          data-od-id="item-delete"
+        >
+          품목 삭제
+        </button>
+      </div>
+    </dialog>
+
+    <!-- 다 썼어요 → 장바구니 담기 (INV-04, CART-06) -->
+    <dialog class="sheet" id="sheet-after" data-od-id="sheet-after-used">
+      <div style="padding: 22px 0 10px; text-align: center">
+        <h2 class="t-headline" id="after-title"></h2>
+        <p class="secondary t-footnote" style="margin-top: 4px">
+          장바구니에 담아 둘까요?
+        </p>
+      </div>
+      <div class="actions-list">
+        <button
+          type="button"
+          id="after-yes"
+          style="font-weight: 600"
+          data-od-id="after-add-cart"
+        >
+          장바구니에 담기
+        </button>
+        <button type="button" data-close data-od-id="after-skip">나중에</button>
+      </div>
+    </dialog>
+
+    <!-- 품목 추가 (INV-01, 02, 10, 16) -->
+    <dialog class="sheet" id="sheet-new" data-od-id="sheet-new-item">
+      <form id="form-new" novalidate>
+        <div class="sheet-head">
+          <button
+            type="button"
+            class="text-btn"
+            data-close
+            data-od-id="new-item-cancel"
+          >
+            취소
+          </button>
+          <h2>새 품목</h2>
+          <button
+            type="submit"
+            class="text-btn"
+            style="font-weight: 600"
+            data-od-id="new-item-save"
+          >
+            추가
+          </button>
+        </div>
+        <div class="field-row" id="row-name">
+          <label for="n-name">이름</label
+          ><input
+            id="n-name"
+            list="names"
+            style="text-align: left"
+            placeholder="예: 우유"
+            autocomplete="off"
+            data-od-id="n-name"
+          />
+        </div>
+        <datalist id="names"></datalist>
+        <div class="similar" id="similar" hidden data-od-id="n-similar"></div>
+        <div class="group-label">관리 방식</div>
+        <div
+          class="segmented"
+          role="group"
+          aria-label="관리 방식"
+          id="n-mode"
+          data-od-id="n-mode"
+        >
+          <button type="button" data-mode="qty" aria-pressed="true">
+            정확한 수량</button
+          ><button type="button" data-mode="status" aria-pressed="false">
+            상태로만
+          </button>
+        </div>
+        <div id="qty-fields">
+          <div class="field-row" style="margin-top: 6px">
+            <span class="label">수량</span
+            ><span class="control stepper" data-step="n-qty"
+              ><button type="button" data-d="-1" aria-label="빼기">
+                <i data-icon="minus"></i></button
+              ><output id="n-qty">1</output
+              ><button type="button" data-d="1" aria-label="더하기">
+                <i data-icon="plus"></i></button
+            ></span>
+          </div>
+          <div class="field-row">
+            <label for="n-unit">단위</label
+            ><select id="n-unit" data-od-id="n-unit"></select>
+          </div>
+          <div class="field-row">
+            <span class="label">최소 수량</span
+            ><span class="control stepper" data-step="n-min"
+              ><button type="button" data-d="-1" aria-label="빼기">
+                <i data-icon="minus"></i></button
+              ><output id="n-min">0</output
+              ><button type="button" data-d="1" aria-label="더하기">
+                <i data-icon="plus"></i></button
+            ></span>
+          </div>
+        </div>
+        <div class="group-label">분류</div>
+        <div class="field-row">
+          <label for="n-cat">카테고리</label
+          ><select id="n-cat" data-od-id="n-category"></select>
+        </div>
+        <div class="field-row">
+          <label for="n-loc">보관 장소</label
+          ><select id="n-loc" data-od-id="n-location"></select>
+        </div>
+        <div class="field-row">
+          <label for="n-exp">유통기한</label
+          ><input id="n-exp" type="date" data-od-id="n-expiry" />
+        </div>
+      </form>
+    </dialog>
+
+    <!-- 재고 목록 관리 (INV-06~08) -->
+    <dialog
+      class="sheet"
+      id="sheet-manage"
+      aria-labelledby="mg-title"
+      data-od-id="inv-manage-sheet"
+    >
+      <div class="sheet-head">
+        <span></span>
+        <h2 id="mg-title">재고 관리</h2>
+        <button type="button" class="text-btn" data-close>완료</button>
+      </div>
+      <nav class="list" style="margin-top: 4px">
+        <a class="row" href="lists.html#inv" data-od-id="mg-categories"
+          ><div class="grow">
+            <div class="title">카테고리</div>
+            <div class="meta" id="mg-cat"></div>
+          </div>
+          <i data-icon="chevron" class="chev"></i
+        ></a>
+        <a class="row" href="lists.html#loc" data-od-id="mg-locations"
+          ><div class="grow">
+            <div class="title">보관 장소</div>
+            <div class="meta" id="mg-loc"></div>
+          </div>
+          <i data-icon="chevron" class="chev"></i
+        ></a>
+        <a class="row" href="lists.html#unit" data-od-id="mg-units"
+          ><div class="grow">
+            <div class="title">단위</div>
+            <div class="meta" id="mg-unit"></div>
+          </div>
+          <i data-icon="chevron" class="chev"></i
+        ></a>
+      </nav>
+    </dialog>
+
+    <script src="js/app.js"></script>
+    <script>
+      /* ---------- 기본 목록 (명세 "기본 목록") ----------------------------- */
+      /* 카테고리·보관 장소는 설정 > 가정(lists.html)에서 관리. "사용 안 함" 장소는 숨김 (INV-08) */
+      var LOC_LIST = KJ.lists.get("loc"),
+        CAT_LIST = KJ.lists.get("inv");
+      var LOCS = LOC_LIST.filter(function (l) {
+        return l.on;
+      }).map(function (l) {
+        return l.name;
+      });
+      var CATS = CAT_LIST.map(function (c) {
+        return c.name;
+      });
+      var CAT_COLOR = {};
+      CAT_LIST.forEach(function (c) {
+        CAT_COLOR[c.name] = c.color;
+      });
+      var TODAY = new Date("2026-10-14"),
+        SOON_DAYS = 3;
+      var ITEMS = [
+        {
+          name: "우유",
+          qty: 1,
+          unit: "팩",
+          min: 2,
+          cat: "유제품·계란",
+          loc: "냉장실",
+          exp: "2026-10-20",
+        },
+        {
+          name: "달걀",
+          qty: 4,
+          unit: "개",
+          min: 6,
+          cat: "유제품·계란",
+          loc: "냉장실",
+          exp: "2026-10-17",
+        },
+        {
+          name: "두부",
+          qty: 1,
+          unit: "모",
+          min: 0,
+          cat: "가공식품",
+          loc: "냉장실",
+          exp: "2026-10-15",
+        },
+        {
+          name: "대파",
+          qty: 1,
+          unit: "단",
+          min: 0,
+          cat: "채소·과일",
+          loc: "냉장실",
+        },
+        {
+          name: "김치",
+          mode: "status",
+          state: "enough",
+          cat: "가공식품",
+          loc: "냉장실",
+        },
+        {
+          name: "냉동 만두",
+          qty: 2,
+          unit: "봉지",
+          min: 1,
+          cat: "가공식품",
+          loc: "냉동실",
+          exp: "2027-02-10",
+        },
+        {
+          name: "냉동 블루베리",
+          mode: "status",
+          state: "low",
+          cat: "채소·과일",
+          loc: "냉동실",
+        },
+        {
+          name: "쌀",
+          mode: "status",
+          state: "enough",
+          cat: "가공식품",
+          loc: "실온 식품장·팬트리",
+        },
+        {
+          name: "라면",
+          qty: 5,
+          unit: "개",
+          min: 2,
+          cat: "가공식품",
+          loc: "실온 식품장·팬트리",
+        },
+        {
+          name: "올리브유",
+          mode: "status",
+          state: "low",
+          cat: "양념·소스",
+          loc: "실온 식품장·팬트리",
+        },
+        {
+          name: "세탁세제",
+          mode: "status",
+          state: "none",
+          cat: "생활용품",
+          loc: "욕실·세탁실",
+        },
+        {
+          name: "두루마리 휴지",
+          qty: 2,
+          unit: "롤",
+          min: 4,
+          cat: "생활용품",
+          loc: "욕실·세탁실",
+        },
+        {
+          name: "키친타월",
+          qty: 3,
+          unit: "롤",
+          min: 1,
+          cat: "생활용품",
+          loc: "서랍·수납장",
+        },
+      ];
+      /* 예시 데이터는 기본 이름으로 적혀 있어 → 현재 목록 이름으로 맞춤 (이름 변경·삭제 반영) */
+      ITEMS.forEach(function (it) {
+        it.cat = KJ.lists.current("inv", it.cat) || "기타";
+        it.loc = KJ.lists.current("loc", it.loc) || "";
+      });
+      var by = "loc",
+        filter = "전체",
+        q = "";
+
+      /* INV-03, INV-05: 저장하지 않고 계산 */
+      function stockState(it) {
+        if (it.mode === "status") return it.state;
+        if (it.qty === 0) return "none";
+        if (it.min && it.qty <= it.min) return "low";
+        return "enough";
+      }
+      function daysLeft(it) {
+        return it.exp ? Math.round((new Date(it.exp) - TODAY) / 864e5) : null;
+      }
+      function statusHTML(it) {
+        var s = stockState(it),
+          dl = daysLeft(it);
+        if (s === "none")
+          return '<span class="status" data-tone="none">없음</span>';
+        if (s === "low")
+          return '<span class="status" data-tone="low">부족</span>';
+        if (dl !== null && dl <= SOON_DAYS)
+          return (
+            '<span class="status" data-tone="expiring">' +
+            (dl <= 0 ? "오늘까지" : dl === 1 ? "내일까지" : dl + "일 남음") +
+            "</span>"
+          );
+        return "";
+      }
+      function metaOf(it) {
+        var parts = [by === "loc" ? it.cat : it.loc];
+        if (it.exp) parts.push("~" + it.exp.slice(5).replace("-", "."));
+        return parts.join(" · ");
+      }
+
+      function renderFilters() {
+        var keys = ["전체"].concat(
+          by === "loc"
+            ? LOCS
+            : CATS.filter(function (c) {
+                return ITEMS.some(function (i) {
+                  return i.cat === c;
+                });
+              }),
+        );
+        if (keys.indexOf(filter) < 0) filter = "전체";
+        document.getElementById("filters").innerHTML =
+          keys
+            .map(function (k, i) {
+              return (
+                '<button type="button" aria-pressed="' +
+                (k === filter) +
+                '" data-f="' +
+                k +
+                '" data-od-id="inv-filter-' +
+                i +
+                '">' +
+                k +
+                "</button>"
+              );
+            })
+            .join("") +
+          '<a class="edit" href="lists.html#' +
+          (by === "loc" ? "loc" : "inv") +
+          '" data-od-id="inv-filter-edit">편집</a>';
+      }
+      function renderSummary() {
+        var n = { none: 0, low: 0, exp: 0 };
+        ITEMS.forEach(function (it) {
+          var s = stockState(it),
+            d = daysLeft(it);
+          if (s === "none") n.none++;
+          else if (s === "low") n.low++;
+          if (d !== null && d <= SOON_DAYS && s !== "none") n.exp++;
+        });
+        document.getElementById("summary").innerHTML =
+          '<span class="status" data-tone="none">없음 ' +
+          n.none +
+          '</span><span class="status" data-tone="low">부족 ' +
+          n.low +
+          '</span><span class="status" data-tone="expiring">임박 ' +
+          n.exp +
+          "</span>";
+      }
+      function renderList() {
+        var key = by === "loc" ? "loc" : "cat",
+          order = by === "loc" ? LOCS : CATS;
+        var list = ITEMS.filter(function (it) {
+          return (
+            (filter === "전체" || it[key] === filter) &&
+            (!q || it.name.indexOf(q) > -1)
+          );
+        });
+        var html = order
+          .map(function (g) {
+            var rows = list.filter(function (it) {
+              return it[key] === g;
+            });
+            if (!rows.length) return "";
+            return (
+              '<div class="group-label">' +
+              (by === "cat"
+                ? '<span class="cat" style="--c:' +
+                  KJ.lists.color(CAT_COLOR[g]) +
+                  '"></span>'
+                : "") +
+              g +
+              '</div><ul class="list">' +
+              rows
+                .map(function (it) {
+                  var i = ITEMS.indexOf(it);
+                  var ctl =
+                    it.mode === "status"
+                      ? '<span class="tri" role="group" aria-label="' +
+                        it.name +
+                        ' 상태">' +
+                        [
+                          ["enough", "충분"],
+                          ["low", "부족"],
+                          ["none", "없음"],
+                        ]
+                          .map(function (s) {
+                            return (
+                              '<button type="button" data-state="' +
+                              s[0] +
+                              '" data-i="' +
+                              i +
+                              '" aria-pressed="' +
+                              (it.state === s[0]) +
+                              '">' +
+                              s[1] +
+                              "</button>"
+                            );
+                          })
+                          .join("") +
+                        "</span>"
+                      : '<span class="stepper"><button type="button" data-q="-1" data-i="' +
+                        i +
+                        '" aria-label="' +
+                        it.name +
+                        ' 하나 빼기"' +
+                        (it.qty === 0 ? " disabled" : "") +
+                        ">" +
+                        KJ.icon("minus") +
+                        '</button><output class="num">' +
+                        it.qty +
+                        '<span class="secondary t-caption"> ' +
+                        it.unit +
+                        '</span></output><button type="button" data-q="1" data-i="' +
+                        i +
+                        '" aria-label="' +
+                        it.name +
+                        ' 하나 더하기">' +
+                        KJ.icon("plus") +
+                        "</button></span>";
+                  return (
+                    '<li class="item" data-od-id="inv-item-' +
+                    i +
+                    '"><div class="grow" data-open="' +
+                    i +
+                    '" role="button" tabindex="0"><div class="title">' +
+                    it.name +
+                    '</div><div class="meta">' +
+                    metaOf(it) +
+                    "</div></div>" +
+                    (it.mode === "status" ? "" : statusHTML(it)) +
+                    ctl +
+                    "</li>"
+                  );
+                })
+                .join("") +
+              "</ul>"
+            );
+          })
+          .join("");
+        document.getElementById("groups").innerHTML =
+          html ||
+          '<div class="empty">' +
+            KJ.icon("search") +
+            "<p>‘" +
+            q +
+            '’에 맞는 품목이 없어요</p><button type="button" class="text-btn" id="add-from-q" data-od-id="inv-empty-add">새 품목으로 추가</button></div>';
+      }
+      function renderAll() {
+        renderFilters();
+        renderSummary();
+        renderList();
+      }
+
+      /* ---------- List interactions -------------------------------------- */
+      document
+        .querySelector('[data-od-id="inv-group-by"]')
+        .addEventListener("click", function (e) {
+          var b = e.target.closest("[data-by]");
+          if (!b) return;
+          by = b.getAttribute("data-by");
+          filter = "전체";
+          this.querySelectorAll("button").forEach(function (x) {
+            x.setAttribute("aria-pressed", x === b);
+          });
+          renderAll();
+        });
+      document
+        .getElementById("filters")
+        .addEventListener("click", function (e) {
+          var b = e.target.closest("[data-f]");
+          if (b) {
+            filter = b.getAttribute("data-f");
+            renderFilters();
+            renderList();
+          }
+        });
+      document.getElementById("q").addEventListener("input", function () {
+        q = this.value.trim();
+        renderList();
+      });
+      document.getElementById("groups").addEventListener("click", function (e) {
+        var t;
+        if ((t = e.target.closest("[data-q]"))) {
+          var it = ITEMS[+t.dataset.i];
+          it.qty = Math.max(0, it.qty + +t.dataset.q);
+          renderSummary();
+          renderList();
+          if (it.qty === 0) askCart(it);
+          return;
+        }
+        if ((t = e.target.closest("[data-state]"))) {
+          var it2 = ITEMS[+t.dataset.i];
+          it2.state = t.dataset.state;
+          renderSummary();
+          renderList();
+          if (it2.state === "none") askCart(it2);
+          return;
+        }
+        if ((t = e.target.closest("[data-open]"))) openItem(+t.dataset.open);
+        if (e.target.id === "add-from-q") openNew(q);
+      });
+      document
+        .getElementById("groups")
+        .addEventListener("keydown", function (e) {
+          if (e.key === "Enter" && e.target.dataset.open)
+            openItem(+e.target.dataset.open);
+        });
+
+      /* ---------- Item detail -------------------------------------------- */
+      var sheetItem = document.getElementById("sheet-item"),
+        cur = null;
+      function openItem(i) {
+        var it = ITEMS[i];
+        cur = i;
+        document.getElementById("i-name").textContent = it.name;
+        document.getElementById("i-meta").innerHTML =
+          it.loc + " · " + it.cat + " " + statusHTML(it);
+        document.getElementById("i-rows").innerHTML =
+          (it.mode === "status"
+            ? '<li><span class="grow">관리 방식</span><span class="trail">상태로만</span></li>'
+            : '<li><span class="grow">수량</span><span class="trail num">' +
+              it.qty +
+              " " +
+              it.unit +
+              '</span></li><li><span class="grow">최소 수량</span><span class="trail num">' +
+              (it.min ? it.min + " " + it.unit : "없음") +
+              "</span></li>") +
+          '<li><span class="grow">유통기한</span><span class="trail num">' +
+          (it.exp ? it.exp.replace(/-/g, ".") : "없음") +
+          "</span></li>";
+        sheetItem.showModal();
+      }
+      document.getElementById("i-used").onclick = function () {
+        var it = ITEMS[cur];
+        if (it.mode === "status") it.state = "none";
+        else it.qty = 0;
+        sheetItem.close();
+        renderSummary();
+        renderList();
+        askCart(it);
+      };
+      document.getElementById("i-cart").onclick = function () {
+        sheetItem.close();
+        KJ.toast(KJ.josa(ITEMS[cur].name, "을/를") + " 장바구니에 담았어요");
+      };
+      document.getElementById("i-del").onclick = function () {
+        var it = ITEMS[cur];
+        KJ.confirm({
+          title: "‘" + it.name + "’ 품목을 삭제할까요?",
+          body: "재고 목록에서 사라지고 되돌릴 수 없어요.",
+          confirmLabel: "삭제",
+          destructive: true,
+        }).then(function (ok) {
+          if (!ok) return;
+          ITEMS.splice(cur, 1);
+          sheetItem.close();
+          renderAll();
+          KJ.toast("품목을 삭제했어요");
+        });
+      };
+
+      /* ---------- 다 썼어요 → 장바구니 ------------------------------------ */
+      var sheetAfter = document.getElementById("sheet-after"),
+        afterItem = null;
+      function askCart(it) {
+        afterItem = it;
+        document.getElementById("after-title").textContent =
+          it.name + " — 없음으로 바꿨어요";
+        sheetAfter.showModal();
+      }
+      document.getElementById("after-yes").onclick = function () {
+        sheetAfter.close();
+        KJ.toast(KJ.josa(afterItem.name, "을/를") + " 장바구니에 담았어요");
+      };
+      document.querySelectorAll("[data-close]").forEach(function (b) {
+        b.onclick = function () {
+          b.closest("dialog").close();
+        };
+      });
+
+      /* ---------- 재고 목록 관리 시트 ------------------------------------ */
+      document.getElementById("manage").onclick = function () {
+        function names(l) {
+          return (
+            l
+              .slice(0, 4)
+              .map(function (x) {
+                return x.name;
+              })
+              .join(", ") + (l.length > 4 ? " 외 " + (l.length - 4) + "개" : "")
+          );
+        }
+        document.getElementById("mg-cat").textContent = names(CAT_LIST);
+        document.getElementById("mg-loc").textContent = names(
+          LOC_LIST.filter(function (l) {
+            return l.on;
+          }),
+        );
+        document.getElementById("mg-unit").textContent = names(
+          KJ.lists.get("unit"),
+        );
+        document.getElementById("sheet-manage").showModal();
+      };
+
+      /* ---------- New item ----------------------------------------------- */
+      var sheetNew = document.getElementById("sheet-new"),
+        form = document.getElementById("form-new"),
+        mode = "qty",
+        addTo = null;
+      document.getElementById("n-cat").innerHTML = CATS.map(function (c) {
+        return "<option>" + c + "</option>";
+      }).join("");
+      document.getElementById("n-unit").innerHTML = KJ.lists
+        .get("unit")
+        .map(function (u) {
+          return (
+            "<option" +
+            (u.name === "팩" ? " selected" : "") +
+            ">" +
+            u.name +
+            "</option>"
+          );
+        })
+        .join("");
+      document.getElementById("n-loc").innerHTML = LOCS.map(function (c) {
+        return "<option>" + c + "</option>";
+      }).join("");
+      function openNew(name) {
+        form.reset();
+        addTo = null;
+        document.getElementById("n-qty").value = 1;
+        document.getElementById("n-min").value = 0;
+        document.getElementById("names").innerHTML = ITEMS.map(function (i) {
+          return '<option value="' + i.name + '">';
+        }).join("");
+        document.getElementById("n-name").value = name || "";
+        checkSimilar();
+        setMode("qty");
+        document.getElementById("row-name").classList.remove("invalid");
+        sheetNew.showModal();
+        document.getElementById("n-name").focus();
+      }
+      document.getElementById("add").onclick = function () {
+        openNew("");
+      };
+      function setMode(m) {
+        mode = m;
+        document.querySelectorAll("#n-mode button").forEach(function (b) {
+          b.setAttribute("aria-pressed", b.dataset.mode === m);
+        });
+        document.getElementById("qty-fields").hidden = m !== "qty";
+      }
+      document.getElementById("n-mode").onclick = function (e) {
+        var b = e.target.closest("[data-mode]");
+        if (b) setMode(b.dataset.mode);
+      };
+      form.querySelectorAll("[data-step]").forEach(function (s) {
+        s.addEventListener("click", function (e) {
+          var b = e.target.closest("[data-d]");
+          if (!b) return;
+          var o = document.getElementById(s.dataset.step);
+          o.value = Math.max(0, +o.value + +b.dataset.d);
+        });
+      });
+      /* INV-16 비슷한 이름 안내 */
+      function checkSimilar() {
+        var v = document.getElementById("n-name").value.trim(),
+          box = document.getElementById("similar");
+        var hit =
+          v &&
+          ITEMS.find(function (i) {
+            return (
+              i.name === v || i.name.indexOf(v) > -1 || v.indexOf(i.name) > -1
+            );
+          });
+        if (!hit) {
+          box.hidden = true;
+          addTo = null;
+          return;
+        }
+        box.hidden = false;
+        box.innerHTML =
+          "이미 <b>" +
+          hit.name +
+          "</b> 품목이 있어요 (" +
+          hit.loc +
+          (hit.mode === "status" ? "" : " · " + hit.qty + hit.unit) +
+          ")." +
+          '<div class="btns"><button type="button" class="btn sm" data-merge data-od-id="similar-merge">기존 품목에 더하기</button><button type="button" class="btn sm gray" data-sep data-od-id="similar-new">새로 등록</button></div>';
+        box.querySelector("[data-merge]").onclick = function () {
+          addTo = hit;
+          box.innerHTML = "<b>" + hit.name + "</b>에 수량을 더할게요.";
+        };
+        box.querySelector("[data-sep]").onclick = function () {
+          addTo = null;
+          box.hidden = true;
+        };
+      }
+      document.getElementById("n-name").addEventListener("input", function () {
+        document.getElementById("row-name").classList.remove("invalid");
+        checkSimilar();
+      });
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        var name = document.getElementById("n-name").value.trim();
+        if (!name) {
+          document.getElementById("row-name").classList.add("invalid");
+          document.getElementById("n-name").focus();
+          return;
+        }
+        var qty = +document.getElementById("n-qty").value;
+        if (addTo && addTo.mode !== "status") {
+          addTo.qty += qty;
+          KJ.toast(
+            addTo.name + " 수량을 " + addTo.qty + addTo.unit + "로 바꿨어요",
+          );
+        } else {
+          ITEMS.push(
+            mode === "status"
+              ? {
+                  name: name,
+                  mode: "status",
+                  state: "enough",
+                  cat: document.getElementById("n-cat").value,
+                  loc: document.getElementById("n-loc").value,
+                }
+              : {
+                  name: name,
+                  qty: qty,
+                  unit: document.getElementById("n-unit").value,
+                  min: +document.getElementById("n-min").value,
+                  cat: document.getElementById("n-cat").value,
+                  loc: document.getElementById("n-loc").value,
+                  exp: document.getElementById("n-exp").value || undefined,
+                },
+          );
+          KJ.toast(KJ.josa(name, "을/를") + " 재고에 추가했어요");
+        }
+        sheetNew.close();
+        renderAll();
+      });
+
+      renderAll();
+      KJ.init();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta
+      name="theme-color"
+      content="#F6F6F8"
+      media="(prefers-color-scheme: light)"
+    />
+    <meta
+      name="theme-color"
+      content="#1A1A1C"
+      media="(prefers-color-scheme: dark)"
+    />
+    <title>김집사</title>
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <style>
+      /* 앱 실행 스플래시 — 집사 캐릭터와 워드마크 */
+      .splash {
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        background: var(--bg);
+      }
+      .splash-brand {
+        text-align: center;
+      }
+      .splash-character {
+        display: block;
+        width: 180px;
+        height: 180px;
+        object-fit: contain;
+        margin: 0 auto 24px;
+        animation: splash-in 420ms var(--ease) both;
+      }
+      .splash h1 {
+        font-size: 40px;
+        line-height: 1.1;
+        font-weight: var(--fw-bold);
+        letter-spacing: -0.02em;
+        color: var(--label);
+        animation: splash-in 420ms var(--ease) both;
+      }
+      .splash.leaving .splash-brand {
+        opacity: 0;
+        transition: opacity 200ms ease-out;
+      }
+      @keyframes splash-in {
+        from {
+          opacity: 0;
+          transform: translateY(4px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .splash h1,
+        .splash-character {
+          animation: none;
+        }
+        .splash.leaving .splash-brand {
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body data-page="splash">
+    <main class="splash" id="splash" data-od-id="splash-main">
+      <div class="splash-brand" data-od-id="splash-brand">
+        <img
+          class="splash-character"
+          src="assets/kimjipsa-dog-bird.png"
+          alt="팔에 흰 수건을 걸친 강아지 집사와 어깨 위 작은 노란 새"
+          width="180"
+          height="180"
+          data-od-id="splash-character"
+        />
+        <h1 data-od-id="splash-wordmark">김집사</h1>
+      </div>
+    </main>
+    <script>
+      /* 로그인 상태에 따라 이동: 가정에 합류한 사용자 → 홈, 아니면 → 시작하기.
+   실제 앱에서는 세션 확인 결과로 대체한다. location.replace로 이동해
+   뒤로 가기로 스플래시에 돌아오지 않게 한다. */
+      (function () {
+        var theme = null;
+        try {
+          theme = localStorage.getItem("kj:theme");
+        } catch (_) {}
+        if (theme === "light" || theme === "dark")
+          document.documentElement.setAttribute("data-theme", theme);
+        var signedIn = false;
+        try {
+          signedIn = localStorage.getItem("kj:signedIn") === "1";
+        } catch (_) {}
+        var reduce =
+          window.matchMedia &&
+          matchMedia("(prefers-reduced-motion: reduce)").matches;
+        setTimeout(function () {
+          document.getElementById("splash").classList.add("leaving");
+          setTimeout(
+            function () {
+              location.replace(signedIn ? "home.html" : "onboarding.html");
+            },
+            reduce ? 0 : 200,
+          );
+        }, 900);
+      })();
+    </script>
+  </body>
+</html>

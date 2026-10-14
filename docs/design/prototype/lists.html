@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>가정 목록 · 김집사</title>
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <style>
+      /* 목록 행: 색 점 · 이름 · (보관 장소) 사용 스위치 · chevron */
+      .ls-list > li {
+        padding: 0;
+      }
+      .ls-row {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: var(--row-min);
+        text-align: left;
+        color: var(--label);
+      }
+      .ls-row .title {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .ls-row .cat {
+        width: 12px;
+        height: 12px;
+      }
+      .ls-list .is-off .title {
+        color: var(--label-tertiary);
+      }
+      .ls-list .badge {
+        font-size: var(--text-caption1);
+        color: var(--label-tertiary);
+        letter-spacing: 0.02em;
+      }
+      .ls-actions {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        margin-top: 12px;
+      }
+
+      /* 색상 선택 — Apple 시스템 컬러 13종 */
+      .swatches {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+        gap: 10px 8px;
+        padding: 8px 0 4px;
+        max-width: 360px;
+      }
+      .swatch {
+        position: relative;
+        width: 36px;
+        height: 36px;
+        border-radius: var(--r-round);
+        display: grid;
+        place-items: center;
+        background: transparent;
+      }
+      .swatch::before {
+        content: "";
+        width: 26px;
+        height: 26px;
+        border-radius: var(--r-round);
+        background: var(--c);
+        transition: transform var(--dur-fast) var(--ease);
+      }
+      .swatch[aria-checked="true"] {
+        box-shadow: inset 0 0 0 2px var(--c);
+      }
+      .swatch[aria-checked="true"]::before {
+        transform: scale(0.78);
+      }
+      .swatch:focus-visible {
+        outline: 2px solid var(--link);
+        outline-offset: 2px;
+      }
+      .color-name {
+        font-size: var(--text-footnote);
+        color: var(--label-secondary);
+      }
+      .name-row .cat {
+        width: 12px;
+        height: 12px;
+      }
+      .sheet .group-label {
+        padding-top: 16px;
+      }
+      .sheet-delete {
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body data-page="lists">
+    <div class="app">
+      <main class="main" data-od-id="lists-main">
+        <header class="page-head" data-od-id="lists-header">
+          <div class="bar">
+            <a class="text-btn" href="settings.html" data-od-id="lists-back"
+              ><i data-icon="back"></i><span>설정</span></a
+            >
+          </div>
+          <h1 class="t-large" id="ls-title" data-od-id="lists-title">
+            일정 카테고리
+          </h1>
+        </header>
+
+        <section
+          class="section"
+          style="margin-top: 16px"
+          data-od-id="lists-section"
+        >
+          <ul class="list ls-list" id="ls" data-od-id="lists-items"></ul>
+          <div class="ls-actions">
+            <button
+              type="button"
+              class="text-btn"
+              id="ls-add"
+              data-od-id="lists-add"
+            >
+              <i data-icon="plus"></i
+              ><span id="ls-add-label">카테고리 추가</span>
+            </button>
+            <button
+              type="button"
+              class="text-btn sm"
+              id="ls-reset"
+              data-od-id="lists-reset"
+              style="color: var(--label-secondary)"
+            >
+              기본 목록으로 되돌리기
+            </button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- 추가 · 수정 시트 -->
+    <dialog
+      class="sheet"
+      id="sheet-edit"
+      aria-labelledby="ed-title"
+      data-od-id="lists-sheet"
+    >
+      <form id="form-edit" novalidate>
+        <div class="sheet-head">
+          <button type="button" class="text-btn" data-close>취소</button>
+          <h2 id="ed-title">새 카테고리</h2>
+          <button
+            type="submit"
+            class="text-btn"
+            style="font-weight: var(--fw-semibold)"
+            data-od-id="lists-save"
+          >
+            저장
+          </button>
+        </div>
+        <div class="field-row left name-row" id="row-name">
+          <span class="cat" id="ed-dot"></span
+          ><label class="sr-only" for="ed-name">이름</label
+          ><input
+            id="ed-name"
+            type="text"
+            maxlength="12"
+            placeholder="이름"
+            autocomplete="off"
+            data-od-id="lists-name"
+          />
+        </div>
+
+        <div id="ed-color-wrap">
+          <div class="group-label">
+            색상 <span class="color-name" id="ed-color-name"></span>
+          </div>
+          <div
+            class="swatches"
+            role="radiogroup"
+            aria-label="카테고리 색상"
+            id="ed-colors"
+            data-od-id="lists-colors"
+          ></div>
+        </div>
+
+        <div id="ed-on-wrap">
+          <div class="field-row">
+            <span class="label">사용</span
+            ><span class="control switch"
+              ><input
+                type="checkbox"
+                id="ed-on"
+                aria-label="이 보관 장소 사용"
+                data-od-id="lists-on"
+            /></span>
+          </div>
+          <p class="t-footnote secondary" id="ed-on-note">
+            끄면 보관 장소 선택지와 재고 화면에서 숨겨져요. 품목은 그대로
+            남아요.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="sheet-delete text-btn danger"
+          id="ed-del"
+          data-od-id="lists-delete"
+        >
+          삭제
+        </button>
+      </form>
+    </dialog>
+
+    <script src="js/app.js"></script>
+    <script>
+      var L = KJ.lists;
+      var TYPES = {
+        cal: { title: "일정 카테고리", unit: "카테고리", color: true },
+        inv: { title: "재고 카테고리", unit: "카테고리", color: true },
+        loc: { title: "보관 장소", unit: "보관 장소", color: false },
+        unit: { title: "단위", unit: "단위", color: false },
+      };
+      /* 단위 사용 현황 — 재고 예시 데이터 기준 (INV-06: 사용 중인 단위는 품목 단위를 먼저 바꾸도록 안내) */
+      var UNIT_USE = {
+        팩: ["우유"],
+        개: ["달걀", "라면"],
+        봉지: ["냉동 만두"],
+        롤: ["두루마리 휴지", "키친타월"],
+      };
+      var type = (location.hash || "").slice(1);
+      if (!TYPES[type]) type = "cal";
+      if (/inventory\.html/.test(document.referrer)) {
+        var bk = document.querySelector('[data-od-id="lists-back"]');
+        bk.href = "inventory.html";
+        bk.lastChild.textContent = "재고";
+      }
+      var items = L.get(type),
+        editIdx = -1,
+        editColor = "blue";
+      var COLOR_KO = {};
+      L.PALETTE.forEach(function (p) {
+        COLOR_KO[p[0]] = p[1];
+      });
+
+      /* ---------- 목록 ------------------------------------------------------ */
+      function render() {
+        var t = TYPES[type];
+        document.getElementById("ls-title").textContent = t.title;
+        document.title = t.title + " · 김집사";
+        document.getElementById("ls-add-label").textContent = t.unit + " 추가";
+        document.getElementById("ls").innerHTML = items
+          .map(function (it, i) {
+            var lead = t.color
+              ? '<span class="cat" style="--c:' +
+                L.color(it.color) +
+                '"></span>'
+              : "";
+            var tail =
+              type === "loc"
+                ? '<span class="control switch"><input type="checkbox" data-on="' +
+                  i +
+                  '"' +
+                  (it.on ? " checked" : "") +
+                  ' aria-label="' +
+                  it.name +
+                  ' 사용"></span>'
+                : "";
+            return (
+              '<li class="' +
+              (type === "loc" && !it.on ? "is-off" : "") +
+              '" data-od-id="lists-item-' +
+              it.id +
+              '">' +
+              '<button type="button" class="ls-row" data-edit="' +
+              i +
+              '">' +
+              lead +
+              '<span class="title">' +
+              esc(it.name) +
+              "</span>" +
+              (type === "loc" && !it.on
+                ? '<span class="badge">사용 안 함</span>'
+                : "") +
+              (type === "unit" && UNIT_USE[it.name]
+                ? '<span class="badge">품목 ' +
+                  UNIT_USE[it.name].length +
+                  "개</span>"
+                : "") +
+              (tail ? "" : KJ.icon("chevron", "chev")) +
+              "</button>" +
+              tail +
+              "</li>"
+            );
+          })
+          .join("");
+      }
+      function esc(s) {
+        return String(s).replace(/[&<>"]/g, function (c) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+        });
+      }
+      function save() {
+        L.set(type, items);
+      }
+
+      window.addEventListener("hashchange", function () {
+        var t = location.hash.slice(1);
+        if (TYPES[t]) {
+          type = t;
+          items = L.get(type);
+          render();
+        }
+      });
+      document.getElementById("ls").addEventListener("change", function (e) {
+        var c = e.target.closest("[data-on]");
+        if (!c) return;
+        var it = items[+c.dataset.on];
+        it.on = c.checked;
+        save();
+        render();
+        KJ.toast(
+          it.on
+            ? it.name + " 다시 사용해요"
+            : KJ.josa(it.name, "은/는") + " 숨겨요. 품목은 그대로 남아 있어요",
+        );
+      });
+      document.getElementById("ls").addEventListener("click", function (e) {
+        var b = e.target.closest("[data-edit]");
+        if (b) openEdit(+b.dataset.edit);
+      });
+      document.getElementById("ls-add").onclick = function () {
+        openEdit(-1);
+      };
+      document.getElementById("ls-reset").onclick = function () {
+        var t = TYPES[type];
+        KJ.confirm({
+          title: t.title + "을 기본 목록으로 되돌릴까요?",
+          body:
+            type === "unit"
+              ? "직접 추가하거나 바꾼 단위는 사라져요. 품목에 쓰인 단위는 그대로 남아요."
+              : type === "loc"
+                ? "직접 추가하거나 바꾼 보관 장소는 사라지고, 숨긴 장소도 다시 보여요."
+                : "직접 추가하거나 바꾼 카테고리는 사라지고, 해당 " +
+                  (type === "cal" ? "일정" : "품목") +
+                  "은 ‘기타’로 옮겨져요.",
+          confirmLabel: "되돌리기",
+          destructive: true,
+        }).then(function (ok) {
+          if (!ok) return;
+          L.reset(type);
+          items = L.get(type);
+          render();
+          KJ.toast("기본 목록으로 되돌렸어요");
+        });
+      };
+
+      /* ---------- 추가 · 수정 시트 ------------------------------------------ */
+      var sheet = document.getElementById("sheet-edit"),
+        nameIn = document.getElementById("ed-name");
+      document.getElementById("ed-colors").innerHTML = L.PALETTE.map(
+        function (p) {
+          return (
+            '<button type="button" class="swatch" role="radio" data-c="' +
+            p[0] +
+            '" style="--c:' +
+            L.color(p[0]) +
+            '" aria-label="' +
+            p[1] +
+            '" aria-checked="false" data-od-id="swatch-' +
+            p[0] +
+            '"></button>'
+          );
+        },
+      ).join("");
+
+      function nextColor() {
+        var used = items.map(function (x) {
+          return x.color;
+        });
+        var free = L.PALETTE.filter(function (p) {
+          return used.indexOf(p[0]) < 0;
+        })[0];
+        return free ? free[0] : "blue";
+      }
+      function paintColor() {
+        document.querySelectorAll("#ed-colors .swatch").forEach(function (s) {
+          s.setAttribute("aria-checked", s.dataset.c === editColor);
+          s.tabIndex = s.dataset.c === editColor ? 0 : -1;
+        });
+        document
+          .getElementById("ed-dot")
+          .style.setProperty("--c", L.color(editColor));
+        document.getElementById("ed-color-name").textContent =
+          "· " + COLOR_KO[editColor];
+      }
+      function openEdit(i) {
+        var t = TYPES[type],
+          it = i > -1 ? items[i] : null;
+        editIdx = i;
+        document.getElementById("ed-title").textContent = it
+          ? t.unit + " 수정"
+          : "새 " + t.unit;
+        nameIn.value = it ? it.name : "";
+        nameIn.placeholder =
+          type === "unit"
+            ? "예: 판"
+            : type === "loc"
+              ? "예: 베란다 창고"
+              : type === "inv"
+                ? "예: 반려동물 용품"
+                : "예: 운동";
+        document.getElementById("row-name").classList.remove("invalid");
+        nameIn.removeAttribute("aria-invalid");
+        document.getElementById("ed-color-wrap").hidden = !t.color;
+        document.getElementById("ed-dot").hidden = !t.color;
+        nameIn.maxLength = type === "unit" ? 6 : 12;
+        document.getElementById("ed-on-wrap").hidden = type !== "loc";
+        document.getElementById("ed-on").checked = it ? !!it.on : true;
+        var del = document.getElementById("ed-del");
+        del.hidden = !it || !!it.fixed;
+        del.textContent = t.unit + " 삭제";
+        if (t.color) {
+          editColor = it ? it.color : nextColor();
+          paintColor();
+        }
+        sheet.showModal();
+        nameIn.focus();
+      }
+      document
+        .getElementById("ed-colors")
+        .addEventListener("click", function (e) {
+          var s = e.target.closest("[data-c]");
+          if (s) {
+            editColor = s.dataset.c;
+            paintColor();
+          }
+        });
+      document
+        .getElementById("ed-colors")
+        .addEventListener("keydown", function (e) {
+          var k = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[
+            e.key
+          ];
+          if (!k) return;
+          e.preventDefault();
+          var keys = L.PALETTE.map(function (p) {
+              return p[0];
+            }),
+            n = (keys.indexOf(editColor) + k + keys.length) % keys.length;
+          editColor = keys[n];
+          paintColor();
+          document
+            .querySelector('#ed-colors [data-c="' + editColor + '"]')
+            .focus();
+        });
+      nameIn.oninput = function () {
+        document.getElementById("row-name").classList.remove("invalid");
+        nameIn.removeAttribute("aria-invalid");
+      };
+      document.querySelectorAll("[data-close]").forEach(function (b) {
+        b.onclick = function () {
+          b.closest("dialog").close();
+        };
+      });
+
+      document
+        .getElementById("form-edit")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+          var name = nameIn.value.trim(),
+            t = TYPES[type];
+          var dup = items.some(function (x, j) {
+            return j !== editIdx && x.name === name;
+          });
+          if (!name || dup) {
+            document.getElementById("row-name").classList.add("invalid");
+            nameIn.setAttribute("aria-invalid", "true");
+            nameIn.focus();
+            if (dup) KJ.toast("‘" + name + "’ " + t.unit + "가 이미 있어요");
+            return;
+          }
+          var isNew = editIdx < 0;
+          var it = isNew
+            ? { id: "u" + Date.now().toString(36), name: name }
+            : items[editIdx];
+          it.name = name;
+          if (t.color) it.color = editColor;
+          if (type === "loc") it.on = document.getElementById("ed-on").checked;
+          if (isNew) {
+            var etc = items.findIndex(function (x) {
+              return x.fixed;
+            });
+            etc > -1 ? items.splice(etc, 0, it) : items.push(it);
+          }
+          save();
+          sheet.close();
+          render();
+          KJ.toast(
+            isNew ? "‘" + name + "’ " + t.unit + "를 추가했어요" : "저장했어요",
+          );
+        });
+
+      document.getElementById("ed-del").onclick = function () {
+        var it = items[editIdx],
+          t = TYPES[type];
+        if (type === "unit" && UNIT_USE[it.name]) {
+          var used = UNIT_USE[it.name];
+          return KJ.confirm({
+            title: "‘" + it.name + "’ 단위를 쓰는 품목이 있어요",
+            body: used.join(", ") + "의 단위를 먼저 바꾼 뒤 삭제할 수 있어요.",
+            cancelLabel: "닫기",
+            confirmLabel: "재고에서 바꾸기",
+          }).then(function (ok) {
+            if (ok) location.href = "inventory.html";
+          });
+        }
+        var body =
+          type === "unit"
+            ? "새 품목을 등록할 때 이 단위를 고를 수 없어요."
+            : type === "loc"
+              ? "이 장소에 있던 품목은 재고에 그대로 남고, 보관 장소만 비워져요. 잠시 숨기려면 ‘사용’을 꺼 주세요."
+              : "이 카테고리의 " +
+                (type === "cal" ? "일정" : "품목") +
+                "은 ‘기타’로 옮겨져요.";
+        KJ.confirm({
+          title:
+            "‘" + it.name + "’ " + KJ.josa(t.unit, "을/를") + " 삭제할까요?",
+          body: body,
+          confirmLabel: "삭제",
+          destructive: true,
+        }).then(function (ok) {
+          if (!ok) return;
+          items.splice(editIdx, 1);
+          save();
+          sheet.close();
+          render();
+          KJ.toast(t.unit + "를 삭제했어요");
+        });
+      };
+
+      render();
+      KJ.init();
+    </script>
+  </body>
+</html>

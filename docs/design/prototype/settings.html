@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>설정 · 김집사</title>
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <style>
+      .set-section {
+        margin-top: 40px;
+      }
+      .set-section > h2 {
+        font-size: var(--text-footnote);
+        font-weight: var(--fw-semibold);
+        color: var(--label-secondary);
+        letter-spacing: 0.02em;
+        padding-bottom: 2px;
+      }
+      .set-section .field-row > .label,
+      .set-section .field-row > label {
+        width: auto;
+        flex: 1;
+      }
+      .set-section .field-row .val {
+        margin-left: auto;
+        color: var(--label-secondary);
+        font-size: var(--text-callout);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .set-section .field-row input[type="time"],
+      .set-section .field-row input[type="text"] {
+        flex: 0 0 auto;
+        width: 140px;
+      }
+      .set-section .foot {
+        font-size: var(--text-footnote);
+        color: var(--label-secondary);
+        padding: 8px 0 0;
+      }
+      .set-section .segmented {
+        flex: 0 0 168px;
+      }
+      .member {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: var(--r-round);
+        background: var(--fill-tertiary);
+        display: grid;
+        place-items: center;
+        font-size: var(--text-footnote);
+        font-weight: var(--fw-semibold);
+        color: var(--label-secondary);
+        flex: none;
+      }
+      .key {
+        font-family: var(--font-mono);
+        font-size: var(--text-subhead);
+      }
+      .row-btn {
+        width: 100%;
+        text-align: left;
+        min-height: var(--row-min);
+        color: var(--link);
+        position: relative;
+      }
+      .row-btn.danger {
+        color: var(--destructive);
+      }
+      .mem li .grow {
+        font-size: var(--text-subhead);
+      }
+      .mem .del {
+        color: var(--destructive);
+        font-size: var(--text-subhead);
+      }
+      .check-ok {
+        color: var(--status-ok-text);
+      }
+      .link-row {
+        color: inherit;
+      }
+      .link-row:active {
+        background: var(--fill-quaternary);
+      }
+      .dots {
+        display: inline-flex;
+      }
+      .dots .cat {
+        width: 8px;
+        height: 8px;
+        box-shadow: 0 0 0 1.5px var(--bg);
+      }
+      .dots .cat + .cat {
+        margin-left: -2px;
+      }
+    </style>
+  </head>
+  <body data-page="settings">
+    <div class="app">
+      <main class="main" data-od-id="settings-main">
+        <header class="page-head" data-od-id="settings-header">
+          <h1 class="t-large" data-od-id="settings-title">설정</h1>
+        </header>
+
+        <!-- 내 정보 (ACC-07) -->
+        <section class="set-section" data-od-id="set-profile">
+          <h2>내 정보</h2>
+          <div class="field-row">
+            <label for="s-name">표시 이름</label
+            ><input
+              id="s-name"
+              type="text"
+              value="지수"
+              data-od-id="s-display-name"
+            />
+          </div>
+          <div class="field-row">
+            <span class="label">로그인</span
+            ><span class="val">카카오 계정</span>
+          </div>
+        </section>
+
+        <!-- 가족 구성원 + 초대 (ACC-04~06) -->
+        <section class="set-section" data-od-id="set-members">
+          <h2>도토리네 구성원</h2>
+          <ul class="list">
+            <li class="member" data-od-id="member-me">
+              <span class="avatar">지</span>
+              <div class="grow">
+                <div class="title">지수 (나)</div>
+                <div class="meta">관리자</div>
+              </div>
+            </li>
+            <li class="member" data-od-id="member-partner">
+              <span class="avatar">민</span>
+              <div class="grow">
+                <div class="title">민호</div>
+                <div class="meta">관리자 · 9월 28일 합류</div>
+              </div>
+            </li>
+          </ul>
+          <button
+            type="button"
+            class="row-btn"
+            id="invite"
+            data-od-id="set-invite"
+          >
+            새 초대 링크 만들기
+          </button>
+          <p class="foot">초대 링크는 한 번만 쓸 수 있고 3일 뒤 만료돼요.</p>
+        </section>
+
+        <!-- 알림 (ACC-11) -->
+        <section class="set-section" data-od-id="set-notify">
+          <h2>알림</h2>
+          <div class="field-row">
+            <span class="label">웹 푸시 알림</span
+            ><span class="control switch"
+              ><input
+                type="checkbox"
+                id="s-push"
+                checked
+                aria-label="웹 푸시 알림"
+                data-od-id="s-push"
+            /></span>
+          </div>
+          <div class="field-row" id="row-morning">
+            <label for="s-morning">아침 요약</label
+            ><input
+              id="s-morning"
+              type="time"
+              value="10:00"
+              data-od-id="s-morning-time"
+            />
+          </div>
+          <p class="foot">
+            iPhone에서는 Safari 공유 메뉴에서 '홈 화면에 추가'를 해야 알림을
+            받을 수 있어요.
+          </p>
+        </section>
+
+        <!-- 홈 화면 (ACC-12) -->
+        <section class="set-section" data-od-id="set-home">
+          <h2>홈 화면</h2>
+          <div class="field-row">
+            <span class="label">캘린더 보기</span>
+            <div
+              class="segmented"
+              role="group"
+              aria-label="홈 캘린더 보기"
+              data-seg
+              data-od-id="s-home-view"
+            >
+              <button type="button" aria-pressed="false">월</button
+              ><button type="button" aria-pressed="true">주</button
+              ><button type="button" aria-pressed="false">일</button>
+            </div>
+          </div>
+          <div class="field-row">
+            <span class="label">다가오는 일정</span
+            ><span class="control switch"
+              ><input
+                type="checkbox"
+                id="s-widget"
+                checked
+                aria-label="다가오는 일정 위젯"
+                data-od-id="s-widget"
+            /></span>
+          </div>
+          <div class="field-row" id="row-count">
+            <span class="label">표시 개수</span>
+            <div
+              class="segmented"
+              role="group"
+              aria-label="표시 개수"
+              data-seg
+              data-od-id="s-widget-count"
+            >
+              <button type="button" aria-pressed="false">3개</button
+              ><button type="button" aria-pressed="true">5개</button
+              ><button type="button" aria-pressed="false">10개</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 가정 설정 (ACC-13) -->
+        <section class="set-section" data-od-id="set-household">
+          <h2>가정</h2>
+          <a
+            class="field-row link-row"
+            href="lists.html#cal"
+            data-od-id="s-cal-categories"
+            ><span class="label">일정 카테고리</span
+            ><span class="val"
+              ><span class="dots" id="dots-cal"></span><span id="cnt-cal"></span
+              ><i data-icon="chevron" class="chev"></i></span
+          ></a>
+          <a
+            class="field-row link-row"
+            href="lists.html#inv"
+            data-od-id="s-inv-categories"
+            ><span class="label">재고 카테고리</span
+            ><span class="val"
+              ><span class="dots" id="dots-inv"></span><span id="cnt-inv"></span
+              ><i data-icon="chevron" class="chev"></i></span
+          ></a>
+          <a
+            class="field-row link-row"
+            href="lists.html#loc"
+            data-od-id="s-locations"
+            ><span class="label">보관 장소</span
+            ><span class="val"
+              ><span id="cnt-loc"></span
+              ><i data-icon="chevron" class="chev"></i></span
+          ></a>
+          <a
+            class="field-row link-row"
+            href="lists.html#unit"
+            data-od-id="s-units"
+            ><span class="label">단위</span
+            ><span class="val"
+              ><span id="cnt-unit"></span
+              ><i data-icon="chevron" class="chev"></i></span
+          ></a>
+          <div class="field-row">
+            <span class="label">유통기한 임박 기준</span>
+            <span
+              class="control"
+              style="display: flex; align-items: center; gap: 8px"
+              ><span class="stepper" id="soon"
+                ><button type="button" data-d="-1" aria-label="하루 줄이기">
+                  <i data-icon="minus"></i></button
+                ><output id="soon-v">3</output
+                ><button type="button" data-d="1" aria-label="하루 늘리기">
+                  <i data-icon="plus"></i></button></span
+              ><span class="secondary t-subhead">일 전</span></span
+            >
+          </div>
+        </section>
+
+        <!-- AI 집사 (ACC-08~10, BOT-15, BOT-16) -->
+        <section class="set-section" data-od-id="set-ai">
+          <h2>AI 집사</h2>
+          <div class="field-row">
+            <label for="s-bot">이름</label>
+            <span
+              class="control"
+              style="display: flex; align-items: center; gap: 2px"
+              ><span class="secondary">김</span
+              ><input
+                id="s-bot"
+                type="text"
+                value="데비"
+                maxlength="8"
+                style="width: 96px; text-align: left"
+                data-od-id="s-bot-name"
+            /></span>
+          </div>
+          <div class="field-row">
+            <span class="label">AI 제공자</span>
+            <div
+              class="segmented"
+              role="group"
+              aria-label="AI 제공자"
+              data-seg
+              data-od-id="s-provider"
+            >
+              <button type="button" aria-pressed="true">Claude</button
+              ><button type="button" aria-pressed="false">Gemini</button>
+            </div>
+          </div>
+          <div class="field-row">
+            <span class="label">API 키</span
+            ><span class="val"
+              ><span class="key">••••••3f9a</span
+              ><span class="status" data-tone="ok" id="key-state"
+                >연결됨</span
+              ></span
+            >
+          </div>
+          <button
+            type="button"
+            class="row-btn"
+            id="key-test"
+            data-od-id="s-key-test"
+          >
+            연결 확인
+          </button>
+          <button
+            type="button"
+            class="row-btn"
+            id="key-replace"
+            data-od-id="s-key-replace"
+          >
+            키 교체
+          </button>
+          <button
+            type="button"
+            class="row-btn danger"
+            id="key-delete"
+            data-od-id="s-key-delete"
+          >
+            키 삭제
+          </button>
+          <p class="foot">
+            키는 서버에 암호화해 저장하고, 화면에는 끝 네 자리만 보여요.
+            도토리네 구성원 모두 이 키를 함께 써요.
+          </p>
+        </section>
+
+        <!-- 챗봇 기억 (BOT-12~14, ACC-14) -->
+        <section class="set-section" data-od-id="set-memory">
+          <h2>김데비가 기억하는 것</h2>
+          <div class="field-row">
+            <span class="label">대화 기억하기</span
+            ><span class="control switch"
+              ><input
+                type="checkbox"
+                id="s-mem"
+                checked
+                aria-label="대화 기억하기"
+                data-od-id="s-memory-toggle"
+            /></span>
+          </div>
+          <ul class="list mem" id="mem"></ul>
+          <button
+            type="button"
+            class="row-btn danger"
+            id="mem-reset"
+            data-od-id="s-memory-reset"
+          >
+            기억 모두 지우기
+          </button>
+          <p class="foot">
+            선호와 습관만 기억해요. 대화 원문은 90일 뒤 자동으로 지워져요.
+          </p>
+        </section>
+
+        <!-- 화면 모드 -->
+        <section class="set-section" data-od-id="set-appearance">
+          <h2>화면</h2>
+          <div class="field-row">
+            <span class="label">모드</span>
+            <div
+              class="segmented"
+              role="group"
+              aria-label="화면 모드"
+              id="theme"
+              data-od-id="s-theme"
+            >
+              <button type="button" data-t="system">자동</button
+              ><button type="button" data-t="light">라이트</button
+              ><button type="button" data-t="dark">다크</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 계정 (ACC-15) -->
+        <section class="set-section" data-od-id="set-account">
+          <h2>계정</h2>
+          <button
+            type="button"
+            class="row-btn"
+            id="logout"
+            data-od-id="s-logout"
+          >
+            로그아웃
+          </button>
+          <button
+            type="button"
+            class="row-btn danger"
+            id="withdraw"
+            data-od-id="s-withdraw"
+          >
+            탈퇴하기
+          </button>
+        </section>
+      </main>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+      /* Segmented groups */
+      document.querySelectorAll("[data-seg]").forEach(function (g) {
+        g.addEventListener("click", function (e) {
+          var b = e.target.closest("button");
+          if (!b) return;
+          g.querySelectorAll("button").forEach(function (x) {
+            x.setAttribute("aria-pressed", x === b);
+          });
+          KJ.toast("저장했어요");
+        });
+      });
+      document.getElementById("s-widget").onchange = function () {
+        document.getElementById("row-count").hidden = !this.checked;
+      };
+      document.getElementById("s-push").onchange = function () {
+        document.getElementById("row-morning").hidden = !this.checked;
+        KJ.toast(this.checked ? "알림을 켰어요" : "알림을 껐어요");
+      };
+      document.getElementById("s-morning").onchange = function () {
+        KJ.toast("매일 " + this.value + "에 오늘 일정을 알려 드릴게요");
+      };
+
+      /* 가정 목록 요약 (CAL-08 · INV-06~08) — 관리는 lists.html */
+      function renderLists() {
+        ["cal", "inv"].forEach(function (t) {
+          var l = KJ.lists.get(t);
+          document.getElementById("cnt-" + t).textContent = l.length + "개";
+          document.getElementById("dots-" + t).innerHTML = l
+            .slice(0, 5)
+            .map(function (c) {
+              return (
+                '<span class="cat" style="--c:' +
+                KJ.lists.color(c.color) +
+                '"></span>'
+              );
+            })
+            .join("");
+        });
+        document.getElementById("cnt-unit").textContent =
+          KJ.lists.get("unit").length + "개";
+        var locs = KJ.lists.get("loc"),
+          on = locs.filter(function (l) {
+            return l.on;
+          }).length;
+        document.getElementById("cnt-loc").textContent =
+          on === locs.length ? on + "개" : on + "개 사용 중";
+      }
+      document.getElementById("soon").addEventListener("click", function (e) {
+        var b = e.target.closest("[data-d]");
+        if (!b) return;
+        var o = document.getElementById("soon-v");
+        o.value = Math.min(14, Math.max(1, +o.value + +b.dataset.d));
+      });
+
+      /* AI 키 */
+      document.getElementById("key-test").onclick = function () {
+        var s = document.getElementById("key-state");
+        s.dataset.tone = "info";
+        s.textContent = "확인 중";
+        setTimeout(function () {
+          s.dataset.tone = "ok";
+          s.textContent = "연결됨";
+          KJ.toast("Claude와 정상적으로 연결돼요");
+        }, 900);
+      };
+      document.getElementById("key-replace").onclick = function () {
+        KJ.toast("새 키를 붙여 넣으면 연결을 확인한 뒤 바꿔요");
+      };
+      document.getElementById("key-delete").onclick = function () {
+        KJ.confirm({
+          title: "API 키를 삭제할까요?",
+          body: "김데비의 자유 대화만 멈추고, 일정·재고·장바구니는 그대로 쓸 수 있어요.",
+          confirmLabel: "삭제",
+          destructive: true,
+        }).then(function (ok) {
+          if (!ok) return;
+          var s = document.getElementById("key-state");
+          s.dataset.tone = "none";
+          s.textContent = "등록 안 됨";
+          document.querySelector(".key").textContent = "—";
+        });
+      };
+      document.getElementById("s-bot").oninput = function () {
+        KJ.HOUSE.bot = "김" + (this.value.trim() || "데비");
+      };
+
+      /* 기억 목록 */
+      var MEM = [
+        "장은 주로 토요일 오전에 봐요",
+        "우유는 저지방을 사요",
+        "아침 요약은 짧게 받는 걸 좋아해요",
+      ];
+      function renderMem() {
+        document.getElementById("mem").innerHTML = MEM.length
+          ? MEM.map(function (m, i) {
+              return (
+                '<li data-od-id="memory-' +
+                i +
+                '"><span class="grow">' +
+                m +
+                '</span><button type="button" class="del" data-m="' +
+                i +
+                '">삭제</button></li>'
+              );
+            }).join("")
+          : '<li class="secondary t-subhead">기억한 내용이 없어요</li>';
+      }
+      document.getElementById("mem").addEventListener("click", function (e) {
+        var b = e.target.closest("[data-m]");
+        if (b) {
+          MEM.splice(+b.dataset.m, 1);
+          renderMem();
+          KJ.toast("이후 대화에서 쓰지 않을게요");
+        }
+      });
+      document.getElementById("mem-reset").onclick = function () {
+        KJ.confirm({
+          title: "기억을 모두 지울까요?",
+          body:
+            "김데비가 기억한 선호와 습관 " + MEM.length + "개가 모두 지워져요.",
+          confirmLabel: "모두 지우기",
+          destructive: true,
+        }).then(function (ok) {
+          if (ok) {
+            MEM = [];
+            renderMem();
+          }
+        });
+      };
+      document.getElementById("s-mem").onchange = function () {
+        KJ.toast(
+          this.checked
+            ? "새 대화를 요약해 기억할게요"
+            : "이제부터 새 대화는 기억하지 않아요",
+        );
+      };
+
+      /* 화면 모드 */
+      var theme = "system";
+      try {
+        theme = localStorage.getItem("kj:theme") || "system";
+      } catch (_) {}
+      function paintTheme() {
+        document.querySelectorAll("#theme button").forEach(function (b) {
+          b.setAttribute("aria-pressed", b.dataset.t === theme);
+        });
+      }
+      document.getElementById("theme").addEventListener("click", function (e) {
+        var b = e.target.closest("[data-t]");
+        if (!b) return;
+        theme = b.dataset.t;
+        if (theme === "system")
+          document.documentElement.removeAttribute("data-theme");
+        else document.documentElement.setAttribute("data-theme", theme);
+        try {
+          localStorage.setItem("kj:theme", theme);
+        } catch (_) {}
+        paintTheme();
+      });
+
+      /* 초대 / 계정 */
+      document.getElementById("invite").onclick = function () {
+        location.href = "onboarding.html#invite";
+      };
+      document.getElementById("logout").onclick = function () {
+        KJ.confirm({ title: "로그아웃할까요?", confirmLabel: "로그아웃" }).then(
+          function (ok) {
+            if (ok) {
+              try {
+                localStorage.removeItem("kj:signedIn");
+              } catch (_) {}
+              location.href = "onboarding.html";
+            }
+          },
+        );
+      };
+      document.getElementById("withdraw").onclick = function () {
+        KJ.confirm({
+          title: "도토리네에서 탈퇴할까요?",
+          body: "내 개인 일정과 김데비 대화·기억이 삭제돼요. 공유 일정, 재고, 장바구니는 가정에 남아요.",
+          confirmLabel: "탈퇴",
+          destructive: true,
+        }).then(function (ok) {
+          if (ok) {
+            try {
+              localStorage.removeItem("kj:signedIn");
+            } catch (_) {}
+            location.href = "onboarding.html";
+          }
+        });
+      };
+
+      renderLists();
+      renderMem();
+      paintTheme();
+      KJ.init();
+    </script>
+  </body>
+</html>
