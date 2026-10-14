@@ -4,7 +4,7 @@
 
 - **디자인 산출물 (CONFIRMED):** `docs/design/`. 구현 전에 `docs/design/HANDOFF.md`부터 읽는다.
 - **토큰 원본 (CONFIRMED):** `docs/design/tokens.css` (Apple 시스템 컬러, 라이트·다크, 상태 variant `success · info · warning · error`, 타이포 variant 12단계, 간격·모양). 색, 폰트, 간격, 라운드는 이 파일의 토큰만 쓰고 임의로 만들지 않는다.
-- **앱 토큰 파일 경로:** `PENDING`(DEC-002, 프로젝트 초기화 때 정함). 정해지면 여기와 `CODING_STANDARDS.md` §6에 적는다.
+- **앱 토큰 파일 경로:** `PENDING`(프로젝트 초기화 때 정함). 정해지면 여기와 `CODING_STANDARDS.md` §6에 적는다.
 
 ## 1. 디자인 방향 (CONFIRMED, 기획서 §04)
 

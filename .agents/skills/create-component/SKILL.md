@@ -16,5 +16,5 @@ description: 김집사의 UI 컴포넌트를 만든다. 새 컴포넌트, 공용
 7. **상태별 UI**: Loading(목록 모양 skeleton), Empty/Error(공용 빈 상태 컴포넌트), 비활성/오류(폼은 필드 인라인)를 구현한다.
 8. **스타일 규칙**: 시각 variant는 `*.variants.ts`(CVA), 데이터는 `*.constants.ts`. 클래스 합치기는 `cn()`. (Tailwind/CVA가 확정된 경우. 확정 전이면 사용자에게 확인)
 9. **import 규칙**: 슬라이스 밖에서는 `index.ts`로만 import. 깊은 경로 import 금지.
-10. **검증**: 렌더링·테스트·린트 실행은 사용자 승인 뒤에. 코드 작업을 마치면 `npm run format` → `npm run format:check`(`package.json`이 없으면 건너뛰고 보고).
+10. **검증**: 렌더링·테스트·린트 실행은 사용자 승인 뒤에. 코드 작업을 마치면 `yarn format` → `yarn format:check`(`package.json`이 없으면 건너뛰고 보고).
 11. **보고**: 만든/재사용한 컴포넌트, 위치와 이유, 새로 복사한 JSX/로직 덩어리가 없는지 점검 결과.

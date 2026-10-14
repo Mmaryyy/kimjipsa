@@ -5,12 +5,12 @@
 | ID | 주제 | 우선 | 막는 것 | Status |
 | --- | --- | --- | --- | --- |
 | DEC-001 | 개인 일정 컬럼 보호 구조 | 높음 | 일정 스키마, Realtime, 첫 마이그레이션 | PENDING |
-| DEC-002 | 언어·UI·날짜 스택 | 높음 | 프로젝트 초기화 | PENDING |
+| DEC-002 | 언어·UI·날짜 스택 | 높음 | 프로젝트 초기화 | CONFIRMED (ADR-0004) |
 | DEC-003 | AI 키 암호화 방식 | 높음 | ACC-08, 챗봇 | PENDING |
 | DEC-004 | 예약 작업(알림·요약·삭제) 실행 방식 | 높음 | CAL-09~11, BOT-12, BOT-14 | PENDING |
 | DEC-005 | 동일 이메일 로그인 수단 분리 | 중간 | ACC-01 | PENDING |
-| DEC-006 | 서버 상태·폼·검증 라이브러리 | 중간 | 데이터 계층 구현 | PENDING |
-| DEC-007 | 테스트 도구 | 중간 | 테스트 작성 | PENDING |
+| DEC-006 | 서버 상태·폼·검증 라이브러리 | 중간 | 데이터 계층 구현 | CONFIRMED (ADR-0005, 폼 라이브러리는 보류) |
+| DEC-007 | 테스트 도구 | 중간 | 테스트 작성 | CONFIRMED (ADR-0006) |
 | DEC-008 | 알림 요구사항의 마일스톤 배치 | 중간 | ROADMAP, M1 범위 | PENDING |
 | DEC-009 | 데이터 모델 공백 | 중간 | 스키마 확정 | PENDING |
 | DEC-010 | 판정 기준 모호 항목 | 낮음 | INV-16, CART-05, CART-12 | PENDING |
@@ -48,7 +48,7 @@ TypeScript + Tailwind + CVA + shadcn/ui + date-fns(KST 고정) / 다른 조합 /
 ### Impact
 프로젝트 초기화, 코딩 표준의 조건부 규칙 확정, 디자인 토큰 파일 위치.
 ### Status
-PENDING
+CONFIRMED (2026-10-14, 권장안 그대로) → ADR-0004
 
 ## DEC-003
 ### Topic
@@ -108,7 +108,7 @@ TanStack Query + Zod 우선 채택. 폼 라이브러리는 폼이 많은 일정�
 ### Impact
 데이터 계층 구조, 코딩 표준 갱신.
 ### Status
-PENDING
+CONFIRMED (2026-10-14, 권장안 그대로: TanStack Query + Zod. 폼 라이브러리·전역 스토어는 필요할 때 다시 정함) → ADR-0005
 
 ## DEC-007
 ### Topic
@@ -122,7 +122,7 @@ Vitest + Testing Library + Playwright / Jest 계열.
 ### Impact
 테스트 작성 스킬(`write-tests`), 스크립트.
 ### Status
-PENDING
+CONFIRMED (2026-10-14, 권장안 그대로. CI는 별도 승인) → ADR-0006
 
 ## DEC-008
 ### Topic

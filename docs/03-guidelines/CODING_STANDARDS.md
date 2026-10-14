@@ -55,7 +55,7 @@
 
 ## 6. 스타일
 
-Tailwind와 CVA를 쓰는 경우에 적용한다.
+Tailwind + CVA + shadcn/ui 기준이다(ADR-0004).
 
 - `size`, `selected`, `disabled`, `pressed`, 의미별 색(`tone`)처럼 시각적 variant는 `class-variance-authority`로 선언하고 `*.variants.ts`에 둔다. 라벨, 옵션 같은 데이터는 `*.constants.ts`에 두고 둘을 한 파일에 섞지 않는다.
 - JSX 안에서 variant 스타일을 긴 삼항이나 조건부 클래스 조합으로 반복하지 않는다.
@@ -75,8 +75,8 @@ Tailwind와 CVA를 쓰는 경우에 적용한다.
 
 ## 8. 코드 가독성
 
-- 포매팅은 prettier가 맡는다. 설정은 `.prettierrc.json`이 원본이며(줄 너비 80자, 큰따옴표, 세미콜론, 후행 쉼표), 프로젝트 세팅 때 `format`, `format:check` 스크립트와 함께 추가한다. 손으로 맞추지 말고 `npm run format`을 쓴다.
-- 코드 작업을 마치면 `npm run format`과 `npm run format:check`를 돌린다(실행 규칙은 `AGENTS.md`). 포매팅은 이번 작업에서 새로 쓰거나 고친 파일에만 적용하고, 상관없는 파일은 포매팅하지 않는다.
+- 포매팅은 prettier가 맡는다. 설정은 `.prettierrc.json`이 원본이며(줄 너비 80자, 큰따옴표, 세미콜론, 후행 쉼표), 프로젝트 세팅 때 `format`, `format:check` 스크립트와 함께 추가한다. 손으로 맞추지 말고 `yarn format`을 쓴다.
+- 코드 작업을 마치면 `yarn format`과 `yarn format:check`를 돌린다(실행 규칙은 `AGENTS.md`). 포매팅은 이번 작업에서 새로 쓰거나 고친 파일에만 적용하고, 상관없는 파일은 포매팅하지 않는다.
 - 한 줄에 컴포넌트 전체나 긴 조건을 몰아 쓰지 않는다. 한 파일 한 줄짜리 코드는 포매터를 돌려도 읽기 어렵다.
 - 포매터가 못 해 주는 부분은 직접 지킨다. 긴 삼항·`&&` 조건 렌더링·`map` 콜백은 변수나 작은 컴포넌트로 빼고, 삼항은 두 겹까지만 쓴다.
 - 설명이 필요한 줄에는 "왜"를 한 줄 주석으로 적는다. 코드가 이미 말해 주는 "무엇"은 적지 않는다. 훅과 변환 함수에는 규칙이 비자명할 때만 한 줄 문서 주석을 붙인다.

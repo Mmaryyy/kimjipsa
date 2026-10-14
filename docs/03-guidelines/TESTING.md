@@ -1,6 +1,6 @@
 # 테스트 전략
 
-상태: 원칙과 요구사항 연결 방식은 **PROPOSED**이다. 도구(Vitest, Testing Library, Playwright)는 승인 전이며(DEC-007) 아직 `package.json`이 없다. **테스트·빌드 같은 검증 실행은 사용자 승인 뒤에만 한다** (`AGENTS.md`). 이 문서는 무엇을 어떻게 테스트할지 정하는 것이지, 자동으로 돌리라는 뜻이 아니다.
+상태: 원칙과 요구사항 연결 방식은 **PROPOSED**이다. 도구는 Vitest + Testing Library(단위·컴포넌트), Playwright(E2E)로 **CONFIRMED**다(ADR-0006). CI 구성은 별도 승인이다. **테스트·빌드 같은 검증 실행은 사용자 승인 뒤에만 한다** (`AGENTS.md`). 이 문서는 무엇을 어떻게 테스트할지 정하는 것이지, 자동으로 돌리라는 뜻이 아니다.
 
 ## 1. 요구사항 연결
 

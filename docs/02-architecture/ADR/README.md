@@ -29,5 +29,9 @@
 | [0001](./0001-platform-stack.md) | 플랫폼 스택: PWA + Next.js + Supabase + Vercel | 2026-10-14 | Accepted |
 | [0002](./0002-feature-sliced-design.md) | 코드 구조: FSD | 2026-10-14 | Accepted |
 | [0003](./0003-byok-server-side-ai.md) | AI: BYOK + 서버 라우트 호출 + 요청자 권한 필터 | 2026-10-14 | Accepted |
+| [0004](./0004-frontend-stack.md) | 언어·스타일링·UI·날짜: TypeScript + Tailwind/CVA + shadcn/ui + date-fns | 2026-10-14 | Accepted |
+| [0005](./0005-server-state-validation.md) | 서버 상태·검증: TanStack Query + Zod | 2026-10-14 | Accepted |
+| [0006](./0006-test-tools.md) | 테스트 도구: Vitest + Testing Library + Playwright | 2026-10-14 | Accepted |
+| [0007](./0007-package-manager-yarn.md) | 패키지 매니저: Yarn 4 (node-modules) | 2026-10-14 | Accepted |
 
-날짜는 결정이 `AGENTS.md`의 "확정된 주요 결정"에 반영된 날(커밋 c1281e5)이다. 실제 결정일을 아는 경우 고친다.
+0001~0003의 날짜는 결정이 `AGENTS.md`의 "확정된 주요 결정"에 반영된 날(커밋 c1281e5)이다. 실제 결정일을 아는 경우 고친다. 0004~0007은 사용자가 승인한 날이다.
