@@ -1,0 +1,33 @@
+# ADR (Architecture Decision Records)
+
+사용자가 승인한 주요 기술 결정만 기록한다. **승인되지 않은 제안은 ADR로 쓰지 않는다.** 제안은 `docs/04-planning/DECISIONS_REQUIRED.md`에서 승인될 때까지 PENDING으로 둔다.
+
+- 파일명: `NNNN-제목.md` (예: `0001-platform-stack.md`)
+- 상태: `Accepted` / `Superseded by NNNN`
+- 결정을 바꿀 때는 기존 ADR을 고치지 않고 새 ADR을 쓰고 이전 것을 `Superseded`로 바꾼다.
+
+## 템플릿
+
+```markdown
+# NNNN. 제목
+
+- 결정 ID: ADR-NNNN (관련 DEC: DEC-xxx)
+- 결정 날짜: YYYY-MM-DD
+- 상태: Accepted
+
+## 배경
+## 검토한 대안
+## 최종 결정
+## 결정 이유
+## 예상 영향
+```
+
+## 목록
+
+| ID | 제목 | 날짜 | 상태 |
+| --- | --- | --- | --- |
+| [0001](./0001-platform-stack.md) | 플랫폼 스택: PWA + Next.js + Supabase + Vercel | 2026-10-14 | Accepted |
+| [0002](./0002-feature-sliced-design.md) | 코드 구조: FSD | 2026-10-14 | Accepted |
+| [0003](./0003-byok-server-side-ai.md) | AI: BYOK + 서버 라우트 호출 + 요청자 권한 필터 | 2026-10-14 | Accepted |
+
+날짜는 결정이 `AGENTS.md`의 "확정된 주요 결정"에 반영된 날(커밋 c1281e5)이다. 실제 결정일을 아는 경우 고친다.

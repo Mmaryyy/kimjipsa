@@ -1,6 +1,6 @@
 # FSD 구조 가이드
 
-파일을 새로 만들거나 옮길 때, 어느 레이어와 슬라이스에 둘지 정할 때 읽는다. 코드 스타일은 `convention.md`를 본다.
+파일을 새로 만들거나 옮길 때, 어느 레이어와 슬라이스에 둘지 정할 때 읽는다. 코드 스타일은 `docs/03-guidelines/CODING_STANDARDS.md`를 본다.
 
 김집사는 Feature-Sliced Design(FSD)으로 구성한다. `unas-react` FSD 전환 플랜의 규칙을 기준으로 하되, Next.js와 Supabase에 맞게 고친 부분이 있다. 폴더와 슬라이스 이름은 프로젝트 초기 세팅 때 확정하고, 달라지면 이 문서를 같이 고친다.
 
