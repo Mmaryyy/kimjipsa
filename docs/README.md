@@ -9,6 +9,8 @@
 | `기획서.html`   | 서비스 기획서                                      | v0.11 | https://claude.ai/artifact/QQ31umsyEzybzhsNa2cpWD |
 | `기능명세.html` | 기능 명세(요구사항 ID, 확인 시나리오, 데이터 항목) | v0.11 | https://claude.ai/artifact/S11NoCQitfDNyyDQRotbEn |
 
+결정 목록(`04-planning/DECISIONS_REQUIRED.md`)은 읽기용 페이지로도 올려 두었습니다: https://claude.ai/artifact/LKwdaPYEExPrbAUPraoGNR (원본은 md, 바뀌면 페이지를 다시 올립니다)
+
 > 기획서 §09에 `docs/fsd.md`라는 경로가 남아 있습니다. 파일은 `02-architecture/FSD.md`로 옮겼습니다. 다음 기획서 개정 때 아티팩트와 복사본을 함께 고칩니다.
 
 ## 개발 문서
