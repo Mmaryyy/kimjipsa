@@ -7,7 +7,7 @@
 | `UNDER_REVIEW` | 검토 중 |
 | `REJECTED` | 채택하지 않기로 한 기술 |
 
-PROPOSED 항목은 `docs/04-planning/DECISIONS_REQUIRED.md`의 결정 번호와 연결한다. 승인되면 확정 표로 옮기고 `ADR/`에 기록한다. 패키지 버전은 프로젝트 초기 세팅 때 정하고 이 문서에 적는다(현재 `package.json` 없음).
+PROPOSED 항목은 `docs/04-planning/DECISIONS_REQUIRED.md`의 결정 번호와 연결한다. 승인되면 확정 표로 옮기고 `ADR/`에 기록한다. P0 설치 버전은 아래에 기록하고 전체 의존성의 정확한 버전은 `package.json`과 `yarn.lock`으로 고정한다.
 
 ## 확정된 스택
 
@@ -21,12 +21,13 @@ PROPOSED 항목은 `docs/04-planning/DECISIONS_REQUIRED.md`의 결정 번호와 
 | AI 제공자 | Claude, Gemini (BYOK, 가정당 하나) | CONFIRMED | `AGENTS.md`, 기획서 §06, §12. 제공자 차이는 어댑터 한 겹으로 감쌈 |
 | 외부 연동 | Google Calendar API (읽기+쓰기, M3) | CONFIRMED | CAL-15 |
 | 폴더 구조 | Feature-Sliced Design | CONFIRMED | `AGENTS.md`, 기획서 §09. 상세는 `FSD.md` |
-| 경계 강제 | 린트 규칙(레이어·슬라이스·public API) | CONFIRMED | 기획서 §09. 도구는 아래 `eslint-plugin-boundaries` |
+| 경계 강제 | `eslint-plugin-boundaries` 7.2.0 | CONFIRMED | ADR-0008, FSD.md §7. 레이어·슬라이스·public API와 entity `@x` 타입 예외 |
 | 포매터 | Prettier | CONFIRMED | `AGENTS.md`(`yarn format` / `format:check`), `CODING_STANDARDS.md` §8 |
 | 패키지 매니저 | Yarn 4, `nodeLinker: node-modules` | CONFIRMED | ADR-0007. corepack + `packageManager` 필드로 버전 고정 |
 | 언어 | TypeScript (strict) | CONFIRMED | ADR-0004 (DEC-002) |
 | 스타일링 | Tailwind CSS + `class-variance-authority` + `cn()` | CONFIRMED | ADR-0004. 테마는 `docs/design/tokens.css`의 CSS 변수를 가리킴 |
 | UI 프리미티브 | shadcn/ui (Radix 기반) | CONFIRMED | ADR-0004. 외형은 `docs/design/HANDOFF.md`에 맞춤 |
+| 아이콘 | `lucide-react` (shadcn/ui 기본 아이콘 라이브러리) | CONFIRMED | 사용자 결정(2026-10-15, P0 코드 리뷰 r002-f1): shadcn 기본값을 따르고 바꾸지 않는다. `components.json`의 `iconLibrary: "lucide"`. P1 이후 아이콘을 쓰는 컴포넌트에서 사용 |
 | 날짜 | date-fns, 타임존 `Asia/Seoul` 고정(MVP) | CONFIRMED | ADR-0004 |
 | 서버 상태 | TanStack Query + Supabase Realtime 구독으로 캐시 갱신 | CONFIRMED | ADR-0005 (DEC-006) |
 | 검증 | Zod (서버 라우트·클라이언트 공유 스키마) | CONFIRMED | ADR-0005 |
@@ -43,7 +44,6 @@ PROPOSED 항목은 `docs/04-planning/DECISIONS_REQUIRED.md`의 결정 번호와 
 | 예약 작업 | Supabase `pg_cron`(+ Edge Function/DB 함수) 또는 Vercel Cron | UNDER_REVIEW | 사용자별 아침 요약 시각, 일정별 시작 전 알림, 5분 무활동 후 기억 요약, 90일 삭제를 처리할 스케줄러가 필요. Vercel 무료 플랜 Cron은 빈도 제한이 있으므로 플랜 확인 필요 | 외부 스케줄러 | 가장 큰 미결 인프라 | DEC-004 |
 | AI 호출 계층 | 직접 어댑터(Claude/Gemini 공식 SDK 또는 REST를 `AiProvider` 인터페이스로 감쌈) | PROPOSED | 지원이 두 곳뿐이라 얇은 어댑터로 충분(기획서 §09). 도구 호출·OCR 차이는 어댑터 안에서 흡수 | Vercel AI SDK | 제공자별 도구 호출 형식 차이를 직접 맞춰야 함 | DEC-012 |
 | 키 암호화 | 서버에서 AES-GCM 등 인증 암호화, 마스터 키는 환경 변수 / 또는 Supabase Vault | UNDER_REVIEW | 요구는 "서버에서 암호화 저장, 화면엔 끝자리만"(ACC-08) | pgsodium, KMS | 키 교체·유출 대응 절차 필요. 보안 항목이라 승인 필수 | DEC-003 |
-| 린트 경계 도구 | `eslint-plugin-boundaries` | PROPOSED | `FSD.md` §7이 이 플러그인을 가정. 버전 고정, `error` 수준 | `@feature-sliced/eslint-config`, steiger | canary 코드로 규칙 검증 필요 | - |
 | 오류 모니터링 | 미정 | PENDING | 기획서 §11이 "에러 모니터링"을 요구하지만 도구 언급 없음 | Sentry 등 | 외부 서비스 비용·개인정보 | DEC-013 |
 | 파일 저장소 | 미정 | PENDING | 영수증 이미지(M3, INV-17)를 저장할지 처리 후 폐기할지 미정 | Supabase Storage | 개인정보 | DEC-011 |
 
@@ -61,3 +61,12 @@ PROPOSED 항목은 `docs/04-planning/DECISIONS_REQUIRED.md`의 결정 번호와 
 
 - 브라우저는 로그인과 실시간 구독만 Supabase에 직접 연결한다. 그 외 AI, 구글 캘린더, 권한 필터링이 필요한 조회는 서버 라우트를 거친다. (기획서 §09)
 - 데이터는 항상 요청자 권한으로 걸러서 내려보낸다. (`AGENTS.md`)
+
+## P0 설치 버전
+
+- Yarn 4.18.1 (`nodeLinker: node-modules`), Node.js 22.12 이상
+- Next.js 16.4.1, React 19.3.1, TypeScript 6.0.3 (`strict`)
+- Tailwind CSS 4.3.3, CVA 0.7.1, shadcn/ui 수동 초기화(`components.json`)
+- ESLint 9.39.5, eslint-plugin-boundaries 7.2.0, Prettier 3.9.10
+- Vitest 5.0.4, Testing Library React 16.3.3, Playwright 1.64.1
+- date-fns·TanStack Query·Zod·Supabase는 사용하는 Phase에서 설치한다.

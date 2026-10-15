@@ -1,0 +1,11 @@
+node_modules
+.next
+.yarn
+.corepack-bin
+yarn.lock
+next-env.d.ts
+playwright-report
+test-results
+coverage
+.playwright-mcp
+docs/

@@ -30,7 +30,7 @@
 
 - **모드:** 기본은 `prefers-color-scheme`를 따르고, `html[data-theme="light" | "dark"]`로 강제할 수 있다(설정 > 화면 모드). 다크 값은 `[data-theme="dark"]` 블록과 `@media (prefers-color-scheme: dark)` 블록에 같은 값으로 두 번 들어 있다. 옮길 때 둘을 함께 맞춘다.
 - **층:** ① Apple 원본 `--sys-*` → ② Apple 시맨틱 `--label-*`, `--bg-*`, `--fill-*` → ③ 김집사 별칭 `--accent`, `--status-*`, `--cat-*`, `--bot`. 컴포넌트는 ②·③만 쓴다.
-- **서체:** 스위트(Sweet/SUITE, 눈누 1150) 웹폰트. `@font-face`는 jsDelivr WOFF2를 쓰고 있다. 셀프 호스팅할지는 구현 시 정한다.
+- **서체:** 스위트(Sweet/SUITE, 눈누 1150) 웹폰트. `@font-face`는 jsDelivr WOFF2를 쓰고, 셀프 호스팅하지 않기로 했다(사용자 결정, 2026-10-15).
 
 ### 3.1 상태 variant — `success · info · warning · error`
 
@@ -131,5 +131,4 @@
 
 - 라이트 모드 success·warning 채움 버튼은 흰 글자 대비가 약 2:1로 낮다. 라이트도 tinted로 바꿀지 정해야 한다.
 - `caption-xs`(11px)는 아직 쓰는 화면이 없다. 하단 탭 바 라벨은 지금 10px로 따로 지정되어 있다.
-- 스위트 웹폰트를 CDN으로 쓸지 셀프 호스팅할지
 - 접근성 등급 목표 (`DESIGN_SYSTEM.md` §6 `PENDING` 그대로)

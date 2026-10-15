@@ -1,0 +1,14 @@
+node_modules/
+.next/
+out/
+.yarn/
+.corepack-bin/
+*.tsbuildinfo
+next-env.d.ts
+.env*
+!.env.example
+coverage/
+playwright-report/
+test-results/
+.playwright-mcp/
+.DS_Store

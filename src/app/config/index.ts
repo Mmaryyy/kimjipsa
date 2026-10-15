@@ -1,0 +1,1 @@
+export { themeBackground } from "./theme";
