@@ -28,6 +28,7 @@
 |                    | `DATA_MODEL.md`           | 엔티티, 필드, 관계, 제약, 데이터 공백                                                           |
 |                    | `ADR/`                    | 승인된 기술 결정 기록                                                                           |
 | `03-guidelines/`   | `CODING_STANDARDS.md`     | 코딩 표준(코드 작업 때만 읽음)                                                                  |
+|                    | `COMPONENT_NAMING.md`     | 컴포넌트 유형별 네이밍, 시맨틱 HTML·접근성, 구현 전후 확인(코드 작업 때만 읽음)                  |
 |                    | `DESIGN_SYSTEM.md`        | UI/UX 원칙, 화면 패턴, 상태 UI (토큰은 `design/` 참고)                                          |
 |                    | `API_CONVENTIONS.md`      | 서버 라우트·API 규칙                                                                            |
 |                    | `STATE_MANAGEMENT.md`     | 상태 종류별 기준                                                                                |

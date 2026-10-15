@@ -22,20 +22,20 @@
 
 필요한 문서만 읽는다. 요구사항 원문은 항상 `docs/기능명세.html`이 우선이고 `REQUIREMENTS.md`는 색인이다.
 
-| 작업 | 읽을 문서 |
-| --- | --- |
-| 신규 기능 | `docs/01-project/REQUIREMENTS.md`, 명세 원문, `docs/02-architecture/ARCHITECTURE.md` |
-| 파일 생성·이동, 코드 위치 결정 | `docs/02-architecture/FSD.md` |
-| 코드 작성·수정 (기획·문서 작업에는 읽지 않음) | `docs/03-guidelines/CODING_STANDARDS.md` |
-| UI·컴포넌트 | `docs/03-guidelines/DESIGN_SYSTEM.md`, `CODING_STANDARDS.md` |
-| API·서버 라우트 | `docs/03-guidelines/API_CONVENTIONS.md` |
-| 스키마·데이터 | `docs/02-architecture/DATA_MODEL.md` |
-| 상태 관리 | `docs/03-guidelines/STATE_MANAGEMENT.md` |
-| 테스트 | `docs/03-guidelines/TESTING.md` |
-| 기술 변경·도입 | `docs/02-architecture/TECH_STACK.md`, `ADR/` |
-| 용어 | `docs/01-project/GLOSSARY.md` |
-| 일정·우선순위 | `docs/04-planning/ROADMAP.md` |
-| 미결 사항 | `docs/04-planning/DECISIONS_REQUIRED.md` |
+| 작업                                          | 읽을 문서                                                                                                       |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| 신규 기능                                     | `docs/01-project/REQUIREMENTS.md`, 명세 원문, `docs/02-architecture/ARCHITECTURE.md`                            |
+| 파일 생성·이동, 코드 위치 결정                | `docs/02-architecture/FSD.md`                                                                                   |
+| 코드 작성·수정 (기획·문서 작업에는 읽지 않음) | `docs/03-guidelines/CODING_STANDARDS.md`                                                                        |
+| UI·컴포넌트                                   | `docs/03-guidelines/DESIGN_SYSTEM.md`, `CODING_STANDARDS.md`, `COMPONENT_NAMING.md` (컴포넌트 이름·시맨틱 HTML) |
+| API·서버 라우트                               | `docs/03-guidelines/API_CONVENTIONS.md`                                                                         |
+| 스키마·데이터                                 | `docs/02-architecture/DATA_MODEL.md`                                                                            |
+| 상태 관리                                     | `docs/03-guidelines/STATE_MANAGEMENT.md`                                                                        |
+| 테스트                                        | `docs/03-guidelines/TESTING.md`                                                                                 |
+| 기술 변경·도입                                | `docs/02-architecture/TECH_STACK.md`, `ADR/`                                                                    |
+| 용어                                          | `docs/01-project/GLOSSARY.md`                                                                                   |
+| 일정·우선순위                                 | `docs/04-planning/ROADMAP.md`                                                                                   |
+| 미결 사항                                     | `docs/04-planning/DECISIONS_REQUIRED.md`                                                                        |
 
 문서 전체 목록과 아티팩트 URL은 `docs/README.md`.
 
