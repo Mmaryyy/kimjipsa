@@ -38,7 +38,16 @@ const noColorLiterals = {
   create(context) {
     function check(node, value) {
       if (typeof value !== "string") return;
-      if (colorSyntax.test(value) || names.has(value.trim().toLowerCase())) {
+      const namedColor = names.has(value.trim().toLowerCase());
+      // variant/tone의 이름은 색 값이 아니라 공용 UI의 의미별 API예요.
+      const attribute =
+        node.parent?.type === "JSXAttribute" ? node.parent.name.name : null;
+      const semanticVariant = attribute === "variant" || attribute === "tone";
+      const typeOnly = node.parent?.type === "TSLiteralType";
+      if (
+        colorSyntax.test(value) ||
+        (namedColor && !semanticVariant && !typeOnly)
+      ) {
         context.report({ node, messageId: "literal" });
       }
     }

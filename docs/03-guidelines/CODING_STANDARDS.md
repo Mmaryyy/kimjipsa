@@ -9,6 +9,7 @@
 - 폴더 구조는 FSD를 따른다. 레이어, 슬라이스, import 방향, Next.js 연결은 `docs/02-architecture/FSD.md`를 기준으로 한다. 파일을 새로 만들거나 옮길 때 그 문서를 읽는다.
 - 슬라이스 안의 데이터 흐름은 `api → model → ui`다. 컴포넌트가 Supabase 클라이언트나 `fetch`를 직접 다루지 않고 `model`의 훅을 거친다. `api/`는 `api.ts`(호출), `type.ts`(요청·응답 타입)로 나눈다.
 - 슬라이스 밖에서는 항상 `index.ts`(public API)로 import한다.
+- `node:*`를 쓰는 서버 전용 모듈은 클라이언트가 쓰는 코드와 같은 배럴(`index.ts`)에서 내보내지 않는다.
 - 슬라이스 안에서도 폴더는 기술 종류보다 개념과 책임으로 나눈다. 복합 UI는 `compare/`, `result/`, `common/`처럼 읽히게 묶는다.
 - 긴 컴포넌트에서 독립된 섹션, 반복되는 행, 자체 입력 로직이 있는 부분은 분리한다. JSX 한두 줄까지 형식적으로 쪼개지는 않는다.
 - 범용 컴포넌트는 쓰는 쪽 도메인을 알지 않는다. 화면마다 다른 조건은 `if`가 아니라 범용 prop(`size`, `appearance`, `tone`, slot)으로 받는다.
@@ -58,11 +59,13 @@
 
 Tailwind + CVA + shadcn/ui 기준이다(ADR-0004).
 
-- `size`, `selected`, `disabled`, `pressed`, 의미별 색(`tone`)처럼 시각적 variant는 `class-variance-authority`로 선언하고 `*.variants.ts`에 둔다. 라벨, 옵션 같은 데이터는 `*.constants.ts`에 두고 둘을 한 파일에 섞지 않는다.
+- `size`, `selected`, `disabled`, `pressed`, 의미별 색(`tone`)처럼 시각적 variant는 `class-variance-authority`로 선언하고 `*.variants.ts`에 둔다. 라벨, 옵션 같은 데이터는 `*.constants.ts`에 두고 둘을 한 파일에 섞지 않는다. variant 이름 목록은 데이터가 아니다. CVA 선언이 단일 원천이므로 타입은 `VariantProps`로 뽑고, 같은 키를 `*.constants.ts`에 다시 적지 않는다. 화면이 variant를 순회해야 하면 `Record<Variant, ...>`처럼 키 누락을 컴파일러가 잡는 형태로 그 화면 쪽에 둔다.
 - JSX 안에서 variant 스타일을 긴 삼항이나 조건부 클래스 조합으로 반복하지 않는다.
 - CVA는 외형을 정하고, 문구와 행동은 props나 도메인 매핑이 정한다.
+- `kj-*` CSS는 `components` 레이어에 두고, 호출부에서 Tailwind 유틸리티로 덮어쓴다.
 - 클래스 합치기는 `cn()`(`clsx` + `tailwind-merge`)을 쓴다.
 - 색·간격은 디자인 토큰 파일의 토큰만 쓰고, TSX나 별도 CSS에 값을 중복 정의하지 않는다. 토큰 원본은 `docs/design/tokens.css`이고, 앱 안의 토큰 파일은 `src/app/styles/tokens.css`이며, Tailwind 테마는 `src/app/styles/globals.css`에서 CSS 변수를 참조한다.
+- 아이콘(svg)의 색은 불투명 토큰(`--icon-*`)을 쓴다. 반투명 색은 선이 겹치는 곳이 진해져 얼룩져 보인다.
 - 상태 색은 `variant`(`success · info · warning · error`), 글자 스타일은 타이포 `variant`(`docs/design/HANDOFF.md` §3)로 고른다.
 
 ## 7. UI 작성

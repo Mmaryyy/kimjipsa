@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const title = "p0-5 빈 화면에 라이트·다크 토큰을 적용해요 (기능 SCN 연결 전)";
+const title = "p1-5 앱 셸에 라이트·다크 토큰을 적용해요 (기능 SCN 연결 전)";
 
 test(title, async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 780 });
@@ -9,7 +9,7 @@ test(title, async ({ page }) => {
 
   const main = page.getByRole("main");
   await expect(
-    page.getByRole("heading", { name: "김집사", level: 1 }),
+    page.getByRole("heading", { name: "오늘", level: 1 }),
   ).toBeVisible();
   await expect
     .poll(() =>
@@ -40,3 +40,30 @@ test(title, async ({ page }) => {
   );
   expect(hasHorizontalOverflow).toBe(false);
 });
+
+for (const width of [375, 1280]) {
+  test(`P1 ${width}px 메뉴 표시 (기능 SCN 연결 전)`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto("/");
+    const bottom = page.getByRole("navigation", {
+      name: "하단 메뉴",
+      includeHidden: true,
+    });
+    const sidebar = page.getByRole("navigation", {
+      name: "주 메뉴",
+      includeHidden: true,
+    });
+    await expect(page.getByRole("main")).toBeVisible();
+    await expect(page.getByRole("complementary")).toHaveCount(0);
+    if (width === 375) {
+      await expect(bottom).toBeVisible();
+      await expect(sidebar).toBeHidden();
+    } else {
+      await expect(sidebar).toBeVisible();
+      await expect(bottom).toBeHidden();
+      await expect(
+        sidebar.getByRole("link", { name: "김집사", exact: true }),
+      ).toBeVisible();
+    }
+  });
+}

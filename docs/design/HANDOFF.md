@@ -30,16 +30,18 @@
 
 - **모드:** 기본은 `prefers-color-scheme`를 따르고, `html[data-theme="light" | "dark"]`로 강제할 수 있다(설정 > 화면 모드). 다크 값은 `[data-theme="dark"]` 블록과 `@media (prefers-color-scheme: dark)` 블록에 같은 값으로 두 번 들어 있다. 옮길 때 둘을 함께 맞춘다.
 - **층:** ① Apple 원본 `--sys-*` → ② Apple 시맨틱 `--label-*`, `--bg-*`, `--fill-*` → ③ 김집사 별칭 `--accent`, `--status-*`, `--cat-*`, `--bot`. 컴포넌트는 ②·③만 쓴다.
+- **배경막:** `--backdrop`은 시트·확인창 뒤에 쓰며 모드와 무관하게 `rgba(0, 0, 0, 0.32)`를 유지한다.
 - **서체:** 스위트(Sweet/SUITE, 눈누 1150) 웹폰트. `@font-face`는 jsDelivr WOFF2를 쓰고, 셀프 호스팅하지 않기로 했다(사용자 결정, 2026-10-15).
 
 ### 3.1 상태 variant — `success · info · warning · error`
 
 | 토큰                                  | 용도                                                                |
 | ------------------------------------- | ------------------------------------------------------------------- |
+| `--icon-secondary` / `--icon-tertiary` | 아이콘용 불투명 색. 반투명 색은 선이 겹치는 곳이 진해져 아이콘이 얼룩져 보이므로 사용한다. |
 | `--{v}`                               | 채우기·아이콘·점                                                    |
 | `--{v}-text`                          | 글자 (Apple 대비 강화 값)                                           |
 | `--{v}-soft`                          | 배너 배경 틴트                                                      |
-| `--{v}-button-bg` / `--{v}-button-fg` | 버튼. 라이트는 채운 색 + 흰 글자, 다크는 tinted(20% 틴트 + 색 글자) |
+| `--{v}-button-bg` / `--{v}-button-fg` | 버튼. 라이트는 채운 색 + 흰 글자, 다크는 tinted(20% 틴트 + 색 글자). 라이트 success·warning 채움 버튼의 낮은 대비(약 2:1)는 알고도 이 디자인을 유지하기로 했다(사용자 결정, 2026-10-15) |
 
 모드가 고정된 원본 값(`--success-light`, `--success-dark`, `--success-text-light` …)은 `DESIGN.md` §2.4 표에 있다. 화면 코드에서는 원본 값을 직접 쓰지 않는다.
 
@@ -63,12 +65,12 @@
 | `.banner[data-variant]`                               | `Banner`                                         | `variant` + 아이콘 + 굵은 첫 문장                                     |
 | `.btn`, `.btn[data-variant]`                          | `Button`                                         | `variant`: primary(accent)·gray·danger·상태 4종 / `size`: sm·md·block |
 | `.text-btn`                                           | `TextButton`                                     | `tone`: default·danger / `size`                                       |
-| `.segmented`                                          | `Segmented`                                      | 월·주·일, 관리 방식                                                   |
+| `.segmented`                                          | `SegmentedControl`                                      | 월·주·일, 관리 방식                                                   |
 | `.filters`                                            | `FilterTabs`                                     | 밑줄 선택, 가로 스크롤                                                |
 | `.switch`, `.check`                                   | `Switch`, `Checkbox`                             | iOS 모양                                                              |
 | `.stepper`                                            | `QuantityStepper`                                | INV-15                                                                |
-| `.field-row`                                          | `FieldRow`                                       | 라벨 왼쪽 · 값 오른쪽, `invalid`                                      |
-| `.list > li`, `.row`, `.group-label`, `.section-head` | `List`, `ListRow`, `GroupLabel`, `SectionHeader` | 구분선 없음                                                           |
+| `.field-row`                                          | `FormFieldRow`                                       | 라벨 왼쪽 · 값 오른쪽, `invalid`                                      |
+| `.list > li`, `.row`, `.group-label`, `.section-head` | `List`, `ListRow`, `ListGroupLabel`, `SectionHeader` | 구분선 없음                                                           |
 | `.cat.*`                                              | `CategoryDot`                                    | 사용자가 고른 색 (`--sys-*` 중 하나)                                  |
 | `dialog.alert`, `KJ.confirm()`                        | `ConfirmDialog`                                  | 제목에 대상 이름. 일정·품목·일괄 삭제·탈퇴 공용                       |
 | `dialog.sheet`                                        | `Sheet`                                          | 모바일 하단 시트, ≥768px 가운데 520px 패널                            |
@@ -129,6 +131,10 @@
 
 ## 9. 아직 정하지 않은 것
 
-- 라이트 모드 success·warning 채움 버튼은 흰 글자 대비가 약 2:1로 낮다. 라이트도 tinted로 바꿀지 정해야 한다.
 - `caption-xs`(11px)는 아직 쓰는 화면이 없다. 하단 탭 바 라벨은 지금 10px로 따로 지정되어 있다.
 - 접근성 등급 목표 (`DESIGN_SYSTEM.md` §6 `PENDING` 그대로)
+
+## 10. 프로토타입과 의도적으로 다른 점
+
+- 확인 대화상자 버튼은 공용 `Button`의 gray·danger variant를 재사용한다.
+- 필터 탭의 선택 밑줄은 HANDOFF 명세를 따른다.

@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @import "./tokens.css";
+@import "../../shared/ui/styles.css" layer(components);
+@import "./shell.css" layer(components);
 
 @theme inline {
   --color-*: initial;
@@ -12,7 +14,7 @@
   --color-popover: var(--bg-tertiary);
   --color-popover-foreground: var(--label);
   --color-primary: var(--accent);
-  --color-primary-foreground: var(--info-button-fg);
+  --color-primary-foreground: var(--on-accent);
   --color-secondary: var(--fill-secondary);
   --color-secondary-foreground: var(--label);
   --color-muted: var(--fill-tertiary);
@@ -109,5 +111,32 @@
     line-height: var(--type-body-lh);
     font-weight: var(--type-body-weight);
     letter-spacing: var(--type-body-tracking);
+  }
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    -webkit-font-smoothing: antialiased;
+  }
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+  button {
+    cursor: pointer;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--label-placeholder);
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
   }
 }

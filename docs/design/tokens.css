@@ -50,6 +50,7 @@
      --{v}-soft-light / --{v}-soft-dark  배경 틴트 (라이트 14% · 다크 20%)
    화면에서는 아래 모드별 시맨틱 토큰(--{v}, --{v}-text …)을 쓴다. */
 :root {
+  --backdrop: rgba(0, 0, 0, 0.32);
   --success-light: #34c759;
   --success-dark: #30d158;
   --success-text-light: #248a3d;
@@ -120,12 +121,15 @@
   /* Labels */
   --label: #1d1d1f; /* Apple #000000 → 김집사 조정 */
   --label-secondary: rgba(60, 60, 67, 0.6);
+  --icon-secondary: #86868b;
+  --icon-tertiary: #bebec2;
   --label-tertiary: rgba(60, 60, 67, 0.3);
   --label-quaternary: rgba(60, 60, 67, 0.18);
   --label-placeholder: rgba(60, 60, 67, 0.3);
   --link: #007aff;
 
   /* Backgrounds */
+  --control-selected-bg: var(--bg);
   --bg: #f6f6f8; /* Apple #FFFFFF → 약간 탁한 쿨 그레이 */
   --bg-secondary: #ededf0;
   --bg-tertiary: #fbfbfc;
@@ -210,11 +214,14 @@
 
   --label: #e5e5ea; /* Apple #FFFFFF → 김집사 조정 */
   --label-secondary: rgba(235, 235, 245, 0.6);
+  --icon-secondary: #97979e;
+  --icon-tertiary: #59595d;
   --label-tertiary: rgba(235, 235, 245, 0.3);
   --label-quaternary: rgba(235, 235, 245, 0.16);
   --label-placeholder: rgba(235, 235, 245, 0.3);
   --link: #0984ff;
 
+  --control-selected-bg: var(--sys-gray3);
   --bg: #1a1a1c; /* Apple #000000 → 살짝 띄운 차콜 */
   --bg-secondary: #222225;
   --bg-tertiary: #2c2c2f;
@@ -293,10 +300,13 @@
     --sys-gray6: #1c1c1e;
     --label: #e5e5ea;
     --label-secondary: rgba(235, 235, 245, 0.6);
+    --icon-secondary: #97979e;
+    --icon-tertiary: #59595d;
     --label-tertiary: rgba(235, 235, 245, 0.3);
     --label-quaternary: rgba(235, 235, 245, 0.16);
     --label-placeholder: rgba(235, 235, 245, 0.3);
     --link: #0984ff;
+    --control-selected-bg: var(--sys-gray3);
     --bg: #1a1a1c;
     --bg-secondary: #222225;
     --bg-tertiary: #2c2c2f;
@@ -350,6 +360,9 @@
   --on-warning: #ffffff;
   --on-error: #ffffff;
 
+  --shadow-control: 0 1px 2px rgba(0, 0, 0, 0.12);
+  --shadow-navigation: 0 -8px 24px -18px rgba(0, 0, 0, 0.18);
+
   /* Action */
   --accent: var(--sys-blue);
   --accent-text: var(--sys-blue);
@@ -388,7 +401,8 @@
 
   /* Typography — 스위트(Sweet / SUITE, 눈누 1150) on Apple text-style sizes.
      One family, weights 400 / 500 / 600 / 700 only. */
-  --font-sans: "Sweet", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+  --font-sans:
+    "Sweet", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
     system-ui, "Segoe UI", sans-serif;
   --font-display: var(--font-sans);
   --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
@@ -473,6 +487,7 @@
   --type-caption-xs-tracking: 0.02em;
 
   /* Spacing (4pt grid) & shape */
+  --sp-half: 2px;
   --sp-1: 4px;
   --sp-2: 8px;
   --sp-3: 12px;
@@ -490,6 +505,7 @@
   --hairline: 0.5px solid var(--separator);
   --hit: 44px; /* 터치 영역 기준 (보이는 크기는 아래 컴팩트 토큰) */
   /* Compact control sizes — 보이는 높이. 작은 컨트롤은 ::after로 터치 영역을 44px까지 넓힌다. */
+  --ctl-h-xs: 26px;
   --ctl-h-sm: 28px;
   --ctl-h: 34px;
   --ctl-h-lg: 42px;

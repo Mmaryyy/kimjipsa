@@ -1,1 +1,1 @@
-export { themeBackground } from "./theme";
+export { appNavigation } from "./navigation.constants";

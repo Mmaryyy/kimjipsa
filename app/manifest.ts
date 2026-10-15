@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-import { themeBackground } from "@/app/config";
+import { themeBackground } from "@/app/config/theme.server";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
