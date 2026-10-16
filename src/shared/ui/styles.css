@@ -438,3 +438,14 @@
 .kj-checkbox[data-state="indeterminate"] .kj-checkbox-minus {
   display: block;
 }
+
+.kj-input {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--hit);
+  padding: var(--sp-2) var(--sp-3);
+  border: 0;
+  border-radius: var(--r-control);
+  background: var(--fill-tertiary);
+  color: var(--label);
+}

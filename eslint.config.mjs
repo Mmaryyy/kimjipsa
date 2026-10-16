@@ -77,6 +77,15 @@ export default defineConfig([
                 to: element(layers, { fileInternalPath: "!index.{ts,tsx}" }),
               },
             },
+            // 서버 API는 클라이언트 배럴과 분리한 공개 진입점만 써요.
+            {
+              from: element("app"),
+              allow: {
+                to: element("entities", {
+                  fileInternalPath: "index.server.ts",
+                }),
+              },
+            },
             // entities/<제공자>/@x/<소비자>.ts에
             // 노출한 타입만 예외예요.
             {

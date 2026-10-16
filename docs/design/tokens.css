@@ -50,6 +50,10 @@
      --{v}-soft-light / --{v}-soft-dark  배경 틴트 (라이트 14% · 다크 20%)
    화면에서는 아래 모드별 시맨틱 토큰(--{v}, --{v}-text …)을 쓴다. */
 :root {
+  --oauth-kakao-bg: #fee500;
+  --oauth-google-bg: #ffffff;
+  --oauth-google-border: #747775;
+  --oauth-google-fg: #1f1f1f;
   --backdrop: rgba(0, 0, 0, 0.32);
   --success-light: #34c759;
   --success-dark: #30d158;
