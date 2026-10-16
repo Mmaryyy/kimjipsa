@@ -1,15 +1,28 @@
 /* 공용 컨트롤은 토큰으로만 색을 정하고, 목록·섹션에는 면과 선을 넣지 않아요. */
 .kj-page-header {
-  padding-block: var(--sp-3) var(--sp-2);
+  padding-block: var(--sp-4) var(--sp-2);
+}
+.kj-page-header-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
 }
 .kj-page-header-toolbar {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
   gap: var(--sp-2);
-  min-height: var(--row-min);
+  min-width: 0;
+  max-width: 60%;
+}
+.kj-page-header-toolbar > * {
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 .kj-page-header h1 {
-  margin-top: 2px;
+  flex: 1;
+  min-width: 0;
 }
 .kj-text {
   overflow-wrap: anywhere;
@@ -330,7 +343,7 @@
 .kj-toast-viewport {
   position: fixed;
   z-index: 90;
-  bottom: calc(96px + env(safe-area-inset-bottom));
+  bottom: calc(var(--bottom-navigation-offset) + env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
   width: max-content;

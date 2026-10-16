@@ -11,10 +11,12 @@ export function PageHeader({
 }) {
   return (
     <header className="kj-page-header">
-      <div className="kj-page-header-toolbar">{actions}</div>
-      <Text as="h1" variant="display">
-        {title}
-      </Text>
+      <div className="kj-page-header-row">
+        <Text as="h1" variant="display">
+          {title}
+        </Text>
+        {actions && <div className="kj-page-header-toolbar">{actions}</div>}
+      </div>
       {subtitle && (
         <Text as="p" variant="body-sm" className="text-muted-foreground">
           {subtitle}

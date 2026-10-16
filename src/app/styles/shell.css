@@ -1,3 +1,16 @@
+:root {
+  --bottom-navigation-icon-size: calc(var(--sp-6) + var(--sp-half));
+  --bottom-navigation-height: calc(
+    max(
+        var(--hit),
+        var(--bottom-navigation-icon-size) + var(--sp-1) + var(--type-body-lh)
+      ) +
+      var(--sp-1) * 2
+  );
+  --bottom-navigation-offset: calc(
+    var(--bottom-navigation-height) + var(--sp-8)
+  );
+}
 .kj-app-layout {
   min-height: 100dvh;
 }
@@ -6,7 +19,8 @@
   min-width: 0;
   max-width: var(--content-max);
   margin-inline: auto;
-  padding: 0 var(--sp-4) calc(96px + env(safe-area-inset-bottom));
+  padding: 0 var(--sp-4)
+    calc(var(--bottom-navigation-offset) + env(safe-area-inset-bottom));
 }
 .kj-bottom-navigation {
   position: fixed;
@@ -14,16 +28,16 @@
   z-index: 40;
   background: var(--bg-grouped-secondary);
   box-shadow: var(--shadow-navigation);
-  padding: var(--sp-2) var(--sp-1)
-    calc(var(--sp-2) + env(safe-area-inset-bottom));
+  padding: var(--sp-1) var(--sp-1)
+    calc(var(--sp-1) + env(safe-area-inset-bottom));
 }
 .kj-bottom-navigation ul {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 .kj-bottom-navigation a svg {
-  width: var(--sp-6);
-  height: var(--sp-6);
+  width: var(--bottom-navigation-icon-size);
+  height: var(--bottom-navigation-icon-size);
 }
 .kj-bottom-navigation a {
   display: flex;
