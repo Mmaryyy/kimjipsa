@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSignOut } from "@/features/account";
-import { accountRoutes } from "@/shared/config";
+import { accountRoutes, eventRoutes } from "@/shared/config";
 import {
   Button,
   Text,
@@ -19,6 +19,9 @@ export function AppearanceSettingsPage() {
       <PageHeader title="설정" />
       <Link href={accountRoutes.family} className="text-primary">
         가정·구성원·표시 이름 관리하기
+      </Link>
+      <Link href={eventRoutes.categories} className="text-primary">
+        일정 카테고리 관리하기
       </Link>
       <section>
         <SectionHeader title="화면 모드" />

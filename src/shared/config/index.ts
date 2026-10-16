@@ -9,3 +9,9 @@ export {
   onboardingPath,
 } from "./account-routes.constants";
 export { getSupabaseConfig } from "./supabase-config";
+export {
+  eventRoutes,
+  eventApiRoutes,
+  eventApiPath,
+  eventCategoryApiPath,
+} from "./event-routes.constants";

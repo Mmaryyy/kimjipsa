@@ -1,4 +1,4 @@
-// P2 migration contract. Regenerate with `supabase gen types typescript --local`
+// P2/P3 migration contract. Regenerate with `supabase gen types typescript --local`
 // after applying the migration to a local Supabase instance.
 export type Json =
   | string
@@ -43,6 +43,79 @@ export type Database<
 > = {
   public: {
     Tables: {
+      event_categories: Table<
+        {
+          id: string;
+          family_id: string;
+          name: string;
+          color: string;
+          sort_order: number;
+        },
+        {
+          id?: string;
+          family_id: string;
+          name: string;
+          color: string;
+          sort_order: number;
+        }
+      >;
+      events: Table<
+        {
+          id: string;
+          family_id: string;
+          owner_id: string | null;
+          visibility: string;
+          start_date: string;
+          end_date: string;
+          start_time: string | null;
+          end_time: string | null;
+          is_all_day: boolean;
+          kind: string;
+        },
+        {
+          id?: string;
+          family_id: string;
+          owner_id: string;
+          visibility?: string;
+          start_date: string;
+          end_date: string;
+          start_time: string | null;
+          end_time: string | null;
+          is_all_day?: boolean;
+          kind?: string;
+        }
+      >;
+      event_details: Omit<
+        Table<
+          {
+            event_id: string;
+            family_id: string;
+            title: string;
+            place: string;
+            memo: string;
+            category_id: string;
+          },
+          {
+            event_id: string;
+            family_id: string;
+            title: string;
+            place?: string;
+            memo?: string;
+            category_id: string;
+          }
+        >,
+        "Relationships"
+      > & {
+        Relationships: [
+          {
+            foreignKeyName: "event_details_event_id_family_id_fkey";
+            columns: ["event_id", "family_id"];
+            isOneToOne: true;
+            referencedRelation: "events";
+            referencedColumns: ["id", "family_id"];
+          },
+        ];
+      };
       users: Table<UserRow<Provider>, UserRow<Provider>>;
       families: Table<FamilyRow, { id?: string; name: string }>;
       memberships: Table<MembershipRow<Role>, MembershipRow<Role>>;
@@ -60,6 +133,36 @@ export type Database<
     };
     Views: { [_ in never]: never };
     Functions: {
+      save_event: {
+        Args: {
+          event_id: string | null;
+          event_title: string;
+          event_place: string;
+          event_memo: string;
+          event_category_id: string;
+          event_visibility: string;
+          event_start_date: string;
+          event_end_date: string;
+          event_start_time: string | null;
+          event_end_time: string | null;
+          event_is_all_day: boolean;
+        };
+        Returns: string;
+      };
+      delete_event: { Args: { event_id: string }; Returns: undefined };
+      save_event_category: {
+        Args: {
+          category_id: string | null;
+          category_name: string;
+          category_color: string;
+          category_sort_order: number;
+        };
+        Returns: string;
+      };
+      delete_event_category: {
+        Args: { category_id: string };
+        Returns: undefined;
+      };
       complete_profile: {
         Args: {
           display_name: string;

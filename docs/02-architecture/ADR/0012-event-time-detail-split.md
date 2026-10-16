@@ -13,9 +13,9 @@ CAL-04는 배우자의 개인 일정을 희미한 칸으로만 보이게 하고 
 
 ## 최종 결정
 - `events`(시간 정보)와 `event_details`(내용)를 분리하고 1:1로 연결한다(`event_details.event_id`).
-  - `events`: 가정, 작성자(`owner_id`), `visibility`, `starts_at`, `ends_at`, `is_all_day`, `kind`. 가정 구성원이 읽는다. 일정 화면의 Realtime 구독은 이 테이블만 대상으로 한다.
+  - `events`: 가정, 작성자(`owner_id`), `visibility`, `start_date`, `end_date`, 선택 `start_time`·`end_time`, `is_all_day`, `kind`. 가정 구성원이 읽는다. 일정 화면의 Realtime 구독은 이 테이블만 대상으로 한다.
   - `event_details`: `title`, `place`, `memo`와 일정 내용에 해당하는 `category_id`, `remind_before`, `dday_style`, 축하 문구. 읽기 RLS는 "공유 일정이거나 작성자 본인"이다.
-- 개인↔공유 전환(CAL-03)은 `events.visibility`만 바꾼다. 내용 행은 그대로 둔다.
+- 공유→개인 전환은 작성자만 가능하다(2026-10-16 사용자 결정). 개인↔공유 전환(CAL-03)은 `events.visibility`만 바꾼다. 내용 행은 그대로 둔다.
 - 개인 일정 칸에는 시간과 개인 여부만 내려가고, 카테고리 색도 내려가지 않는다(카테고리는 일정 성격을 드러낼 수 있어 내용 테이블에 둔다).
 - 챗봇과 화면은 같은 서버 함수를 쓰며, `event_details`를 요청자 권한으로 읽는다.
 - 검증: 배우자 세션으로 `event_details`를 직접 조회·구독해 개인 일정 내용이 오지 않는 canary 테스트를 둔다.
