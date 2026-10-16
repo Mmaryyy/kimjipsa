@@ -18,6 +18,7 @@
 - 스타일링: Tailwind CSS + `class-variance-authority` + `cn()`(`clsx` + `tailwind-merge`). Tailwind 테마는 `docs/design/tokens.css`를 옮긴 CSS 변수를 가리킨다.
 - UI 프리미티브: shadcn/ui(Radix 기반). 외형은 `docs/design/HANDOFF.md` §4·§6에 맞게 고친다.
 - 날짜: date-fns. 타임존은 MVP에서 `Asia/Seoul` 고정, 날짜 계산은 한 모듈에 모아 나중에 사용자별 타임존으로 넓힐 수 있게 한다.
+  - 2026-10-16: `@date-fns/tz`를 함께 쓴다. 서버(UTC)와 브라우저(KST)가 같은 날짜를 `Asia/Seoul` 기준으로 보게 하기 위해서다. dayjs로 바꾸는 안은 다시 검토했고 date-fns를 유지하기로 했다.
 
 ## 결정 이유
 - 코딩 표준과 디자인 인계 문서가 이미 이 조합을 기준으로 쓰여 있다.

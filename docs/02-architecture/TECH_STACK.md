@@ -38,7 +38,7 @@ PROPOSED 항목은 `docs/04-planning/DECISIONS_REQUIRED.md`의 결정 번호와 
 
 | 영역 | 추천 | 상태 | 추천 이유 | 대안 | 단점·주의 | 결정 |
 | --- | --- | --- | --- | --- | --- | --- |
-| 폼 라이브러리 | React Hook Form | UNDER_REVIEW | 일정·재고·가정 설정 폼이 많음. Zod는 확정(ADR-0005) | 직접 상태 + Zod만 | 폼이 단순하면 과할 수 있음. 일정 등록 폼 구현 전에 다시 정함 | DEC-006 |
+| 폼 라이브러리 | React Hook Form + @hookform/resolvers(Zod) | CONFIRMED | 일정·재고·가정 설정 폼이 많음. Zod는 확정(ADR-0005) | 직접 상태 + Zod만 | 번들에 의존성 2개가 늘어남. 폼이 있는 화면에서만 로드 | DEC-006, ADR-0011 |
 | 클라이언트 전역 상태 | 필요할 때만 entity `model/`에 작은 스토어(예: Zustand) | UNDER_REVIEW | 서버 상태가 대부분이라 전역 스토어 필요가 작음 | Context | 챗봇 창 열림/최소화 등 UI 상태가 후보 | DEC-006 |
 | 웹 푸시 발송 | Web Push 프로토콜(VAPID) + `web-push` 라이브러리, 서버 라우트에서 발송 | PROPOSED | 추가 비용 없음(기획서 §06). iOS는 설치한 PWA만 지원 | FCM | VAPID 키가 시크릿 | DEC-004 |
 | 예약 작업 | Supabase `pg_cron`(+ Edge Function/DB 함수) 또는 Vercel Cron | UNDER_REVIEW | 사용자별 아침 요약 시각, 일정별 시작 전 알림, 5분 무활동 후 기억 요약, 90일 삭제를 처리할 스케줄러가 필요. Vercel 무료 플랜 Cron은 빈도 제한이 있으므로 플랜 확인 필요 | 외부 스케줄러 | 가장 큰 미결 인프라 | DEC-004 |

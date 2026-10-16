@@ -8,15 +8,15 @@
 | DEC-002 | 언어·UI·날짜 스택 | 높음 | 프로젝트 초기화 | CONFIRMED (ADR-0004) |
 | DEC-003 | AI 키 암호화 방식 | 높음 | ACC-08, 챗봇 | PENDING |
 | DEC-004 | 예약 작업(알림·요약·삭제) 실행 방식 | 높음 | CAL-09~11, BOT-12, BOT-14 | PENDING |
-| DEC-005 | 동일 이메일 로그인 수단 분리 | 중간 | ACC-01 | PENDING |
-| DEC-006 | 서버 상태·폼·검증 라이브러리 | 중간 | 데이터 계층 구현 | CONFIRMED (ADR-0005, 폼 라이브러리는 보류) |
+| DEC-005 | 동일 이메일 로그인 수단 분리 | 중간 | ACC-01 | CONFIRMED (ADR-0009) |
+| DEC-006 | 서버 상태·폼·검증 라이브러리 | 중간 | 데이터 계층 구현 | CONFIRMED (ADR-0005, 폼 라이브러리는 ADR-0011) |
 | DEC-007 | 테스트 도구 | 중간 | 테스트 작성 | CONFIRMED (ADR-0006) |
 | DEC-008 | 알림 요구사항의 마일스톤 배치 | 중간 | ROADMAP, M1 범위 | PENDING |
-| DEC-009 | 데이터 모델 공백 | 중간 | 스키마 확정 | PENDING |
+| DEC-009 | 데이터 모델 공백 | 중간 | 스키마 확정 | PENDING (⑤ 결정, 나머지 대기) |
 | DEC-010 | 판정 기준 모호 항목 | 낮음 | INV-16, CART-05, CART-12 | PENDING |
 | DEC-011 | 영수증 이미지 저장 | 낮음(M3) | INV-17 | PENDING |
 | DEC-012 | AI 어댑터 구현 방식 | 낮음(M2) | 챗봇 | PENDING |
-| DEC-013 | 도메인·약관·모니터링·백업 | 중간 | 로그인 심사, 베타 | PENDING |
+| DEC-013 | 도메인·약관·모니터링·백업 | 중간 | 로그인 심사, 베타 | PENDING (P2 범위 결정, 나머지 대기) |
 | DEC-014 | 재고 카테고리 아이콘 | 낮음(M2, P6) | INV-07 스키마·화면 | PENDING |
 
 ---
@@ -95,7 +95,9 @@ Supabase Auth의 자동 연결 설정 조정 / 이메일 대신 제공자 id로 
 ### Impact
 ACC-01, 보안(계정 탈취 가능성), 온보딩 흐름.
 ### Status
-PENDING
+CONFIRMED (ADR-0009)
+### Decision
+사용자 결정(2026-10-15, 권장안): 카카오 동의 항목에서 이메일을 받지 않고, 계정은 제공자 + 제공자 사용자 id로 구분한다. 이메일은 식별·연결에 쓰지 않는다. Supabase 동작(카카오 이메일 없이 로그인되는지, 같은 이메일의 구글과 합쳐지지 않는지)은 P2 초반에 시험해 확인하고, 다르게 동작하면 구현을 멈추고 보고한 뒤 문서를 먼저 고친다.
 
 ## DEC-006
 ### Topic
@@ -109,7 +111,8 @@ TanStack Query + Zod 우선 채택. 폼 라이브러리는 폼이 많은 일정�
 ### Impact
 데이터 계층 구조, 코딩 표준 갱신.
 ### Status
-CONFIRMED (2026-10-14, 권장안 그대로: TanStack Query + Zod. 폼 라이브러리·전역 스토어는 필요할 때 다시 정함) → ADR-0005
+CONFIRMED (2026-10-14, 권장안 그대로: TanStack Query + Zod. 전역 스토어는 필요할 때 다시 정함) → ADR-0005
+폼 라이브러리: CONFIRMED (2026-10-16, React Hook Form + @hookform/resolvers, 기존 폼도 통일) → ADR-0011
 
 ## DEC-007
 ### Topic
@@ -152,6 +155,10 @@ PENDING
 `DATA_MODEL.md`, 마이그레이션.
 ### Status
 PENDING
+### Decided so far
+⑤ 초대의 생성자·수락자(사용자 결정, 2026-10-15, 권장안): `invites`에 `created_by`, `accepted_by`, `accepted_at`을 추가한다. 사용 여부는 `accepted_by`가 있는지로 판단하고, 1회용·3일 만료 규칙은 그대로다. 나머지 ①②③④⑥⑦은 해당 Phase 전에 정한다.
+
+P10(ACC-15) 메모: `invites.created_by`·`accepted_by`의 사용자 삭제 시 FK 처리(`ON DELETE SET NULL` 여부, null 허용 및 사용 여부 판정 포함)는 ④ 탈퇴자 작성자 표시와 함께 결정한다. P2에서는 삭제 규칙을 바꾸지 않는다.
 
 ## DEC-010
 ### Topic
@@ -208,6 +215,11 @@ PENDING
 외부 비용, 로그인 심사, 출시 일정. 비용이 발생하므로 승인 필수.
 ### Status
 PENDING
+### Decided so far
+P2 범위(사용자 결정, 2026-10-15, 권장안): 개발은 Vercel 기본 도메인(`*.vercel.app`)과 localhost로 하고, 약관·개인정보처리방침은 "초안" 표시가 붙은 최소 문구로 동의 화면을 만든다(법률 검토를 거친 문서가 아니다). 정식 문서는 베타 전(P13)에 정한다.
+
+P2 동의 기록(사용자 결정, 2026-10-16): `users.terms_accepted_at`, `privacy_accepted_at`(`timestamptz`), `terms_version`(`text`)을 최초 `complete_profile`에서 저장한다. 현재 초안 버전은 `draft-2026-10-16`이며, 표시 이름 수정 시 최초 동의 기록을 유지한다. 정식 약관 전환과 재동의 정책은 P13에서 정한다.
+사용자가 "자체 도메인을 살 계획이 없다"고 했다. 구글 로그인(P2)은 기본 도메인과 테스트 모드로 가능하지만, 구글 캘린더 연동(P11)은 앱 검증에 도메인이 필요한지 확인이 필요하다. 모니터링 도구와 DB 백업은 미정이다.
 
 ## DEC-014
 ### Topic

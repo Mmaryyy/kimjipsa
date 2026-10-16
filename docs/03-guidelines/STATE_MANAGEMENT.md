@@ -1,6 +1,6 @@
 # 상태 관리
 
-상태: 상태 종류별 기준은 **PROPOSED**이다. 서버 상태는 TanStack Query, 검증은 Zod로 **CONFIRMED**다(ADR-0005). 폼 라이브러리와 전역 스토어는 아직 정하지 않았으므로 이를 전제로 한 강제 규칙을 만들지 않는다. 기존 합의: 상태는 가능하면 저장하지 말고 현재 값에서 계산한다 (`CODING_STANDARDS.md` §5).
+상태: 상태 종류별 기준은 **PROPOSED**이다. 서버 상태는 TanStack Query, 검증은 Zod로 **CONFIRMED**다(ADR-0005). 폼은 React Hook Form으로 **CONFIRMED**다(ADR-0011). 전역 스토어는 아직 정하지 않았으므로 이를 전제로 한 강제 규칙을 만들지 않는다. 기존 합의: 상태는 가능하면 저장하지 말고 현재 값에서 계산한다 (`CODING_STANDARDS.md` §5).
 
 ## 1. 상태 종류별 기준
 
@@ -10,7 +10,7 @@
 | Global Client State | entity/widget `model/`에 필요할 때만 작은 스토어 | 챗봇 창 열림/최소화(최소화 여부는 서버에도 사용자별로 기억 BOT-01), 마지막 읽기 전용 상태 표시 |
 | Server State | TanStack Query 캐시 + Supabase Realtime | 일정, 재고, 장바구니, 대화, 설정, 멤버 |
 | URL State | 쿼리 문자열·경로 | 달력 뷰(월/주/일)와 기준 날짜, 재고 필터(보관 장소·카테고리), 검색어 |
-| Form State | 폼 라이브러리(제안) 또는 로컬 state | 일정 등록 폼, 품목 폼, 재고 반영 확인 화면, 설정 폼 |
+| Form State | React Hook Form(ADR-0011) | 일정 등록 폼, 품목 폼, 재고 반영 확인 화면, 설정 폼 |
 
 ## 2. 판단 규칙
 

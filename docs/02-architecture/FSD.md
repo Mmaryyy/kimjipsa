@@ -28,6 +28,7 @@ import는 위에서 아래로만 한다. 같은 레이어의 다른 슬라이스
 - entities는 `entities/<domain>/{api,model,ui,lib}` 구조로 두고 흐름은 `api → model(상태·훅) → ui`다. 전역 상태 스토어는 필요할 때만 `model/`에 둔다.
 - **public API**: 슬라이스 밖에서는 `@/entities/event`처럼 슬라이스의 `index.ts`로만 가져온다. `@/entities/event/api/type` 같은 깊은 import는 금지한다.
 - 슬라이스 안에서는 상대경로(`../api`)를 쓴다. 자기 `index.ts`를 import하면 순환 참조가 생긴다.
+- 서버 전용 함수는 슬라이스의 `index.server.ts`를 별도 public API로 쓰고 `app` 레이어에서만 import한다. 클라이언트용 `index.ts`에서는 재export하지 않아 도메인 상수 import가 `server-only`까지 연결되지 않게 한다.
 - **entity 사이의 참조**는 `entities/<a>/@x/<b>.ts`로만 한다. 예를 들어 장바구니 항목이 재고 품목 id를 가지면 `entities/cart-item/@x/inventory-item.ts`로 필요한 타입만 내보낸다.
 - 페이지는 배럴로 재수출하지 않는다. 무거운 서드파티(에디터, 차트 등)는 어떤 `index.ts`에도 넣지 않는다.
 - 경로 alias는 `@/*` → `src/*` 하나만 쓴다.
@@ -45,6 +46,7 @@ Next의 `app/`, `pages/`와 FSD의 `app`, `pages`가 이름이 겹친다. 이렇
 
 - FSD의 `app` 레이어는 `src/app/`이다. 프로바이더와 전역 스타일은 여기에 두고 루트 `app/layout.tsx`가 가져다 쓴다.
 - Next가 `src/pages`를 라우터로 읽지 않도록 프로젝트 루트에 빈 `pages/` 폴더(README만 둠)를 만든다.
+- `shared/server`는 서버 전용 Supabase 클라이언트·세션 갱신·범용 라우트 처리의 진입점으로 허용한다. 클라이언트용 `shared/api` 배럴과 분리해 `server-only`가 브라우저로 섞이지 않게 한다. 도메인 오류 코드·문구는 해당 entity의 `api/server.ts`에 둔다. 프록시는 `shared/server/index.proxy.ts`의 별도 public API를 사용해 `next/headers`·라우트 전용 코드를 가져오지 않는다.
 - 서버 전용 코드(Supabase 서비스 키, AI 키 복호화, 푸시 발송)는 해당 슬라이스의 `api/` 세그먼트 안에서 `server-only`로 표시한 파일에 둔다. 라우트 핸들러(`app/api/**/route.ts`)는 요청을 받아 그 함수를 호출하기만 한다.
 - 개인 일정 필터링(CAL-04, BOT-10)처럼 화면과 챗봇이 함께 쓰는 권한 규칙은 `entities/event`의 서버 함수 한 곳에 둔다. 화면용 조회와 챗봇 도구가 같은 함수를 호출하게 해서, 규칙이 두 군데로 갈라지지 않게 한다.
 
