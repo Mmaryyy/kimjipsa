@@ -20,10 +20,6 @@ export async function LoginPage({
         </Banner>
       )}
       <LoginFlow inviteToken={invite} />
-      <Text as="p" variant="caption" className="text-muted-foreground">
-        카카오와 구글은 각각 별개 계정이에요. 가입할 때 사용한 수단으로 로그인해
-        주세요.
-      </Text>
     </div>
   );
 }

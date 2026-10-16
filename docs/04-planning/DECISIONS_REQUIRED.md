@@ -4,7 +4,7 @@
 
 | ID | 주제 | 우선 | 막는 것 | Status |
 | --- | --- | --- | --- | --- |
-| DEC-001 | 개인 일정 컬럼 보호 구조 | 높음 | 일정 스키마, Realtime, 첫 마이그레이션 | PENDING |
+| DEC-001 | 개인 일정 컬럼 보호 구조 | 높음 | 일정 스키마, Realtime, 첫 마이그레이션 | CONFIRMED (ADR-0012) |
 | DEC-002 | 언어·UI·날짜 스택 | 높음 | 프로젝트 초기화 | CONFIRMED (ADR-0004) |
 | DEC-003 | AI 키 암호화 방식 | 높음 | ACC-08, 챗봇 | PENDING |
 | DEC-004 | 예약 작업(알림·요약·삭제) 실행 방식 | 높음 | CAL-09~11, BOT-12, BOT-14 | PENDING |
@@ -12,7 +12,7 @@
 | DEC-006 | 서버 상태·폼·검증 라이브러리 | 중간 | 데이터 계층 구현 | CONFIRMED (ADR-0005, 폼 라이브러리는 ADR-0011) |
 | DEC-007 | 테스트 도구 | 중간 | 테스트 작성 | CONFIRMED (ADR-0006) |
 | DEC-008 | 알림 요구사항의 마일스톤 배치 | 중간 | ROADMAP, M1 범위 | PENDING |
-| DEC-009 | 데이터 모델 공백 | 중간 | 스키마 확정 | PENDING (⑤ 결정, 나머지 대기) |
+| DEC-009 | 데이터 모델 공백 | 중간 | 스키마 확정 | CONFIRMED (제안안 승인, 차후 수정 가능) |
 | DEC-010 | 판정 기준 모호 항목 | 낮음 | INV-16, CART-05, CART-12 | PENDING |
 | DEC-011 | 영수증 이미지 저장 | 낮음(M3) | INV-17 | PENDING |
 | DEC-012 | AI 어댑터 구현 방식 | 낮음(M2) | 챗봇 | PENDING |
@@ -35,7 +35,7 @@ A. 행 분리는 DB 수준에서 유출을 막고, 챗봇·화면이 같은 서�
 ### Impact
 일정 스키마와 `entities/event` 서버 함수 구조, 개인 일정 전환(CAL-03) 구현 방식, 첫 마이그레이션이 달라진다. 보안·개인정보 항목이라 승인 필수.
 ### Status
-PENDING
+CONFIRMED (2026-10-16, 권장안 A, ADR-0012)
 
 ## DEC-002
 ### Topic
@@ -154,9 +154,9 @@ PENDING
 ### Impact
 `DATA_MODEL.md`, 마이그레이션.
 ### Status
-PENDING
+CONFIRMED (2026-10-16, 제안안 승인. 필요하면 해당 Phase에서 수정)
 ### Decided so far
-⑤ 초대의 생성자·수락자(사용자 결정, 2026-10-15, 권장안): `invites`에 `created_by`, `accepted_by`, `accepted_at`을 추가한다. 사용 여부는 `accepted_by`가 있는지로 판단하고, 1회용·3일 만료 규칙은 그대로다. 나머지 ①②③④⑥⑦은 해당 Phase 전에 정한다.
+⑤ 초대의 생성자·수락자(사용자 결정, 2026-10-15, 권장안): `invites`에 `created_by`, `accepted_by`, `accepted_at`을 추가한다. 사용 여부는 `accepted_by`가 있는지로 판단하고, 1회용·3일 만료 규칙은 그대로다. 나머지 ①②③④⑥⑦은 2026-10-16에 제안안대로 승인됐고(`DATA_MODEL.md` 참조) 해당 Phase에서 필요하면 고친다.
 
 P10(ACC-15) 메모: `invites.created_by`·`accepted_by`의 사용자 삭제 시 FK 처리(`ON DELETE SET NULL` 여부, null 허용 및 사용 여부 판정 포함)는 ④ 탈퇴자 작성자 표시와 함께 결정한다. P2에서는 삭제 규칙을 바꾸지 않는다.
 

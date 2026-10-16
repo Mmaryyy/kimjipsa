@@ -37,5 +37,6 @@
 | [0009](./0009-separate-accounts-per-login-method.md) | 로그인 수단별 별개 계정: 카카오 이메일 미수집 + 제공자 id 구분 | 2026-10-15 | Accepted |
 | [0010](./0010-fsd-server-entry-points.md) | FSD 서버 전용 진입점: index.server.ts와 shared/server | 2026-10-16 | Accepted |
 | [0011](./0011-react-hook-form.md) | 폼: React Hook Form + @hookform/resolvers(Zod) | 2026-10-16 | Accepted |
+| [0012](./0012-event-time-detail-split.md) | 개인 일정 보호: 시간 테이블과 내용 테이블 분리 | 2026-10-16 | Accepted |
 
 0001~0003의 날짜는 결정이 `AGENTS.md`의 "확정된 주요 결정"에 반영된 날(커밋 c1281e5)이다. 실제 결정일을 아는 경우 고친다. 0004~0007은 사용자가 승인한 날이다.
