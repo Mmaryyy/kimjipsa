@@ -1,6 +1,6 @@
 /* 공용 컨트롤은 토큰으로만 색을 정하고, 목록·섹션에는 면과 선을 넣지 않아요. */
 .kj-page-header {
-  padding-block: var(--sp-4) var(--sp-2);
+  padding-block: var(--sp-5) var(--sp-2);
 }
 .kj-page-header-row {
   display: flex;

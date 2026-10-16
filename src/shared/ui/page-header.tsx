@@ -12,7 +12,7 @@ export function PageHeader({
   return (
     <header className="kj-page-header">
       <div className="kj-page-header-row">
-        <Text as="h1" variant="display">
+        <Text as="h1" variant="title-lg">
           {title}
         </Text>
         {actions && <div className="kj-page-header-toolbar">{actions}</div>}
