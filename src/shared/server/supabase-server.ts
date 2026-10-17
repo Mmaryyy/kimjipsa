@@ -3,10 +3,13 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@/shared/api";
 import { getSupabaseConfig } from "@/shared/config";
+import { isServerMockDataEnabled } from "./mock-data";
 export async function createServerSupabaseClient<
   Role extends string = string,
   Provider extends string = string,
 >() {
+  if (await isServerMockDataEnabled())
+    throw new Error("테스트 데이터 모드에서는 Supabase에 접근할 수 없어요.");
   const cookieStore = await cookies();
   const { url, key } = getSupabaseConfig();
   return createServerClient<Database<Role, Provider>>(url, key, {

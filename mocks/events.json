@@ -1,0 +1,339 @@
+[
+  {
+    "id": "10000000-0000-4000-8000-000000000100",
+    "owner_id": "10000000-0000-4000-8000-000000000002",
+    "visibility": "shared",
+    "start_date": "2026-10-03",
+    "end_date": "2026-10-03",
+    "start_time": null,
+    "end_time": null,
+    "is_all_day": true,
+    "kind": "event",
+    "event_details": {
+      "title": "개천절",
+      "place": "",
+      "memo": "",
+      "category_id": "10000000-0000-4000-8000-000000000015",
+      "dday_style": "normal",
+      "celebrate_message": ""
+    },
+    "mock_start_offset": -11,
+    "mock_end_offset": -11
+  },
+  {
+    "id": "10000000-0000-4000-8000-000000000101",
+    "owner_id": "10000000-0000-4000-8000-000000000002",
+    "visibility": "shared",
+    "start_date": "2026-10-09",
+    "end_date": "2026-10-09",
+    "start_time": "18:00",
+    "end_time": null,
+    "is_all_day": false,
+    "kind": "event",
+    "event_details": {
+      "title": "한글날 저녁",
+      "place": "분당",
+      "memo": "",
+      "category_id": "10000000-0000-4000-8000-000000000014",
+      "dday_style": "normal",
+      "celebrate_message": ""
+    },
+    "mock_start_offset": -5,
+    "mock_end_offset": -5
+  },
+  {
+    "id": "10000000-0000-4000-8000-000000000102",
+    "owner_id": "10000000-0000-4000-8000-000000000002",
+    "visibility": "shared",
+    "start_date": "2026-10-12",
+    "end_date": "2026-10-12",
+    "start_time": "09:00",
+    "end_time": null,
+    "is_all_day": false,
+    "kind": "event",
+    "event_details": {
+      "title": "주간 회의",
+      "place": "",
+      "memo": "",
+      "category_id": "10000000-0000-4000-8000-000000000011",
+      "dday_style": "normal",
+      "celebrate_message": ""
+    },
+    "mock_start_offset": -2,
+    "mock_end_offset": -2
+  },
+  {
+    "id": "10000000-0000-4000-8000-000000000103",
+    "owner_id": "10000000-0000-4000-8000-000000000002",
+    "visibility": "shared",
+    "start_date": "2026-10-14",
+    "end_date": "2026-10-14",
+    "start_time": "10:30",
+    "end_time": null,
+    "is_all_day": false,
+    "kind": "event",
+    "event_details": {
+      "title": "치과 정기검진",
+      "place": "연세바른치과",
+      "memo": "",
+      "category_id": "10000000-0000-4000-8000-000000000012",
+      "dday_style": "normal",
+      "celebrate_message": ""
+    },
+    "mock_start_offset": 0,
+    "mock_end_offset": 0
+  },
+  {
+    "id": "10000000-0000-4000-8000-000000000104",
+    "owner_id": "10000000-0000-4000-8000-000000000003",
+    "visibility": "private",
+    "start_date": "2026-10-14",
+    "end_date": "2026-10-14",
+    "start_time": "14:00",
+    "end_time": "16:00",
+    "is_all_day": false,
+    "kind": "event",
+    "event_details": {
+      "title": "민호 개인 일정",
+      "place": "",
+      "memo": "",
+      "category_id": "10000000-0000-4000-8000-000000000015",
+      "dday_style": "normal",
+      "celebrate_message": ""
+    },
+    "mock_start_offset": 0,
+    "mock_end_offset": 0
+  },
+  {
+    "id": "10000000-0000-4000-8000-000000000105",
+    "owner_id": "10000000-0000-4000-8000-000000000003",
+    "visibility": "shared",
+    "start_date": "2026-10-14",
+    "end_date": "2026-10-14",
+    "start_time": "19:30",
+    "end_time": null,
+    "is_all_day": false,
+    "kind": "event",
+    "event_details": {
+      "title": "성수동 저녁 약속",
+      "place": "대림창고 근처",
+      "memo": "7시 20분에 성수역 3번 출구",
+      "category_id": "10000000-0000-4000-8000-000000000013",
+      "dday_style": "normal",
+      "celebrate_message": ""
+    },
+    "mock_start_offset": 0,
+    "mock_end_offset": 0
+  },
+  {
+    "id": "10000000-0000-4000-8000-000000000106",
+    "owner_id": "10000000-0000-4000-8000-000000000002",
+    "visibility": "shared",
+    "start_date": "2026-10-15",
+    "end_date": "2026-10-15",
+    "start_time": null,
+    "end_time": null,
+    "is_all_day": true,
+    "kind": "event",
+    "event_details": {
+      "title": "아파트 방역 소독",
+      "place": "",
+      "memo": "",
+      "category_id": "10000000-0000-4000-8000-000000000010",
+      "dday_style": "normal",
+      "celebrate_message": ""
+    },
+    "mock_start_offset": 1,
+    "mock_end_offset": 1
+  },
+  {
+    "id": "10000000-0000-4000-8000-000000000107",
+    "owner_id": "10000000-0000-4000-8000-000000000002",
+    "visibility": "shared",
+    "start_date": "2026-10-17",
+    "end_date": "2026-10-17",
+    "start_time": "12:00",
+    "end_time": null,
+    "is_all_day": false,
+    "kind": "event",
+    "event_details": {
+      "title": "부모님 댁 점심",
+      "place": "분당",
+      "memo": "",
+      "category_id": "10000000-0000-4000-8000-000000000014",
+      "dday_style": "normal",
+      "celebrate_message": ""
+    },
+    "mock_start_offset": 3,
+    "mock_end_offset": 3
+  },
+  {
+    "id": "10000000-0000-4000-8000-000000000108",
+    "owner_id": "10000000-0000-4000-8000-000000000002",
+    "visibility": "shared",
+    "start_date": "2026-10-17",
+    "end_date": "2026-10-17",
+    "start_time": "15:00",
+    "end_time": null,
+    "is_all_day": false,
+    "kind": "event",
+    "event_details": {
+      "title": "이케아 가구 보기",
+      "place": "광명점",
+      "memo": "",
+      "category_id": "10000000-0000-4000-8000-000000000013",
+      "dday_style": "normal",
+      "celebrate_message": ""
+    },
+    "mock_start_offset": 3,
+    "mock_end_offset": 3
+  },
+  {
+    "id": "10000000-0000-4000-8000-000000000109",
+    "owner_id": "10000000-0000-4000-8000-000000000003",
+    "visibility": "private",
+    "start_date": "2026-10-18",
+    "end_date": "2026-10-18",
+    "start_time": "10:00",
+    "end_time": null,
+    "is_all_day": false,
+    "kind": "event",
+    "event_details": {
+      "title": "민호 개인 일정",
+      "place": "",
+      "memo": "",
+      "category_id": "10000000-0000-4000-8000-000000000015",
+      "dday_style": "normal",
+      "celebrate_message": ""
+    },
+    "mock_start_offset": 4,
+    "mock_end_offset": 4
+  },
+  {
+    "id": "10000000-0000-4000-8000-000000000110",
+    "owner_id": "10000000-0000-4000-8000-000000000002",
+    "visibility": "shared",
+    "start_date": "2026-10-19",
+    "end_date": "2026-10-19",
+    "start_time": null,
+    "end_time": null,
+    "is_all_day": true,
+    "kind": "dday",
+    "event_details": {
+      "title": "민호 생일",
+      "place": "",
+      "memo": "",
+      "category_id": "10000000-0000-4000-8000-000000000012",
+      "dday_style": "celebrate",
+      "celebrate_message": ""
+    },
+    "mock_start_offset": 5,
+    "mock_end_offset": 5
+  },
+  {
+    "id": "10000000-0000-4000-8000-000000000111",
+    "owner_id": "10000000-0000-4000-8000-000000000002",
+    "visibility": "shared",
+    "start_date": "2026-10-21",
+    "end_date": "2026-10-21",
+    "start_time": "09:00",
+    "end_time": null,
+    "is_all_day": false,
+    "kind": "event",
+    "event_details": {
+      "title": "하반기 워크숍",
+      "place": "",
+      "memo": "",
+      "category_id": "10000000-0000-4000-8000-000000000011",
+      "dday_style": "normal",
+      "celebrate_message": ""
+    },
+    "mock_start_offset": 7,
+    "mock_end_offset": 7
+  },
+  {
+    "id": "10000000-0000-4000-8000-000000000112",
+    "owner_id": "10000000-0000-4000-8000-000000000002",
+    "visibility": "private",
+    "start_date": "2026-10-24",
+    "end_date": "2026-10-24",
+    "start_time": "13:00",
+    "end_time": null,
+    "is_all_day": false,
+    "kind": "event",
+    "event_details": {
+      "title": "건강검진",
+      "place": "",
+      "memo": "",
+      "category_id": "10000000-0000-4000-8000-000000000012",
+      "dday_style": "normal",
+      "celebrate_message": ""
+    },
+    "mock_start_offset": 10,
+    "mock_end_offset": 10
+  },
+  {
+    "id": "10000000-0000-4000-8000-000000000113",
+    "owner_id": "10000000-0000-4000-8000-000000000002",
+    "visibility": "shared",
+    "start_date": "2026-10-28",
+    "end_date": "2026-10-28",
+    "start_time": "20:00",
+    "end_time": null,
+    "is_all_day": false,
+    "kind": "event",
+    "event_details": {
+      "title": "관리비 납부",
+      "place": "",
+      "memo": "",
+      "category_id": "10000000-0000-4000-8000-000000000010",
+      "dday_style": "normal",
+      "celebrate_message": ""
+    },
+    "mock_start_offset": 14,
+    "mock_end_offset": 14
+  },
+  {
+    "id": "10000000-0000-4000-8000-000000000114",
+    "owner_id": "10000000-0000-4000-8000-000000000002",
+    "visibility": "shared",
+    "start_date": "2026-10-11",
+    "end_date": "2026-10-11",
+    "start_time": null,
+    "end_time": null,
+    "is_all_day": true,
+    "kind": "dday",
+    "event_details": {
+      "title": "결혼기념일",
+      "place": "",
+      "memo": "",
+      "category_id": "10000000-0000-4000-8000-000000000010",
+      "dday_style": "normal",
+      "celebrate_message": ""
+    },
+    "mock_start_offset": -3,
+    "mock_end_offset": -3
+  },
+  {
+    "id": "10000000-0000-4000-8000-000000000115",
+    "owner_id": "10000000-0000-4000-8000-000000000002",
+    "visibility": "shared",
+    "start_date": "2025-10-14",
+    "end_date": "2025-10-14",
+    "start_time": null,
+    "end_time": null,
+    "is_all_day": true,
+    "kind": "dday",
+    "event_details": {
+      "title": "처음 만난 날",
+      "place": "",
+      "memo": "",
+      "category_id": "10000000-0000-4000-8000-000000000010",
+      "dday_style": "celebrate",
+      "celebrate_message": ""
+    },
+    "mock_start_offset": 0,
+    "mock_end_offset": 0,
+    "mock_years_ago": 1
+  }
+]

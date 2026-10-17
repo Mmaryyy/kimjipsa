@@ -1,0 +1,17 @@
+[
+  {
+    "token": "10000000-0000-4000-8000-000000000200",
+    "used": false,
+    "mock_expires_in_days": 3
+  },
+  {
+    "token": "10000000-0000-4000-8000-000000000201",
+    "used": true,
+    "mock_expires_in_days": 3
+  },
+  {
+    "token": "10000000-0000-4000-8000-000000000202",
+    "used": false,
+    "mock_expires_in_days": -1
+  }
+]

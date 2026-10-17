@@ -12,6 +12,7 @@ const { exchangeCodeForSession, signOut, authenticatedClient } = vi.hoisted(
 );
 vi.mock("server-only", () => ({}));
 vi.mock("@/shared/server", () => ({
+  isServerMockDataEnabled: async () => false,
   createServerSupabaseClient: async () => ({
     auth: { exchangeCodeForSession, signOut },
   }),

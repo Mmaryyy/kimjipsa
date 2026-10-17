@@ -1,10 +1,22 @@
 "use client";
+import dynamic from "next/dynamic";
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { AccountGate } from "@/widgets/account-gate";
 import { accountRoutes, catalogPath } from "@/shared/config";
 import { SidebarNavigation } from "./sidebar-navigation";
 import { BottomNavigation } from "./bottom-navigation";
+const MockDataToolbar =
+  process.env.NODE_ENV === "development"
+    ? dynamic(
+        () =>
+          import("./mock-data-toolbar").then(
+            (module) => module.MockDataToolbar,
+          ),
+        { ssr: false },
+      )
+    : () => null;
+
 export function AppLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "/";
   const publicPage =
@@ -23,6 +35,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       </a>
       {!publicPage && <SidebarNavigation pathname={pathname} />}
       <main id="main-content" className="kj-app-layout-main" tabIndex={-1}>
+        {process.env.NODE_ENV === "development" && <MockDataToolbar />}
         {publicPage ? children : <AccountGate>{children}</AccountGate>}
       </main>
       {!publicPage && <BottomNavigation pathname={pathname} />}

@@ -1,4 +1,5 @@
 "use client";
+import { isMockDataEnabled } from "@/shared/config";
 import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createBrowserSupabaseClient } from "@/shared/api";
@@ -14,6 +15,7 @@ export const categoryQueryKey = ["event-categories"] as const;
 export function useEvents() {
   const queryClient = useQueryClient();
   useEffect(() => {
+    if (isMockDataEnabled()) return;
     const client = createBrowserSupabaseClient();
     const channel = client
       .channel("calendar-times")

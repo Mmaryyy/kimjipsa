@@ -5,6 +5,8 @@ import type { User } from "@supabase/supabase-js";
 import { z } from "zod";
 import { ApiError } from "@/shared/api";
 import {
+  mockContext,
+  mockJson,
   createServerSupabaseClient,
   throwDatabaseError as throwSharedDatabaseError,
 } from "@/shared/server";
@@ -38,6 +40,32 @@ function assertIdentityPolicy(user: User) {
     );
   }
 }
+async function mockAccount(): Promise<Account | null> {
+  const context = await mockContext();
+  if (!context) return null;
+  const family = await mockJson("family");
+  const member = family.members[context.perspective]!;
+  const stage = context.values.get("account-stage") ?? context.stage;
+  if (stage === "login")
+    return { userId: null, profile: null, membership: null };
+  const displayName = context.values.get(`display-name:${member.user_id}`);
+  return {
+    userId: member.user_id,
+    profile:
+      stage === "profile"
+        ? null
+        : {
+            displayName:
+              typeof displayName === "string"
+                ? displayName
+                : member.display_name,
+          },
+    membership:
+      stage === "profile" || stage === "family"
+        ? null
+        : { familyId: family.id, role: member.role },
+  };
+}
 export async function authenticatedClient() {
   const client = await createServerSupabaseClient<FamilyRole, LoginProvider>();
   const {
@@ -50,6 +78,8 @@ export async function authenticatedClient() {
   return { client, user };
 }
 export async function getAccount(): Promise<Account> {
+  const mock = await mockAccount();
+  if (mock) return mock;
   const client = await createServerSupabaseClient<FamilyRole, LoginProvider>();
   const {
     data: { user },
@@ -109,6 +139,18 @@ export async function saveProfile(input: unknown) {
     throw new ApiError(code, issue?.message ?? "입력 내용을 확인해 주세요.");
   }
   const profile = parsed.data;
+  const context = await mockContext();
+  if (context) {
+    const account = await mockAccount();
+    if (!account?.userId)
+      throw new ApiError("unauthorized", "로그인이 필요해요.", 401);
+    context.values.set(`display-name:${account.userId}`, profile.displayName);
+    const family = await mockJson("family");
+    family.members[context.perspective]!.display_name = profile.displayName;
+    if ((context.values.get("account-stage") ?? context.stage) === "profile")
+      context.values.set("account-stage", "family");
+    return null;
+  }
   const { client } = await authenticatedClient();
   const { error } = await client.rpc("complete_profile", {
     display_name: profile.displayName,
@@ -120,6 +162,16 @@ export async function saveProfile(input: unknown) {
 }
 
 export async function getHomeSettings() {
+  const context = await mockContext();
+  if (context) {
+    const account = await mockAccount();
+    if (!account?.userId)
+      throw new ApiError("unauthorized", "로그인이 필요해요.", 401);
+    const settings = await mockJson("home-settings");
+    return homeSettingsSchema.parse(
+      context.values.get(`home:${account.userId}`) ?? settings,
+    );
+  }
   const { client, user } = await authenticatedClient();
   const { data, error } = await client
     .from("users")
@@ -135,6 +187,14 @@ export async function getHomeSettings() {
 }
 export async function saveHomeSettings(input: unknown) {
   const settings = homeSettingsSchema.parse(input);
+  const context = await mockContext();
+  if (context) {
+    const account = await mockAccount();
+    if (!account?.userId)
+      throw new ApiError("unauthorized", "로그인이 필요해요.", 401);
+    context.values.set(`home:${account.userId}`, settings);
+    return null;
+  }
   const { client } = await authenticatedClient();
   const { error } = await client.rpc("save_home_settings", {
     home_view: settings.homeView,

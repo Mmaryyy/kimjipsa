@@ -1,7 +1,12 @@
 import type { LoginProvider } from "@/entities/user";
 import { isAuthSessionMissingError } from "@supabase/supabase-js";
 import { createBrowserSupabaseClient, request } from "@/shared/api";
-import { accountApiRoutes, accountRoutes } from "@/shared/config";
+import {
+  isMockDataEnabled,
+  mockStageCookie,
+  accountApiRoutes,
+  accountRoutes,
+} from "@/shared/config";
 import type { Account, ProfileInput } from "@/entities/user";
 export function fetchAccount() {
   return request<Account>(accountApiRoutes.account);
@@ -10,6 +15,11 @@ export function updateProfile(input: ProfileInput) {
   return request<null>(accountApiRoutes.profile, input);
 }
 export async function signOut() {
+  if (isMockDataEnabled()) {
+    document.cookie = `${mockStageCookie}=login; Path=/; SameSite=Lax`;
+    window.location.assign(accountRoutes.login);
+    return;
+  }
   const client = createBrowserSupabaseClient();
   const { error } = await client.auth.signOut();
   if (error && !isAuthSessionMissingError(error)) {
@@ -20,6 +30,11 @@ export async function signIn(
   provider: LoginProvider,
   inviteToken?: string | null,
 ) {
+  if (isMockDataEnabled()) {
+    document.cookie = `${mockStageCookie}=profile; Path=/; SameSite=Lax`;
+    window.location.assign(accountRoutes.onboarding);
+    return;
+  }
   const client = createBrowserSupabaseClient();
   const callback = new URL(accountRoutes.callback, window.location.origin);
   if (inviteToken) callback.searchParams.set("invite", inviteToken);

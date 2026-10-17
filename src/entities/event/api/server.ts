@@ -1,9 +1,13 @@
 import "server-only";
 import { z } from "zod";
+import { tz } from "@date-fns/tz";
+import { format } from "date-fns";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/shared/api";
 import { ApiError } from "@/shared/api";
 import {
+  mockContext,
+  mockJson,
   createServerSupabaseClient,
   throwDatabaseError,
 } from "@/shared/server";
@@ -67,7 +71,42 @@ const recordSchema = z.object({
     })
     .nullable(),
 }) satisfies z.ZodType<EventRecord>;
+async function mockEvents() {
+  return mockJson("events");
+}
+async function mockCategories() {
+  return mockJson("event-categories");
+}
+async function mockEventContext() {
+  const context = await mockContext();
+  if (!context) return null;
+  const stage = context.values.get("account-stage") ?? context.stage;
+  if (stage === "login")
+    throw new ApiError("unauthorized", errors.unauthorized[1], 401);
+  if (stage === "profile" || stage === "family")
+    throw new ApiError("family_required", errors.family_required[1], 403);
+  // The family fixture supplies identity; no Supabase auth or service key is used.
+  const family = await mockJson("family");
+  return { ...context, userId: family.members[context.perspective]!.user_id };
+}
+function requireEditableMockEvent(
+  events: EventRecord[],
+  id: string,
+  userId: string,
+) {
+  const event = events.find((candidate) => candidate.id === idSchema.parse(id));
+  if (!event)
+    throw new ApiError("event_not_found", errors.event_not_found[1], 404);
+  if (event.visibility === "private" && event.owner_id !== userId)
+    throw new ApiError("event_forbidden", errors.event_forbidden[1], 403);
+  return event;
+}
 export async function listEvents(auth?: AuthContext): Promise<CalendarEvent[]> {
+  const mock = await mockEventContext();
+  if (mock)
+    return (await mockEvents()).map((event) =>
+      filterEventForRequester(event, mock.userId),
+    );
   const { client, userId, familyId } = await eventContext(auth);
   const { data, error } = await client
     .from("events")
@@ -87,6 +126,15 @@ export async function getEvent(
   id: string,
   auth?: AuthContext,
 ): Promise<CalendarEvent | null> {
+  const mock = await mockEventContext();
+  if (mock) {
+    const record = (await mockEvents()).find(
+      (event) => event.id === idSchema.parse(id),
+    );
+    if (!record) return null;
+    const event = filterEventForRequester(record, mock.userId);
+    return event.details ? event : null;
+  }
   const { client, userId, familyId } = await eventContext(auth);
   const { data, error } = await client
     .from("events")
@@ -106,6 +154,50 @@ export async function saveEvent(
   auth?: AuthContext,
 ) {
   const event = eventSchema.parse(input);
+  const mock = await mockEventContext();
+  if (mock) {
+    const events = await mockEvents();
+    const target =
+      id === null ? null : requireEditableMockEvent(events, id, mock.userId);
+    if (
+      target &&
+      event.visibility === "private" &&
+      target.owner_id !== mock.userId
+    )
+      throw new ApiError("event_forbidden", errors.event_forbidden[1], 403);
+    if (
+      !(await mockCategories()).some(
+        (category) => category.id === event.categoryId,
+      )
+    )
+      throw new ApiError(
+        "category_not_found",
+        errors.category_not_found[1],
+        404,
+      );
+    const record = {
+      id: target?.id ?? crypto.randomUUID(),
+      owner_id: target ? target.owner_id : mock.userId,
+      visibility: event.visibility,
+      start_date: event.startDate,
+      end_date: event.endDate,
+      start_time: event.startTime,
+      end_time: event.endTime,
+      is_all_day: event.isAllDay,
+      kind: event.kind,
+      event_details: {
+        title: event.title,
+        place: event.place,
+        memo: event.memo,
+        category_id: event.categoryId,
+        dday_style: event.ddayStyle,
+        celebrate_message: event.celebrateMessage,
+      },
+    };
+    if (target) Object.assign(target, record);
+    else events.push(record);
+    return record.id;
+  }
   const { client, userId, familyId } = await eventContext(auth);
   if (id !== null && event.visibility === "private") {
     const target = await client
@@ -140,6 +232,20 @@ export async function saveEvent(
   return data;
 }
 export async function deleteEvent(id: string, auth?: AuthContext) {
+  const mock = await mockEventContext();
+  if (mock) {
+    const events = await mockEvents();
+    const target = requireEditableMockEvent(events, id, mock.userId);
+    events.splice(events.indexOf(target as (typeof events)[number]), 1);
+    for (const [key, value] of mock.values) {
+      if (key.startsWith("dday-dismissals:") && Array.isArray(value))
+        mock.values.set(
+          key,
+          value.filter((entry: { event_id: string }) => entry.event_id !== id),
+        );
+    }
+    return null;
+  }
   const { client } = await eventContext(auth);
   const { error } = await client.rpc("delete_event", {
     event_id: idSchema.parse(id),
@@ -150,6 +256,10 @@ export async function deleteEvent(id: string, auth?: AuthContext) {
 export async function listEventCategories(
   auth?: AuthContext,
 ): Promise<EventCategory[]> {
+  if (await mockEventContext())
+    return [...(await mockCategories())].sort(
+      (a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, "ko"),
+    );
   const { client, familyId } = await eventContext(auth);
   const { data, error } = await client
     .from("event_categories")
@@ -171,6 +281,60 @@ export async function saveEventCategory(
   auth?: AuthContext,
 ) {
   const category = eventCategorySchema.parse(input);
+  if (await mockEventContext()) {
+    const categories = await mockCategories();
+    const target =
+      id === null
+        ? null
+        : categories.find((entry) => entry.id === idSchema.parse(id));
+    if (id !== null && !target)
+      throw new ApiError(
+        "category_not_found",
+        errors.category_not_found[1],
+        404,
+      );
+    if (target?.name === "기타" && category.name !== "기타")
+      throw new ApiError("fallback_category", errors.fallback_category[1], 409);
+    if (
+      categories.some(
+        (entry) => entry.id !== id && entry.name === category.name,
+      )
+    )
+      throw new ApiError(
+        "category_duplicate",
+        errors.category_duplicate[1],
+        409,
+      );
+    const targetOrder = Math.min(
+      category.sortOrder,
+      categories.length - (target ? 1 : 0),
+    );
+    for (const entry of categories) {
+      if (!target && entry.sortOrder >= targetOrder) entry.sortOrder += 1;
+      if (
+        target &&
+        targetOrder < target.sortOrder &&
+        entry.sortOrder >= targetOrder &&
+        entry.sortOrder < target.sortOrder
+      )
+        entry.sortOrder += 1;
+      if (
+        target &&
+        targetOrder > target.sortOrder &&
+        entry.sortOrder > target.sortOrder &&
+        entry.sortOrder <= targetOrder
+      )
+        entry.sortOrder -= 1;
+    }
+    const record = {
+      ...category,
+      sortOrder: targetOrder,
+      id: id ?? crypto.randomUUID(),
+    };
+    if (target) Object.assign(target, record);
+    else categories.push(record);
+    return record.id;
+  }
   const { client } = await eventContext(auth);
   const { data, error } = await client.rpc("save_event_category", {
     category_id: id === null ? null : idSchema.parse(id),
@@ -182,6 +346,31 @@ export async function saveEventCategory(
   return data;
 }
 export async function deleteEventCategory(id: string, auth?: AuthContext) {
+  if (await mockEventContext()) {
+    const categories = await mockCategories();
+    const target = categories.find((entry) => entry.id === idSchema.parse(id));
+    if (!target)
+      throw new ApiError(
+        "category_not_found",
+        errors.category_not_found[1],
+        404,
+      );
+    if (target.name === "기타")
+      throw new ApiError("fallback_category", errors.fallback_category[1], 409);
+    const fallback = categories.find((entry) => entry.name === "기타");
+    if (!fallback)
+      throw new ApiError(
+        "category_not_found",
+        errors.category_not_found[1],
+        404,
+      );
+    for (const event of await mockEvents()) {
+      if (event.event_details?.category_id === id)
+        event.event_details.category_id = fallback.id;
+    }
+    categories.splice(categories.indexOf(target), 1);
+    return null;
+  }
   const { client } = await eventContext(auth);
   const { error } = await client.rpc("delete_event_category", {
     category_id: idSchema.parse(id),
@@ -191,6 +380,11 @@ export async function deleteEventCategory(id: string, auth?: AuthContext) {
 }
 
 export async function listDdayDismissals(auth?: AuthContext) {
+  const mock = await mockEventContext();
+  if (mock)
+    return z
+      .array(z.object({ event_id: z.uuid(), year: z.number().int() }))
+      .parse(mock.values.get(`dday-dismissals:${mock.userId}`) ?? []);
   const { client, userId } = await eventContext(auth);
   const { data, error } = await client
     .from("dday_card_dismissals")
@@ -202,6 +396,27 @@ export async function listDdayDismissals(auth?: AuthContext) {
     .parse(data);
 }
 export async function dismissDdayCard(id: string, auth?: AuthContext) {
+  const mock = await mockEventContext();
+  if (mock) {
+    const event = await getEvent(id);
+    const today = format(new Date(), "yyyy-MM-dd", { in: tz("Asia/Seoul") });
+    if (
+      !event?.details ||
+      event.kind !== "dday" ||
+      event.details.ddayStyle !== "celebrate" ||
+      event.startDate > today ||
+      event.startDate.slice(5) !== today.slice(5)
+    )
+      throw new ApiError("event_not_found", errors.event_not_found[1], 404);
+    const dismissals = await listDdayDismissals();
+    const year = Number(today.slice(0, 4));
+    if (
+      !dismissals.some((entry) => entry.event_id === id && entry.year === year)
+    )
+      dismissals.push({ event_id: id, year });
+    mock.values.set(`dday-dismissals:${mock.userId}`, dismissals);
+    return null;
+  }
   const { client } = await eventContext(auth);
   const { error } = await client.rpc("dismiss_dday_card", {
     event_id: idSchema.parse(id),

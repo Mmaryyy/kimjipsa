@@ -3,6 +3,8 @@ import { familySchema } from "../model/family.schema";
 import { z } from "zod";
 import { ApiError } from "@/shared/api";
 import {
+  mockContext,
+  mockJson,
   createServerSupabaseClient,
   throwDatabaseError as throwSharedDatabaseError,
 } from "@/shared/server";
@@ -35,7 +37,30 @@ const previewSchema = z.union([
   z.object({ status: z.literal("valid"), familyName: z.string() }),
   z.object({ status: z.enum(["used", "expired", "not_found"]) }),
 ]);
+async function mockFamily() {
+  return mockJson("family");
+}
+async function mockInvites() {
+  return mockJson("invites");
+}
+async function requireMockMember(admin = false) {
+  const context = await mockContext();
+  if (!context) throw new Error("테스트 데이터가 꺼져 있어요.");
+  if (context.stage === "login")
+    throw new ApiError("unauthorized", databaseErrors.unauthorized[1], 401);
+  const family = await mockFamily();
+  const member = family.members[context.perspective]!;
+  if (admin && member.role !== "admin")
+    throw new ApiError("forbidden", databaseErrors.forbidden[1], 403);
+  return { context, family, member };
+}
 export async function getFamily(): Promise<Family | null> {
+  if (await mockContext()) {
+    const { family, context } = await requireMockMember();
+    const stage = context.values.get("account-stage") ?? context.stage;
+    if (stage === "profile" || stage === "family") return null;
+    return family;
+  }
   const client = await createServerSupabaseClient<FamilyRole>();
   const { data: families, error } = await client
     .from("families")
@@ -52,6 +77,25 @@ export async function getFamily(): Promise<Family | null> {
 }
 export async function createFamily(input: unknown) {
   const { name } = familySchema.parse(input);
+  if (await mockContext()) {
+    const { context, family } = await requireMockMember();
+    const stage = context.values.get("account-stage") ?? context.stage;
+    if (stage === "profile")
+      throw new ApiError(
+        "profile_required",
+        databaseErrors.profile_required[1],
+        409,
+      );
+    if (stage !== "family")
+      throw new ApiError(
+        "already_in_family",
+        databaseErrors.already_in_family[1],
+        409,
+      );
+    family.name = name;
+    context.values.set("account-stage", "ready");
+    return family.id;
+  }
   const client = await createServerSupabaseClient<FamilyRole>();
   const { data, error } = await client.rpc("create_family", {
     family_name: name,
@@ -60,6 +104,15 @@ export async function createFamily(input: unknown) {
   return data;
 }
 export async function createInvite(): Promise<Invitation> {
+  if (await mockContext()) {
+    await requireMockMember(true);
+    const invitation = {
+      token: crypto.randomUUID(),
+      expiresAt: new Date(Date.now() + 3 * 86400000).toISOString(),
+    };
+    (await mockInvites()).push({ ...invitation, used: false });
+    return invitation;
+  }
   const client = await createServerSupabaseClient<FamilyRole>();
   const { data, error } = await client.rpc("create_invite");
   throwDatabaseError(error);
@@ -80,6 +133,17 @@ export async function createInvite(): Promise<Invitation> {
 export async function previewInvite(token: string): Promise<InvitePreview> {
   const parsed = z.uuid().safeParse(token);
   if (!parsed.success) return { status: "not_found" };
+  const context = await mockContext();
+  if (context) {
+    const invitation = (await mockInvites()).find(
+      (entry) => entry.token === token,
+    );
+    if (!invitation) return { status: "not_found" };
+    if (invitation.used) return { status: "used" };
+    if (new Date(invitation.expiresAt).getTime() <= Date.now())
+      return { status: "expired" };
+    return { status: "valid", familyName: (await mockFamily()).name };
+  }
   const client = await createServerSupabaseClient<FamilyRole>();
   const { data, error } = await client.rpc("preview_invite", {
     invite_token: parsed.data,
@@ -96,6 +160,42 @@ export async function previewInvite(token: string): Promise<InvitePreview> {
 }
 export async function acceptInvite(token: string) {
   const inviteToken = z.uuid("초대 링크를 확인해 주세요.").parse(token);
+  if (await mockContext()) {
+    const { context, family } = await requireMockMember();
+    const stage = context.values.get("account-stage") ?? context.stage;
+    if (stage === "profile")
+      throw new ApiError(
+        "profile_required",
+        databaseErrors.profile_required[1],
+        409,
+      );
+    if (stage !== "family")
+      throw new ApiError(
+        "already_in_family",
+        databaseErrors.already_in_family[1],
+        409,
+      );
+    const preview = await previewInvite(inviteToken);
+    if (preview.status !== "valid") {
+      const code =
+        preview.status === "used"
+          ? "invite_used"
+          : preview.status === "expired"
+            ? "invite_expired"
+            : "invite_not_found";
+      throw new ApiError(
+        code,
+        databaseErrors[code][1],
+        databaseErrors[code][0],
+      );
+    }
+    const invitation = (await mockInvites()).find(
+      (entry) => entry.token === inviteToken,
+    )!;
+    invitation.used = true;
+    context.values.set("account-stage", "ready");
+    return family.id;
+  }
   const client = await createServerSupabaseClient<FamilyRole>();
   const { data, error } = await client.rpc("accept_invite", {
     invite_token: inviteToken,

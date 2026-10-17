@@ -11,12 +11,21 @@ import {
   saveEventCategory,
   deleteEventCategory,
 } from "@/entities/event/index.server";
-import { handleRoute, readJson } from "@/shared/server";
+import {
+  isServerMockDataEnabled,
+  handleRoute,
+  readJson,
+} from "@/shared/server";
+
 type Context = { params: Promise<{ id: string }> };
 async function authorized<T>(
-  action: (auth: Awaited<ReturnType<typeof authenticatedClient>>) => Promise<T>,
+  action: (
+    auth?: Awaited<ReturnType<typeof authenticatedClient>>,
+  ) => Promise<T>,
 ) {
-  const auth = await authenticatedClient();
+  const auth = (await isServerMockDataEnabled())
+    ? undefined
+    : await authenticatedClient();
   return action(auth);
 }
 export function eventsGET(request: Request) {

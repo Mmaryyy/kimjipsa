@@ -16,3 +16,10 @@ export {
   eventCategoryApiPath,
 } from "./event-routes.constants";
 export { homeSettingsApiPath } from "./home-routes.constants";
+export {
+  isMockDataEnabled,
+  mockEnabledCookie,
+  mockSessionCookie,
+  mockPerspectiveCookie,
+  mockStageCookie,
+} from "./mock-data";

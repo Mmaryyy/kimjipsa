@@ -14,6 +14,7 @@ import {
   acceptInvite,
 } from "@/entities/family/index.server";
 import {
+  isServerMockDataEnabled,
   handleRoute,
   readJson,
   createServerSupabaseClient,
@@ -27,19 +28,19 @@ export function profilePOST(request: Request) {
 }
 export function familyGET(request: Request) {
   return handleRoute(request, async () => {
-    await authenticatedClient();
+    if (!(await isServerMockDataEnabled())) await authenticatedClient();
     return getFamily();
   });
 }
 export function familyPOST(request: Request) {
   return handleRoute(request, async () => {
-    await authenticatedClient();
+    if (!(await isServerMockDataEnabled())) await authenticatedClient();
     return createFamily(await readJson(request));
   });
 }
 export function invitesPOST(request: Request) {
   return handleRoute(request, async () => {
-    await authenticatedClient();
+    if (!(await isServerMockDataEnabled())) await authenticatedClient();
     return createInvite();
   });
 }
@@ -51,12 +52,14 @@ export function inviteGET(request: Request, context: InviteContext) {
 }
 export function invitePOST(request: Request, context: InviteContext) {
   return handleRoute(request, async () => {
-    await authenticatedClient();
+    if (!(await isServerMockDataEnabled())) await authenticatedClient();
     return acceptInvite((await context.params).token);
   });
 }
 export async function authCallbackGET(request: Request) {
   const url = new URL(request.url);
+  if (await isServerMockDataEnabled())
+    return NextResponse.redirect(new URL(accountRoutes.onboarding, url.origin));
   const token = url.searchParams.get("invite");
   const code = url.searchParams.get("code");
   let destination = `${accountRoutes.login}?error=oauth`;
@@ -65,7 +68,7 @@ export async function authCallbackGET(request: Request) {
     try {
       const { error } = await client.auth.exchangeCodeForSession(code);
       if (!error) {
-        await authenticatedClient();
+        if (!(await isServerMockDataEnabled())) await authenticatedClient();
         destination = token ? invitePath(token) : onboardingPath();
       }
     } catch (error) {
