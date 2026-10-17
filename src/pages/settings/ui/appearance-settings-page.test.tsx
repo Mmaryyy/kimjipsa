@@ -11,6 +11,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type * as SharedApi from "@/shared/api";
 import { AppearanceSettingsPage } from "./appearance-settings-page";
 
+vi.mock("./home-settings", () => ({ HomeSettings: () => <div /> }));
+
 const { signOut, replace } = vi.hoisted(() => ({
   signOut: vi.fn(),
   replace: vi.fn(),

@@ -34,3 +34,11 @@ export function saveCategory(input: EventCategoryInput, id?: string) {
 export function deleteCategory(id: string) {
   return request<null>(`${eventCategoryApiPath(id)}/delete`, {});
 }
+export function fetchDdayDismissals() {
+  return request<{ event_id: string; year: number }[]>(
+    eventApiRoutes.dismissals,
+  );
+}
+export function dismissDdayCard(id: string) {
+  return request<null>(`${eventApiPath(id)}/dismiss`, {});
+}

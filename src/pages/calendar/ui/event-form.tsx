@@ -21,6 +21,9 @@ function initialValues(
 ): EventFormInput {
   const now = new Date();
   return {
+    kind: event?.kind ?? "event",
+    ddayStyle: event?.details?.ddayStyle ?? "normal",
+    celebrateMessage: event?.details?.celebrateMessage ?? "",
     title: event?.details?.title ?? "",
     place: event?.details?.place ?? "",
     memo: event?.details?.memo ?? "",
@@ -56,6 +59,8 @@ export function EventForm({
   });
   const visibility = useWatch({ control, name: "visibility" });
   const isAllDay = useWatch({ control, name: "isAllDay" });
+  const kind = useWatch({ control, name: "kind" });
+  const ddayStyle = useWatch({ control, name: "ddayStyle" });
   const onAllDayChange = useCallback(
     (checked: boolean) => {
       if (checked) {
@@ -83,6 +88,47 @@ export function EventForm({
     <form onSubmit={handleSubmit(onSubmit)} className="grid gap-3" noValidate>
       <fieldset disabled={isSubmitting} className="grid min-w-0 gap-2">
         <legend className="sr-only">일정 입력</legend>
+        <FormFieldRow label="종류" htmlFor="event-kind">
+          {(props) => (
+            <select {...props} {...register("kind")}>
+              <option value="event">일정</option>
+              <option value="dday">D-day</option>
+            </select>
+          )}
+        </FormFieldRow>
+        {kind === "dday" && (
+          <>
+            <FormFieldRow
+              label="D-day 종류"
+              htmlFor="event-dday-style"
+              error={errors.ddayStyle?.message}
+              invalid={!!errors.ddayStyle}
+            >
+              {(props) => (
+                <select {...props} {...register("ddayStyle")}>
+                  <option value="normal">일반</option>
+                  <option value="celebrate">축하</option>
+                </select>
+              )}
+            </FormFieldRow>
+            {ddayStyle === "celebrate" && (
+              <FormFieldRow
+                label="축하 문구 (선택)"
+                htmlFor="event-celebrate-message"
+                error={errors.celebrateMessage?.message}
+                invalid={!!errors.celebrateMessage}
+              >
+                {(props) => (
+                  <input
+                    {...props}
+                    {...register("celebrateMessage")}
+                    placeholder="소중한 날을 축하해요!"
+                  />
+                )}
+              </FormFieldRow>
+            )}
+          </>
+        )}
         <FormFieldRow
           label="제목"
           htmlFor="event-title"
@@ -114,17 +160,19 @@ export function EventForm({
         <Text as="p" variant="caption" className="text-muted-foreground">
           {eventVisibility[visibility]}
         </Text>
-        <FormFieldRow label="종일" htmlFor="event-all-day">
-          {(props) => (
-            <Switch
-              {...props}
-              checked={isAllDay}
-              onCheckedChange={onAllDayChange}
-            />
-          )}
-        </FormFieldRow>
+        {kind !== "dday" && (
+          <FormFieldRow label="종일" htmlFor="event-all-day">
+            {(props) => (
+              <Switch
+                {...props}
+                checked={isAllDay}
+                onCheckedChange={onAllDayChange}
+              />
+            )}
+          </FormFieldRow>
+        )}
         <FormFieldRow
-          label="시작"
+          label={kind === "dday" ? "기준 날짜" : "시작"}
           htmlFor="event-start"
           invalid={!!errors.startDate}
           error={errors.startDate?.message}
@@ -133,15 +181,19 @@ export function EventForm({
             <input {...props} {...register("startDate")} type="date" />
           )}
         </FormFieldRow>
-        <FormFieldRow
-          label="종료"
-          htmlFor="event-end"
-          invalid={!!errors.endDate}
-          error={errors.endDate?.message}
-        >
-          {(props) => <input {...props} {...register("endDate")} type="date" />}
-        </FormFieldRow>
-        {!isAllDay && (
+        {kind !== "dday" && (
+          <FormFieldRow
+            label="종료"
+            htmlFor="event-end"
+            invalid={!!errors.endDate}
+            error={errors.endDate?.message}
+          >
+            {(props) => (
+              <input {...props} {...register("endDate")} type="date" />
+            )}
+          </FormFieldRow>
+        )}
+        {kind !== "dday" && !isAllDay && (
           <>
             <FormFieldRow
               label="시작 시각 (선택)"

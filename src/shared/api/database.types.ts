@@ -1,4 +1,4 @@
-// P2/P3 migration contract. Regenerate with `supabase gen types typescript --local`
+// P2/P3/P4 migration contract. Regenerate with `supabase gen types typescript --local`
 // after applying the migration to a local Supabase instance.
 export type Json =
   | string
@@ -22,6 +22,9 @@ type UserRow<Provider extends string> = {
   terms_accepted_at: string;
   privacy_accepted_at: string;
   terms_version: string;
+  home_view: string;
+  upcoming_enabled: boolean;
+  upcoming_count: number;
 };
 type FamilyRow = { id: string; name: string };
 type MembershipRow<Role extends string> = {
@@ -94,6 +97,8 @@ export type Database<
             place: string;
             memo: string;
             category_id: string;
+            dday_style: string;
+            celebrate_message: string;
           },
           {
             event_id: string;
@@ -102,6 +107,8 @@ export type Database<
             place?: string;
             memo?: string;
             category_id: string;
+            dday_style?: string;
+            celebrate_message?: string;
           }
         >,
         "Relationships"
@@ -116,7 +123,23 @@ export type Database<
           },
         ];
       };
-      users: Table<UserRow<Provider>, UserRow<Provider>>;
+      dday_card_dismissals: Table<
+        { user_id: string; event_id: string; year: number },
+        { user_id: string; event_id: string; year: number }
+      >;
+      users: Table<
+        UserRow<Provider>,
+        Omit<
+          UserRow<Provider>,
+          "home_view" | "upcoming_enabled" | "upcoming_count"
+        > &
+          Partial<
+            Pick<
+              UserRow<Provider>,
+              "home_view" | "upcoming_enabled" | "upcoming_count"
+            >
+          >
+      >;
       families: Table<FamilyRow, { id?: string; name: string }>;
       memberships: Table<MembershipRow<Role>, MembershipRow<Role>>;
       invites: Table<
@@ -146,9 +169,21 @@ export type Database<
           event_start_time: string | null;
           event_end_time: string | null;
           event_is_all_day: boolean;
+          event_kind?: string;
+          event_dday_style?: string;
+          event_celebrate_message?: string;
         };
         Returns: string;
       };
+      save_home_settings: {
+        Args: {
+          home_view: string;
+          upcoming_enabled: boolean;
+          upcoming_count: number;
+        };
+        Returns: undefined;
+      };
+      dismiss_dday_card: { Args: { event_id: string }; Returns: undefined };
       delete_event: { Args: { event_id: string }; Returns: undefined };
       save_event_category: {
         Args: {

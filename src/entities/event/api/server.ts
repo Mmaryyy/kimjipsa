@@ -45,7 +45,7 @@ async function eventContext(auth?: AuthContext) {
   return { client, userId: user.id, familyId: membership.data.family_id };
 }
 const selection =
-  "id, owner_id, visibility, start_date, end_date, start_time, end_time, is_all_day, event_details(title, place, memo, category_id)";
+  "id, owner_id, visibility, start_date, end_date, start_time, end_time, is_all_day, kind, event_details(title, place, memo, category_id, dday_style, celebrate_message)";
 const recordSchema = z.object({
   id: z.uuid(),
   owner_id: z.uuid().nullable(),
@@ -55,8 +55,11 @@ const recordSchema = z.object({
   start_time: z.string().nullable(),
   end_time: z.string().nullable(),
   is_all_day: z.boolean(),
+  kind: z.enum(["event", "dday"]),
   event_details: z
     .object({
+      dday_style: z.enum(["normal", "celebrate"]),
+      celebrate_message: z.string(),
       title: z.string(),
       place: z.string(),
       memo: z.string(),
@@ -118,6 +121,9 @@ export async function saveEvent(
       throw new ApiError("event_forbidden", errors.event_forbidden[1], 403);
   }
   const { data, error } = await client.rpc("save_event", {
+    event_kind: event.kind,
+    event_dday_style: event.ddayStyle,
+    event_celebrate_message: event.celebrateMessage,
     event_id: id === null ? null : idSchema.parse(id),
     event_title: event.title,
     event_place: event.place,
@@ -179,6 +185,26 @@ export async function deleteEventCategory(id: string, auth?: AuthContext) {
   const { client } = await eventContext(auth);
   const { error } = await client.rpc("delete_event_category", {
     category_id: idSchema.parse(id),
+  });
+  throwDatabaseError(error, errors);
+  return null;
+}
+
+export async function listDdayDismissals(auth?: AuthContext) {
+  const { client, userId } = await eventContext(auth);
+  const { data, error } = await client
+    .from("dday_card_dismissals")
+    .select("event_id, year")
+    .eq("user_id", userId);
+  throwDatabaseError(error, errors);
+  return z
+    .array(z.object({ event_id: z.uuid(), year: z.number().int() }))
+    .parse(data);
+}
+export async function dismissDdayCard(id: string, auth?: AuthContext) {
+  const { client } = await eventContext(auth);
+  const { error } = await client.rpc("dismiss_dday_card", {
+    event_id: idSchema.parse(id),
   });
   throwDatabaseError(error, errors);
   return null;

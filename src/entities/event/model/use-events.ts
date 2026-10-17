@@ -1,8 +1,14 @@
 "use client";
 import { useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createBrowserSupabaseClient } from "@/shared/api";
-import { fetchEvents, fetchEvent, fetchCategories } from "../api/api";
+import {
+  fetchEvents,
+  fetchEvent,
+  fetchCategories,
+  fetchDdayDismissals,
+  dismissDdayCard,
+} from "../api/api";
 export const eventQueryKey = ["events"] as const;
 export const categoryQueryKey = ["event-categories"] as const;
 export function useEvents() {
@@ -49,5 +55,20 @@ export function useEventCategories() {
     queryKey: categoryQueryKey,
     queryFn: fetchCategories,
     refetchInterval: 10000,
+  });
+}
+export function useDdayDismissals() {
+  return useQuery({
+    queryKey: ["dday-dismissals"],
+    queryFn: fetchDdayDismissals,
+    refetchInterval: 10000,
+  });
+}
+export function useDismissDdayCard() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: dismissDdayCard,
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["dday-dismissals"] }),
   });
 }

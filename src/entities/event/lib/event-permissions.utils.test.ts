@@ -13,6 +13,8 @@ const event: EventRecord = {
   end_time: "16:00:00",
   is_all_day: false,
   event_details: {
+    dday_style: "celebrate",
+    celebrate_message: "CANARY_CELEBRATE_MESSAGE",
     title: "CANARY_TITLE",
     place: "CANARY_PLACE",
     memo: "CANARY_MEMO",

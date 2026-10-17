@@ -8,7 +8,10 @@ export type EventRecord = {
   start_time: string | null;
   end_time: string | null;
   is_all_day: boolean;
+  kind?: "event" | "dday";
   event_details: {
+    dday_style?: "normal" | "celebrate";
+    celebrate_message?: string;
     title: string;
     place: string;
     memo: string;
@@ -25,6 +28,8 @@ export function filterEventForRequester(
   let details: EventDetails | null = null;
   if (canEdit && event.event_details) {
     details = {
+      ddayStyle: event.event_details.dday_style ?? "normal",
+      celebrateMessage: event.event_details.celebrate_message ?? "",
       title: event.event_details.title,
       place: event.event_details.place,
       memo: event.event_details.memo,
@@ -32,6 +37,7 @@ export function filterEventForRequester(
     };
   }
   return {
+    kind: event.kind ?? "event",
     id: event.id,
     ownerId: event.owner_id,
     visibility: event.visibility,

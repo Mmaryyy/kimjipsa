@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { HomeSettings } from "./home-settings";
 import { useSignOut } from "@/features/account";
 import { accountRoutes, eventRoutes } from "@/shared/config";
 import {
@@ -23,6 +24,7 @@ export function AppearanceSettingsPage() {
       <Link href={eventRoutes.categories} className="text-primary">
         일정 카테고리 관리하기
       </Link>
+      <HomeSettings />
       <section>
         <SectionHeader title="화면 모드" />
         <ThemeModeSelector />

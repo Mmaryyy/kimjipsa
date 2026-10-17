@@ -27,6 +27,7 @@ const categories: EventCategory[] = [
   },
 ];
 const event: CalendarEvent = {
+  kind: "event",
   id: "event",
   ownerId: "owner",
   visibility: "shared",
@@ -38,6 +39,8 @@ const event: CalendarEvent = {
   endTime: "10:00",
   isAllDay: false,
   details: {
+    ddayStyle: "normal",
+    celebrateMessage: "",
     title: "함께 일정",
     place: "",
     memo: "",
@@ -81,6 +84,41 @@ describe("CAL-01~03 SCN-CAL-1 일정 입력", () => {
           startTime: null,
           endTime: null,
           isAllDay: false,
+        }),
+      ),
+    );
+  });
+});
+
+describe("CAL-06 CAL-16 SCN-CAL-9~10 D-day 등록", () => {
+  it("기준 날짜와 종류·축하 문구를 저장하고 숨긴 시간·기간은 비워요", async () => {
+    render(
+      <EventForm event={event} categories={categories} onSaved={() => {}} />,
+    );
+    fireEvent.change(screen.getByLabelText("종류"), {
+      target: { value: "dday" },
+    });
+    fireEvent.change(screen.getByLabelText("D-day 종류"), {
+      target: { value: "celebrate" },
+    });
+    fireEvent.change(screen.getByLabelText("축하 문구 (선택)"), {
+      target: { value: "축하해요" },
+    });
+    fireEvent.change(screen.getByLabelText("기준 날짜"), {
+      target: { value: "2020-10-11" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "저장하기" }));
+    await waitFor(() =>
+      expect(onSave).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: "dday",
+          ddayStyle: "celebrate",
+          celebrateMessage: "축하해요",
+          startDate: "2020-10-11",
+          endDate: "2020-10-11",
+          isAllDay: true,
+          startTime: null,
+          endTime: null,
         }),
       ),
     );

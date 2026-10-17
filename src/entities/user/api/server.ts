@@ -1,3 +1,4 @@
+import { homeSettingsSchema } from "../model/home-settings.schema";
 import "server-only";
 import { profileSchema } from "../model/profile.schema";
 import type { User } from "@supabase/supabase-js";
@@ -113,6 +114,32 @@ export async function saveProfile(input: unknown) {
     display_name: profile.displayName,
     terms_accepted: profile.termsAccepted,
     privacy_accepted: profile.privacyAccepted,
+  });
+  throwDatabaseError(error);
+  return null;
+}
+
+export async function getHomeSettings() {
+  const { client, user } = await authenticatedClient();
+  const { data, error } = await client
+    .from("users")
+    .select("home_view, upcoming_enabled, upcoming_count")
+    .eq("id", user.id)
+    .single();
+  throwDatabaseError(error);
+  return homeSettingsSchema.parse({
+    homeView: data?.home_view,
+    upcomingEnabled: data?.upcoming_enabled,
+    upcomingCount: data?.upcoming_count,
+  });
+}
+export async function saveHomeSettings(input: unknown) {
+  const settings = homeSettingsSchema.parse(input);
+  const { client } = await authenticatedClient();
+  const { error } = await client.rpc("save_home_settings", {
+    home_view: settings.homeView,
+    upcoming_enabled: settings.upcomingEnabled,
+    upcoming_count: settings.upcomingCount,
   });
   throwDatabaseError(error);
   return null;

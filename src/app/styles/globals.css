@@ -140,3 +140,27 @@
     outline-offset: 2px;
   }
 }
+
+@layer components {
+  .kj-celebration-confetti {
+    color: var(--celebrate-text);
+    letter-spacing: var(--sp-3);
+    animation: celebration-confetti 2s ease-out both;
+    pointer-events: none;
+  }
+  @keyframes celebration-confetti {
+    from {
+      transform: translateY(-16px) rotate(-4deg);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0) rotate(0);
+      opacity: 1;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .kj-celebration-confetti {
+      animation: none;
+    }
+  }
+}

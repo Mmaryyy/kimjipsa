@@ -15,3 +15,4 @@ export {
   eventApiPath,
   eventCategoryApiPath,
 } from "./event-routes.constants";
+export { homeSettingsApiPath } from "./home-routes.constants";

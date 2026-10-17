@@ -8,12 +8,15 @@ export type EventInput = z.infer<typeof eventSchema>;
 export type EventCategoryInput = z.infer<typeof eventCategorySchema>;
 export type EventCategory = EventCategoryInput & { id: string };
 export type EventDetails = {
+  ddayStyle: "normal" | "celebrate";
+  celebrateMessage: string;
   title: string;
   place: string;
   memo: string;
   categoryId: string;
 };
 export type CalendarEvent = {
+  kind: "event" | "dday";
   id: string;
   ownerId: string | null;
   visibility: keyof typeof eventVisibility;

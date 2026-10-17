@@ -12,6 +12,11 @@ vi.mock("@/entities/event", async (original) => ({
   useEventCategories,
 }));
 vi.mock("./event-detail", () => ({ EventDetail: () => <p>상세 내용</p> }));
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams("date=2026-10-16&view=day"),
+  usePathname: () => "/calendar",
+  useRouter: () => ({ replace: vi.fn() }),
+}));
 const refetch = vi.fn();
 describe("CAL-01~05 SCN-CAL-1~3 일정 목록", () => {
   beforeEach(() => {
@@ -38,7 +43,7 @@ describe("CAL-01~05 SCN-CAL-1~3 일정 목록", () => {
   it("빈 목록을 안내해요", () => {
     render(<CalendarPage />);
     expect(
-      screen.getByText("등록한 일정이 없어요. 새 일정을 만들어 보세요."),
+      screen.getByText("선택한 기간에 일정이 없어요."),
     ).toBeInTheDocument();
   });
   it("조회 실패를 빈 목록으로 표시하지 않고 재시도해요", () => {
@@ -51,7 +56,7 @@ describe("CAL-01~05 SCN-CAL-1~3 일정 목록", () => {
     fireEvent.click(screen.getByRole("button", { name: "다시 시도하기" }));
     expect(refetch).toHaveBeenCalled();
     expect(
-      screen.queryByText("등록한 일정이 없어요. 새 일정을 만들어 보세요."),
+      screen.queryByText("선택한 기간에 일정이 없어요."),
     ).not.toBeInTheDocument();
   });
   it("배우자 개인 일정은 상세를 여는 버튼이 없어요", () => {

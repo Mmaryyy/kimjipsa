@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import { catalogPath } from "@/shared/config";
 import { HomePage } from "./home-page";
 
+vi.mock("./home-schedule", () => ({ HomeSchedule: () => <div /> }));
+
 describe("P1 홈 화면 (기능 SCN 연결 전)", () => {
   it("페이지가 오늘 제목을 보여 줘요", () => {
     render(<HomePage />);

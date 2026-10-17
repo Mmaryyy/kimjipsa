@@ -1,6 +1,8 @@
 import "server-only";
 import { authenticatedClient } from "@/entities/user/index.server";
 import {
+  listDdayDismissals,
+  dismissDdayCard,
   listEvents,
   getEvent,
   saveEvent,
@@ -67,6 +69,17 @@ export function categoryDeletePOST(request: Request, context: Context) {
   return handleRoute(request, () =>
     authorized(async (auth) =>
       deleteEventCategory((await context.params).id, auth),
+    ),
+  );
+}
+
+export function ddayDismissalsGET(request: Request) {
+  return handleRoute(request, () => authorized(listDdayDismissals));
+}
+export function ddayDismissPOST(request: Request, context: Context) {
+  return handleRoute(request, () =>
+    authorized(async (auth) =>
+      dismissDdayCard((await context.params).id, auth),
     ),
   );
 }

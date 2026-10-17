@@ -5,7 +5,7 @@
         var(--hit),
         var(--bottom-navigation-icon-size) + var(--sp-1) + var(--type-body-lh)
       ) +
-      var(--sp-1) * 2
+      var(--sp-2) + var(--sp-1)
   );
   --bottom-navigation-offset: calc(
     var(--bottom-navigation-height) + var(--sp-8)
@@ -28,7 +28,7 @@
   z-index: 40;
   background: var(--bg-grouped-secondary);
   box-shadow: var(--shadow-navigation);
-  padding: var(--sp-1) var(--sp-1)
+  padding: var(--sp-2) var(--sp-1)
     calc(var(--sp-1) + env(safe-area-inset-bottom));
 }
 .kj-bottom-navigation ul {

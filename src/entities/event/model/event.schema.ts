@@ -7,6 +7,9 @@ const time = z
   .nullable();
 export const eventSchema = z
   .object({
+    kind: z.enum(["event", "dday"]).default("event"),
+    ddayStyle: z.enum(["normal", "celebrate"]).default("normal"),
+    celebrateMessage: z.string().trim().default(""),
     title: z
       .string({ error: "제목을 입력해 주세요." })
       .trim()
@@ -24,6 +27,26 @@ export const eventSchema = z
     isAllDay: z.boolean({ error: "종일 여부를 확인해 주세요." }),
   })
   .superRefine((event, context) => {
+    if (
+      event.kind === "dday" &&
+      (event.startDate !== event.endDate || !event.isAllDay)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["endDate"],
+        message: "D-day는 기준 날짜 하루를 종일로 등록해 주세요.",
+      });
+    }
+    if (
+      event.kind === "event" &&
+      (event.ddayStyle !== "normal" || event.celebrateMessage !== "")
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["ddayStyle"],
+        message: "축하 설정은 D-day에서만 사용할 수 있어요.",
+      });
+    }
     if (
       event.endDate < event.startDate ||
       (event.endDate === event.startDate &&

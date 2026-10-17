@@ -7,3 +7,4 @@ export {
   saveEventCategory,
   deleteEventCategory,
 } from "./api/server";
+export { listDdayDismissals, dismissDdayCard } from "./api/server";

@@ -1,72 +1,26 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { LockKeyhole } from "lucide-react";
+import { CalendarView } from "@/widgets/calendar-view";
 import {
   useEvents,
   useEventCategories,
-  eventTimeLabel,
-  type CalendarEvent,
-  type EventCategory,
+  eventDateInput,
+  useCalendarClock,
 } from "@/entities/event";
 import { eventRoutes } from "@/shared/config";
 import {
   Button,
-  CategoryDot,
   EmptyState,
   ErrorState,
-  List,
-  ListRow,
   ListSkeleton,
   PageHeader,
   Sheet,
-  TextButton,
 } from "@/shared/ui";
 import { EventForm } from "./event-form";
 import { EventDetail } from "./event-detail";
-function EventRow({
-  event,
-  categories,
-  onOpen,
-}: {
-  event: CalendarEvent;
-  categories: EventCategory[];
-  onOpen: (id: string) => void;
-}) {
-  const category = categories.find(
-    (category) => category.id === event.details?.categoryId,
-  );
-  if (!event.details)
-    return (
-      <ListRow
-        leading={
-          <LockKeyhole
-            aria-hidden="true"
-            size={16}
-            className="text-muted-foreground"
-          />
-        }
-        description={eventTimeLabel(event)}
-        className="text-muted-foreground"
-      >
-        개인 일정
-      </ListRow>
-    );
-  return (
-    <ListRow
-      leading={category && <CategoryDot color={category.color} />}
-      description={eventTimeLabel(event)}
-    >
-      <TextButton
-        className="max-w-full whitespace-normal break-words text-left"
-        onClick={() => onOpen(event.id)}
-      >
-        {event.details.title}
-      </TextButton>
-    </ListRow>
-  );
-}
 function EventList({ onOpen }: { onOpen: (id: string) => void }) {
+  const instant = useCalendarClock();
   const events = useEvents();
   const categories = useEventCategories();
   if (events.isError)
@@ -89,23 +43,16 @@ function EventList({ onOpen }: { onOpen: (id: string) => void }) {
     );
   if (events.isPending || categories.isPending)
     return <ListSkeleton label="일정을 불러오고 있어요" />;
-  if (!events.data.length)
-    return (
-      <EmptyState message="등록한 일정이 없어요. 새 일정을 만들어 보세요." />
-    );
   return (
-    <List>
-      {events.data.map((event) => (
-        <EventRow
-          key={event.id}
-          event={event}
-          categories={categories.data}
-          onOpen={onOpen}
-        />
-      ))}
-    </List>
+    <CalendarView
+      events={events.data}
+      categories={categories.data}
+      today={eventDateInput(instant.toISOString())}
+      onOpen={onOpen}
+    />
   );
 }
+
 function NewEvent({ onSaved }: { onSaved: () => void }) {
   const categories = useEventCategories();
   if (categories.isError)
