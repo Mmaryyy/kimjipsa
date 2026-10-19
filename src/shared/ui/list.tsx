@@ -16,7 +16,13 @@ export function ListRow({
   ...props
 }: ListRowProps) {
   return (
-    <li className={cn("kj-list-row", className)} {...props}>
+    <li
+      className={cn(
+        "flex min-h-[var(--row-min)] items-center gap-3 py-2 [overflow-wrap:anywhere]",
+        className,
+      )}
+      {...props}
+    >
       {leading}
       <div className="min-w-0 flex-1">
         <div>{children}</div>
@@ -26,7 +32,7 @@ export function ListRow({
           </Text>
         )}
       </div>
-      {trailing && <div className="kj-list-row-trailing">{trailing}</div>}
+      {trailing && <div className="max-w-13/20 flex-none">{trailing}</div>}
     </li>
   );
 }
@@ -35,5 +41,5 @@ export function ListGroupLabel({ className, ...props }: ComponentProps<"h3">) {
   return <GroupLabel as="h3" className={className} {...props} />;
 }
 export function List({ className, ...props }: ComponentProps<"ul">) {
-  return <ul className={cn("kj-list", className)} {...props} />;
+  return <ul className={cn("m-0 list-none p-0", className)} {...props} />;
 }

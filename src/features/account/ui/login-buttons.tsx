@@ -26,7 +26,7 @@ export function LoginButtons({ inviteToken }: { inviteToken?: string | null }) {
           {error.message}
         </Text>
       )}
-      <div className="kj-login-actions mt-auto grid gap-2">
+      <div className="mt-auto grid gap-2">
         <Button
           className={cn(
             "h-[46px] w-full min-w-0 justify-center overflow-hidden rounded-[12px] p-0",

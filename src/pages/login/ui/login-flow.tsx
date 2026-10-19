@@ -8,6 +8,7 @@ import {
 } from "@/features/account";
 import { accountRoutes, onboardingPath } from "@/shared/config";
 import {
+  onboardingStyles,
   Banner,
   BrandLogo,
   Button,
@@ -58,7 +59,10 @@ export function LoginFlow({
   if (account.isPending || destination)
     return <ListSkeleton label="로그인 상태를 확인하고 있어요" />;
   return (
-    <div className="kj-onboarding" data-od-id="onboarding-main">
+    <div
+      className={onboardingStyles({ part: "page" })}
+      data-od-id="onboarding-main"
+    >
       {showLogin ? (
         <>
           <OnboardingProgress
@@ -69,7 +73,10 @@ export function LoginFlow({
                 : undefined
             }
           />
-          <section className="kj-onboarding-panel" data-od-id="ob-step-login">
+          <section
+            className={onboardingStyles({ part: "panel" })}
+            data-od-id="ob-step-login"
+          >
             <LoginIntroduction />
             {error !== undefined && (
               <Banner variant="error" title="로그인을 마치지 못했어요">

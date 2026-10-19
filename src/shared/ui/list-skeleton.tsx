@@ -1,3 +1,4 @@
+import { cn } from "@/shared/lib";
 import { List, ListRow } from "./list";
 export function ListSkeleton({
   rows = 3,
@@ -13,10 +14,27 @@ export function ListSkeleton({
         {Array.from({ length: Math.max(0, rows) }, (_, index) => (
           <ListRow
             key={index}
-            leading={<span className="kj-list-skeleton kj-list-skeleton-dot" />}
+            leading={
+              <span
+                className={cn([
+                  "rounded-[var(--sp-half)] bg-[var(--fill-quaternary)] animate-skeleton-pulse",
+                  "motion-reduce:animate-none size-[var(--ctl-h-sm)] flex-none",
+                ])}
+              />
+            }
           >
-            <div className="kj-list-skeleton kj-list-skeleton-title" />
-            <div className="kj-list-skeleton kj-list-skeleton-detail" />
+            <div
+              className={cn([
+                "h-3.5 rounded-[var(--sp-half)] bg-[var(--fill-quaternary)] animate-skeleton-pulse",
+                "motion-reduce:animate-none w-13/20",
+              ])}
+            />
+            <div
+              className={cn([
+                "h-3.5 rounded-[var(--sp-half)] bg-[var(--fill-quaternary)] animate-skeleton-pulse",
+                "motion-reduce:animate-none mt-2 w-2/5",
+              ])}
+            />
           </ListRow>
         ))}
       </List>

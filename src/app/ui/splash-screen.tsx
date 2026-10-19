@@ -10,7 +10,15 @@ export function SplashScreen({
 }) {
   return (
     <div
-      className={cn("kj-splash-screen", leaving && "leaving", className)}
+      className={cn(
+        [
+          "fixed inset-0 z-70 grid place-items-center bg-background text-center",
+          "[&>div]:transition-opacity [&>div]:duration-200 [&>div]:ease-out",
+          "motion-reduce:[&>div]:transition-none",
+        ],
+        leaving && "[&>div]:opacity-0 motion-reduce:[&>div]:opacity-100",
+        className,
+      )}
       role="status"
       aria-label="김집사를 준비하고 있어요"
       data-od-id="splash-main"

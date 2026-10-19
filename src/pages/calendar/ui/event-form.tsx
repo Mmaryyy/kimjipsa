@@ -1,4 +1,6 @@
 "use client";
+import { cn } from "@/shared/lib";
+
 import { useCallback, type FormEvent } from "react";
 import {
   Controller,
@@ -73,7 +75,12 @@ function EventDateField({
       error={error}
     >
       {(props) => (
-        <div className="kj-event-date-inputs">
+        <div
+          className={cn([
+            "flex min-w-0 items-center justify-end gap-2 [&_input[type=date]]:min-w-0",
+            "[&_input[type=date]]:w-32 [&_input[type=time]]:min-w-0 [&_input[type=time]]:w-22",
+          ])}
+        >
           <input
             {...props}
             data-od-id={`f-${prefix}-date`}

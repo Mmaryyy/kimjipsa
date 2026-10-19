@@ -1,4 +1,6 @@
 "use client";
+import { cn } from "@/shared/lib";
+
 import { AlertDialog } from "radix-ui";
 import { Button } from "./button";
 import type { OverlayProps } from "./overlay.types";
@@ -28,14 +30,21 @@ export function ConfirmDialog({
       {trigger && <AlertDialog.Trigger asChild>{trigger}</AlertDialog.Trigger>}
       <AlertDialog.Portal>
         <AlertDialog.Overlay className="kj-overlay" />
-        <AlertDialog.Content className="kj-confirm-dialog" data-theme={theme}>
+        <AlertDialog.Content
+          className={cn([
+            "fixed top-1/2 left-1/2 z-81 w-[min(calc(var(--sp-10)*7.5),calc(100%-var(--sp-6)*2))]",
+            "-translate-1/2 rounded-sm bg-popover p-4 text-center text-foreground",
+            "[overflow-wrap:anywhere] [&_p]:mt-1",
+          ])}
+          data-theme={theme}
+        >
           <AlertDialog.Title className="text-headline">
             ‘{targetName}’ {title}
           </AlertDialog.Title>
           <AlertDialog.Description className="text-caption text-muted-foreground">
             {description}
           </AlertDialog.Description>
-          <div className="kj-confirm-dialog-actions">
+          <div className="mt-4 grid grid-cols-2 gap-2">
             <AlertDialog.Cancel asChild>
               <Button variant="gray" disabled={pending}>
                 취소하기

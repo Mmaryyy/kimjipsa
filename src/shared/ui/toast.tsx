@@ -1,4 +1,5 @@
 "use client";
+import { cn } from "@/shared/lib";
 
 import { Toast as ToastPrimitive } from "radix-ui";
 import { Button } from "./button";
@@ -24,7 +25,11 @@ export function Toast({
       open={open}
       onOpenChange={onOpenChange}
       duration={duration}
-      className="kj-toast"
+      className={cn([
+        "grid gap-2 rounded-sm bg-foreground px-3 py-2 text-[length:var(--type-body-sm-size)]",
+        "text-background [overflow-wrap:anywhere]",
+        "data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=end]:opacity-0",
+      ])}
       data-theme={theme}
     >
       <ToastPrimitive.Title>{message}</ToastPrimitive.Title>

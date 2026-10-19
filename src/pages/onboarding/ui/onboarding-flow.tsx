@@ -10,6 +10,7 @@ import {
 import { CreateFamilyForm, InviteShare, useFamily } from "@/features/family";
 import { accountRoutes, invitePath } from "@/shared/config";
 import {
+  onboardingStyles,
   ErrorState,
   ListSkeleton,
   OnboardingProgress,
@@ -78,7 +79,10 @@ export function OnboardingFlow({ inviteToken }: { inviteToken?: string }) {
         : 3;
   const step = Math.min(requestedStep ?? actualStep, actualStep);
   return (
-    <div className="kj-onboarding" data-od-id="onboarding-main">
+    <div
+      className={onboardingStyles({ part: "page" })}
+      data-od-id="onboarding-main"
+    >
       <OnboardingProgress
         step={step}
         onBack={
@@ -91,7 +95,10 @@ export function OnboardingFlow({ inviteToken }: { inviteToken?: string }) {
         }
       />
       {step === 1 && (
-        <section data-od-id="ob-step-login" className="kj-onboarding-panel">
+        <section
+          data-od-id="ob-step-login"
+          className={onboardingStyles({ part: "panel" })}
+        >
           <LoginIntroduction />
           {account.data.userId ? (
             <TextButton onClick={() => setRequestedStep(null)}>계속</TextButton>
@@ -101,7 +108,10 @@ export function OnboardingFlow({ inviteToken }: { inviteToken?: string }) {
         </section>
       )}
       {step === 2 && (
-        <section data-od-id="ob-step-terms" className="kj-onboarding-panel">
+        <section
+          data-od-id="ob-step-terms"
+          className={onboardingStyles({ part: "panel" })}
+        >
           <Text as="h1" variant="title-lg">
             약관에 동의해 주세요
           </Text>
@@ -113,7 +123,10 @@ export function OnboardingFlow({ inviteToken }: { inviteToken?: string }) {
         </section>
       )}
       {step === 3 && (
-        <section data-od-id="ob-step-home" className="kj-onboarding-panel">
+        <section
+          data-od-id="ob-step-home"
+          className={onboardingStyles({ part: "panel" })}
+        >
           <div>
             <Text as="h1" variant="title-lg">
               우리 집 이름을 정해 주세요

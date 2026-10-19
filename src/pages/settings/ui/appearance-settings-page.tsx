@@ -1,4 +1,5 @@
 "use client";
+import { cn } from "@/shared/lib";
 
 import { HomeSettings } from "./home-settings";
 import { useSignOut } from "@/features/account";
@@ -33,7 +34,15 @@ export function AppearanceSettingsPage() {
   const { onSignOut, pending, error } = useSignOut();
 
   return (
-    <div className="kj-settings" data-od-id="settings-main">
+    <div
+      className={cn([
+        "[&>section]:mt-10 [&>section>[data-slot=group-label]]:pt-0",
+        "[&_[data-slot=segmented-control]]:w-42 [&_[data-slot=field-row]>label]:w-auto",
+        "[&_[data-slot=field-row]>label]:flex-1 [&_[data-slot=input]]:w-35",
+        "[&_[data-slot=input]]:text-right",
+      ])}
+      data-od-id="settings-main"
+    >
       <PageHeader odId="settings" titleVariant="display" title="설정" />
       <AccountSettings />
       <PlannedSettingsSection title="알림" odId="set-notify" />

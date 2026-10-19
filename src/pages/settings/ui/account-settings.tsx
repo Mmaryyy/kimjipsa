@@ -1,4 +1,6 @@
 "use client";
+import { cn } from "@/shared/lib";
+
 import { useState } from "react";
 import { useAccount, ProfileForm } from "@/features/account";
 import { useFamily, InviteShare } from "@/features/family";
@@ -82,7 +84,12 @@ export function AccountSettings() {
                 key={member.user_id}
                 data-od-id={isMe ? "member-me" : "member-partner"}
                 leading={
-                  <span className="kj-member-avatar">
+                  <span
+                    className={cn([
+                      "grid size-8 place-items-center rounded-[var(--r-round)] bg-muted",
+                      "text-[length:var(--type-caption-size)] font-semibold text-muted-foreground",
+                    ])}
+                  >
                     {Array.from(member.display_name)[0]}
                   </span>
                 }

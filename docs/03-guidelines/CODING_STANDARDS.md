@@ -62,7 +62,9 @@ Tailwind + CVA + shadcn/ui 기준이다(ADR-0004).
 - `size`, `selected`, `disabled`, `pressed`, 의미별 색(`tone`)처럼 시각적 variant는 `class-variance-authority`로 선언하고 `*.variants.ts`에 둔다. 라벨, 옵션 같은 데이터는 `*.constants.ts`에 두고 둘을 한 파일에 섞지 않는다. variant 이름 목록은 데이터가 아니다. CVA 선언이 단일 원천이므로 타입은 `VariantProps`로 뽑고, 같은 키를 `*.constants.ts`에 다시 적지 않는다. 화면이 variant를 순회해야 하면 `Record<Variant, ...>`처럼 키 누락을 컴파일러가 잡는 형태로 그 화면 쪽에 둔다.
 - JSX 안에서 variant 스타일을 긴 삼항이나 조건부 클래스 조합으로 반복하지 않는다.
 - CVA는 외형을 정하고, 문구와 행동은 props나 도메인 매핑이 정한다.
-- `kj-*` CSS는 `components` 레이어에 두고, 호출부에서 Tailwind 유틸리티로 덮어쓴다.
+- 한 컴포넌트에서만 쓰는 스타일은 해당 컴포넌트 안의 Tailwind 유틸리티로 작성한다. 시각적 variant가 필요하면 `*.variants.ts`의 CVA로 분리한다.
+- 여러 컴포넌트가 같은 표현을 쓰면 공용 컴포넌트나 CVA variant를 재사용한다. 터치 영역·안전 영역·배경막처럼 실제로 범용인 유틸리티와 커스텀 `@keyframes`만 CSS에 둔다. 새 `kj-*` 클래스를 만들지 않는다.
+- 임의 값 유틸리티가 필요하면 디자인 토큰을 참조한다. 기존 화면의 외형을 유지하는 스타일 이동에서도 토큰 값을 중복 정의하지 않는다.
 - 클래스 합치기는 `cn()`(`clsx` + `tailwind-merge`)을 쓴다.
 - 색·간격은 디자인 토큰 파일의 토큰만 쓰고, TSX나 별도 CSS에 값을 중복 정의하지 않는다. 토큰 원본은 `docs/design/tokens.css`이고, 앱 안의 토큰 파일은 `src/app/styles/tokens.css`이며, Tailwind 테마는 `src/app/styles/globals.css`에서 CSS 변수를 참조한다.
 - 아이콘(svg)의 색은 불투명 토큰(`--icon-*`)을 쓴다. 반투명 색은 선이 겹치는 곳이 진해져 얼룩져 보인다.

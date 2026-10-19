@@ -1,6 +1,6 @@
 import { cva, type VariantProps } from "class-variance-authority";
 
-export const textStyles = cva("kj-text", {
+export const textStyles = cva("[overflow-wrap:anywhere]", {
   variants: {
     variant: {
       display: "text-display",
@@ -24,81 +24,136 @@ export type TextVariant = NonNullable<
   VariantProps<typeof textStyles>["variant"]
 >;
 
-export const statusBadgeStyles = cva("kj-status-badge", {
-  variants: {
-    variant: {
-      success: "text-success-text [--status-dot:var(--success)]",
-      info: "text-info-text [--status-dot:var(--info)]",
-      warning: "text-warning-text [--status-dot:var(--warning)]",
-      error: "text-error-text [--status-dot:var(--error)]",
+export const statusBadgeStyles = cva(
+  [
+    "inline-flex flex-none items-center gap-1 whitespace-nowrap",
+    "text-[length:var(--type-caption-size)]",
+  ],
+  {
+    variants: {
+      variant: {
+        success: "text-success-text [--status-dot:var(--success)]",
+        info: "text-info-text [--status-dot:var(--info)]",
+        warning: "text-warning-text [--status-dot:var(--warning)]",
+        error: "text-error-text [--status-dot:var(--error)]",
+      },
     },
+    defaultVariants: { variant: "info" },
   },
-  defaultVariants: { variant: "info" },
-});
+);
 
 export type StatusVariant = NonNullable<
   VariantProps<typeof statusBadgeStyles>["variant"]
 >;
 
-export const bannerStyles = cva("kj-banner text-caption", {
-  variants: {
-    variant: {
-      success: "bg-success-soft",
-      info: "bg-info-soft",
-      warning: "bg-warning-soft",
-      error: "bg-error-soft",
-    } satisfies Record<StatusVariant, string>,
-  },
-  defaultVariants: { variant: "info" },
-});
-
-export const buttonStyles = cva("kj-button kj-hit text-label", {
-  variants: {
-    variant: {
-      primary: "bg-primary text-primary-foreground",
-      gray: "bg-muted text-foreground",
-      toast: "bg-background text-foreground",
-      danger: "bg-muted text-destructive",
-      success: "bg-success-button-bg text-success-button-fg",
-      info: "bg-info-button-bg text-info-button-fg",
-      warning: "bg-warning-button-bg text-warning-button-fg",
-      error: "bg-error-button-bg text-error-button-fg",
+export const bannerStyles = cva(
+  "flex items-start gap-3 p-3 [&_strong]:font-semibold text-caption",
+  {
+    variants: {
+      variant: {
+        success: "bg-success-soft",
+        info: "bg-info-soft",
+        warning: "bg-warning-soft",
+        error: "bg-error-soft",
+      } satisfies Record<StatusVariant, string>,
     },
-    size: {
-      sm: "kj-control-sm text-caption",
-      md: "kj-control-md",
-      block: "kj-control-block",
-    },
+    defaultVariants: { variant: "info" },
   },
-  defaultVariants: { variant: "primary", size: "md" },
-});
+);
 
-export const textButtonStyles = cva("kj-text-button kj-hit text-label", {
+export const buttonStyles = cva(
+  [
+    "inline-flex shrink-0 cursor-pointer items-center justify-center gap-1 rounded-sm px-3",
+    "whitespace-nowrap [word-break:keep-all] active:opacity-70 disabled:cursor-default",
+    "disabled:[&_svg]:text-[var(--icon-tertiary)] kj-hit text-label",
+  ],
+  {
+    variants: {
+      variant: {
+        primary: "bg-primary text-primary-foreground",
+        gray: "bg-muted text-foreground",
+        toast: "bg-background text-foreground",
+        danger: "bg-muted text-destructive",
+        success: "bg-success-button-bg text-success-button-fg",
+        info: "bg-info-button-bg text-info-button-fg",
+        warning: "bg-warning-button-bg text-warning-button-fg",
+        error: "bg-error-button-bg text-error-button-fg",
+      },
+      size: {
+        sm: "min-h-[var(--ctl-h-sm)] text-caption",
+        md: "min-h-[var(--ctl-h)]",
+        block: "min-h-[var(--ctl-h-lg)] w-full",
+      },
+    },
+    defaultVariants: { variant: "primary", size: "md" },
+  },
+);
+
+export const textButtonStyles = cva(
+  [
+    "inline-flex shrink-0 cursor-pointer items-center justify-center gap-1 whitespace-nowrap",
+    "[word-break:keep-all] active:opacity-70 disabled:cursor-default kj-hit text-label",
+  ],
+  {
+    variants: {
+      tone: { default: "text-primary", danger: "text-destructive" },
+      size: {
+        sm: "min-h-[var(--ctl-h-sm)] text-[length:var(--type-caption-size)]",
+        md: "min-h-[var(--ctl-h)]",
+      },
+    },
+    defaultVariants: { tone: "default", size: "md" },
+  },
+);
+
+export const toggleGroupStyles = cva(
+  [
+    "flex min-w-0 [&_button]:cursor-pointer [&_button]:whitespace-nowrap",
+    "[&_button]:[word-break:keep-all] [&_button:disabled]:cursor-default",
+    "[&_button:disabled]:opacity-50",
+  ],
+  {
+    variants: {
+      appearance: {
+        segmented: [
+          "min-w-max shrink-0 rounded-sm bg-muted p-0.5 [&_button]:min-h-[var(--ctl-h-xs)]",
+          "[&_button]:min-w-max [&_button]:flex-[1_0_auto] [&_button]:rounded-sm [&_button]:px-2",
+          "[&_button[data-state=on]]:bg-[var(--control-selected-bg)]",
+          "[&_button[data-state=on]]:font-semibold",
+          "[&_button[data-state=on]]:shadow-[var(--shadow-control)]",
+        ],
+        filters: [
+          "gap-5 overflow-x-auto py-2 [scrollbar-width:none] [&_button]:min-h-[var(--ctl-h)]",
+          "[&_button]:flex-none [&_button]:text-[var(--label-tertiary)]",
+          "[&_button[data-state=on]]:font-semibold [&_button[data-state=on]]:text-foreground",
+          "[&_button[data-state=on]]:underline",
+          "[&_button[data-state=on]]:underline-offset-[var(--sp-2)]",
+        ],
+      },
+    },
+    defaultVariants: { appearance: "segmented" },
+  },
+);
+
+export const formFieldRowStyles = cva(
+  [
+    "flex min-h-[var(--row-min)] flex-wrap items-center gap-3 py-1 [&>label]:basis-22",
+    "[&>label]:grow-0 [&>label]:shrink-0",
+  ],
+  {
+    variants: { invalid: { true: "[&>label]:text-destructive", false: "" } },
+  },
+);
+
+export const emptyStateStyles = cva("text-muted-foreground", {
   variants: {
-    tone: { default: "text-primary", danger: "text-destructive" },
-    size: {
-      sm: "kj-control-sm text-[length:var(--type-caption-size)]",
-      md: "kj-control-md",
+    layout: {
+      centered: "py-10 text-center",
+      row: [
+        "flex items-center justify-between gap-3 py-3 text-left [&>p]:text-muted-foreground",
+        "[&>div:last-child]:mt-0 [&>div:last-child]:flex-none",
+      ],
     },
   },
-  defaultVariants: { tone: "default", size: "md" },
-});
-
-export const toggleGroupStyles = cva("kj-toggle-group", {
-  variants: {
-    appearance: {
-      segmented: "kj-segmented-control",
-      filters: "kj-filter-tabs",
-    },
-  },
-  defaultVariants: { appearance: "segmented" },
-});
-
-export const formFieldRowStyles = cva("kj-form-field-row", {
-  variants: { invalid: { true: "kj-form-field-row-invalid", false: "" } },
-});
-
-export const emptyStateStyles = cva("kj-empty-state", {
-  variants: { layout: { centered: "", row: "kj-empty-state-row" } },
   defaultVariants: { layout: "centered" },
 });

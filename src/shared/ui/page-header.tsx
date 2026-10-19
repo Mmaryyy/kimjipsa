@@ -1,3 +1,4 @@
+import { cn } from "@/shared/lib";
 import type { ReactNode } from "react";
 import { Text } from "./text";
 export function PageHeader({
@@ -27,7 +28,7 @@ export function PageHeader({
           {subtitle}
         </Text>
       )}
-      <div className="kj-page-header-row">
+      <div className="flex items-center gap-2 [&_h1]:min-w-0 [&_h1]:flex-1">
         <Text
           as="h1"
           variant={titleVariant}
@@ -35,7 +36,16 @@ export function PageHeader({
         >
           {title}
         </Text>
-        {actions && <div className="kj-page-header-toolbar">{actions}</div>}
+        {actions && (
+          <div
+            className={cn([
+              "flex min-w-0 max-w-3/5 flex-wrap items-center justify-end gap-2 [&>*]:max-w-full",
+              "[&>*]:[overflow-wrap:anywhere]",
+            ])}
+          >
+            {actions}
+          </div>
+        )}
       </div>
       {children}
     </header>

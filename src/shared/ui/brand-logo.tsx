@@ -1,3 +1,4 @@
+import { wordmarkStyles } from "./onboarding.variants";
 import Image from "next/image";
 
 export function BrandLogo() {
@@ -12,7 +13,7 @@ export function BrandLogo() {
         priority
         data-od-id="splash-character"
       />
-      <h1 className="kj-wordmark" data-od-id="splash-wordmark">
+      <h1 className={wordmarkStyles()} data-od-id="splash-wordmark">
         김집사
       </h1>
     </div>

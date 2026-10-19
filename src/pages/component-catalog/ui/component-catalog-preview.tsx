@@ -40,7 +40,7 @@ function AppearanceSamples({ onAction }: { onAction: () => void }) {
   return (
     <>
       <SectionHeader title="글자" />
-      <div className="kj-component-catalog-stack">
+      <div className="grid gap-4 py-4">
         {textVariants.map((variant) => (
           <Text as="p" variant={variant} key={variant}>
             {variant} · 우리 집을 함께 돌봐요
@@ -49,7 +49,7 @@ function AppearanceSamples({ onAction }: { onAction: () => void }) {
       </div>
 
       <SectionHeader title="상태와 배너" />
-      <div className="kj-component-catalog-stack">
+      <div className="grid gap-4 py-4">
         {statusVariants.map((variant) => (
           <div key={variant}>
             <StatusBadge variant={variant}>{statusLabels[variant]}</StatusBadge>
@@ -61,7 +61,7 @@ function AppearanceSamples({ onAction }: { onAction: () => void }) {
       </div>
 
       <SectionHeader title="버튼" />
-      <div className="kj-component-catalog-demo">
+      <div className="flex flex-wrap items-center gap-4 py-4">
         {buttonOptions.map(([variant, label]) => (
           <Button key={variant} variant={variant} onClick={onAction}>
             {label}
@@ -107,7 +107,7 @@ function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
   return (
     <section
       data-theme={theme}
-      className="kj-component-catalog-pane"
+      className="min-w-0 bg-background p-4 text-foreground"
       aria-label={`${theme === "light" ? "라이트" : "다크"} 견본`}
     >
       <Text as="h2" variant="title">
@@ -116,7 +116,7 @@ function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
       <AppearanceSamples onAction={showToast} />
 
       <SectionHeader title="선택과 필터" />
-      <div className="kj-component-catalog-stack">
+      <div className="grid gap-4 py-4">
         <SegmentedControl
           label="보기 방식"
           options={viewOptions}
@@ -150,7 +150,7 @@ function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
           />
         )}
       </FormFieldRow>
-      <div className="kj-component-catalog-demo">
+      <div className="flex flex-wrap items-center gap-4 py-4">
         <Switch aria-label="비활성 스위치" disabled />
         <Checkbox aria-label="비활성 체크" disabled />
         <QuantityStepper
@@ -215,7 +215,7 @@ function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
           </ListRow>
         )}
       </List>
-      <div className="kj-component-catalog-demo">
+      <div className="flex flex-wrap items-center gap-4 py-4">
         {categoryColorOptions.map((color) => (
           <CategoryDot
             key={color}
@@ -226,7 +226,7 @@ function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
       </div>
 
       <SectionHeader title="시트와 확인창" />
-      <div className="kj-component-catalog-demo">
+      <div className="flex flex-wrap items-center gap-4 py-4">
         <Sheet
           open={sheetOpen}
           onOpenChange={setSheetOpen}
@@ -297,7 +297,7 @@ export function ComponentCatalogPreview({ splash }: { splash: ReactNode }) {
     <>
       <SectionHeader title="화면 모드" />
       <ThemeModeSelector />
-      <div className="kj-component-catalog-modes">
+      <div className="grid min-w-0 gap-6 xl:grid-cols-2">
         <ComponentCatalogPane theme="light" />
         <ComponentCatalogPane theme="dark" />
       </div>

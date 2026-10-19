@@ -1,4 +1,5 @@
 "use client";
+import { cn } from "@/shared/lib";
 
 import { Toast as ToastPrimitive } from "radix-ui";
 import type { ReactNode } from "react";
@@ -8,7 +9,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastPrimitive.Provider swipeDirection="right">
       {children}
       <ToastPrimitive.Viewport
-        className="kj-toast-viewport"
+        className={cn([
+          "fixed bottom-[calc(var(--bottom-navigation-offset)+env(safe-area-inset-bottom))] left-1/2",
+          "z-90 w-max max-w-[calc(100%-var(--sp-8))] -translate-x-1/2 list-none p-0 lg:bottom-8",
+        ])}
         label="알림 ({hotkey})"
       />
     </ToastPrimitive.Provider>

@@ -27,7 +27,7 @@ function CelebrationCard({
   return (
     <article
       ref={bannerRef}
-      className="kj-celebration-banner"
+      className="relative overflow-hidden bg-[var(--fill-quaternary)] px-4 pt-4.5 pb-4"
       aria-label={`${event.details?.title} 축하`}
     >
       <Text

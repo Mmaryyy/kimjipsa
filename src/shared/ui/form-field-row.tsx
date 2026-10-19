@@ -23,9 +23,20 @@ export function FormFieldRow({
   ...props
 }: FormFieldRowProps) {
   return (
-    <div className={cn(formFieldRowStyles({ invalid }), className)} {...props}>
+    <div
+      data-slot="field-row"
+      className={cn(formFieldRowStyles({ invalid }), className)}
+      {...props}
+    >
       <label htmlFor={htmlFor}>{label}</label>
-      <div className="kj-form-field-row-control">
+      <div
+        className={cn([
+          "flex min-w-0 flex-1 justify-end [&_:is(input,select,textarea)]:min-h-[var(--ctl-h)]",
+          "[&_:is(input,select,textarea)]:min-w-0 [&_:is(input,select,textarea)]:w-full",
+          "[&_:is(input,select,textarea)]:bg-transparent [&_:is(input,select,textarea)]:text-right",
+          "[&_textarea]:text-left",
+        ])}
+      >
         {children({
           id: htmlFor,
           "aria-invalid": invalid || undefined,
@@ -38,7 +49,7 @@ export function FormFieldRow({
           variant="caption"
           id={`${htmlFor}-error`}
           role="alert"
-          className="kj-form-field-row-error"
+          className="basis-full [color:var(--destructive)]"
         >
           {error}
         </Text>

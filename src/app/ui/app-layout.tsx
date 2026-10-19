@@ -1,4 +1,6 @@
 "use client";
+import { cn } from "@/shared/lib";
+
 import dynamic from "next/dynamic";
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
@@ -30,14 +32,25 @@ export function AppLayout({ children }: { children: ReactNode }) {
     pathname.startsWith(`${accountRoutes.invite}/`) ||
     pathname === catalogPath;
   const shell = (
-    <div className="kj-app-layout" data-public={publicPage}>
-      <a className="kj-skip-link" href="#main-content">
+    <div
+      className="group/app min-h-dvh lg:pl-62 data-[public=true]:pl-0"
+      data-public={publicPage}
+    >
+      <a
+        className="fixed top-2 left-4 z-100 -translate-y-2/1 bg-background p-2 focus:translate-y-0"
+        href="#main-content"
+      >
         본문으로 건너뛰기
       </a>
       {!publicPage && <SidebarNavigation pathname={pathname} />}
       <main
         id="main-content"
-        className="kj-app-layout-main"
+        className={cn([
+          "mx-auto min-w-0 max-w-[var(--content-max)] bg-background px-4 pt-0",
+          "pb-[calc(var(--bottom-navigation-offset)+env(safe-area-inset-bottom))] lg:max-w-280",
+          "lg:px-10 lg:pb-10 lg:data-[home=true]:max-w-[var(--content-max)]",
+          "group-data-[public=true]/app:pb-0",
+        ])}
         data-home={pathname === accountRoutes.home}
         tabIndex={-1}
       >

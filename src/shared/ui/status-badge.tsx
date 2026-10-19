@@ -12,7 +12,10 @@ export function StatusBadge({
 }: StatusBadgeProps) {
   return (
     <span className={cn(statusBadgeStyles({ variant }), className)} {...props}>
-      <span className="kj-status-badge-dot" aria-hidden="true" />
+      <span
+        className="size-1.25 flex-none rounded-[var(--r-round)] bg-[var(--status-dot)]"
+        aria-hidden="true"
+      />
       {children}
     </span>
   );

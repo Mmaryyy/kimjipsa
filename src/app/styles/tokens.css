@@ -521,3 +521,27 @@
   --dur-fast: 160ms;
   --dur: 280ms;
 }
+
+/* 앱 셸의 안전 영역과 알림 위치가 공유하는 파생 토큰. */
+:root {
+  --bottom-navigation-icon-size: calc(var(--sp-6) + var(--sp-half));
+  --bottom-navigation-height: calc(
+    max(
+        var(--hit),
+        var(--bottom-navigation-icon-size) + var(--sp-1) + var(--type-body-lh)
+      ) +
+      var(--sp-2) + var(--sp-1)
+  );
+  --bottom-navigation-offset: calc(
+    var(--bottom-navigation-height) + var(--sp-8)
+  );
+}
+
+/* 기존 컴포넌트의 비율·뷰포트·모션 값: P4.7에서 외형을 유지하며 옮겨요. */
+:root {
+  --wordmark-line-height: 1.1;
+  --swatch-selected-scale: 0.78;
+  --sheet-mobile-max-height: 92dvh;
+  --sheet-desktop-max-height: 80dvh;
+  --skeleton-duration: 1.5s;
+}

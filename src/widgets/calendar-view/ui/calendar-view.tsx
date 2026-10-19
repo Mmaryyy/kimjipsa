@@ -34,6 +34,7 @@ import {
   Text,
   TextButton,
 } from "@/shared/ui";
+import { calendarNumberStyles } from "./calendar-date.variants";
 import { useCalendarLocation } from "../model/use-calendar-location";
 
 type CalendarProps = {
@@ -46,6 +47,23 @@ type CalendarProps = {
   onOpen?: (id: string) => void;
   onAdd?: () => void;
 };
+
+function getCalendarNumberTone({
+  emphasized,
+  outside,
+  sunday,
+  month,
+}: {
+  emphasized: boolean;
+  outside: boolean;
+  sunday: boolean;
+  month?: number;
+}) {
+  if (emphasized && month !== undefined) return "selected";
+  if (sunday && !emphasized) return "sunday";
+  if (outside) return "outside";
+  return emphasized ? "selected" : "default";
+}
 
 function CalendarDate({
   day,
@@ -68,9 +86,17 @@ function CalendarDate({
   const daily = occurrences.filter(
     (item) => item.startDate <= date && item.endDate >= date,
   );
+  const emphasized = date === today || date === selected;
+  const outside = month !== undefined && day.getMonth() !== month;
+  const numberTone = getCalendarNumberTone({
+    emphasized,
+    outside,
+    sunday: day.getDay() === 0,
+    month,
+  });
   return (
     <TextButton
-      className="kj-calendar-date text-foreground"
+      className="flex min-w-0 flex-col gap-1 px-0 pt-2 pb-2.5 text-foreground"
       onClick={() => onSelect(date)}
       data-od-id={`${month !== undefined ? "month" : "week"}-day-${date}`}
       data-outside={month !== undefined && day.getMonth() !== month}
@@ -80,11 +106,31 @@ function CalendarDate({
       aria-current={date === today ? "date" : undefined}
       aria-pressed={date === selected}
     >
-      <span className="kj-calendar-dow">
+      <span
+        className={cn(
+          [
+            "text-[length:var(--type-caption-sm-size)] font-normal",
+            "tracking-[var(--type-caption-sm-tracking)]",
+          ],
+          day.getDay() === 0
+            ? "text-[var(--sys-red-ic)]"
+            : "text-muted-foreground",
+        )}
+      >
         {format(day, "EEEEE", { locale: ko })}
       </span>
-      <span className="kj-calendar-number">{format(day, "d")}</span>
-      <span className="kj-calendar-dots" aria-hidden="true">
+      <span
+        className={calendarNumberStyles({
+          tone: numberTone,
+          today: date === today,
+        })}
+      >
+        {format(day, "d")}
+      </span>
+      <span
+        className="flex h-1.25 gap-0.75 [&_i]:size-1.25 [&_i]:rounded-[var(--r-round)]"
+        aria-hidden="true"
+      >
         {daily.slice(0, 3).map(({ event }) => {
           const category = categories.find(
             (category) => category.id === event.details?.categoryId,
@@ -601,9 +647,14 @@ function CalendarContent({
             <nav
               aria-label={home && view === "week" ? "이번 주" : "달력"}
               data-od-id={home && view === "week" ? "week-strip" : undefined}
-              className={
-                view === "month" ? "kj-calendar-month" : "kj-calendar-week"
-              }
+              className={cn(
+                "mt-1 grid min-w-0 grid-cols-7",
+                view === "month" && [
+                  "[&>button]:min-h-14 lg:[&>button]:min-h-21",
+                  "[&>button>span:nth-child(2)]:size-7.5",
+                  "[&>button:nth-child(n+8)>span:first-child]:hidden",
+                ],
+              )}
             >
               {days.map((day) => (
                 <CalendarDate

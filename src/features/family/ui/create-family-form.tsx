@@ -1,10 +1,18 @@
 "use client";
+import { cn } from "@/shared/lib";
 import { useCallback } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { familySchema } from "@/entities/family";
 import { ApiError } from "@/shared/api";
-import { Button, CategoryDot, FormFieldRow, Text } from "@/shared/ui";
+import {
+  Input,
+  onboardingStyles,
+  Button,
+  CategoryDot,
+  FormFieldRow,
+  Text,
+} from "@/shared/ui";
 import { useCreateFamily } from "../model/use-family";
 export function CreateFamilyForm({ onCreated }: { onCreated?: () => void }) {
   const { onSubmit } = useCreateFamily(onCreated);
@@ -44,18 +52,24 @@ export function CreateFamilyForm({ onCreated }: { onCreated?: () => void }) {
     <form
       onSubmit={handleSubmit(onCreate)}
       noValidate
-      className={onCreated ? "kj-onboarding-form" : "grid gap-5"}
+      className={onCreated ? onboardingStyles({ part: "form" }) : "grid gap-5"}
       aria-busy={isSubmitting}
     >
       <FormFieldRow
-        className={onCreated ? "kj-family-name-field" : undefined}
+        className={cn(
+          onCreated && [
+            "block [&>label]:sr-only [&_input]:w-full [&_input]:rounded-sm [&_input]:bg-muted",
+            "[&_input]:px-3 [&_input]:py-4 [&_input]:text-left",
+            "[&_input]:text-[length:var(--type-title-size)]",
+          ],
+        )}
         label="가정 이름"
         htmlFor="familyName"
         invalid={Boolean(nameError)}
         error={nameError}
       >
         {(controlProps) => (
-          <input
+          <Input
             {...controlProps}
             aria-describedby={[
               controlProps["aria-describedby"],
@@ -64,7 +78,7 @@ export function CreateFamilyForm({ onCreated }: { onCreated?: () => void }) {
               .filter(Boolean)
               .join(" ")}
             data-od-id="ob-home-name"
-            className="kj-input text-title"
+            className="text-title"
             {...register("name")}
             required
             placeholder="도토리네"

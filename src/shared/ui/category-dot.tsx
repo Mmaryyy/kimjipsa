@@ -9,7 +9,8 @@ export function CategoryDot({
 }) {
   return (
     <span
-      className="kj-category-dot"
+      data-slot="category-dot"
+      className="size-2.5 flex-none rounded-[var(--r-round)] bg-[var(--category-color)]"
       role={label ? "img" : undefined}
       aria-label={label}
       aria-hidden={label ? undefined : true}

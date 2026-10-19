@@ -93,13 +93,13 @@ export function EventOccurrenceRow({
             </Text>
           )}
           {privateEvent ? (
-            <span className="kj-event-dot bg-[var(--sys-gray3)]" />
+            <span className="size-2 flex-none rounded-[var(--r-round)] bg-[var(--sys-gray3)]" />
           ) : celebrated ? (
-            <span className="kj-event-dot bg-[var(--celebrate)]" />
+            <span className="size-2 flex-none rounded-[var(--r-round)] bg-[var(--celebrate)]" />
           ) : category ? (
             <CategoryDot color={category.color} />
           ) : (
-            <span className="kj-event-dot bg-[var(--label-tertiary)]" />
+            <span className="size-2 flex-none rounded-[var(--r-round)] bg-[var(--label-tertiary)]" />
           )}
         </>
       }

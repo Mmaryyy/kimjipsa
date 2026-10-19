@@ -1,4 +1,6 @@
 "use client";
+import { cn } from "@/shared/lib";
+
 import { Minus, Plus } from "lucide-react";
 import { Button } from "./button";
 type QuantityStepperProps = {
@@ -28,7 +30,15 @@ export function QuantityStepper({
     onValueChange(Math.min(max, Math.max(min, next)));
   };
   return (
-    <div className="kj-quantity-stepper" role="group" aria-label={label}>
+    <div
+      className={cn([
+        "inline-flex items-center gap-0.5 [&_button]:min-h-[var(--ctl-h-xs)]",
+        "[&_button]:w-[var(--ctl-h-xs)] [&_button]:p-0 [&_output]:min-w-[var(--ctl-h)]",
+        "[&_output]:text-center [&_output]:font-semibold [&_output]:tabular-nums",
+      ])}
+      role="group"
+      aria-label={label}
+    >
       <Button
         variant="gray"
         size="sm"

@@ -16,6 +16,8 @@ import {
 } from "@/entities/legal-document";
 import { ApiError } from "@/shared/api";
 import {
+  Input,
+  onboardingStyles,
   Button,
   Checkbox,
   FormFieldRow,
@@ -197,7 +199,7 @@ export function ProfileForm({
     <form
       onSubmit={handleSubmit(onSave)}
       noValidate
-      className={onboarding ? "kj-onboarding-form" : "grid gap-5"}
+      className={onboarding ? onboardingStyles({ part: "form" }) : "grid gap-5"}
       aria-busy={isSubmitting}
     >
       <FormFieldRow
@@ -207,7 +209,7 @@ export function ProfileForm({
         error={nameError}
       >
         {(controlProps) => (
-          <input
+          <Input
             {...controlProps}
             aria-describedby={[
               controlProps["aria-describedby"],
@@ -216,7 +218,6 @@ export function ProfileForm({
               .filter(Boolean)
               .join(" ")}
             data-od-id={hasProfile ? "s-display-name-input" : undefined}
-            className="kj-input"
             autoFocus={autoFocus}
             {...register("displayName")}
             required

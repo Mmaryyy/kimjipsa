@@ -6,6 +6,14 @@
 - **토큰 원본 (CONFIRMED):** `docs/design/tokens.css` (Apple 시스템 컬러, 라이트·다크, 상태 variant `success · info · warning · error`, 타이포 variant 12단계, 간격·모양). 색, 폰트, 간격, 라운드는 이 파일의 토큰만 쓰고 임의로 만들지 않는다.
 - **앱 토큰 파일 경로:** `src/app/styles/tokens.css`. 원본을 옮긴 파일이며, Tailwind 테마 연결은 `src/app/styles/globals.css`에 둔다.
 
+### 스타일 구현 기준 (CONFIRMED, 사용자 결정 2026-10-19)
+
+- 컴포넌트 전용 스타일은 컴포넌트의 Tailwind 유틸리티로 작성하고, 상태·크기별 표현은 CVA(`*.variants.ts`)로 관리한다.
+- 반복되는 표현은 공용 컴포넌트·variant를 재사용한다. 입력은 `Input`, 가입 레이아웃과 워드마크는 `onboardingStyles`·`wordmarkStyles`를 사용한다.
+- CSS에는 토큰, base 리셋, 커스텀 애니메이션과 범용 유틸리티만 남긴다. 현재 범용 클래스는 `kj-hit`(터치 영역), `kj-overlay`(배경막), `kj-page-header`(안전 영역)이며, 새 `kj-*`는 추가하지 않는다.
+- Tailwind 테마는 색·간격·라운드·타이포·글자 굵기의 앱 토큰을 참조한다. 기존 셸의 파생 치수와 모션·비율도 앱 토큰에 모으고, 디자인 원본의 색·간격 값은 바꾸지 않는다.
+- P4.7의 클래스별 사용처와 이동 결과는 [스타일 감사](../design/P4.7_STYLE_AUDIT.md)를 참고한다.
+
 ## 1. 디자인 방향 (CONFIRMED, 기획서 §04)
 
 - 모바일 우선 반응형 웹, PWA. 홈 화면에 설치해 앱처럼 쓴다.

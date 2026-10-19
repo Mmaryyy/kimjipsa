@@ -1,4 +1,6 @@
 "use client";
+import { cn } from "@/shared/lib";
+
 import { useCallback, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -123,9 +125,22 @@ export function EventCategoryForm({
               색상 · {eventCategoryColors[color]}
             </GroupLabel>
           </legend>
-          <div className="kj-category-swatches">
+          <div className="grid max-w-90 grid-cols-[repeat(auto-fill,calc(var(--sp-8)+var(--sp-1)))] gap-2 pt-2 pb-1">
             {Object.entries(eventCategoryColors).map(([value, label]) => (
-              <label key={value} className="kj-category-swatch">
+              <label
+                key={value}
+                className={cn([
+                  "relative grid size-9 place-items-center [&_input]:absolute [&_input]:inset-0",
+                  "[&_input]:cursor-pointer [&_input]:opacity-0",
+                  "[&_[data-slot=category-dot]]:pointer-events-none [&_[data-slot=category-dot]]:size-6.5",
+                  "[&:has(input:checked)_[data-slot=category-dot]]:outline-2",
+                  "[&:has(input:checked)_[data-slot=category-dot]]:outline-[var(--category-color)]",
+                  "[&:has(input:checked)_[data-slot=category-dot]]:outline-offset-4",
+                  "[&:has(input:checked)_[data-slot=category-dot]]:scale-[var(--swatch-selected-scale)]",
+                  "has-[:focus-visible]:rounded-[var(--r-round)] has-[:focus-visible]:outline-2",
+                  "has-[:focus-visible]:outline-primary has-[:focus-visible]:outline-offset-2",
+                ])}
+              >
                 <input
                   {...register("color")}
                   type="radio"

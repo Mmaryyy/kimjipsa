@@ -41,6 +41,9 @@ export function ToggleGroup<Value extends string>({
 }) {
   return (
     <ToggleGroupPrimitive.Root
+      data-slot={
+        appearance === "segmented" ? "segmented-control" : "filter-tabs"
+      }
       id={id}
       aria-invalid={ariaInvalid}
       aria-describedby={ariaDescribedBy}

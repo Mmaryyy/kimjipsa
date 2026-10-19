@@ -17,7 +17,10 @@ export function EmptyState({
   return (
     <div className={emptyStateStyles({ layout })}>
       {icon !== null && (
-        <div aria-hidden="true" className="kj-empty-state-icon">
+        <div
+          aria-hidden="true"
+          className="mb-2 flex justify-center text-[var(--icon-tertiary)]"
+        >
           {icon}
         </div>
       )}
