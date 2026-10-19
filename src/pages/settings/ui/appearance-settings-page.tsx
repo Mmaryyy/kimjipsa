@@ -87,14 +87,16 @@ export function AppearanceSettingsPage() {
           </Text>
         )}
       </section>
-      <div className="mt-10 pb-4" data-od-id="set-viewport">
-        <Link
-          href={viewportPath}
-          className="kj-hit text-caption text-muted-foreground"
-        >
-          개발용 · 화면 정보
-        </Link>
-      </div>
+      {process.env.NODE_ENV === "development" && (
+        <div className="mt-10 pb-4" data-od-id="set-viewport">
+          <Link
+            href={viewportPath}
+            className="kj-hit text-caption text-muted-foreground"
+          >
+            개발용 · 화면 정보
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

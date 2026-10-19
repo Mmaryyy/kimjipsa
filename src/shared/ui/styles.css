@@ -10,9 +10,12 @@
 }
 @supports (-webkit-touch-callout: none) {
   @media (display-mode: standalone), (display-mode: fullscreen) {
+    :root {
+      --onboarding-min-padding-top: var(--sp-8);
+    }
     .kj-page-header {
-      /* WebKit 301994: 홈 화면 앱에서 inset이 0이어도 상태 막대 공간을 확보해요. */
-      --page-header-min-padding-top: calc(var(--sp-10) + var(--sp-8));
+      /* 홈 화면 앱 실측: inset 0에서 32px 미만이면 상단 글자가 흐려 보여요. */
+      --page-header-min-padding-top: var(--sp-8);
     }
   }
 }

@@ -4,7 +4,8 @@ export const onboardingStyles = cva("flex flex-1 flex-col", {
   variants: {
     part: {
       page: [
-        "mx-auto min-h-dvh max-w-110 pt-[max(var(--sp-3),env(safe-area-inset-top))]",
+        "mx-auto min-h-dvh max-w-110",
+        "pt-[max(var(--onboarding-min-padding-top,var(--sp-3)),env(safe-area-inset-top))]",
         "pb-[calc(var(--sp-6)+env(safe-area-inset-bottom))]",
       ],
       panel: "gap-8 pt-10 [&>:last-child]:mt-auto",
