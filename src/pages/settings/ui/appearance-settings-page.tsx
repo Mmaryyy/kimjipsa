@@ -1,5 +1,7 @@
 "use client";
 import { cn } from "@/shared/lib";
+import Link from "next/link";
+import { viewportPath } from "@/shared/config";
 
 import { HomeSettings } from "./home-settings";
 import { useSignOut } from "@/features/account";
@@ -85,6 +87,14 @@ export function AppearanceSettingsPage() {
           </Text>
         )}
       </section>
+      <div className="mt-10 pb-4" data-od-id="set-viewport">
+        <Link
+          href={viewportPath}
+          className="kj-hit text-caption text-muted-foreground"
+        >
+          개발용 · 화면 정보
+        </Link>
+      </div>
     </div>
   );
 }
