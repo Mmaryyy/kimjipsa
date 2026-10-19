@@ -1,21 +1,51 @@
 "use client";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ApiError } from "@/shared/api";
 import { useAccount } from "@/features/account";
 import { accountRoutes } from "@/shared/config";
-import { ErrorState, ListSkeleton } from "@/shared/ui";
-export function AccountGate({ children }: { children: ReactNode }) {
+import { ErrorState } from "@/shared/ui";
+
+export function AccountGate({
+  children,
+  splash,
+}: {
+  children: ReactNode;
+  splash: (leaving: boolean) => ReactNode;
+}) {
   const account = useAccount();
   const router = useRouter();
+  const [minimumElapsed, setMinimumElapsed] = useState(false);
+  const [released, setReleased] = useState(false);
   let destination: string | null = null;
   if (account.data && !account.data.userId) destination = accountRoutes.login;
   else if (account.data && (!account.data.profile || !account.data.membership))
     destination = accountRoutes.onboarding;
+  const settled = !account.isPending;
+  const leaving = minimumElapsed && settled && !released;
   useEffect(() => {
-    if (destination) router.replace(destination);
-  }, [destination, router]);
+    const timer = window.setTimeout(() => setMinimumElapsed(true), 900);
+    return () => window.clearTimeout(timer);
+  }, []);
+  useEffect(() => {
+    if (!leaving) return;
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const timer = window.setTimeout(
+      () => setReleased(true),
+      reducedMotion ? 0 : 200,
+    );
+    return () => window.clearTimeout(timer);
+  }, [leaving]);
+  useEffect(() => {
+    if (released && destination && !account.isError)
+      router.replace(destination);
+  }, [released, destination, account.isError, router]);
+  // 셸과 본문을 아예 마운트하지 않아 첫 HTML과 탭 순서에도 노출하지 않아요.
+  if (!released || account.isPending || (destination && !account.isError))
+    return splash(leaving || (released && destination !== null));
   if (
     account.error instanceof ApiError &&
     account.error.code === "identity_policy_violation"
@@ -46,7 +76,7 @@ export function AccountGate({ children }: { children: ReactNode }) {
         retrying={account.isFetching}
       />
     );
-  if (account.isPending || destination)
-    return <ListSkeleton label="로그인 상태를 확인하고 있어요" />;
-  return children;
+  if (account.data?.userId && account.data.profile && account.data.membership)
+    return children;
+  return splash(false);
 }

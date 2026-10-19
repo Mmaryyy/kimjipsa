@@ -1,15 +1,27 @@
 "use client";
-import { useCallback } from "react";
-import { Controller, useForm, useWatch } from "react-hook-form";
+import { useCallback, type FormEvent } from "react";
+import {
+  Controller,
+  useForm,
+  useWatch,
+  type UseFormRegister,
+  type FieldErrors,
+} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   type CalendarEvent,
   type EventCategory,
   type EventInput,
   eventDateInput,
-  eventVisibility,
 } from "@/entities/event";
-import { Button, FormFieldRow, Switch, Text } from "@/shared/ui";
+import {
+  Button,
+  CategoryDot,
+  FormFieldRow,
+  GroupLabel,
+  Switch,
+  Text,
+} from "@/shared/ui";
 import {
   eventFormSchema,
   type EventFormInput,
@@ -18,6 +30,7 @@ import { useEventEditor } from "../model/use-event-editor";
 function initialValues(
   event: CalendarEvent | undefined,
   categories: EventCategory[],
+  initialDate?: string,
 ): EventFormInput {
   const now = new Date();
   return {
@@ -30,20 +43,72 @@ function initialValues(
     categoryId: event?.details?.categoryId ?? categories[0]?.id ?? "",
     visibility: event?.visibility ?? "shared",
     isAllDay: event?.isAllDay ?? false,
-    startDate: event?.startDate ?? eventDateInput(now.toISOString()),
-    endDate: event?.endDate ?? eventDateInput(now.toISOString()),
+    startDate:
+      event?.startDate ?? initialDate ?? eventDateInput(now.toISOString()),
+    endDate: event?.endDate ?? initialDate ?? eventDateInput(now.toISOString()),
     startTime: event?.startTime ?? "",
     endTime: event?.endTime ?? "",
   };
 }
+function EventDateField({
+  prefix,
+  isAllDay,
+  register,
+  errors,
+}: {
+  prefix: "start" | "end";
+  isAllDay: boolean;
+  register: UseFormRegister<EventFormInput>;
+  errors: FieldErrors<EventFormInput>;
+}) {
+  const dateField = prefix === "start" ? "startDate" : "endDate";
+  const timeField = prefix === "start" ? "startTime" : "endTime";
+  const label = prefix === "start" ? "시작" : "종료";
+  const error = errors[dateField]?.message ?? errors[timeField]?.message;
+  return (
+    <FormFieldRow
+      label={label}
+      htmlFor={`event-${prefix}`}
+      invalid={Boolean(error)}
+      error={error}
+    >
+      {(props) => (
+        <div className="kj-event-date-inputs">
+          <input
+            {...props}
+            data-od-id={`f-${prefix}-date`}
+            {...register(dateField)}
+            type="date"
+          />
+          {!isAllDay && (
+            <input
+              id={`event-${prefix}-time`}
+              aria-label={`${label} 시각 (선택)`}
+              aria-invalid={Boolean(errors[timeField]) || undefined}
+              aria-describedby={props["aria-describedby"]}
+              data-od-id={`f-${prefix}-time`}
+              {...register(timeField)}
+              type="time"
+            />
+          )}
+        </div>
+      )}
+    </FormFieldRow>
+  );
+}
+
 export function EventForm({
   event,
   categories,
   onSaved,
+  formId,
+  initialDate,
 }: {
   event?: CalendarEvent;
   categories: EventCategory[];
   onSaved: () => void;
+  formId?: string;
+  initialDate?: string;
 }) {
   const { onSave } = useEventEditor(event?.id, onSaved);
   const {
@@ -55,9 +120,8 @@ export function EventForm({
     formState: { errors, isSubmitting },
   } = useForm<EventFormInput, unknown, EventInput>({
     resolver: zodResolver(eventFormSchema),
-    defaultValues: initialValues(event, categories),
+    defaultValues: initialValues(event, categories, initialDate),
   });
-  const visibility = useWatch({ control, name: "visibility" });
   const isAllDay = useWatch({ control, name: "isAllDay" });
   const kind = useWatch({ control, name: "kind" });
   const ddayStyle = useWatch({ control, name: "ddayStyle" });
@@ -84,11 +148,138 @@ export function EventForm({
     },
     [onSave, setError],
   );
+  const onFormSubmit = useCallback(
+    (event: FormEvent<HTMLFormElement>) => {
+      if (isSubmitting) {
+        event.preventDefault();
+        return;
+      }
+      void handleSubmit(onSubmit)(event);
+    },
+    [handleSubmit, onSubmit, isSubmitting],
+  );
+  const categoryId = useWatch({ control, name: "categoryId" });
+  const category = categories.find((category) => category.id === categoryId);
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="grid gap-3" noValidate>
+    <form
+      id={formId}
+      onSubmit={onFormSubmit}
+      aria-busy={isSubmitting}
+      className="grid gap-3"
+      noValidate
+    >
       <fieldset disabled={isSubmitting} className="grid min-w-0 gap-2">
         <legend className="sr-only">일정 입력</legend>
-        <FormFieldRow label="종류" htmlFor="event-kind">
+        <FormFieldRow
+          label="제목"
+          htmlFor="event-title"
+          invalid={!!errors.title}
+          error={errors.title?.message}
+        >
+          {(props) => (
+            <input
+              {...props}
+              data-od-id="f-title"
+              {...register("title")}
+              autoFocus
+            />
+          )}
+        </FormFieldRow>
+        <FormFieldRow label="장소" htmlFor="event-place">
+          {(props) => (
+            <input {...props} data-od-id="f-place" {...register("place")} />
+          )}
+        </FormFieldRow>
+        <GroupLabel>시간</GroupLabel>
+        {kind !== "dday" && (
+          <FormFieldRow label="종일" htmlFor="event-all-day">
+            {(props) => (
+              <Switch
+                {...props}
+                data-od-id="f-allday"
+                checked={isAllDay}
+                onCheckedChange={onAllDayChange}
+              />
+            )}
+          </FormFieldRow>
+        )}
+        <EventDateField
+          prefix="start"
+          isAllDay={isAllDay || kind === "dday"}
+          register={register}
+          errors={errors}
+        />
+        {kind !== "dday" && (
+          <EventDateField
+            prefix="end"
+            isAllDay={isAllDay}
+            register={register}
+            errors={errors}
+          />
+        )}
+        {kind !== "dday" && !isAllDay && (
+          <Text as="p" variant="caption" className="text-muted-foreground">
+            시각을 모두 비우면 시간 미정으로 저장돼요.
+          </Text>
+        )}
+        <div
+          className="flex min-h-11 items-center justify-between gap-3"
+          data-od-id="f-remind"
+        >
+          <span>알림</span>
+          <Text variant="caption" className="text-muted-foreground">
+            준비 중
+          </Text>
+        </div>
+        <GroupLabel>분류</GroupLabel>
+        <FormFieldRow
+          label="카테고리"
+          htmlFor="event-category"
+          invalid={!!errors.categoryId}
+          error={errors.categoryId?.message}
+        >
+          {(props) => (
+            <div className="flex items-center gap-2">
+              {category && <CategoryDot color={category.color} />}
+              <select
+                {...props}
+                data-od-id="f-category"
+                {...register("categoryId")}
+              >
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </FormFieldRow>
+        {(!event || event.canChangeVisibility) && (
+          <FormFieldRow label="개인 일정" htmlFor="event-private">
+            {(props) => (
+              <Controller
+                control={control}
+                name="visibility"
+                render={({ field }) => (
+                  <Switch
+                    {...props}
+                    data-od-id="f-private"
+                    checked={field.value === "private"}
+                    onCheckedChange={(checked) =>
+                      field.onChange(checked ? "private" : "shared")
+                    }
+                    aria-label="개인 일정"
+                  />
+                )}
+              />
+            )}
+          </FormFieldRow>
+        )}
+        <Text as="p" variant="caption" className="text-muted-foreground">
+          기본은 둘 다 참석하는 공유 일정이에요.
+        </Text>
+        <FormFieldRow label="일정 종류" htmlFor="event-kind">
           {(props) => (
             <select {...props} {...register("kind")}>
               <option value="event">일정</option>
@@ -129,118 +320,16 @@ export function EventForm({
             )}
           </>
         )}
-        <FormFieldRow
-          label="제목"
-          htmlFor="event-title"
-          invalid={!!errors.title}
-          error={errors.title?.message}
-        >
-          {(props) => <input {...props} {...register("title")} autoFocus />}
-        </FormFieldRow>
-        {(!event || event.canChangeVisibility) && (
-          <FormFieldRow label="개인 일정" htmlFor="event-private">
-            {(props) => (
-              <Controller
-                control={control}
-                name="visibility"
-                render={({ field }) => (
-                  <Switch
-                    {...props}
-                    checked={field.value === "private"}
-                    onCheckedChange={(checked) =>
-                      field.onChange(checked ? "private" : "shared")
-                    }
-                    aria-label="개인 일정"
-                  />
-                )}
-              />
-            )}
-          </FormFieldRow>
-        )}
-        <Text as="p" variant="caption" className="text-muted-foreground">
-          {eventVisibility[visibility]}
-        </Text>
-        {kind !== "dday" && (
-          <FormFieldRow label="종일" htmlFor="event-all-day">
-            {(props) => (
-              <Switch
-                {...props}
-                checked={isAllDay}
-                onCheckedChange={onAllDayChange}
-              />
-            )}
-          </FormFieldRow>
-        )}
-        <FormFieldRow
-          label={kind === "dday" ? "기준 날짜" : "시작"}
-          htmlFor="event-start"
-          invalid={!!errors.startDate}
-          error={errors.startDate?.message}
-        >
-          {(props) => (
-            <input {...props} {...register("startDate")} type="date" />
-          )}
-        </FormFieldRow>
-        {kind !== "dday" && (
-          <FormFieldRow
-            label="종료"
-            htmlFor="event-end"
-            invalid={!!errors.endDate}
-            error={errors.endDate?.message}
-          >
-            {(props) => (
-              <input {...props} {...register("endDate")} type="date" />
-            )}
-          </FormFieldRow>
-        )}
-        {kind !== "dday" && !isAllDay && (
-          <>
-            <FormFieldRow
-              label="시작 시각 (선택)"
-              htmlFor="event-start-time"
-              invalid={!!errors.startTime}
-              error={errors.startTime?.message}
-            >
-              {(props) => (
-                <input {...props} {...register("startTime")} type="time" />
-              )}
-            </FormFieldRow>
-            <FormFieldRow
-              label="종료 시각 (선택)"
-              htmlFor="event-end-time"
-              invalid={!!errors.endTime}
-              error={errors.endTime?.message}
-            >
-              {(props) => (
-                <input {...props} {...register("endTime")} type="time" />
-              )}
-            </FormFieldRow>
-            <Text as="p" variant="caption" className="text-muted-foreground">
-              시각을 모두 비우면 시간 미정으로 저장돼요.
-            </Text>
-          </>
-        )}
-        <FormFieldRow
-          label="카테고리"
-          htmlFor="event-category"
-          invalid={!!errors.categoryId}
-          error={errors.categoryId?.message}
-        >
-          {(props) => (
-            <select {...props} {...register("categoryId")}>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          )}
-        </FormFieldRow>
-        <FormFieldRow label="장소" htmlFor="event-place">
-          {(props) => <input {...props} {...register("place")} />}
-        </FormFieldRow>
+        <GroupLabel>메모</GroupLabel>
         <FormFieldRow label="메모" htmlFor="event-memo">
-          {(props) => <textarea {...props} {...register("memo")} rows={3} />}
+          {(props) => (
+            <textarea
+              {...props}
+              data-od-id="f-memo"
+              {...register("memo")}
+              rows={3}
+            />
+          )}
         </FormFieldRow>
       </fieldset>
       {errors.root && (
@@ -248,9 +337,11 @@ export function EventForm({
           {errors.root.message}
         </Text>
       )}
-      <Button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "저장하고 있어요" : "저장하기"}
-      </Button>
+      {!formId && (
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "저장하고 있어요" : "저장하기"}
+        </Button>
+      )}
     </form>
   );
 }

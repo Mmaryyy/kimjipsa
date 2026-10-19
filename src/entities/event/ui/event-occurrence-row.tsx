@@ -1,79 +1,131 @@
 import Link from "next/link";
 import { LockKeyhole } from "lucide-react";
+import { format } from "date-fns";
 import { eventRoutes } from "@/shared/config";
+import { cn } from "@/shared/lib";
 import { CategoryDot, ListRow, TextButton, Text } from "@/shared/ui";
 import type { EventCategory } from "../api/type";
 import type { EventOccurrence } from "../lib/event-occurrences.utils";
-import { eventTimeLabel } from "../lib/event-date.utils";
+import { kstDate } from "../lib/dday.utils";
+
 export function EventOccurrenceRow({
   occurrence,
   categories,
+  ownerNames,
   onOpen,
+  showDdayDate = false,
+  date = occurrence.startDate,
 }: {
   occurrence: EventOccurrence;
   categories: EventCategory[];
+  ownerNames?: Record<string, string>;
   onOpen?: (id: string) => void;
+  showDdayDate?: boolean;
+  date?: string;
 }) {
   const { event, dday } = occurrence;
   const category = categories.find(
     (category) => category.id === event.details?.categoryId,
   );
-  if (!event.details)
-    return (
-      <ListRow
-        leading={
-          <LockKeyhole
-            aria-hidden="true"
-            size={16}
-            className="text-muted-foreground"
-          />
-        }
-        description={eventTimeLabel({
-          ...event,
-          startDate: occurrence.startDate,
-          endDate: occurrence.endDate,
-        })}
-        className="text-muted-foreground opacity-50"
-      >
-        개인 일정
-      </ListRow>
-    );
+  const owner = event.ownerId ? ownerNames?.[event.ownerId] : undefined;
+  const privateEvent = event.visibility === "private";
+  const celebrated = event.details?.ddayStyle === "celebrate";
   const emphasized =
-    event.details.ddayStyle === "celebrate" &&
-    dday !== null &&
-    dday.daysUntil >= 0 &&
-    dday.daysUntil <= 7;
-  const title = onOpen ? (
-    <TextButton
-      className="max-w-full whitespace-normal break-words text-left"
-      onClick={() => onOpen(event.id)}
-    >
-      {event.details.title}
-    </TextButton>
-  ) : (
-    <Link
-      className="break-words text-primary"
-      href={`${eventRoutes.calendar}?view=day&date=${occurrence.startDate}`}
-    >
-      {event.details.title}
-    </Link>
-  );
+    dday !== null && dday.daysUntil >= 0 && dday.daysUntil <= 7;
+  const titleText = event.details?.title ?? "개인 일정";
+  let title = <span>{titleText}</span>;
+  if (event.details)
+    title = onOpen ? (
+      <TextButton
+        className="max-w-full text-left whitespace-normal text-foreground text-body font-normal"
+        onClick={() => onOpen(event.id)}
+      >
+        {titleText}
+      </TextButton>
+    ) : (
+      <Link
+        className={showDdayDate ? "block truncate" : "break-words"}
+        href={`${eventRoutes.calendar}?view=day&date=${occurrence.startDate}`}
+      >
+        {titleText}
+      </Link>
+    );
+  let metadata = [
+    event.startDate !== event.endDate &&
+      `${occurrence.startDate} ~ ${occurrence.endDate}`,
+    event.details?.place,
+    privateEvent ? owner && `${owner}님` : "둘 다",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  if (!event.details)
+    metadata = [owner && `${owner}님`, event.endTime && `${event.endTime}까지`]
+      .filter(Boolean)
+      .join(" · ");
+  if (dday) {
+    const dateFormat = dday.anniversary > 0 ? "yyyy년 M월 d일" : "M월 d일";
+    metadata = [
+      showDdayDate && format(kstDate(occurrence.startDate), dateFormat),
+      dday.anniversary > 0
+        ? `${dday.anniversary}주년`
+        : celebrated
+          ? "축하"
+          : "",
+    ]
+      .filter(Boolean)
+      .join(" · ");
+  }
+  const time =
+    event.isAllDay || date > occurrence.startDate
+      ? "종일"
+      : (event.startTime ?? "시간 미정");
   return (
     <ListRow
-      leading={category && <CategoryDot color={category.color} />}
-      description={
-        dday
-          ? `${dday.label}${event.details.ddayStyle === "celebrate" && dday.anniversary > 0 ? ` · ${dday.anniversary}주년` : ""}`
-          : eventTimeLabel(event)
+      className={!event.details ? "text-muted-foreground" : undefined}
+      leading={
+        <>
+          {!dday && (
+            <Text
+              variant="caption"
+              className="w-[60px] shrink-0 text-muted-foreground tabular-nums"
+            >
+              {time}
+            </Text>
+          )}
+          {privateEvent ? (
+            <span className="kj-event-dot bg-[var(--sys-gray3)]" />
+          ) : celebrated ? (
+            <span className="kj-event-dot bg-[var(--celebrate)]" />
+          ) : category ? (
+            <CategoryDot color={category.color} />
+          ) : (
+            <span className="kj-event-dot bg-[var(--label-tertiary)]" />
+          )}
+        </>
       }
-      className={emphasized ? "text-[var(--celebrate-text)]" : undefined}
+      description={metadata}
+      trailing={
+        dday ? (
+          <Text
+            variant={showDdayDate ? "title" : "caption"}
+            className={cn(
+              "whitespace-nowrap tabular-nums",
+              showDdayDate && "text-[length:var(--type-title-size)]",
+              emphasized && "text-[color:var(--celebrate-text)]",
+            )}
+          >
+            {dday.label}
+          </Text>
+        ) : privateEvent ? (
+          <LockKeyhole
+            size={16}
+            aria-label="개인 일정"
+            className="text-[var(--icon-tertiary)]"
+          />
+        ) : undefined
+      }
     >
       {title}
-      {category && (
-        <Text as="p" variant="caption" className="text-muted-foreground">
-          {category.name}
-        </Text>
-      )}
     </ListRow>
   );
 }

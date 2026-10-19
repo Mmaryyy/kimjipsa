@@ -8,6 +8,7 @@ export function ThemeModeSelector() {
   const { mode, setMode } = useThemeMode();
   return (
     <SegmentedControl
+      odId="s-theme"
       label="화면 모드"
       options={themeModes}
       value={mode}

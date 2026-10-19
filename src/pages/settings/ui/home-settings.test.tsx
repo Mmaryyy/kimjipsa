@@ -22,13 +22,12 @@ describe("ACC-12 홈 구성 저장", () => {
   });
   it("뷰·위젯 표시·개수를 사용자 설정으로 저장해요", async () => {
     render(<HomeSettings />);
-    fireEvent.change(screen.getByLabelText("달력 보기"), {
-      target: { value: "month" },
-    });
+    fireEvent.click(screen.getByRole("radio", { name: "월" }));
+    fireEvent.click(screen.getByRole("radio", { name: "10개" }));
     fireEvent.click(screen.getByRole("switch", { name: "다가오는 일정" }));
-    fireEvent.change(screen.getByLabelText("일정 개수"), {
-      target: { value: "10" },
-    });
+    expect(
+      screen.queryByRole("radio", { name: "10개" }),
+    ).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "홈 구성 저장하기" }));
     await waitFor(() =>
       expect(mutateAsync).toHaveBeenCalledWith({
@@ -41,9 +40,7 @@ describe("ACC-12 홈 구성 저장", () => {
   it("저장에 실패하면 오류를 알리고 다시 저장할 수 있어요", async () => {
     mutateAsync.mockRejectedValueOnce(new Error("저장 실패"));
     render(<HomeSettings />);
-    fireEvent.change(screen.getByLabelText("일정 개수"), {
-      target: { value: "3" },
-    });
+    fireEvent.click(screen.getByRole("radio", { name: "3개" }));
     fireEvent.click(screen.getByRole("button", { name: "홈 구성 저장하기" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("저장 실패");
     expect(

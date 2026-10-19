@@ -1,27 +1,20 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { catalogPath } from "@/shared/config";
 import { HomePage } from "./home-page";
 
-vi.mock("./home-schedule", () => ({ HomeSchedule: () => <div /> }));
+vi.mock("./home-schedule", () => ({ HomeSchedule: () => <h1>오늘</h1> }));
 
-describe("P1 홈 화면 (기능 SCN 연결 전)", () => {
-  it("페이지가 오늘 제목을 보여 줘요", () => {
+describe("CAL-13 홈 화면 조립", () => {
+  it("일정 위젯이 제공하는 오늘 머리를 한 번만 보여 줘요", () => {
     render(<HomePage />);
     expect(
-      screen.getByRole("heading", { name: "오늘", level: 1 }),
-    ).toBeVisible();
-  });
-
-  it("개발 모드에서 카탈로그 링크를 보여 줘요", () => {
-    vi.stubEnv("NODE_ENV", "development");
-    try {
-      render(<HomePage />);
-      expect(
-        screen.getByRole("link", { name: "컴포넌트 살펴보기" }),
-      ).toHaveAttribute("href", catalogPath);
-    } finally {
-      vi.unstubAllEnvs();
-    }
+      screen.getAllByRole("heading", { name: "오늘", level: 1 }),
+    ).toHaveLength(1);
+    expect(
+      screen.queryByRole("link", { name: "컴포넌트 살펴보기" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "우리 집·초대 관리하기" }),
+    ).not.toBeInTheDocument();
   });
 });

@@ -1,31 +1,52 @@
 "use client";
-import { useSyncExternalStore } from "react";
-import { formatDateTime } from "@/shared/lib";
+import { useEffect, useRef, useSyncExternalStore } from "react";
+import { tz } from "@date-fns/tz";
+import { format } from "date-fns";
 import { invitePath } from "@/shared/config";
-import { Button, EmptyState, ListSkeleton, Text } from "@/shared/ui";
+import { Button, ListSkeleton, Text, TextButton } from "@/shared/ui";
 import { useInviteShare } from "../model/use-family";
 const subscribe = () => () => {};
 const getOrigin = () => window.location.origin;
 const getServerOrigin = () => "";
-export function InviteShare() {
+const getShareSupported = () => typeof navigator.share === "function";
+const getServerShareSupported = () => false;
+export function InviteShare({
+  onboarding = false,
+  onLater,
+}: {
+  onboarding?: boolean;
+  onLater?: () => void;
+}) {
+  const started = useRef(false);
   const { invitation, onCreate, onShare, pending, error, shareMessage } =
     useInviteShare();
   const origin = useSyncExternalStore(subscribe, getOrigin, getServerOrigin);
+  const shareSupported = useSyncExternalStore(
+    subscribe,
+    getShareSupported,
+    getServerShareSupported,
+  );
+  useEffect(() => {
+    if (onboarding && !invitation && !started.current) {
+      started.current = true;
+      onCreate();
+    }
+  }, [onboarding, invitation, onCreate]);
   return (
-    <section className="grid gap-3" aria-labelledby="invite-share-title">
-      <Text as="h2" variant="title-sm" id="invite-share-title">
-        함께 쓸 사람을 초대해요
-      </Text>
-      <Text as="p" variant="caption" className="text-muted-foreground">
-        링크는 한 번만 쓸 수 있고, 만든 뒤 3일 동안 유효해요. 한 명마다 새
-        링크를 만들어 주세요.
-      </Text>
-      {!invitation && !pending && !error && (
-        <EmptyState message="아직 만든 초대 링크가 없어요." />
+    <section
+      className={onboarding ? "flex flex-1 flex-col gap-3" : "grid gap-3"}
+      aria-label="초대 링크"
+    >
+      {(!onboarding || !invitation) && (
+        <TextButton
+          className="justify-start justify-self-start"
+          data-od-id="set-invite"
+          onClick={onCreate}
+          disabled={pending}
+        >
+          {pending ? "초대 링크를 만들고 있어요" : "새 초대 링크 만들기"}
+        </TextButton>
       )}
-      <Button onClick={onCreate} disabled={pending}>
-        {pending ? "초대 링크를 만들고 있어요" : "새 초대 링크 만들기"}
-      </Button>
       {pending && <ListSkeleton rows={1} label="초대 링크를 만들고 있어요" />}
       {error && (
         <Text as="p" role="alert" className="text-error-text">
@@ -33,22 +54,38 @@ export function InviteShare() {
         </Text>
       )}
       {invitation && (
-        <div className="grid gap-3">
-          <label htmlFor="inviteLink" className="text-caption">
-            초대 링크
-          </label>
-          <input
-            id="inviteLink"
-            className="kj-input"
-            readOnly
-            value={`${origin}${invitePath(invitation.token)}`}
-          />
-          <Text as="p" variant="caption">
-            만료 시각: {formatDateTime(invitation.expiresAt)}
-          </Text>
-          <Button variant="gray" onClick={onShare}>
-            링크 공유·복사하기
-          </Button>
+        <div>
+          <div
+            role="group"
+            aria-label="초대 링크 값"
+            data-od-id="ob-invite-link"
+            className="flex items-center gap-3 bg-[var(--fill-quaternary)] p-3.5"
+          >
+            <code
+              tabIndex={0}
+              className="min-w-0 flex-1 font-mono text-body-sm break-all select-text"
+            >
+              {`${origin}${invitePath(invitation.token)}`}
+            </code>
+            <TextButton
+              size="sm"
+              className="shrink-0"
+              data-od-id="ob-copy"
+              onClick={() => void onShare(true)}
+            >
+              복사
+            </TextButton>
+          </div>
+          <ul className="mt-4 text-body-sm text-muted-foreground [&>li]:py-1">
+            <li>한 번 사용하면 링크가 닫혀요</li>
+            <li>
+              {format(new Date(invitation.expiresAt), "M월 d일 HH:mm", {
+                in: tz("Asia/Seoul"),
+              })}
+              에 만료돼요 (3일)
+            </li>
+            <li>다른 가정에 속한 사람은 합류할 수 없어요</li>
+          </ul>
         </div>
       )}
       {shareMessage && (
@@ -56,6 +93,27 @@ export function InviteShare() {
           {shareMessage}
         </Text>
       )}
+      <div className={onboarding ? "mt-auto grid gap-2 pt-5" : "grid gap-2"}>
+        {invitation && shareSupported && (
+          <Button
+            size={onboarding ? "block" : "md"}
+            data-od-id="ob-share"
+            onClick={() => void onShare()}
+          >
+            카카오톡으로 보내기
+          </Button>
+        )}
+        {onboarding && onLater && (
+          <Button
+            size="block"
+            variant="gray"
+            data-od-id="ob-later"
+            onClick={onLater}
+          >
+            나중에 할게요
+          </Button>
+        )}
+      </div>
     </section>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 import { useCallback } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { calendarViews } from "@/entities/event";
 import {
@@ -14,14 +14,14 @@ import {
   ErrorState,
   FormFieldRow,
   ListSkeleton,
-  SectionHeader,
+  GroupLabel,
+  SegmentedControl,
   Switch,
   Text,
 } from "@/shared/ui";
 function HomeSettingsForm({ settings }: { settings: Settings }) {
   const save = useSaveHomeSettings();
   const {
-    register,
     control,
     handleSubmit,
     reset,
@@ -45,24 +45,35 @@ function HomeSettingsForm({ settings }: { settings: Settings }) {
     },
     [reset, save, setError],
   );
+  const upcomingEnabled = useWatch({ control, name: "upcomingEnabled" });
   return (
     <form className="grid gap-3" onSubmit={handleSubmit(onSubmit)}>
       <fieldset disabled={isSubmitting} className="grid min-w-0 gap-2">
         <legend className="sr-only">홈 구성</legend>
         <FormFieldRow
-          label="달력 보기"
+          label="캘린더 보기"
           htmlFor="home-view"
           error={errors.homeView?.message}
           invalid={!!errors.homeView}
         >
           {(props) => (
-            <select {...props} {...register("homeView")}>
-              {calendarViews.map(({ value, label }) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
+            <Controller
+              name="homeView"
+              control={control}
+              render={({ field }) => (
+                <SegmentedControl
+                  odId="s-home-view"
+                  label="홈 캘린더 보기"
+                  options={calendarViews.map((option) => ({
+                    ...option,
+                    label: option.label.slice(0, 1),
+                  }))}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  {...props}
+                />
+              )}
+            />
           )}
         </FormFieldRow>
         <FormFieldRow label="다가오는 일정" htmlFor="upcoming-enabled">
@@ -73,6 +84,7 @@ function HomeSettingsForm({ settings }: { settings: Settings }) {
               render={({ field }) => (
                 <Switch
                   {...props}
+                  data-od-id="s-widget"
                   checked={field.value}
                   onCheckedChange={field.onChange}
                 />
@@ -80,25 +92,34 @@ function HomeSettingsForm({ settings }: { settings: Settings }) {
             />
           )}
         </FormFieldRow>
-        <FormFieldRow
-          label="일정 개수"
-          htmlFor="upcoming-count"
-          error={errors.upcomingCount?.message}
-          invalid={!!errors.upcomingCount}
-        >
-          {(props) => (
-            <select
-              {...props}
-              {...register("upcomingCount", { valueAsNumber: true })}
-            >
-              {[3, 5, 10].map((count) => (
-                <option key={count} value={count}>
-                  {count}개
-                </option>
-              ))}
-            </select>
-          )}
-        </FormFieldRow>
+        {upcomingEnabled && (
+          <FormFieldRow
+            label="표시 개수"
+            htmlFor="upcoming-count"
+            error={errors.upcomingCount?.message}
+            invalid={!!errors.upcomingCount}
+          >
+            {(props) => (
+              <Controller
+                name="upcomingCount"
+                control={control}
+                render={({ field }) => (
+                  <SegmentedControl
+                    odId="s-widget-count"
+                    label="표시 개수"
+                    options={[3, 5, 10].map((count) => ({
+                      value: String(count),
+                      label: `${count}개`,
+                    }))}
+                    value={String(field.value)}
+                    onValueChange={(value) => field.onChange(Number(value))}
+                    {...props}
+                  />
+                )}
+              />
+            )}
+          </FormFieldRow>
+        )}
       </fieldset>
       {errors.root && (
         <Text as="p" role="alert" className="text-error-text">
@@ -132,8 +153,8 @@ export function HomeSettings() {
     content = <ListSkeleton label="홈 설정을 불러오고 있어요" />;
   else content = <HomeSettingsForm settings={settings.data} />;
   return (
-    <section aria-labelledby="home-settings-title">
-      <SectionHeader id="home-settings-title" title="홈 구성" />
+    <section data-od-id="set-home" aria-labelledby="home-settings-title">
+      <GroupLabel id="home-settings-title">홈 화면</GroupLabel>
       {content}
     </section>
   );

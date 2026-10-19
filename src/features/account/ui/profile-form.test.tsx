@@ -27,9 +27,11 @@ function renderProfile(displayName?: string) {
 function fillProfile(name = "살림이") {
   const input = screen.getByRole("textbox", { name: "표시 이름" });
   fireEvent.change(input, { target: { value: name } });
-  fireEvent.click(screen.getByRole("checkbox", { name: "이용약관 동의" }));
   fireEvent.click(
-    screen.getByRole("checkbox", { name: "개인정보 처리방침 동의" }),
+    screen.getByRole("checkbox", { name: "이용약관 동의 (필수)" }),
+  );
+  fireEvent.click(
+    screen.getByRole("checkbox", { name: "개인정보 처리방침 동의 (필수)" }),
   );
   return input;
 }
@@ -44,14 +46,14 @@ describe("ACC-02 SCN-ACC-1 약관 동의 팝업", () => {
     {
       name: "이용약관",
       heading: "서비스 이용",
-      checkedLabel: "이용약관 동의",
-      uncheckedLabel: "개인정보 처리방침 동의",
+      checkedLabel: "이용약관 동의 (필수)",
+      uncheckedLabel: "개인정보 처리방침 동의 (필수)",
     },
     {
       name: "개인정보 처리방침",
       heading: "수집 항목과 목적",
-      checkedLabel: "개인정보 처리방침 동의",
-      uncheckedLabel: "이용약관 동의",
+      checkedLabel: "개인정보 처리방침 동의 (필수)",
+      uncheckedLabel: "이용약관 동의 (필수)",
     },
   ])(
     "$name 본문을 시트로 열고 닫아도 입력과 체크 상태를 유지해요",
@@ -100,14 +102,14 @@ describe("ACC-02 SCN-ACC-1 프로필 제출과 오류 위치", () => {
     fireEvent.change(screen.getByRole("textbox", { name: "표시 이름" }), {
       target: { value: "  😀😀😀😀😀😀  " },
     });
-    fireEvent.click(screen.getByRole("checkbox", { name: "이용약관 동의" }));
     fireEvent.click(
-      screen.getByRole("checkbox", { name: "개인정보 처리방침 동의" }),
+      screen.getByRole("checkbox", { name: "이용약관 동의 (필수)" }),
+    );
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "개인정보 처리방침 동의 (필수)" }),
     );
     fireEvent.submit(
-      screen
-        .getByRole("button", { name: "저장하고 계속하기" })
-        .closest("form")!,
+      screen.getByRole("button", { name: "동의하고 계속" }).closest("form")!,
     );
     await waitFor(() =>
       expect(updateProfile).toHaveBeenCalledWith(
@@ -164,7 +166,7 @@ describe("ACC-02 SCN-ACC-1 클라이언트 검증과 제출 상태", () => {
     },
   );
 
-  it.each(["이용약관 동의", "개인정보 처리방침 동의"])(
+  it.each(["이용약관 동의 (필수)", "개인정보 처리방침 동의 (필수)"])(
     "%s만 선택하면 동의 오류를 fieldset 안에 표시해요",
     async (label) => {
       renderProfile();
@@ -181,7 +183,7 @@ describe("ACC-02 SCN-ACC-1 클라이언트 검증과 제출 상태", () => {
   it("기존 프로필은 동의 입력 없이 이름을 저장해요", async () => {
     renderProfile("살림이");
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "저장하고 계속하기" }));
+    fireEvent.click(screen.getByRole("button", { name: "표시 이름 저장" }));
     await waitFor(() =>
       expect(updateProfile).toHaveBeenCalledWith(
         { displayName: "살림이", termsAccepted: true, privacyAccepted: true },
@@ -211,5 +213,32 @@ describe("ACC-02 SCN-ACC-1 클라이언트 검증과 제출 상태", () => {
     resolveSave(null);
     await waitFor(() => expect(button).toBeEnabled());
     expect(input.closest("form")).toHaveAttribute("aria-busy", "false");
+  });
+});
+
+describe("ACC-02 SCN-ACC-1 모두 동의", () => {
+  it("모두 동의와 개별 동의가 연동되고 제출 가능 상태가 바뀌어요", () => {
+    renderProfile();
+    const all = screen.getByRole("checkbox", { name: "모두 동의" });
+    const submit = screen.getByRole("button", { name: "동의하고 계속" });
+    expect(submit).toBeDisabled();
+    expect(screen.getByText("동의해야 계속할 수 있어요")).toBeVisible();
+    expect(submit).toHaveAccessibleDescription("동의해야 계속할 수 있어요");
+    fireEvent.click(all);
+    expect(
+      screen.getByRole("checkbox", { name: "이용약관 동의 (필수)" }),
+    ).toBeChecked();
+    expect(
+      screen.getByRole("checkbox", { name: "개인정보 처리방침 동의 (필수)" }),
+    ).toBeChecked();
+    expect(submit).toBeEnabled();
+    expect(
+      screen.queryByText("동의해야 계속할 수 있어요"),
+    ).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "이용약관 동의 (필수)" }),
+    );
+    expect(all).not.toBeChecked();
+    expect(submit).toBeDisabled();
   });
 });

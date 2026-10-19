@@ -9,19 +9,30 @@ export function LoginButtons({ inviteToken }: { inviteToken?: string | null }) {
   const isKakaoBrowser = useKakaoBrowser();
   const { pending, error, onKakao, onGoogle } = useSignIn(inviteToken);
   return (
-    <div className="grid gap-3" aria-busy={pending}>
+    <div className="flex flex-1 flex-col gap-3" aria-busy={pending}>
       {isKakaoBrowser && (
         <Banner variant="warning" title="외부 브라우저에서 열어 주세요">
           카카오톡 안에서는 Google 로그인이 제한될 수 있어요. 이 링크를 Safari나
           Chrome에서 열어 주세요.
         </Banner>
       )}
-      <div className="grid gap-2">
+      {pending && (
+        <Text as="p" role="status">
+          로그인 화면으로 이동해요.
+        </Text>
+      )}
+      {error && (
+        <Text as="p" role="alert" className="text-error-text">
+          {error.message}
+        </Text>
+      )}
+      <div className="kj-login-actions mt-auto grid gap-2">
         <Button
           className={cn(
             "h-[46px] w-full min-w-0 justify-center overflow-hidden rounded-[12px] p-0",
             "bg-[var(--oauth-kakao-bg)]",
           )}
+          data-od-id="ob-login-kakao"
           onClick={onKakao}
           disabled={pending}
           aria-label="카카오 로그인"
@@ -42,6 +53,7 @@ export function LoginButtons({ inviteToken }: { inviteToken?: string | null }) {
             "bg-[var(--oauth-google-bg)] text-[var(--oauth-google-fg)]",
             "shadow-[inset_0_0_0_1px_var(--oauth-google-border)]",
           )}
+          data-od-id="ob-login-google"
           onClick={onGoogle}
           disabled={pending}
         >
@@ -58,16 +70,6 @@ export function LoginButtons({ inviteToken }: { inviteToken?: string | null }) {
           </span>
         </Button>
       </div>
-      {pending && (
-        <Text as="p" role="status">
-          로그인 화면으로 이동해요.
-        </Text>
-      )}
-      {error && (
-        <Text as="p" role="alert" className="text-error-text">
-          {error.message}
-        </Text>
-      )}
     </div>
   );
 }

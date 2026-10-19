@@ -1,6 +1,7 @@
 "use client";
 
 import { ToggleGroup as ToggleGroupPrimitive } from "radix-ui";
+import type { ComponentProps } from "react";
 import { cn } from "@/shared/lib";
 import { toggleGroupStyles } from "./ui.variants";
 
@@ -8,14 +9,19 @@ type ToggleGroupOption<Value extends string> = {
   value: Value;
   label: string;
   disabled?: boolean;
+  odId?: string;
 };
-export type ToggleGroupProps<Value extends string> = {
+export type ToggleGroupProps<Value extends string> = Pick<
+  ComponentProps<typeof ToggleGroupPrimitive.Root>,
+  "id" | "aria-invalid" | "aria-describedby"
+> & {
   label: string;
   options: readonly ToggleGroupOption<Value>[];
   value: Value;
   onValueChange: (value: Value) => void;
   disabled?: boolean;
   className?: string;
+  odId?: string;
 };
 
 export function ToggleGroup<Value extends string>({
@@ -26,11 +32,19 @@ export function ToggleGroup<Value extends string>({
   disabled,
   className,
   appearance,
+  odId,
+  id,
+  "aria-invalid": ariaInvalid,
+  "aria-describedby": ariaDescribedBy,
 }: ToggleGroupProps<Value> & {
   appearance: "segmented" | "filters";
 }) {
   return (
     <ToggleGroupPrimitive.Root
+      id={id}
+      aria-invalid={ariaInvalid}
+      aria-describedby={ariaDescribedBy}
+      data-od-id={odId}
       type="single"
       aria-label={label}
       value={value}
@@ -44,6 +58,7 @@ export function ToggleGroup<Value extends string>({
     >
       {options.map((option) => (
         <ToggleGroupPrimitive.Item
+          data-od-id={option.odId}
           key={option.value}
           value={option.value}
           disabled={option.disabled}

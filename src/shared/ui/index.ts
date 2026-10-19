@@ -1,4 +1,5 @@
 export { Text } from "./text";
+export { BrandLogo } from "./brand-logo";
 export { Button } from "./button";
 export { TextButton } from "./text-button";
 export { StatusBadge } from "./status-badge";
@@ -21,6 +22,8 @@ export { EmptyState } from "./empty-state";
 export { ErrorState } from "./error-state";
 export { ListSkeleton } from "./list-skeleton";
 export { ThemeModeSelector } from "./theme-mode-selector";
+export { OnboardingProgress } from "./onboarding-progress";
 export { PageHeader } from "./page-header";
 export { categoryColors } from "./ui.constants";
 export type { TextVariant, StatusVariant } from "./ui.variants";
+export { GroupLabel } from "./group-label";

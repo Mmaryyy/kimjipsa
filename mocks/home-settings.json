@@ -1,5 +1,5 @@
 {
-  "homeView": "month",
+  "homeView": "week",
   "upcomingEnabled": true,
   "upcomingCount": 5
 }

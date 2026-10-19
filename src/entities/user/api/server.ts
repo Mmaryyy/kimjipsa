@@ -50,6 +50,7 @@ async function mockAccount(): Promise<Account | null> {
     return { userId: null, profile: null, membership: null };
   const displayName = context.values.get(`display-name:${member.user_id}`);
   return {
+    loginProvider: "kakao",
     userId: member.user_id,
     profile:
       stage === "profile"
@@ -117,6 +118,7 @@ export async function getAccount(): Promise<Account> {
   throwDatabaseError(profile.error);
   throwDatabaseError(membership.error);
   return {
+    loginProvider: z.enum(providers).parse(user.identities?.[0]?.provider),
     userId: user.id,
     profile: profile.data ? { displayName: profile.data.display_name } : null,
     membership: membership.data

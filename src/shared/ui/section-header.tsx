@@ -11,7 +11,7 @@ export function SectionHeader({
 }) {
   return (
     <div className="kj-section-header">
-      <Text as="h2" variant="title-sm" id={id}>
+      <Text as="h2" variant="title-sm" id={id} data-od-id={id}>
         {title}
       </Text>
       {action}

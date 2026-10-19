@@ -4,7 +4,7 @@ export function CategoryDot({
   color,
   label,
 }: {
-  color: keyof typeof categoryColors;
+  color?: keyof typeof categoryColors;
   label?: string;
 }) {
   return (
@@ -13,7 +13,11 @@ export function CategoryDot({
       role={label ? "img" : undefined}
       aria-label={label}
       aria-hidden={label ? undefined : true}
-      style={{ "--category-color": categoryColors[color] } as CSSProperties}
+      style={
+        {
+          "--category-color": color ? categoryColors[color] : "var(--sys-teal)",
+        } as CSSProperties
+      }
     />
   );
 }

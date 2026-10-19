@@ -1,5 +1,6 @@
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/shared/lib";
+import { GroupLabel } from "./group-label";
 import { Text } from "./text";
 type ListRowProps = ComponentProps<"li"> & {
   leading?: ReactNode;
@@ -31,12 +32,7 @@ export function ListRow({
 }
 
 export function ListGroupLabel({ className, ...props }: ComponentProps<"h3">) {
-  return (
-    <h3
-      className={cn("kj-list-group-label text-caption", className)}
-      {...props}
-    />
-  );
+  return <GroupLabel as="h3" className={className} {...props} />;
 }
 export function List({ className, ...props }: ComponentProps<"ul">) {
   return <ul className={cn("kj-list", className)} {...props} />;

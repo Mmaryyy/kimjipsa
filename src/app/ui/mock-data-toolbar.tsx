@@ -1,6 +1,8 @@
 "use client";
 import { useAccount } from "@/features/account";
-import { useCallback } from "react";
+import { useCallback, type CSSProperties } from "react";
+import { Dialog } from "radix-ui";
+import { FlaskConical } from "lucide-react";
 import {
   isMockDataEnabled,
   mockEnabledCookie,
@@ -45,7 +47,7 @@ function MockDataBanner() {
     [],
   );
   return (
-    <aside aria-label="개발용 테스트 데이터" className="mb-4">
+    <div>
       <Banner title={`테스트 데이터 · ${perspective} 시점`}>
         <p>
           저장·삭제는 서버 메모리에만 반영돼요. 새로고침과 시점 전환 후에도
@@ -69,7 +71,7 @@ function MockDataBanner() {
           </Button>
         </div>
       </Banner>
-    </aside>
+    </div>
   );
 }
 
@@ -82,22 +84,55 @@ export function MockDataToolbar() {
     window.location.reload();
   }, []);
   return (
-    <>
-      <aside
-        aria-label="목업 모드 전환"
-        className={cn(
-          "fixed right-2 top-[calc(env(safe-area-inset-top)+var(--sp-2))] z-50",
-          "flex items-center gap-2 bg-card p-2 text-foreground",
-        )}
+    <Dialog.Root modal={false}>
+      <div
+        style={
+          {
+            "--mock-toolbar-bottom":
+              "calc(var(--bottom-navigation-offset) + env(safe-area-inset-bottom) + var(--sp-4))",
+          } as CSSProperties
+        }
+        className="fixed right-2 bottom-[var(--mock-toolbar-bottom)] z-50 lg:bottom-8"
       >
-        <label htmlFor="mock-data-enabled">목업 모드</label>
-        <Switch
-          id="mock-data-enabled"
-          checked={enabled}
-          onCheckedChange={onEnabledChange}
-        />
-      </aside>
-      {enabled && <MockDataBanner />}
-    </>
+        <Dialog.Trigger asChild>
+          <Button
+            variant="gray"
+            size="sm"
+            aria-label="개발용 테스트 데이터 열기"
+          >
+            <FlaskConical size={18} aria-hidden="true" />
+          </Button>
+        </Dialog.Trigger>
+        <Dialog.Content
+          style={{
+            maxHeight:
+              "calc(100dvh - var(--bottom-navigation-offset) - " +
+              "env(safe-area-inset-bottom) - env(safe-area-inset-top) - var(--hit) - var(--sp-5))",
+          }}
+          className={cn(
+            "absolute bottom-full right-0 mb-2 grid gap-3 overflow-y-auto",
+            "w-[min(360px,calc(100vw-16px))]",
+            "rounded-[var(--r-control)] bg-card p-4 text-foreground",
+            "shadow-[var(--shadow-navigation)]",
+          )}
+        >
+          <Dialog.Title className="text-headline">
+            개발용 테스트 데이터
+          </Dialog.Title>
+          <Dialog.Description className="text-caption text-muted-foreground">
+            목업 모드와 시점을 바꿔 화면을 확인해요.
+          </Dialog.Description>
+          <div className="flex items-center justify-between gap-2">
+            <label htmlFor="mock-data-enabled">목업 모드</label>
+            <Switch
+              id="mock-data-enabled"
+              checked={enabled}
+              onCheckedChange={onEnabledChange}
+            />
+          </div>
+          {enabled && <MockDataBanner />}
+        </Dialog.Content>
+      </div>
+    </Dialog.Root>
   );
 }

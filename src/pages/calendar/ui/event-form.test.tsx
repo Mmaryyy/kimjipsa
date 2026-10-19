@@ -95,18 +95,23 @@ describe("CAL-06 CAL-16 SCN-CAL-9~10 D-day 등록", () => {
     render(
       <EventForm event={event} categories={categories} onSaved={() => {}} />,
     );
-    fireEvent.change(screen.getByLabelText("종류"), {
+    fireEvent.change(screen.getByRole("combobox", { name: "일정 종류" }), {
       target: { value: "dday" },
     });
-    fireEvent.change(screen.getByLabelText("D-day 종류"), {
+    fireEvent.change(screen.getByRole("combobox", { name: "D-day 종류" }), {
       target: { value: "celebrate" },
     });
     fireEvent.change(screen.getByLabelText("축하 문구 (선택)"), {
       target: { value: "축하해요" },
     });
-    fireEvent.change(screen.getByLabelText("기준 날짜"), {
+    fireEvent.change(screen.getByLabelText("시작", { exact: true }), {
       target: { value: "2020-10-11" },
     });
+    expect(
+      screen.queryByLabelText("종료", { exact: true }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("시작 시각 (선택)")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("종료 시각 (선택)")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "저장하기" }));
     await waitFor(() =>
       expect(onSave).toHaveBeenCalledWith(

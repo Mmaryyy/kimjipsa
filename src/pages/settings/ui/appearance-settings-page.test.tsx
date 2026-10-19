@@ -12,6 +12,8 @@ import type * as SharedApi from "@/shared/api";
 import { AppearanceSettingsPage } from "./appearance-settings-page";
 
 vi.mock("./home-settings", () => ({ HomeSettings: () => <div /> }));
+vi.mock("./account-settings", () => ({ AccountSettings: () => <div /> }));
+vi.mock("./household-settings", () => ({ HouseholdSettings: () => <div /> }));
 
 const { signOut, replace } = vi.hoisted(() => ({
   signOut: vi.fn(),

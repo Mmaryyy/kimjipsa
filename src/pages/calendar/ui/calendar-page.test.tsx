@@ -12,6 +12,13 @@ vi.mock("@/entities/event", async (original) => ({
   useEventCategories,
 }));
 vi.mock("./event-detail", () => ({ EventDetail: () => <p>상세 내용</p> }));
+vi.mock("@/features/family", () => ({
+  useFamily: () => ({
+    data: { name: "우리 집", members: [] },
+    isPending: false,
+    isError: false,
+  }),
+}));
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams("date=2026-10-16&view=day"),
   usePathname: () => "/calendar",
@@ -40,11 +47,11 @@ describe("CAL-01~05 SCN-CAL-1~3 일정 목록", () => {
       "일정을 불러오고 있어요",
     );
   });
-  it("빈 목록을 안내해요", () => {
+  it("빈 일 보기에도 시간대와 개인 일정 안내를 보여 줘요", () => {
     render(<CalendarPage />);
-    expect(
-      screen.getByText("선택한 기간에 일정이 없어요."),
-    ).toBeInTheDocument();
+    expect(screen.getByText("08:00")).toBeVisible();
+    expect(screen.getByText(/은 시간만 보여요/)).toBeVisible();
+    expect(screen.getByRole("button", { name: "일정 추가" })).toBeVisible();
   });
   it("조회 실패를 빈 목록으로 표시하지 않고 재시도해요", () => {
     useEvents.mockReturnValue({
@@ -80,7 +87,7 @@ describe("CAL-01~05 SCN-CAL-1~3 일정 목록", () => {
       ],
     });
     render(<CalendarPage />);
-    expect(screen.getByText("개인 일정")).toBeInTheDocument();
+    expect(screen.getAllByText("개인 일정")[0]).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "개인 일정" }),
     ).not.toBeInTheDocument();

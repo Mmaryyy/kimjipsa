@@ -20,14 +20,15 @@ export function useInvite(token: string) {
     queryFn: () => fetchInvite(token),
   });
 }
-export function useCreateFamily() {
+export function useCreateFamily(onCreated?: () => void) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: createFamily,
     onSuccess: async () => {
+      onCreated?.();
       await queryClient.invalidateQueries();
-      router.replace(accountRoutes.family);
+      if (!onCreated) router.replace(accountRoutes.family);
     },
   });
   return { onSubmit: mutation.mutateAsync };
@@ -60,26 +61,29 @@ export function useInviteShare() {
     onMutate: () => setShareMessage(""),
   });
   const onCreate = useCallback(() => mutation.mutate(), [mutation]);
-  const onShare = useCallback(async () => {
-    if (!mutation.data) return;
-    const url = new URL(
-      invitePath(mutation.data.token),
-      window.location.origin,
-    ).toString();
-    try {
-      if (navigator.share)
-        await navigator.share({ title: "우리 집에 초대해요", url });
-      else {
-        await navigator.clipboard.writeText(url);
-        setShareMessage("초대 링크를 복사했어요.");
+  const onShare = useCallback(
+    async (copyOnly = false) => {
+      if (!mutation.data) return;
+      const url = new URL(
+        invitePath(mutation.data.token),
+        window.location.origin,
+      ).toString();
+      try {
+        if (!copyOnly && navigator.share)
+          await navigator.share({ title: "우리 집에 초대해요", url });
+        else {
+          await navigator.clipboard.writeText(url);
+          setShareMessage("초대 링크를 복사했어요.");
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") return;
+        setShareMessage(
+          "공유하지 못했어요. 아래 링크를 길게 눌러 복사해 주세요.",
+        );
       }
-    } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") return;
-      setShareMessage(
-        "공유하지 못했어요. 아래 링크를 길게 눌러 복사해 주세요.",
-      );
-    }
-  }, [mutation.data]);
+    },
+    [mutation.data],
+  );
   return {
     onCreate,
     onShare,

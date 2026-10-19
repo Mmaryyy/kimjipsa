@@ -1,7 +1,7 @@
 "use client";
 
 import { Toast as ToastPrimitive } from "radix-ui";
-import { TextButton } from "./text-button";
+import { Button } from "./button";
 
 type ToastProps = {
   open: boolean;
@@ -28,18 +28,28 @@ export function Toast({
       data-theme={theme}
     >
       <ToastPrimitive.Title>{message}</ToastPrimitive.Title>
-      {action && (
-        <ToastPrimitive.Action asChild altText={action.label}>
-          <TextButton className="kj-toast-action" onClick={action.onClick}>
-            {action.label}
-          </TextButton>
-        </ToastPrimitive.Action>
-      )}
-      <ToastPrimitive.Close asChild>
-        <TextButton className="kj-toast-action" aria-label="알림 닫기">
-          닫기
-        </TextButton>
-      </ToastPrimitive.Close>
+      <div className="flex justify-end gap-2">
+        {action && (
+          <ToastPrimitive.Action asChild altText={action.label}>
+            <Button
+              variant="toast"
+              className="min-h-11 shrink-0 whitespace-nowrap"
+              onClick={action.onClick}
+            >
+              {action.label}
+            </Button>
+          </ToastPrimitive.Action>
+        )}
+        <ToastPrimitive.Close asChild>
+          <Button
+            variant="toast"
+            className="min-h-11 shrink-0 whitespace-nowrap"
+            aria-label="알림 닫기"
+          >
+            닫기
+          </Button>
+        </ToastPrimitive.Close>
+      </div>
     </ToastPrimitive.Root>
   );
 }

@@ -57,6 +57,7 @@ export const buttonStyles = cva("kj-button kj-hit text-label", {
     variant: {
       primary: "bg-primary text-primary-foreground",
       gray: "bg-muted text-foreground",
+      toast: "bg-background text-foreground",
       danger: "bg-muted text-destructive",
       success: "bg-success-button-bg text-success-button-fg",
       info: "bg-info-button-bg text-info-button-fg",
@@ -75,7 +76,10 @@ export const buttonStyles = cva("kj-button kj-hit text-label", {
 export const textButtonStyles = cva("kj-text-button kj-hit text-label", {
   variants: {
     tone: { default: "text-primary", danger: "text-destructive" },
-    size: { sm: "kj-control-sm text-caption", md: "kj-control-md" },
+    size: {
+      sm: "kj-control-sm text-[length:var(--type-caption-size)]",
+      md: "kj-control-md",
+    },
   },
   defaultVariants: { tone: "default", size: "md" },
 });
@@ -92,4 +96,9 @@ export const toggleGroupStyles = cva("kj-toggle-group", {
 
 export const formFieldRowStyles = cva("kj-form-field-row", {
   variants: { invalid: { true: "kj-form-field-row-invalid", false: "" } },
+});
+
+export const emptyStateStyles = cva("kj-empty-state", {
+  variants: { layout: { centered: "", row: "kj-empty-state-row" } },
+  defaultVariants: { layout: "centered" },
 });

@@ -1,79 +1,22 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useEventCategories, type EventCategory } from "@/entities/event";
 import {
-  Button,
   CategoryDot,
-  ConfirmDialog,
   EmptyState,
   ErrorState,
   List,
-  ListRow,
   ListSkeleton,
   PageHeader,
   Sheet,
   Text,
   TextButton,
 } from "@/shared/ui";
-import { useCategoryEditor } from "../model/use-category-editor";
+import { settingsPath } from "@/shared/config";
 import { EventCategoryForm } from "./event-category-form";
-function CategoryRow({
-  category,
-  onEdit,
-}: {
-  category: EventCategory;
-  onEdit: (category: EventCategory) => void;
-}) {
-  const [confirming, setConfirming] = useState(false);
-  const { onDelete, deleting, deleteError } = useCategoryEditor(
-    category.id,
-    () => setConfirming(false),
-  );
-  return (
-    <ListRow
-      leading={<CategoryDot color={category.color} />}
-      trailing={
-        <div className="flex gap-2">
-          <TextButton
-            onClick={() => onEdit(category)}
-            aria-label={`${category.name} 수정하기`}
-          >
-            수정하기
-          </TextButton>
-          {category.name !== "기타" && (
-            <TextButton
-              tone="danger"
-              onClick={() => setConfirming(true)}
-              aria-label={`${category.name} 삭제하기`}
-            >
-              삭제하기
-            </TextButton>
-          )}
-        </div>
-      }
-    >
-      <Text className="break-words">{category.name}</Text>
-      {deleteError && (
-        <Text as="p" role="alert" className="text-error-text">
-          {deleteError.message}
-        </Text>
-      )}
-      <ConfirmDialog
-        open={confirming}
-        onOpenChange={(open) => {
-          if (!deleting) setConfirming(open);
-        }}
-        targetName={category.name}
-        title="카테고리를 삭제할까요?"
-        description={
-          deleteError?.message ?? "이 카테고리의 일정은 기타로 옮겨져요."
-        }
-        onConfirm={onDelete}
-        pending={deleting}
-      />
-    </ListRow>
-  );
-}
+
 function CategoryList({
   onEdit,
 }: {
@@ -96,9 +39,26 @@ function CategoryList({
       <EmptyState message="일정 카테고리가 없어요. 새 카테고리를 만들어 보세요." />
     );
   return (
-    <List>
+    <List data-od-id="lists-items">
       {categories.data.map((category) => (
-        <CategoryRow key={category.id} category={category} onEdit={onEdit} />
+        <li key={category.id} data-od-id={`lists-item-${category.id}`}>
+          <TextButton
+            className="min-h-11 w-full justify-start gap-3 text-foreground font-normal"
+            onClick={() => onEdit(category)}
+            aria-label={`${category.name} 수정하기`}
+          >
+            <CategoryDot color={category.color} />
+            <span className="min-w-0 flex-1 truncate text-left">
+              {category.name}
+            </span>
+            {category.name === "기타" && (
+              <Text variant="caption" className="text-muted-foreground">
+                기본
+              </Text>
+            )}
+            <ChevronRight size={16} className="text-[var(--icon-tertiary)]" />
+          </TextButton>
+        </li>
       ))}
     </List>
   );
@@ -108,20 +68,54 @@ export function EventCategoriesPage() {
     undefined,
   );
   return (
-    <>
+    <div data-od-id="lists-main">
       <PageHeader
+        odId="lists"
         title="일정 카테고리"
-        actions={
-          <Button onClick={() => setEditing(null)}>카테고리 만들기</Button>
+        titleVariant="display"
+        navigation={
+          <Link
+            href={settingsPath}
+            data-od-id="lists-back"
+            className="inline-flex min-h-11 items-center gap-1 text-primary"
+          >
+            <ChevronLeft size={20} />
+            설정
+          </Link>
         }
       />
-      <CategoryList onEdit={setEditing} />
+      <section
+        className="mt-4"
+        aria-label="일정 카테고리 목록"
+        data-od-id="lists-section"
+      >
+        <CategoryList onEdit={setEditing} />
+        <TextButton
+          className="mt-3"
+          data-od-id="lists-add"
+          onClick={() => setEditing(null)}
+        >
+          <Plus size={18} />
+          카테고리 추가
+        </TextButton>
+      </section>
       <Sheet
         open={editing !== undefined}
         onOpenChange={(open) => {
           if (!open) setEditing(undefined);
         }}
-        title={editing ? "카테고리 수정" : "카테고리 만들기"}
+        odId="lists-sheet"
+        closeLabel="취소"
+        title={editing ? "카테고리 수정" : "새 카테고리"}
+        action={
+          <TextButton
+            data-od-id="lists-save"
+            type="submit"
+            form="category-form"
+          >
+            저장
+          </TextButton>
+        }
         description="가정에서 함께 쓸 일정 카테고리 이름과 색을 정해요."
       >
         {editing !== undefined && (
@@ -132,6 +126,6 @@ export function EventCategoriesPage() {
           />
         )}
       </Sheet>
-    </>
+    </div>
   );
 }

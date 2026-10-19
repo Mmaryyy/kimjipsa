@@ -61,6 +61,8 @@
   justify-content: center;
   gap: var(--sp-1);
   flex-shrink: 0;
+  white-space: nowrap;
+  word-break: keep-all;
   cursor: pointer;
 }
 .kj-button {
@@ -98,6 +100,8 @@
   align-items: center;
   gap: var(--sp-1);
   font-size: var(--type-caption-size);
+  flex: none;
+  white-space: nowrap;
 }
 .kj-status-badge-dot {
   width: 5px;
@@ -121,19 +125,23 @@
 }
 .kj-toggle-group button {
   cursor: pointer;
+  white-space: nowrap;
+  word-break: keep-all;
 }
 .kj-toggle-group button:disabled {
   opacity: 0.5;
   cursor: default;
 }
 .kj-segmented-control {
+  flex-shrink: 0;
+  min-width: max-content;
   padding: 2px;
   border-radius: var(--r-control);
   background: var(--fill-tertiary);
 }
 .kj-segmented-control button {
-  flex: 1;
-  min-width: 0;
+  flex: 1 0 auto;
+  min-width: max-content;
   min-height: 26px;
   padding-inline: var(--sp-2);
   border-radius: var(--r-control);
@@ -365,20 +373,14 @@
   list-style: none;
 }
 .kj-toast {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--sp-3);
+  display: grid;
+  gap: var(--sp-2);
   padding: var(--sp-2) var(--sp-3);
   border-radius: var(--r-control);
   background: var(--label);
   color: var(--bg);
   font-size: var(--type-body-sm-size);
   overflow-wrap: anywhere;
-}
-.kj-toast .kj-toast-action {
-  color: inherit;
-  text-decoration: underline;
 }
 .kj-toast[data-swipe="move"] {
   transform: translateX(var(--radix-toast-swipe-move-x));
@@ -474,4 +476,296 @@
   border-radius: var(--r-control);
   background: var(--fill-tertiary);
   color: var(--label);
+}
+
+.kj-group-label {
+  padding: var(--sp-5) 0 var(--sp-half);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+  font-weight: var(--fw-semibold);
+  color: var(--label-secondary);
+  letter-spacing: 0.02em;
+}
+.kj-calendar-week,
+.kj-calendar-month {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  min-width: 0;
+  margin-top: var(--sp-1);
+}
+.kj-calendar-date {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  padding: var(--sp-2) 0 calc(var(--sp-2) + var(--sp-half));
+  min-width: 0;
+  color: var(--label);
+}
+.kj-calendar-dow {
+  font-size: var(--type-caption-sm-size);
+  font-weight: var(--fw-regular);
+  color: var(--label-secondary);
+  letter-spacing: 0.02em;
+}
+.kj-calendar-date[data-sunday="true"] .kj-calendar-dow {
+  color: var(--sys-red-ic);
+}
+.kj-calendar-number {
+  display: grid;
+  place-items: center;
+  width: var(--sp-8);
+  height: var(--sp-8);
+  font-size: var(--type-body-size);
+  font-weight: var(--fw-medium);
+  font-variant-numeric: tabular-nums;
+  border-radius: var(--r-round);
+}
+.kj-calendar-date[data-today="true"] .kj-calendar-number {
+  background: var(--label);
+  color: var(--bg);
+  font-weight: var(--fw-bold);
+}
+.kj-calendar-date[aria-pressed="true"] .kj-calendar-number {
+  background: var(--label);
+  color: var(--bg);
+}
+.kj-calendar-dots {
+  display: flex;
+  gap: 3px;
+  height: 5px;
+}
+.kj-calendar-dots i {
+  width: 5px;
+  height: 5px;
+  border-radius: var(--r-round);
+}
+.kj-calendar-month .kj-calendar-date {
+  min-height: 56px;
+}
+.kj-calendar-month .kj-calendar-date:nth-child(n + 8) .kj-calendar-dow {
+  display: none;
+}
+.kj-event-dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: var(--r-round);
+}
+.kj-member-avatar {
+  display: grid;
+  place-items: center;
+  width: var(--sp-8);
+  height: var(--sp-8);
+  font-size: var(--type-caption-size);
+  color: var(--label-secondary);
+  background: var(--fill-tertiary);
+  border-radius: var(--r-round);
+  font-weight: var(--fw-semibold);
+}
+.kj-onboarding {
+  max-width: 440px;
+  margin-inline: auto;
+  min-height: 100dvh;
+  padding-top: max(var(--sp-3), env(safe-area-inset-top));
+  padding-bottom: calc(var(--sp-6) + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+}
+.kj-onboarding-progress {
+  appearance: none;
+  border: 0;
+  width: 100%;
+  height: 2px;
+  margin-top: var(--sp-1);
+  background: var(--fill-tertiary);
+  color: var(--label);
+}
+.kj-onboarding-progress::-webkit-progress-bar {
+  background: var(--fill-tertiary);
+}
+.kj-onboarding-progress::-webkit-progress-value {
+  background: var(--label);
+}
+.kj-onboarding-progress::-moz-progress-bar {
+  background: var(--label);
+}
+.kj-onboarding-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+  padding-top: var(--sp-10);
+}
+.kj-wordmark {
+  font-size: 40px;
+  line-height: 1.1;
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.02em;
+}
+.kj-celebration-banner {
+  position: relative;
+  overflow: hidden;
+  padding: calc(var(--sp-4) + var(--sp-half)) var(--sp-4) var(--sp-4);
+  background: var(--fill-quaternary);
+}
+@media (min-width: 1024px) {
+  .kj-calendar-month .kj-calendar-date {
+    min-height: 84px;
+  }
+}
+
+.kj-onboarding-benefits {
+  margin-top: var(--sp-8);
+  display: grid;
+  gap: var(--sp-5);
+}
+.kj-onboarding-benefits li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  font-size: var(--type-body-sm-size);
+  color: var(--label-secondary);
+}
+.kj-onboarding-benefits strong {
+  flex: 0 0 72px;
+  font-weight: var(--fw-semibold);
+  color: var(--label);
+}
+
+.kj-event-date-inputs {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+.kj-event-date-inputs input[type="date"] {
+  min-width: 0;
+  width: 128px;
+}
+.kj-event-date-inputs input[type="time"] {
+  min-width: 0;
+  width: 88px;
+}
+
+.kj-onboarding-panel > :last-child {
+  margin-top: auto;
+}
+.kj-onboarding-form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+.kj-onboarding-form > button[type="submit"] {
+  margin-top: auto;
+}
+.kj-calendar-month .kj-calendar-number {
+  width: 30px;
+  height: 30px;
+}
+.kj-calendar-date[data-sunday="true"]:not([data-today="true"]):not(
+    [aria-pressed="true"]
+  )
+  .kj-calendar-number {
+  color: var(--sys-red-ic);
+}
+.kj-calendar-date[data-outside="true"] .kj-calendar-number {
+  color: var(--label-tertiary);
+}
+.kj-calendar-month .kj-calendar-date[data-today="true"] .kj-calendar-number {
+  color: var(--bg);
+}
+.kj-calendar-month .kj-calendar-date[aria-pressed="true"] .kj-calendar-number {
+  color: var(--bg);
+}
+
+.kj-settings > section {
+  margin-top: var(--sp-10);
+}
+.kj-settings > section > .kj-group-label {
+  padding-top: 0;
+}
+.kj-settings .kj-segmented-control {
+  width: 168px;
+}
+.kj-settings .kj-form-field-row > label {
+  flex: 1;
+  width: auto;
+}
+.kj-settings .kj-input {
+  width: 140px;
+  text-align: right;
+}
+.kj-empty-state-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3) 0;
+  text-align: left;
+}
+.kj-empty-state-row > p {
+  color: var(--label-secondary);
+}
+.kj-empty-state-row > div:last-child {
+  margin-top: 0;
+  flex: none;
+}
+
+.kj-category-swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 36px);
+  gap: var(--sp-2);
+  max-width: 360px;
+  padding: var(--sp-2) 0 var(--sp-1);
+}
+.kj-category-swatch {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+}
+.kj-category-swatch input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.kj-category-swatch .kj-category-dot {
+  width: 26px;
+  height: 26px;
+  pointer-events: none;
+}
+.kj-category-swatch:has(input:checked) .kj-category-dot {
+  outline: 2px solid var(--category-color);
+  outline-offset: 4px;
+  transform: scale(0.78);
+}
+.kj-category-swatch:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-round);
+}
+
+.kj-family-name-field {
+  display: block;
+}
+.kj-family-name-field > label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.kj-family-name-field .kj-input {
+  width: 100%;
+  text-align: left;
+  background: var(--fill-tertiary);
+  padding: var(--sp-4) var(--sp-3);
+  border-radius: var(--r-control);
+  font-size: var(--type-title-size);
+  font-weight: var(--fw-semibold);
 }

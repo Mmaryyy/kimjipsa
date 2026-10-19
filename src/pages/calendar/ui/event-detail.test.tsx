@@ -42,8 +42,11 @@ describe("CAL-12 SCN-CAL-7 상세와 삭제 확인", () => {
       isError: false,
       data: {
         id: "event",
-        startDate: "2026-10-16T06:00:00Z",
-        endDate: "2026-10-16T07:00:00Z",
+        kind: "event",
+        startDate: "2026-10-16",
+        endDate: "2026-10-16",
+        startTime: "15:00",
+        endTime: "16:00",
         isAllDay: false,
         visibility: "shared",
         canEdit: true,
@@ -71,7 +74,7 @@ describe("CAL-12 SCN-CAL-7 상세와 삭제 확인", () => {
   afterEach(cleanup);
   it("일정 제목이 있는 확인창에서 취소하면 삭제하지 않아요", () => {
     renderDetail();
-    fireEvent.click(screen.getByRole("button", { name: "삭제하기" }));
+    fireEvent.click(screen.getByRole("button", { name: "일정 삭제" }));
     expect(screen.getByRole("alertdialog")).toHaveAccessibleName(
       "‘병원 예약’ 일정을 삭제할까요?",
     );
@@ -80,7 +83,7 @@ describe("CAL-12 SCN-CAL-7 상세와 삭제 확인", () => {
   });
   it("확인 버튼을 눌러야 삭제해요", async () => {
     renderDetail();
-    fireEvent.click(screen.getByRole("button", { name: "삭제하기" }));
+    fireEvent.click(screen.getByRole("button", { name: "일정 삭제" }));
     const dialog = screen.getByRole("alertdialog");
     fireEvent.click(within(dialog).getByRole("button", { name: "삭제하기" }));
     await waitFor(() => expect(deleteEvent).toHaveBeenCalledWith("event"));

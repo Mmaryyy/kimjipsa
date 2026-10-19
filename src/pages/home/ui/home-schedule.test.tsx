@@ -14,10 +14,18 @@ vi.mock("@/entities/event", async (original) => ({
   useEventCategories,
   useCalendarClock: () => new Date("2026-10-17T12:00:00+09:00"),
   useDdayDismissals: () => ({ data: [], isPending: false, isError: false }),
+  useDismissDdayCard: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 vi.mock("@/entities/user", async (original) => ({
   ...(await original<typeof UserModule>()),
   useHomeSettings,
+}));
+vi.mock("@/features/family", () => ({
+  useFamily: () => ({
+    data: { name: "우리 집", members: [] },
+    isPending: false,
+    isError: false,
+  }),
 }));
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
@@ -56,7 +64,7 @@ describe("CAL-06 CAL-07 CAL-13 ACC-12 SCN-CAL-8~9 홈 상태", () => {
   });
   it("일정 없음과 D-day 없음, 다가오는 일정 없음을 안내해요", () => {
     render(<HomeSchedule />);
-    expect(screen.getByText("선택한 기간에 일정이 없어요.")).toBeVisible();
+    expect(screen.getByText("등록된 일정이 없어요")).toBeVisible();
     expect(screen.getByText("다가오는 일정이 없어요.")).toBeVisible();
     expect(screen.getByText("등록한 D-day가 없어요.")).toBeVisible();
   });
@@ -76,16 +84,14 @@ describe("CAL-06 CAL-07 CAL-13 ACC-12 SCN-CAL-8~9 홈 상태", () => {
       expect(refetch).toHaveBeenCalledOnce();
     },
   );
-  it("위젯을 꺼도 사용자 설정의 일간 달력과 D-day는 유지해요", () => {
+  it("위젯을 꺼도 오늘 일정과 D-day는 유지해요", () => {
     useHomeSettings.mockReturnValue({
       data: { homeView: "day", upcomingEnabled: false, upcomingCount: 3 },
       isPending: false,
       isError: false,
     });
     render(<HomeSchedule />);
-    expect(
-      screen.getByRole("region", { name: "2026-10-17 일정" }),
-    ).toBeVisible();
+    expect(screen.getByRole("region", { name: "오늘 일정" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "D-day" })).toBeVisible();
     expect(
       screen.queryByRole("heading", { name: "다가오는 일정" }),

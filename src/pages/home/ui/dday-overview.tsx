@@ -23,8 +23,8 @@ export function DdayOverview({
     })
     .sort(compareOccurrences);
   return (
-    <section aria-labelledby="dday-overview-title">
-      <SectionHeader id="dday-overview-title" title="D-day" />
+    <section data-od-id="dday-section" aria-labelledby="dday-title">
+      <SectionHeader id="dday-title" title="D-day" />
       {occurrences.length === 0 ? (
         <EmptyState message="등록한 D-day가 없어요." />
       ) : (
@@ -32,6 +32,7 @@ export function DdayOverview({
           {occurrences.map((occurrence) => (
             <EventOccurrenceRow
               key={occurrence.event.id}
+              showDdayDate
               occurrence={occurrence}
               categories={categories}
             />

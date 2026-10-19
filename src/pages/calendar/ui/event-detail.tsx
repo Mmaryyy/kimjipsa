@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useEvent, useEventCategories, eventTimeLabel } from "@/entities/event";
 import {
   Button,
+  TextButton,
   ConfirmDialog,
   EmptyState,
   ErrorState,
@@ -69,7 +70,11 @@ export function EventDetail({
       <Text as="h2" variant="title">
         {details.title}
       </Text>
-      <Text as="p">{eventTimeLabel(event.data)}</Text>
+      <Text as="p">
+        {event.data.startDate === event.data.endDate &&
+          `${event.data.startDate} · `}
+        {eventTimeLabel(event.data)}
+      </Text>
       <Text as="p" variant="caption">
         {event.data.visibility === "private" ? "개인 일정" : "둘 다"}
       </Text>
@@ -94,9 +99,13 @@ export function EventDetail({
           <Button variant="gray" onClick={() => setEditing(true)}>
             수정하기
           </Button>
-          <Button variant="danger" onClick={() => setConfirming(true)}>
-            삭제하기
-          </Button>
+          <TextButton
+            data-od-id="detail-delete"
+            tone="danger"
+            onClick={() => setConfirming(true)}
+          >
+            일정 삭제
+          </TextButton>
         </div>
       )}
       {deleteError && (

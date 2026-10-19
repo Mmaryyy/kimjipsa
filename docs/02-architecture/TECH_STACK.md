@@ -28,6 +28,7 @@ PROPOSED 항목은 `docs/04-planning/DECISIONS_REQUIRED.md`의 결정 번호와 
 | 스타일링 | Tailwind CSS + `class-variance-authority` + `cn()` | CONFIRMED | ADR-0004. 테마는 `docs/design/tokens.css`의 CSS 변수를 가리킴 |
 | UI 프리미티브 | shadcn/ui (Radix 기반). 현재는 `radix-ui` 통합 패키지를 직접 쓰고 `kj-*` CSS로 외형을 입힘 | CONFIRMED | ADR-0004. 외형은 `docs/design/HANDOFF.md`에 맞춤. shadcn CLI가 만든 파일은 아직 없고(`components.json`만 있음) 추가할 때는 `shared/ui` 규칙(`README.md`)을 따른다 |
 | 아이콘 | `lucide-react` (shadcn/ui 기본 아이콘 라이브러리) | CONFIRMED | 사용자 결정(2026-10-15, P0 코드 리뷰 r002-f1): shadcn 기본값을 따르고 바꾸지 않는다. `components.json`의 `iconLibrary: "lucide"`. P1 이후 아이콘을 쓰는 컴포넌트에서 사용 |
+| 축하 색종이 | `canvas-confetti` 1.9.4 | CONFIRMED | 사용자 요청(2026-10-19, CAL-16): 축하 카드 색종이, 약 4.4KB gzip. 홈에서 동적 로드하고 동작 줄이기·숨은 탭에서는 중지 |
 | 날짜 | date-fns, 타임존 `Asia/Seoul` 고정(MVP) | CONFIRMED | ADR-0004 |
 | 서버 상태 | TanStack Query + Supabase Realtime 구독으로 캐시 갱신 | CONFIRMED | ADR-0005 (DEC-006) |
 | 검증 | Zod (서버 라우트·클라이언트 공유 스키마) | CONFIRMED | ADR-0005 |

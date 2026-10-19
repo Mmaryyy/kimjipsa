@@ -1,6 +1,6 @@
 "use client";
-import { useCallback } from "react";
-import { useForm } from "react-hook-form";
+import { useCallback, useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   eventCategorySchema,
@@ -9,7 +9,14 @@ import {
   type EventCategory,
   type EventCategoryInput,
 } from "@/entities/event";
-import { Button, FormFieldRow, Text } from "@/shared/ui";
+import {
+  CategoryDot,
+  ConfirmDialog,
+  FormFieldRow,
+  GroupLabel,
+  Text,
+  TextButton,
+} from "@/shared/ui";
 import { useCategoryEditor } from "../model/use-category-editor";
 export function EventCategoryForm({
   category,
@@ -24,9 +31,14 @@ export function EventCategoryForm({
       -1,
       ...(categories.data ?? []).map((category) => category.sortOrder),
     ) + 1;
-  const { onSave } = useCategoryEditor(category?.id, onSaved);
+  const [confirming, setConfirming] = useState(false);
+  const { onSave, onDelete, deleting, deleteError } = useCategoryEditor(
+    category?.id,
+    onSaved,
+  );
   const {
     register,
+    control,
     handleSubmit,
     setError,
     formState: { errors, isSubmitting },
@@ -51,9 +63,23 @@ export function EventCategoryForm({
     },
     [onSave, setError],
   );
+  const color = useWatch({ control, name: "color" });
+  const busy = isSubmitting || deleting;
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="grid gap-3" noValidate>
-      <fieldset disabled={isSubmitting} className="grid min-w-0 gap-2">
+    <form
+      id="category-form"
+      onSubmit={(event) => {
+        if (busy) {
+          event.preventDefault();
+          return;
+        }
+        void handleSubmit(onSubmit)(event);
+      }}
+      className="grid gap-3"
+      noValidate
+      aria-busy={busy}
+    >
+      <fieldset disabled={busy} className="grid min-w-0 gap-2">
         <legend className="sr-only">일정 카테고리 입력</legend>
         <FormFieldRow
           label="이름"
@@ -62,12 +88,17 @@ export function EventCategoryForm({
           error={errors.name?.message}
         >
           {(props) => (
-            <input
-              {...props}
-              {...register("name")}
-              readOnly={category?.name === "기타"}
-              autoFocus
-            />
+            <div className="flex items-center gap-3">
+              <CategoryDot color={color} />
+              <input
+                {...props}
+                {...register("name")}
+                data-od-id="lists-name"
+                placeholder="이름"
+                readOnly={category?.name === "기타"}
+                autoFocus
+              />
+            </div>
           )}
         </FormFieldRow>
         <FormFieldRow
@@ -86,31 +117,66 @@ export function EventCategoryForm({
             />
           )}
         </FormFieldRow>
-        <FormFieldRow
-          label="색"
-          htmlFor="category-color"
-          invalid={!!errors.color}
-          error={errors.color?.message}
-        >
-          {(props) => (
-            <select {...props} {...register("color")}>
-              {Object.entries(eventCategoryColors).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
+        <fieldset data-od-id="lists-colors" className="min-w-0">
+          <legend>
+            <GroupLabel as="span">
+              색상 · {eventCategoryColors[color]}
+            </GroupLabel>
+          </legend>
+          <div className="kj-category-swatches">
+            {Object.entries(eventCategoryColors).map(([value, label]) => (
+              <label key={value} className="kj-category-swatch">
+                <input
+                  {...register("color")}
+                  type="radio"
+                  value={value}
+                  aria-label={label}
+                />
+                <CategoryDot color={value as EventCategoryInput["color"]} />
+              </label>
+            ))}
+          </div>
+          {errors.color && (
+            <Text as="p" role="alert" className="text-error-text">
+              {errors.color.message}
+            </Text>
           )}
-        </FormFieldRow>
+        </fieldset>
       </fieldset>
       {errors.root && (
         <Text as="p" role="alert" className="text-error-text">
           {errors.root.message}
         </Text>
       )}
-      <Button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "저장하고 있어요" : "저장하기"}
-      </Button>
+      {category && category.name !== "기타" && (
+        <TextButton
+          className="mt-5 justify-self-start"
+          data-od-id="lists-delete"
+          tone="danger"
+          onClick={() => setConfirming(true)}
+          disabled={busy}
+        >
+          삭제
+        </TextButton>
+      )}
+      {deleteError && (
+        <Text as="p" role="alert" className="text-error-text">
+          {deleteError.message}
+        </Text>
+      )}
+      <ConfirmDialog
+        open={confirming}
+        onOpenChange={(open) => {
+          if (!deleting) setConfirming(open);
+        }}
+        targetName={category?.name ?? ""}
+        title="카테고리를 삭제할까요?"
+        description={
+          deleteError?.message ?? "이 카테고리의 일정은 기타로 옮겨져요."
+        }
+        onConfirm={onDelete}
+        pending={deleting}
+      />
     </form>
   );
 }

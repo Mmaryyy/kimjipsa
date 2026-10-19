@@ -42,16 +42,16 @@ describe("CAL-01~02 SCN-CAL-1 날짜와 선택 시각", () => {
       }).success,
     ).toBe(true);
   });
-  it("종일은 시각을 비우고, 하루 날짜를 한 번만 표시해요", () => {
+  it("종일은 시각을 비우고, 하루 일정은 날짜를 반복하지 않아요", () => {
     const event = { ...input, startTime: null, endTime: null, isAllDay: true };
     expect(eventSchema.safeParse(event).success).toBe(true);
     expect(
       eventSchema.safeParse({ ...event, startTime: "09:00" }).success,
     ).toBe(false);
-    expect(eventTimeLabel(event)).toBe("2026-10-16 · 종일");
+    expect(eventTimeLabel(event)).toBe("종일");
     expect(eventTimeLabel({ ...event, endDate: "2026-10-17" })).toBe(
       "2026-10-16 ~ 2026-10-17 · 종일",
     );
-    expect(eventTimeLabel({ ...event, isAllDay: false })).toBe("2026-10-16");
+    expect(eventTimeLabel({ ...event, isAllDay: false })).toBe("시간 미정");
   });
 });
