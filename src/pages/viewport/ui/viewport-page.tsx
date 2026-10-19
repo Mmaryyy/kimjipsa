@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { settingsPath } from "@/shared/config";
+import { settingsPath, viewportSpacingPath } from "@/shared/config";
 import { Button, Text } from "@/shared/ui";
 import { readViewport, viewportEntries } from "../lib/viewport.utils";
 
@@ -116,6 +116,13 @@ export function ViewportPage() {
           개발용 진단 화면이에요. 길이 단위는 px이며, null은 미지원 또는 메타
           없음이에요.
         </Text>
+        <Link
+          href={viewportSpacingPath}
+          className="kj-hit mt-4 inline-flex min-h-[var(--hit)] items-center text-primary text-label"
+          data-od-id="viewport-spacing-link"
+        >
+          여백 실험 열기
+        </Link>
         <div
           className="mt-4 flex flex-wrap gap-3"
           data-od-id="viewport-actions"

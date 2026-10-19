@@ -5,7 +5,12 @@ import dynamic from "next/dynamic";
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { AccountGate } from "@/widgets/account-gate";
-import { accountRoutes, catalogPath, viewportPath } from "@/shared/config";
+import {
+  accountRoutes,
+  catalogPath,
+  viewportPath,
+  viewportSpacingPath,
+} from "@/shared/config";
 import { SidebarNavigation } from "./sidebar-navigation";
 import { BottomNavigation } from "./bottom-navigation";
 import { SplashScreen } from "./splash-screen";
@@ -29,6 +34,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       accountRoutes.terms,
       accountRoutes.privacy,
       viewportPath,
+      viewportSpacingPath,
     ].some((route) => pathname === route) ||
     pathname.startsWith(`${accountRoutes.invite}/`) ||
     pathname === catalogPath;
