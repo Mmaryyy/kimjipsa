@@ -49,20 +49,21 @@ type CalendarProps = {
 };
 
 function getCalendarNumberTone({
-  emphasized,
+  selected,
+  today,
   outside,
   sunday,
-  month,
 }: {
-  emphasized: boolean;
+  selected: boolean;
+  today: boolean;
   outside: boolean;
   sunday: boolean;
-  month?: number;
 }) {
-  if (emphasized && month !== undefined) return "selected";
-  if (sunday && !emphasized) return "sunday";
+  if (selected) return "selected";
+  if (today) return "today";
+  if (sunday) return "sunday";
   if (outside) return "outside";
-  return emphasized ? "selected" : "default";
+  return "default";
 }
 
 function CalendarDate({
@@ -86,25 +87,35 @@ function CalendarDate({
   const daily = occurrences.filter(
     (item) => item.startDate <= date && item.endDate >= date,
   );
-  const emphasized = date === today || date === selected;
+  const isToday = date === today;
+  const isSelected = date === selected;
   const outside = month !== undefined && day.getMonth() !== month;
   const numberTone = getCalendarNumberTone({
-    emphasized,
+    selected: isSelected,
+    today: isToday,
     outside,
     sunday: day.getDay() === 0,
-    month,
   });
+  const accessibleLabel = [
+    format(day, "M월 d일 EEEE", { locale: ko }),
+    `일정 ${daily.length}개`,
+    isToday && "오늘",
+    isSelected && "선택됨",
+  ]
+    .filter(Boolean)
+    .join(", ");
   return (
     <TextButton
-      className="flex min-w-0 flex-col gap-1 px-0 pt-2 pb-2.5 text-foreground"
+      className="group/calendar-date flex min-w-0 flex-col gap-1 px-0 pt-2 pb-2.5 text-foreground outline-none"
       onClick={() => onSelect(date)}
       data-od-id={`${month !== undefined ? "month" : "week"}-day-${date}`}
       data-outside={month !== undefined && day.getMonth() !== month}
-      data-today={date === today}
+      data-today={isToday}
+      data-selected={isSelected}
       data-sunday={day.getDay() === 0}
-      aria-label={`${format(day, "M월 d일 EEEE", { locale: ko })}, 일정 ${daily.length}개`}
-      aria-current={date === today ? "date" : undefined}
-      aria-pressed={date === selected}
+      aria-label={accessibleLabel}
+      aria-current={isToday ? "date" : undefined}
+      aria-pressed={isSelected}
     >
       <span
         className={cn(
@@ -122,7 +133,6 @@ function CalendarDate({
       <span
         className={calendarNumberStyles({
           tone: numberTone,
-          today: date === today,
         })}
       >
         {format(day, "d")}
@@ -219,6 +229,7 @@ function DayEvents({
             <EventOccurrenceRow
               key={occurrence.event.id}
               occurrence={occurrence}
+              showDdayCountdown={home}
               date={date}
               categories={categories}
               ownerNames={ownerNames}
@@ -271,6 +282,7 @@ function WeekEvents({
                   <EventOccurrenceRow
                     key={occurrence.event.id}
                     occurrence={occurrence}
+                    showDdayCountdown={false}
                     date={date}
                     categories={categories}
                     ownerNames={ownerNames}
@@ -316,11 +328,9 @@ function TimelineEvent({
   const color =
     event.visibility === "private"
       ? "var(--sys-gray3)"
-      : event.details?.ddayStyle === "celebrate"
-        ? "var(--celebrate)"
-        : category
-          ? categoryColors[category.color]
-          : "var(--label-tertiary)";
+      : category
+        ? categoryColors[category.color]
+        : "var(--label-tertiary)";
   const content = (
     <>
       <span
@@ -342,7 +352,15 @@ function TimelineEvent({
           <>
             {showTime && event.startTime && `${event.startTime} `}
             {event.details?.title}
-            {dday && ` · ${dday.label}`}
+            {dday && (
+              <span className="block text-caption text-muted-foreground">
+                {dday.anniversary > 0
+                  ? `${dday.anniversary}주년`
+                  : event.details?.ddayStyle === "celebrate"
+                    ? "축하"
+                    : ""}
+              </span>
+            )}
           </>
         )}
       </span>

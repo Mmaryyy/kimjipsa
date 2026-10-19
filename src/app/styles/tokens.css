@@ -524,6 +524,9 @@
 
 /* 앱 셸의 안전 영역과 알림 위치가 공유하는 파생 토큰. */
 :root {
+  --toast-padding-block: 9px;
+  --toast-padding-inline: 14px;
+  --toast-offset: 96px;
   --bottom-navigation-icon-size: calc(var(--sp-6) + var(--sp-half));
   --bottom-navigation-height: calc(
     max(

@@ -1,20 +1,18 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, Plus } from "lucide-react";
 import { useEventCategories, type EventCategory } from "@/entities/event";
 import {
-  CategoryDot,
   EmptyState,
   ErrorState,
-  List,
   ListSkeleton,
   PageHeader,
   Sheet,
-  Text,
   TextButton,
 } from "@/shared/ui";
 import { settingsPath } from "@/shared/config";
+import { SortableCategoryList } from "./sortable-category-list";
 import { EventCategoryForm } from "./event-category-form";
 
 function CategoryList({
@@ -38,30 +36,7 @@ function CategoryList({
     return (
       <EmptyState message="일정 카테고리가 없어요. 새 카테고리를 만들어 보세요." />
     );
-  return (
-    <List data-od-id="lists-items">
-      {categories.data.map((category) => (
-        <li key={category.id} data-od-id={`lists-item-${category.id}`}>
-          <TextButton
-            className="min-h-11 w-full justify-start gap-3 text-foreground font-normal"
-            onClick={() => onEdit(category)}
-            aria-label={`${category.name} 수정하기`}
-          >
-            <CategoryDot color={category.color} />
-            <span className="min-w-0 flex-1 truncate text-left">
-              {category.name}
-            </span>
-            {category.name === "기타" && (
-              <Text variant="caption" className="text-muted-foreground">
-                기본
-              </Text>
-            )}
-            <ChevronRight size={16} className="text-[var(--icon-tertiary)]" />
-          </TextButton>
-        </li>
-      ))}
-    </List>
-  );
+  return <SortableCategoryList categories={categories.data} onEdit={onEdit} />;
 }
 export function EventCategoriesPage() {
   const [editing, setEditing] = useState<EventCategory | null | undefined>(

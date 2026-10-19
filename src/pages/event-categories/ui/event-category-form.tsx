@@ -44,18 +44,17 @@ export function EventCategoryForm({
     handleSubmit,
     setError,
     formState: { errors, isSubmitting },
-  } = useForm<EventCategoryInput>({
-    resolver: zodResolver(eventCategorySchema),
+  } = useForm<Omit<EventCategoryInput, "sortOrder">>({
+    resolver: zodResolver(eventCategorySchema.omit({ sortOrder: true })),
     defaultValues: category ?? {
       name: "",
-      sortOrder: nextOrder,
       color: Object.keys(eventCategoryColors)[0] as EventCategoryInput["color"],
     },
   });
   const onSubmit = useCallback(
-    async (input: EventCategoryInput) => {
+    async (input: Omit<EventCategoryInput, "sortOrder">) => {
       try {
-        await onSave(input);
+        await onSave({ ...input, sortOrder: category?.sortOrder ?? nextOrder });
       } catch (error) {
         setError("root", {
           message:
@@ -63,7 +62,7 @@ export function EventCategoryForm({
         });
       }
     },
-    [onSave, setError],
+    [onSave, setError, category, nextOrder],
   );
   const color = useWatch({ control, name: "color" });
   const busy = isSubmitting || deleting;
@@ -101,22 +100,6 @@ export function EventCategoryForm({
                 autoFocus
               />
             </div>
-          )}
-        </FormFieldRow>
-        <FormFieldRow
-          label="표시 순서 (0부터)"
-          htmlFor="category-order"
-          invalid={!!errors.sortOrder}
-          error={errors.sortOrder?.message}
-        >
-          {(props) => (
-            <input
-              {...props}
-              {...register("sortOrder", { valueAsNumber: true })}
-              type="number"
-              min={0}
-              step={1}
-            />
           )}
         </FormFieldRow>
         <fieldset data-od-id="lists-colors" className="min-w-0">

@@ -10,6 +10,7 @@ import {
   fetchDdayDismissals,
   dismissDdayCard,
 } from "../api/api";
+import { eventPollingIntervalMs } from "./event.constants";
 export const eventQueryKey = ["events"] as const;
 export const categoryQueryKey = ["event-categories"] as const;
 export function useEvents() {
@@ -42,28 +43,27 @@ export function useEvents() {
   return useQuery({
     queryKey: eventQueryKey,
     queryFn: fetchEvents,
-    refetchInterval: 10000,
+    refetchInterval: eventPollingIntervalMs,
   });
 }
 export function useEvent(id: string) {
   return useQuery({
     queryKey: [...eventQueryKey, id],
     queryFn: () => fetchEvent(id),
-    refetchInterval: 10000,
+    refetchInterval: eventPollingIntervalMs,
   });
 }
 export function useEventCategories() {
   return useQuery({
     queryKey: categoryQueryKey,
     queryFn: fetchCategories,
-    refetchInterval: 10000,
   });
 }
 export function useDdayDismissals() {
   return useQuery({
     queryKey: ["dday-dismissals"],
     queryFn: fetchDdayDismissals,
-    refetchInterval: 10000,
+    refetchInterval: eventPollingIntervalMs,
   });
 }
 export function useDismissDdayCard() {

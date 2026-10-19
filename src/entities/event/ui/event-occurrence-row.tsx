@@ -2,11 +2,11 @@ import Link from "next/link";
 import { LockKeyhole } from "lucide-react";
 import { format } from "date-fns";
 import { eventRoutes } from "@/shared/config";
-import { cn } from "@/shared/lib";
 import { CategoryDot, ListRow, TextButton, Text } from "@/shared/ui";
 import type { EventCategory } from "../api/type";
 import type { EventOccurrence } from "../lib/event-occurrences.utils";
 import { kstDate } from "../lib/dday.utils";
+import { ddayLabelStyles } from "./event-occurrence-row.variants";
 
 export function EventOccurrenceRow({
   occurrence,
@@ -14,6 +14,7 @@ export function EventOccurrenceRow({
   ownerNames,
   onOpen,
   showDdayDate = false,
+  showDdayCountdown = true,
   date = occurrence.startDate,
 }: {
   occurrence: EventOccurrence;
@@ -21,6 +22,7 @@ export function EventOccurrenceRow({
   ownerNames?: Record<string, string>;
   onOpen?: (id: string) => void;
   showDdayDate?: boolean;
+  showDdayCountdown?: boolean;
   date?: string;
 }) {
   const { event, dday } = occurrence;
@@ -30,8 +32,12 @@ export function EventOccurrenceRow({
   const owner = event.ownerId ? ownerNames?.[event.ownerId] : undefined;
   const privateEvent = event.visibility === "private";
   const celebrated = event.details?.ddayStyle === "celebrate";
-  const emphasized =
-    dday !== null && dday.daysUntil >= 0 && dday.daysUntil <= 7;
+  const ddayTone =
+    dday?.daysUntil === 0
+      ? "today"
+      : dday && dday.daysUntil >= 1 && dday.daysUntil <= 7
+        ? "soon"
+        : "distant";
   const titleText = event.details?.title ?? "개인 일정";
   let title = <span>{titleText}</span>;
   if (event.details)
@@ -94,7 +100,7 @@ export function EventOccurrenceRow({
           )}
           {privateEvent ? (
             <span className="size-2 flex-none rounded-[var(--r-round)] bg-[var(--sys-gray3)]" />
-          ) : celebrated ? (
+          ) : celebrated && showDdayCountdown ? (
             <span className="size-2 flex-none rounded-[var(--r-round)] bg-[var(--celebrate)]" />
           ) : category ? (
             <CategoryDot color={category.color} />
@@ -105,14 +111,13 @@ export function EventOccurrenceRow({
       }
       description={metadata}
       trailing={
-        dday ? (
+        dday && showDdayCountdown ? (
           <Text
             variant={showDdayDate ? "title" : "caption"}
-            className={cn(
-              "whitespace-nowrap tabular-nums",
-              showDdayDate && "text-[length:var(--type-title-size)]",
-              emphasized && "text-[color:var(--celebrate-text)]",
-            )}
+            className={ddayLabelStyles({
+              size: showDdayDate ? "title" : "caption",
+              tone: ddayTone,
+            })}
           >
             {dday.label}
           </Text>

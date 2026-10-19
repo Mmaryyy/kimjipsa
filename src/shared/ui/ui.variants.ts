@@ -72,7 +72,8 @@ export const buttonStyles = cva(
       variant: {
         primary: "bg-primary text-primary-foreground",
         gray: "bg-muted text-foreground",
-        toast: "bg-background text-foreground",
+        toast:
+          "bg-transparent px-0 font-semibold text-inherit tracking-normal underline",
         danger: "bg-muted text-destructive",
         success: "bg-success-button-bg text-success-button-fg",
         info: "bg-info-button-bg text-info-button-fg",

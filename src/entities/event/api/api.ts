@@ -42,3 +42,11 @@ export function fetchDdayDismissals() {
 export function dismissDdayCard(id: string) {
   return request<null>(`${eventApiPath(id)}/dismiss`, {});
 }
+
+export function reorderCategory(category: EventCategory, sortOrder: number) {
+  return request<string>(
+    eventCategoryApiPath(category.id),
+    { name: category.name, color: category.color, sortOrder },
+    "PUT",
+  );
+}

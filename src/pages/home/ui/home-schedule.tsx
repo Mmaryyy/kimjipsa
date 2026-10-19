@@ -1,5 +1,6 @@
 "use client";
 import {
+  DdayOverview,
   kstDate,
   useEvents,
   useEventCategories,
@@ -20,7 +21,6 @@ import {
   Text,
 } from "@/shared/ui";
 import { CelebrationCards } from "./celebration-cards";
-import { DdayOverview } from "./dday-overview";
 import { UpcomingEvents } from "./upcoming-events";
 export function HomeSchedule() {
   const instant = useCalendarClock();

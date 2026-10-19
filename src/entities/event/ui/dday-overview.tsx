@@ -1,29 +1,31 @@
-import {
-  EventOccurrenceRow,
-  nextDday,
-  compareOccurrences,
-  type CalendarEvent,
-  type EventCategory,
-} from "@/entities/event";
+import type { CalendarEvent, EventCategory } from "../api/type";
+import { upcomingOccurrences } from "../lib/event-occurrences.utils";
+import { EventOccurrenceRow } from "./event-occurrence-row";
 import { EmptyState, List, SectionHeader } from "@/shared/ui";
 export function DdayOverview({
   events,
   categories,
   instant,
+  onOpen,
+  limit,
 }: {
   events: CalendarEvent[];
   categories: EventCategory[];
   instant: Date;
+  onOpen?: (id: string) => void;
+  limit?: number;
 }) {
-  const occurrences = events
-    .filter((event) => event.kind === "dday")
-    .map((event) => {
-      const dday = nextDday(event.startDate, instant);
-      return { event, startDate: dday.date, endDate: dday.date, dday };
-    })
-    .sort(compareOccurrences);
+  const occurrences = upcomingOccurrences(
+    events.filter((event) => event.kind === "dday" && event.details !== null),
+    limit ?? events.length,
+    instant,
+  );
   return (
-    <section data-od-id="dday-section" aria-labelledby="dday-title">
+    <section
+      className="min-w-0"
+      data-od-id="dday-section"
+      aria-labelledby="dday-title"
+    >
       <SectionHeader id="dday-title" title="D-day" />
       {occurrences.length === 0 ? (
         <EmptyState message="등록한 D-day가 없어요." />
@@ -32,6 +34,7 @@ export function DdayOverview({
           {occurrences.map((occurrence) => (
             <EventOccurrenceRow
               key={occurrence.event.id}
+              onOpen={onOpen}
               showDdayDate
               occurrence={occurrence}
               categories={categories}

@@ -112,3 +112,17 @@ describe("CAL-07 CAL-13 SCN-CAL-8 달력과 다가오는 일정", () => {
     expect(upcomingOccurrences([], 5, instant)).toEqual([]);
   });
 });
+
+it("CAL-06 SCN-CAL-9 범위 안 D-day도 오늘 기준으로 라벨을 계산해요", () => {
+  const rows = occurrencesInRange(
+    [event("dday", { kind: "dday", startDate: "2025-10-22" })],
+    "2026-10-01",
+    "2026-10-31",
+    instant,
+  );
+  expect(rows[0].dday).toMatchObject({
+    daysUntil: 5,
+    label: "D-5",
+    anniversary: 1,
+  });
+});

@@ -1,1 +1,4 @@
-export { categoryPOST as POST } from "@/app/api/event-routes";
+export {
+  categoryPOST as POST,
+  categoryPOST as PUT,
+} from "@/app/api/event-routes";

@@ -293,7 +293,7 @@ describe("ACC-01 ACC-05 SCN-ACC-2 로그인 만료 안내", () => {
     }
   });
 
-  it("만료 뒤 개별 쿼리의 10초 주기 조회도 멈추고 마지막 데이터를 유지해요", async () => {
+  it("만료 뒤 개별 쿼리의 30초 주기 조회도 멈추고 마지막 데이터를 유지해요", async () => {
     vi.useFakeTimers();
     render(
       <QueryProvider>
@@ -307,13 +307,13 @@ describe("ACC-01 ACC-05 SCN-ACC-2 로그인 만료 안내", () => {
       queryFn: request,
       initialData: ["마지막 일정"],
       refetchOnMount: false,
-      refetchInterval: 10_000,
+      refetchInterval: 30_000,
       refetchIntervalInBackground: true,
     });
     const unsubscribe = observer.subscribe(() => {});
     try {
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(10_000);
+        await vi.advanceTimersByTimeAsync(30_000);
       });
       expect(request).toHaveBeenCalledOnce();
       await expireSession("mutation", "session-expired");
@@ -343,7 +343,7 @@ describe("ACC-01 ACC-05 SCN-ACC-2 로그인 만료 안내", () => {
       queryFn: request,
       initialData: ["마지막 일정"],
       refetchOnMount: false,
-      refetchInterval: 10_000,
+      refetchInterval: 30_000,
       refetchIntervalInBackground: true,
     };
     const observer = new QueryObserver(client, options);

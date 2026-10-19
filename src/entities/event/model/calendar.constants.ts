@@ -4,3 +4,5 @@ export const calendarViews = [
   { value: "day", label: "일간" },
 ] as const;
 export type CalendarView = (typeof calendarViews)[number]["value"];
+
+export const calendarDdayLimit = 5;

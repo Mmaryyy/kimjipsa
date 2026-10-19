@@ -19,10 +19,15 @@ export {
   saveEvent,
   deleteEvent,
   saveCategory,
+  reorderCategory,
   deleteCategory,
 } from "./api/api";
 export { eventDateInput, eventTimeLabel } from "./lib/event-date.utils";
-export { calendarViews, type CalendarView } from "./model/calendar.constants";
+export {
+  calendarViews,
+  calendarDdayLimit,
+  type CalendarView,
+} from "./model/calendar.constants";
 export { kstDate, kstNow, nextDday } from "./lib/dday.utils";
 export {
   occurrencesInRange,
@@ -33,3 +38,4 @@ export {
 export { useDdayDismissals, useDismissDdayCard } from "./model/use-events";
 export { EventOccurrenceRow } from "./ui/event-occurrence-row";
 export { useCalendarClock } from "./model/use-calendar-clock";
+export { DdayOverview } from "./ui/dday-overview";

@@ -65,6 +65,45 @@ describe("CAL-07 SCN-CAL-8 월·주·일 URL 상태", () => {
     expect(screen.getByRole("region", { name: "오늘 일정" })).toBeVisible();
     expect(screen.queryByRole("radio")).not.toBeInTheDocument();
   });
+  describe.each([false, true])("홈 주간 스트립 %s", (home) => {
+    it.each(["2026-12-30", "2026-12-31"])(
+      "%s 선택 시 오늘과 선택 날짜를 구분해요",
+      (selected) => {
+        location.search = `view=${home ? "week" : "month"}&date=${selected}`;
+        render(<CalendarView {...props} home={home} defaultView="week" />);
+        const today = screen.getByRole("button", {
+          name: /12월 31일 목요일, 일정 0개, 오늘/,
+        });
+        const chosen = screen.getByRole("button", {
+          name: /선택됨/,
+        });
+        expect(today).toHaveAttribute("aria-current", "date");
+        expect(today).toHaveAttribute(
+          "aria-pressed",
+          String(selected === props.today),
+        );
+        expect(chosen).toHaveAttribute("aria-pressed", "true");
+        expect(chosen.children[1]).toHaveClass(
+          "bg-foreground",
+          "text-background",
+          "font-semibold",
+        );
+        if (selected !== props.today) {
+          expect(today.children[1]).toHaveClass(
+            "text-[var(--accent-text)]",
+            "font-bold",
+          );
+          expect(today.children[1]).not.toHaveClass("bg-foreground");
+          expect(chosen).not.toHaveAttribute("aria-current");
+        } else {
+          expect(today).toBe(chosen);
+          expect(today.children[1]).not.toHaveClass(
+            "text-[var(--accent-text)]",
+          );
+        }
+      },
+    );
+  });
   it("잘못된 URL은 오늘과 기본 보기로 대체해요", () => {
     location.search = "view=invalid&date=2026-02-30";
     render(<CalendarView {...props} defaultView="day" />);
@@ -186,7 +225,9 @@ describe("CAL-07 일간·주간 일정 구성", () => {
       />,
     );
     expect(timelineSlot("종일").getAllByRole("button")).toHaveLength(3);
-    expect(timelineSlot("종일").getByText(/D-Day/)).toBeVisible();
+    expect(
+      timelineSlot("종일").queryByText(/D-(?:Day|\d+)/),
+    ).not.toBeInTheDocument();
     expect(timelineSlot("시간 미정").getByRole("button")).toHaveTextContent(
       "치과 정기검진",
     );
@@ -232,4 +273,25 @@ describe("CAL-07 일간·주간 일정 구성", () => {
     expect(within(day).getByText("10:30")).toBeVisible();
     expect(within(day).queryByText(/2026-10-14/)).not.toBeInTheDocument();
   });
+});
+
+describe("CAL-06 CAL-07 SCN-CAL-8 SCN-CAL-9 날짜별 D-day", () => {
+  it.each(["month", "week", "day"])(
+    "%s 보기에는 카운트다운 없이 제목과 주년을 보여 주고 상세를 열어요",
+    (view) => {
+      location.search = `view=${view}&date=2026-10-14`;
+      const onOpen = vi.fn();
+      render(
+        <CalendarView
+          {...props}
+          events={[{ ...timelineEvent, kind: "dday", startDate: "2025-10-14" }]}
+          onOpen={onOpen}
+        />,
+      );
+      expect(screen.queryByText(/D-(?:Day|\d+)/)).not.toBeInTheDocument();
+      expect(screen.getByText("1주년")).toBeVisible();
+      fireEvent.click(screen.getByRole("button", { name: /치과 정기검진/ }));
+      expect(onOpen).toHaveBeenCalledWith("dentist");
+    },
+  );
 });

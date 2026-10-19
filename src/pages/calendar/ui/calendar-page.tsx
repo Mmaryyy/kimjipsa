@@ -6,6 +6,8 @@ import Link from "next/link";
 import { useFamily } from "@/features/family";
 import { CalendarView } from "@/widgets/calendar-view";
 import {
+  DdayOverview,
+  calendarDdayLimit,
   useEvents,
   useEventCategories,
   eventDateInput,
@@ -62,19 +64,28 @@ function EventList({
   if (events.isPending || categories.isPending || family.isPending)
     return <ListSkeleton label="일정을 불러오고 있어요" />;
   return (
-    <CalendarView
-      ownerNames={Object.fromEntries(
-        (family.data?.members ?? []).map((member) => [
-          member.user_id,
-          member.display_name,
-        ]),
-      )}
-      events={events.data}
-      categories={categories.data}
-      today={eventDateInput(instant.toISOString())}
-      onOpen={onOpen}
-      onAdd={onAdd}
-    />
+    <div className="grid min-w-0 gap-10">
+      <CalendarView
+        ownerNames={Object.fromEntries(
+          (family.data?.members ?? []).map((member) => [
+            member.user_id,
+            member.display_name,
+          ]),
+        )}
+        events={events.data}
+        categories={categories.data}
+        today={eventDateInput(instant.toISOString())}
+        onOpen={onOpen}
+        onAdd={onAdd}
+      />
+      <DdayOverview
+        events={events.data}
+        categories={categories.data}
+        instant={instant}
+        onOpen={onOpen}
+        limit={calendarDdayLimit}
+      />
+    </div>
   );
 }
 

@@ -34,17 +34,23 @@ export function occurrencesInRange(
       ) {
         const date = ddayInYear(event.startDate, year);
         if (date && date >= start && date <= end) {
+          const daysUntil = differenceInCalendarDays(
+            kstDate(date),
+            kstNow(instant),
+          );
           occurrences.push({
             event,
             startDate: date,
             endDate: date,
             dday: {
               date,
-              daysUntil: differenceInCalendarDays(
-                kstDate(date),
-                kstNow(instant),
-              ),
-              label: "D-Day",
+              daysUntil,
+              label:
+                daysUntil === 0
+                  ? "D-Day"
+                  : daysUntil > 0
+                    ? `D-${daysUntil}`
+                    : `D+${-daysUntil}`,
               anniversary: year - Number(event.startDate.slice(0, 4)),
             },
           });

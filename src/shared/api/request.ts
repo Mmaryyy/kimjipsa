@@ -10,11 +10,15 @@ const apiResultSchema = z.discriminatedUnion("ok", [
 export type ApiResult<T> =
   | { ok: true; data: T }
   | { ok: false; error: { code: string; message: string } };
-export async function request<T>(url: string, body?: unknown): Promise<T> {
+export async function request<T>(
+  url: string,
+  body?: unknown,
+  method?: "POST" | "PUT",
+): Promise<T> {
   let response: Response;
   try {
     response = await fetch(url, {
-      method: body === undefined ? "GET" : "POST",
+      method: method ?? (body === undefined ? "GET" : "POST"),
       credentials: "same-origin",
       cache: "no-store",
       headers:
