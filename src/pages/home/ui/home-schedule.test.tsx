@@ -5,6 +5,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type * as EventModule from "@/entities/event";
 import type * as UserModule from "@/entities/user";
+import { SkeletonStatus } from "@/shared/ui";
 import { HomeSchedule } from "./home-schedule";
 const { useEvents, useEventCategories, useHomeSettings } = vi.hoisted(() => ({
   useEvents: vi.fn(),
@@ -60,9 +61,17 @@ describe("CAL-06 CAL-07 CAL-13 ACC-12 SCN-CAL-8~9 홈 상태", () => {
   });
   it("홈 달력과 위젯의 로딩을 보여 줘요", () => {
     useEvents.mockReturnValue({ isPending: true });
-    render(<HomeSchedule />);
+    render(
+      <SkeletonStatus>
+        <HomeSchedule />
+      </SkeletonStatus>,
+    );
+    expect(screen.getAllByRole("status")).toHaveLength(1);
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "화면을 불러오고 있어요",
+    );
     expect(
-      screen.getByRole("status", { name: "오늘 일정을 불러오고 있어요" }),
+      screen.getByRole("group", { name: "오늘 일정을 불러오고 있어요" }),
     ).toBeVisible();
   });
   it("일정 없음과 D-day 없음, 다가오는 일정 없음을 안내해요", () => {

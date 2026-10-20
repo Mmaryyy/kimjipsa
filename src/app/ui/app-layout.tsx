@@ -1,4 +1,5 @@
 "use client";
+import { SkeletonStatus } from "@/shared/ui";
 import { cn } from "@/shared/lib";
 
 import dynamic from "next/dynamic";
@@ -61,7 +62,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
         tabIndex={-1}
       >
         {process.env.NODE_ENV === "development" && <MockDataToolbar />}
-        {children}
+        <SkeletonStatus key={pathname}>{children}</SkeletonStatus>
       </main>
       {!publicPage && <BottomNavigation pathname={pathname} />}
     </div>

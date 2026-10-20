@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { prefetchHome } from "../model/prefetch-home";
 import Link from "next/link";
 import { ApiError } from "@/shared/api";
 import { useAccount } from "@/features/account";
@@ -16,13 +18,37 @@ export function AccountGate({
 }) {
   const account = useAccount();
   const router = useRouter();
+  const pathname = usePathname();
+  const client = useQueryClient();
+  const [prefetched, setPrefetched] = useState(false);
   const [minimumElapsed, setMinimumElapsed] = useState(false);
   const [released, setReleased] = useState(false);
   let destination: string | null = null;
   if (account.data && !account.data.userId) destination = accountRoutes.login;
   else if (account.data && (!account.data.profile || !account.data.membership))
     destination = accountRoutes.onboarding;
-  const settled = !account.isPending;
+  const shouldPrefetch =
+    pathname === accountRoutes.home &&
+    !!account.data?.userId &&
+    !!account.data.profile &&
+    !!account.data.membership;
+  useEffect(() => {
+    if (!shouldPrefetch || released) return;
+    let active = true;
+    const finish = () => {
+      if (active) setPrefetched(true);
+    };
+    const timer = window.setTimeout(finish, 3000);
+    void prefetchHome(client).finally(() => {
+      window.clearTimeout(timer);
+      finish();
+    });
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [client, shouldPrefetch, released]);
+  const settled = !account.isPending && (!shouldPrefetch || prefetched);
   const leaving = minimumElapsed && settled && !released;
   useEffect(() => {
     const timer = window.setTimeout(() => setMinimumElapsed(true), 900);

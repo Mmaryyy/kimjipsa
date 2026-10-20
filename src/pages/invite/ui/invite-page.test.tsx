@@ -18,7 +18,11 @@ const { fetchAccount, fetchInvite, acceptInvite, replace } = vi.hoisted(() => ({
   replace: vi.fn(),
 }));
 vi.mock("@/features/account/api/api", () => ({ fetchAccount }));
-vi.mock("@/features/family/api/api", () => ({ fetchInvite, acceptInvite }));
+vi.mock("@/features/family/api/api", async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  fetchInvite,
+  acceptInvite,
+}));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
 const account: Account = {
   userId: "test-user",

@@ -113,7 +113,7 @@ describe("CAL-17 공휴일 표시", () => {
       useHolidays.mockReturnValue({ names: {}, isPending: true });
       const { rerender } = render(<CalendarView {...props} />);
       expect(
-        screen.getByRole("status", { name: "일정을 준비하고 있어요" }),
+        screen.getByRole("group", { name: /불러오고 있어요/ }),
       ).toBeVisible();
       expect(
         screen.queryByText("등록된 일정이 없어요"),
@@ -124,7 +124,7 @@ describe("CAL-17 공휴일 표시", () => {
       });
       rerender(<CalendarView {...props} />);
       expect(
-        screen.queryByRole("status", { name: "일정을 준비하고 있어요" }),
+        screen.queryByRole("group", { name: /불러오고 있어요/ }),
       ).not.toBeInTheDocument();
       expect(
         screen.getByRole("listitem", { name: "한글날, 공휴일" }),

@@ -1,7 +1,12 @@
 "use client";
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { accountRoutes, invitePath } from "@/shared/config";
 import {
   fetchFamily,
@@ -11,8 +16,14 @@ import {
   acceptInvite,
 } from "../api/api";
 const familyQueryKey = ["family"] as const;
+export const familyQueryOptions = queryOptions({
+  queryKey: familyQueryKey,
+  queryFn: fetchFamily,
+  staleTime: 30_000,
+  retryOnMount: false,
+});
 export function useFamily() {
-  return useQuery({ queryKey: familyQueryKey, queryFn: fetchFamily });
+  return useQuery(familyQueryOptions);
 }
 export function useInvite(token: string) {
   return useQuery({

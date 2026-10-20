@@ -1,4 +1,5 @@
 "use client";
+import { HomeSettingsSkeleton } from "./settings-skeleton";
 import { useCallback, useRef, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,7 +13,6 @@ import {
 import {
   ErrorState,
   FormFieldRow,
-  ListSkeleton,
   GroupLabel,
   SegmentedControl,
   Switch,
@@ -175,8 +175,7 @@ export function HomeSettings() {
         }}
       />
     );
-  else if (settings.isPending)
-    content = <ListSkeleton label="홈 설정을 불러오고 있어요" />;
+  else if (settings.isPending) content = <HomeSettingsSkeleton />;
   else content = <HomeSettingsForm settings={settings.data} />;
   return (
     <section data-od-id="set-home" aria-labelledby="home-settings-title">

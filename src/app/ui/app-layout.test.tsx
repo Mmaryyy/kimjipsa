@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderToString } from "react-dom/server";
 import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -8,6 +9,9 @@ const { useAccount, replace, route } = vi.hoisted(() => ({
   useAccount: vi.fn(),
   replace: vi.fn(),
   route: { pathname: "/" },
+}));
+vi.mock("@/widgets/account-gate/model/prefetch-home", () => ({
+  prefetchHome: () => Promise.resolve(),
 }));
 vi.mock("@/features/account", () => ({ useAccount }));
 vi.mock("next/navigation", () => ({
@@ -44,9 +48,11 @@ function accountResult(data?: Account, error?: Error) {
 }
 function app() {
   return (
-    <AppLayout>
-      <button>화면 본문</button>
-    </AppLayout>
+    <QueryClientProvider client={new QueryClient()}>
+      <AppLayout>
+        <button>화면 본문</button>
+      </AppLayout>
+    </QueryClientProvider>
   );
 }
 async function elapse(milliseconds: number) {
@@ -113,6 +119,7 @@ describe("ACC-01 SCN-ACC-1 첫 진입 계정 확인 스플래시", () => {
     expectSplashOnly();
     useAccount.mockReturnValue(accountResult(readyAccount));
     view.rerender(app());
+    await elapse(0);
     await elapse(199);
     expectSplashOnly();
     await elapse(1);

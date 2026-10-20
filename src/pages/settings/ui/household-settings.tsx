@@ -1,15 +1,10 @@
 "use client";
+import { SettingsSkeleton } from "./settings-skeleton";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { useEventCategories } from "@/entities/event";
 import { eventRoutes } from "@/shared/config";
-import {
-  CategoryDot,
-  ErrorState,
-  GroupLabel,
-  ListSkeleton,
-  Text,
-} from "@/shared/ui";
+import { CategoryDot, ErrorState, GroupLabel, Text } from "@/shared/ui";
 
 export function HouseholdSettings() {
   const categories = useEventCategories();
@@ -23,7 +18,13 @@ export function HouseholdSettings() {
       />
     );
   if (categories.isPending)
-    return <ListSkeleton label="일정 카테고리를 불러오고 있어요" />;
+    return (
+      <SettingsSkeleton
+        label="일정 카테고리를 불러오고 있어요"
+        title="가정"
+        rows={5}
+      />
+    );
   return (
     <section data-od-id="set-household">
       <GroupLabel>가정</GroupLabel>

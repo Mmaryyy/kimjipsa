@@ -1,7 +1,12 @@
 "use client";
 import { isMockDataEnabled } from "@/shared/config";
 import { useEffect } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { createBrowserSupabaseClient } from "@/shared/api";
 import {
   fetchEvents,
@@ -13,6 +18,24 @@ import {
 import { eventPollingIntervalMs } from "./event.constants";
 export const eventQueryKey = ["events"] as const;
 export const categoryQueryKey = ["event-categories"] as const;
+export const eventsQueryOptions = queryOptions({
+  queryKey: eventQueryKey,
+  queryFn: fetchEvents,
+  staleTime: 30_000,
+  retryOnMount: false,
+});
+export const categoriesQueryOptions = queryOptions({
+  queryKey: categoryQueryKey,
+  queryFn: fetchCategories,
+  staleTime: 30_000,
+  retryOnMount: false,
+});
+export const dismissalsQueryOptions = queryOptions({
+  queryKey: ["dday-dismissals"],
+  queryFn: fetchDdayDismissals,
+  staleTime: 30_000,
+  retryOnMount: false,
+});
 export function useEvents() {
   const queryClient = useQueryClient();
   useEffect(() => {
@@ -41,8 +64,7 @@ export function useEvents() {
   }, [queryClient]);
   // Poll as a recovery path for disconnects and category-only edits.
   return useQuery({
-    queryKey: eventQueryKey,
-    queryFn: fetchEvents,
+    ...eventsQueryOptions,
     refetchInterval: eventPollingIntervalMs,
   });
 }
@@ -55,14 +77,12 @@ export function useEvent(id: string) {
 }
 export function useEventCategories() {
   return useQuery({
-    queryKey: categoryQueryKey,
-    queryFn: fetchCategories,
+    ...categoriesQueryOptions,
   });
 }
 export function useDdayDismissals() {
   return useQuery({
-    queryKey: ["dday-dismissals"],
-    queryFn: fetchDdayDismissals,
+    ...dismissalsQueryOptions,
     refetchInterval: eventPollingIntervalMs,
   });
 }

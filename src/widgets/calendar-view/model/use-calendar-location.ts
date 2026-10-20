@@ -12,14 +12,24 @@ export function useCalendarLocation(defaultView: CalendarView, today: string) {
     defaultView;
   const parsedDate = z.iso.date().safeParse(params?.get("date"));
   const urlDate = parsedDate.success ? parsedDate.data : today;
+  const [interacted, setInteracted] = useState(false);
+  const search = `${params?.get("view") ?? ""}/${params?.get("date") ?? ""}`;
   const [location, setLocation] = useState({ view: urlView, date: urlDate });
   const [previousUrl, setPreviousUrl] = useState({
     view: urlView,
     date: urlDate,
+    search,
   });
-  if (previousUrl.view !== urlView || previousUrl.date !== urlDate) {
-    setPreviousUrl({ view: urlView, date: urlDate });
-    setLocation({ view: urlView, date: urlDate });
+  if (
+    previousUrl.view !== urlView ||
+    previousUrl.date !== urlDate ||
+    previousUrl.search !== search
+  ) {
+    setPreviousUrl({ view: urlView, date: urlDate, search });
+    // 늦게 도착한 기본 보기 설정은 사용자가 이미 고른 위치를 덮어쓰지 않아요.
+    if (previousUrl.search !== search || !interacted) {
+      setLocation({ view: urlView, date: urlDate });
+    }
   }
   const { view, date } = location;
   const current = useRef(location);
@@ -28,6 +38,7 @@ export function useCalendarLocation(defaultView: CalendarView, today: string) {
   }, [location]);
   const onNavigate = useCallback(
     (nextView: CalendarView, nextDate: string) => {
+      setInteracted(true);
       current.current = { view: nextView, date: nextDate };
       setLocation(current.current);
       const next = new URLSearchParams(params?.toString());

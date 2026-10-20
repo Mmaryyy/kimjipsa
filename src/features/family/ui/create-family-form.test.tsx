@@ -2,10 +2,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/shared/api";
+import type * as FamilyApiModule from "../api/api";
 import { CreateFamilyForm } from "./create-family-form";
 
 const { createFamily } = vi.hoisted(() => ({ createFamily: vi.fn() }));
-vi.mock("../api/api", () => ({ createFamily }));
+vi.mock("../api/api", async (importOriginal) => ({
+  ...(await importOriginal<typeof FamilyApiModule>()),
+  createFamily,
+}));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn() }) }));
 
 function renderFamily() {

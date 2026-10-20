@@ -1,9 +1,20 @@
 "use client";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { fetchHomeSettings, saveHomeSettings } from "../api/home-settings";
 const homeSettingsKey = ["home-settings"] as const;
+export const homeSettingsQueryOptions = queryOptions({
+  queryKey: homeSettingsKey,
+  queryFn: fetchHomeSettings,
+  staleTime: 30_000,
+  retryOnMount: false,
+});
 export function useHomeSettings() {
-  return useQuery({ queryKey: homeSettingsKey, queryFn: fetchHomeSettings });
+  return useQuery(homeSettingsQueryOptions);
 }
 export function useSaveHomeSettings() {
   const queryClient = useQueryClient();

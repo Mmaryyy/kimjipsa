@@ -375,3 +375,58 @@ describe("CAL-06 CAL-07 SCN-CAL-8 SCN-CAL-9 날짜별 D-day", () => {
     },
   );
 });
+
+describe("CAL-07 P4.12 SCN-CAL-8 달력 섹션 로딩", () => {
+  it.each(["month", "week"])(
+    "%s 로딩 중 날짜 버튼은 일정 개수를 단정하지 않아요",
+    (view) => {
+      location.search = `view=${view}&date=2026-12-31`;
+      render(<CalendarView {...props} home loading />);
+      const navigation = screen.getByRole("navigation");
+      for (const button of within(navigation).getAllByRole("button")) {
+        expect(button.getAttribute("aria-label")).not.toContain("일정 0개");
+      }
+    },
+  );
+  it("늦게 온 기본 보기가 사용자가 고른 날짜와 보기를 덮어쓰지 않아요", () => {
+    location.search = "";
+    const { rerender } = render(
+      <CalendarView {...props} home loading defaultView="week" />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "12월 30일 수요일" }));
+    rerender(<CalendarView {...props} home defaultView="month" />);
+    expect(screen.getByRole("navigation", { name: "이번 주" })).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: /12월 30일.*선택됨/ }),
+    ).toHaveAttribute("aria-pressed", "true");
+    location.search = "view=month&date=2027-01-15";
+    rerender(<CalendarView {...props} home defaultView="month" />);
+    expect(screen.getByRole("navigation", { name: "달력" })).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: /1월 15일.*선택됨/ }),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+  it("월 그리드의 날짜 칸 수를 로딩 뒤에도 유지해요", () => {
+    location.search = "view=month&date=2026-12-31";
+    const { rerender } = render(<CalendarView {...props} loading />);
+    const before = within(
+      screen.getByRole("navigation", { name: "달력" }),
+    ).getAllByRole("button").length;
+    expect(screen.queryByText("등록된 일정이 없어요")).not.toBeInTheDocument();
+    rerender(<CalendarView {...props} />);
+    expect(
+      within(screen.getByRole("navigation", { name: "달력" })).getAllByRole(
+        "button",
+      ),
+    ).toHaveLength(before);
+  });
+  it.each([
+    ["week", "이번 주 일정을 불러오고 있어요"],
+    ["day", "하루 일정을 불러오고 있어요"],
+  ])("%s 보기에는 해당 목록 스켈레톤을 보여 줘요", (view, label) => {
+    location.search = `view=${view}&date=2026-12-31`;
+    render(<CalendarView {...props} loading />);
+    expect(screen.getByRole("group", { name: label })).toBeVisible();
+    expect(screen.queryByText("등록된 일정이 없어요")).not.toBeInTheDocument();
+  });
+});

@@ -2,6 +2,7 @@
 
 import {
   DdayOverview,
+  EventListSkeleton,
   eventDateInput,
   kstDate,
   upcomingOccurrences,
@@ -9,13 +10,7 @@ import {
   useEventCategories,
   useEvents,
 } from "@/entities/event";
-import {
-  ErrorState,
-  ListSkeleton,
-  PageHeader,
-  SectionHeader,
-  Text,
-} from "@/shared/ui";
+import { ErrorState, PageHeader, SectionHeader, Text } from "@/shared/ui";
 
 import { CalendarView } from "@/widgets/calendar-view";
 import { CelebrationCards } from "./celebration-cards";
@@ -42,17 +37,17 @@ export function HomeSchedule() {
         }}
       />
     );
-  if (
-    family.isPending ||
-    events.isPending ||
-    categories.isPending ||
-    settings.isPending ||
-    !events.data ||
-    !categories.data ||
-    !settings.data
-  )
-    return <ListSkeleton label="오늘 일정을 불러오고 있어요" />;
+  const loading = events.isPending || categories.isPending || family.isPending;
+  const homeSettings = settings.data ?? {
+    homeView: "week",
+    upcomingEnabled: true,
+    upcomingCount: 5,
+  };
   const today = eventDateInput(instant.toISOString());
+  const dateLabel = format(kstDate(today), "M월 d일 EEEE", { locale: ko });
+  const subtitle = family.data?.name
+    ? `${dateLabel} · ${family.data.name}`
+    : dateLabel;
   const ownerNames = Object.fromEntries(
     (family.data?.members ?? []).map((member) => [
       member.user_id,
@@ -61,41 +56,51 @@ export function HomeSchedule() {
   );
   return (
     <>
-      <PageHeader
-        odId="home"
-        title="오늘"
-        subtitle={`${format(kstDate(today), "M월 d일 EEEE", { locale: ko })} · ${family.data?.name ?? ""}`}
-      />
-      <CelebrationCards events={events.data} instant={instant} />
+      <PageHeader odId="home" title="오늘" subtitle={subtitle} />
+      {events.data && (
+        <CelebrationCards events={events.data} instant={instant} />
+      )}
       <div className="grid min-w-0 gap-10 lg:grid-cols-[1.4fr_1fr]">
         <div>
           <CalendarView
             home
+            loading={loading || settings.isPending}
             ownerNames={ownerNames}
-            events={events.data}
-            categories={categories.data}
+            events={events.data ?? []}
+            categories={categories.data ?? []}
             today={eventDateInput(instant.toISOString())}
-            defaultView={settings.data.homeView}
+            defaultView={homeSettings.homeView}
           />
-          {settings.data.upcomingEnabled && (
-            <UpcomingEvents
-              occurrences={upcomingOccurrences(
-                events.data,
-                settings.data.upcomingCount,
-                instant,
-              )}
-              categories={categories.data}
-              ownerNames={ownerNames}
-              count={settings.data.upcomingCount}
-            />
-          )}
+          {homeSettings.upcomingEnabled &&
+            (loading || settings.isPending ? (
+              <EventListSkeleton
+                title="다가오는 일정"
+                grouped
+                rows={homeSettings.upcomingCount}
+              />
+            ) : (
+              <UpcomingEvents
+                occurrences={upcomingOccurrences(
+                  events.data ?? [],
+                  homeSettings.upcomingCount,
+                  instant,
+                )}
+                categories={categories.data ?? []}
+                ownerNames={ownerNames}
+                count={homeSettings.upcomingCount}
+              />
+            ))}
         </div>
         <div className="grid content-start gap-10">
-          <DdayOverview
-            events={events.data}
-            categories={categories.data}
-            instant={instant}
-          />
+          {loading ? (
+            <EventListSkeleton title="D-day" dday />
+          ) : (
+            <DdayOverview
+              events={events.data ?? []}
+              categories={categories.data ?? []}
+              instant={instant}
+            />
+          )}
           <section data-od-id="stock-summary" aria-labelledby="stock-title">
             <SectionHeader id="stock-title" title="확인할 재고" />
             <Text as="p" variant="caption" className="text-muted-foreground">

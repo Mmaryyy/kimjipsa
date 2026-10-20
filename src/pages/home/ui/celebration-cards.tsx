@@ -8,7 +8,7 @@ import {
 } from "@/entities/event";
 import { X } from "lucide-react";
 import { format } from "date-fns";
-import { TextButton, ErrorState, ListSkeleton, Text } from "@/shared/ui";
+import { TextButton, ErrorState, Text } from "@/shared/ui";
 import { useConfettiBurst } from "../model/use-confetti-burst";
 function CelebrationCard({
   event,
@@ -88,8 +88,7 @@ export function CelebrationCards({
         }}
       />
     );
-  if (dismissals.isPending)
-    return <ListSkeleton label="축하 일정을 불러오고 있어요" />;
+  if (dismissals.isPending) return null;
   return (
     <div>
       {cards.map(({ event, dday }) => (

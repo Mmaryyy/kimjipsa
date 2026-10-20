@@ -7,6 +7,7 @@ import { useFamily } from "@/features/family";
 import { CalendarView } from "@/widgets/calendar-view";
 import {
   DdayOverview,
+  EventListSkeleton,
   calendarDdayLimit,
   useEvents,
   useEventCategories,
@@ -61,30 +62,34 @@ function EventList({
         }}
       />
     );
-  if (events.isPending || categories.isPending || family.isPending)
-    return <ListSkeleton label="일정을 불러오고 있어요" />;
+  const loading = events.isPending || categories.isPending || family.isPending;
   return (
     <div className="grid min-w-0 gap-10">
       <CalendarView
+        loading={loading}
         ownerNames={Object.fromEntries(
           (family.data?.members ?? []).map((member) => [
             member.user_id,
             member.display_name,
           ]),
         )}
-        events={events.data}
-        categories={categories.data}
+        events={events.data ?? []}
+        categories={categories.data ?? []}
         today={eventDateInput(instant.toISOString())}
         onOpen={onOpen}
         onAdd={onAdd}
       />
-      <DdayOverview
-        events={events.data}
-        categories={categories.data}
-        instant={instant}
-        onOpen={onOpen}
-        limit={calendarDdayLimit}
-      />
+      {loading ? (
+        <EventListSkeleton title="D-day" dday interactive />
+      ) : (
+        <DdayOverview
+          events={events.data ?? []}
+          categories={categories.data ?? []}
+          instant={instant}
+          onOpen={onOpen}
+          limit={calendarDdayLimit}
+        />
+      )}
     </div>
   );
 }
@@ -183,7 +188,7 @@ function CalendarContent() {
 
 export function CalendarPage() {
   return (
-    <Suspense fallback={<ListSkeleton label="일정을 준비하고 있어요" />}>
+    <Suspense fallback={<EventListSkeleton title="일정" />}>
       <CalendarContent />
     </Suspense>
   );

@@ -1,4 +1,5 @@
 "use client";
+import { AccountSettingsSkeleton } from "./settings-skeleton";
 import { cn } from "@/shared/lib";
 
 import { useState } from "react";
@@ -11,7 +12,6 @@ import {
   GroupLabel,
   List,
   ListRow,
-  ListSkeleton,
   Sheet,
   Text,
   TextButton,
@@ -32,8 +32,7 @@ export function AccountSettings() {
       />
     );
   }
-  if (account.isPending || family.isPending)
-    return <ListSkeleton label="가정과 구성원을 불러오고 있어요" />;
+  if (account.isPending || family.isPending) return <AccountSettingsSkeleton />;
   const currentAccount = account.data;
   if (!family.data) return <EmptyState message="아직 소속된 가정이 없어요." />;
   return (

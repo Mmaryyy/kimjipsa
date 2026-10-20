@@ -19,6 +19,8 @@ import {
   calendarWeekTitle,
   occurrencesInRange,
   EventOccurrenceRow,
+  EventListSkeleton,
+  EventRowsSkeleton,
   type CalendarView as View,
   type CalendarEvent,
   type EventCategory,
@@ -32,7 +34,8 @@ import {
   EmptyState,
   List,
   ListRow,
-  ListSkeleton,
+  Skeleton,
+  SkeletonSection,
   PageHeader,
   GroupLabel,
   SegmentedControl,
@@ -45,6 +48,7 @@ import { calendarNumberStyles } from "./calendar-date.variants";
 import { useCalendarLocation } from "../model/use-calendar-location";
 
 type CalendarProps = {
+  loading?: boolean;
   events: CalendarEvent[];
   categories: EventCategory[];
   today: string;
@@ -82,6 +86,7 @@ function CalendarDate({
   onSelect,
   month,
   holidayName,
+  loading,
 }: {
   day: Date;
   selected: string;
@@ -91,6 +96,7 @@ function CalendarDate({
   onSelect: (date: string) => void;
   month?: number;
   holidayName?: string;
+  loading?: boolean;
 }) {
   const date = format(day, "yyyy-MM-dd");
   const daily = occurrences.filter(
@@ -114,7 +120,7 @@ function CalendarDate({
   const holidayLabel = holidayName?.replace(/\s/g, "");
   const accessibleLabel = [
     format(day, "M월 d일 EEEE", { locale: ko }),
-    `일정 ${daily.length}개`,
+    !loading && `일정 ${daily.length}개`,
     holidayName,
     isToday && "오늘",
     isSelected && "선택됨",
@@ -152,7 +158,11 @@ function CalendarDate({
           }[weekdayTone],
         )}
       >
-        {format(day, "EEEEE", { locale: ko })}
+        {loading ? (
+          <Skeleton className="h-3 w-3" />
+        ) : (
+          format(day, "EEEEE", { locale: ko })
+        )}
       </span>
       <span
         className={calendarNumberStyles({
@@ -161,23 +171,20 @@ function CalendarDate({
           today: isToday,
         })}
       >
-        {format(day, "d")}
+        {loading ? <Skeleton className="h-5 w-5" /> : format(day, "d")}
       </span>
       {month !== undefined && (
         <span
           className={cn(
             "-mt-1 block h-4 w-full truncate text-center",
-            "tracking-[min(-0.03em,calc(100cqi/var(--holiday-chars)-0.9em))]",
-            "text-[length:clamp(9px,calc(100cqi/var(--holiday-chars)),11px)]",
+            "max-w-[calc(var(--holiday-chars)*0.87em)]",
+            "tracking-normal",
+            // 스위트 한글 폭(약 0.86em)에 여유를 두고 기본 자간으로 6글자를 맞춘다.
+            "text-[length:clamp(9px,calc(100cqi/var(--holiday-chars)/0.87),11px)]",
             outside
               ? "text-[var(--label-tertiary)]"
               : "text-[var(--sys-red-ic)]",
           )}
-          style={
-            {
-              "--holiday-chars": Math.max(1, holidayLabel?.length ?? 0),
-            } as CSSProperties
-          }
           aria-hidden="true"
         >
           {holidayLabel}
@@ -636,6 +643,7 @@ function CalendarPanel({
   onDateChange,
   holidayNames,
   holidaysPending,
+  loading,
 }: CalendarProps & {
   date: string;
   view: View;
@@ -653,8 +661,41 @@ function CalendarPanel({
   );
   const selectedHoliday = holidayNames[date];
   if (home && view === "day") return null;
-  if (!home && holidaysPending && view !== "month") {
-    return <ListSkeleton label="일정을 준비하고 있어요" />;
+  if (!home && (loading || holidaysPending) && view === "week") {
+    return (
+      <SkeletonSection label="이번 주 일정을 불러오고 있어요">
+        {days.map((day) => (
+          <div key={day.toISOString()}>
+            <GroupLabel as="h3">
+              {format(day, "M월 d일 EEEE", { locale: ko })}
+            </GroupLabel>
+            <EventRowsSkeleton rows={1} interactive />
+          </div>
+        ))}
+      </SkeletonSection>
+    );
+  }
+  if (!home && (loading || holidaysPending) && view === "day") {
+    return (
+      <SkeletonSection label="하루 일정을 불러오고 있어요">
+        <ul className="mt-3">
+          {Array.from({ length: 15 }, (_, index) => (
+            <li
+              key={index}
+              className="flex min-h-12 items-start gap-3 py-[9px]"
+            >
+              <Text
+                variant="caption-sm"
+                className="w-13 shrink-0 pt-0.5 text-[var(--label-tertiary)]"
+              >
+                {String(index + 8).padStart(2, "0")}:00
+              </Text>
+              <Skeleton className="mt-1 h-4 w-32" />
+            </li>
+          ))}
+        </ul>
+      </SkeletonSection>
+    );
   }
   if (view === "day") {
     return (
@@ -683,6 +724,8 @@ function CalendarPanel({
   }
   return (
     <nav
+      style={{ "--holiday-chars": 6 } as CSSProperties}
+      aria-busy={loading || undefined}
       aria-label={home && view === "week" ? "이번 주" : "달력"}
       data-od-id={home && view === "week" ? "week-strip" : undefined}
       className={cn(
@@ -697,6 +740,7 @@ function CalendarPanel({
         <CalendarDate
           key={day.toISOString()}
           day={day}
+          loading={loading}
           month={view === "month" ? selected.getMonth() : undefined}
           selected={date}
           today={today}
@@ -719,6 +763,7 @@ function CalendarContent({
   ownerNames,
   onOpen,
   onAdd,
+  loading,
 }: CalendarProps) {
   const { view, date, onViewChange, onDateChange, onMove } =
     useCalendarLocation(defaultView, today);
@@ -759,6 +804,7 @@ function CalendarContent({
       : isPending;
     return (
       <CalendarPanel
+        loading={loading}
         events={events}
         categories={categories}
         today={today}
@@ -854,7 +900,7 @@ function CalendarContent({
             : "grid gap-2"
         }
       >
-        <div data-od-id={!home ? "cal-grid" : undefined}>
+        <div className="min-w-0" data-od-id={!home ? "cal-grid" : undefined}>
           {home ? (
             renderPanel(date)
           ) : (
@@ -866,8 +912,16 @@ function CalendarContent({
             />
           )}
         </div>
-        {!home && view === "month" && holidaysPending ? (
-          <ListSkeleton label="일정을 준비하고 있어요" />
+        {(home || view === "month") &&
+        (loading || (!home && holidaysPending)) ? (
+          <EventListSkeleton
+            interactive={!home}
+            title={
+              home
+                ? "오늘 일정"
+                : format(selected, "M월 d일 EEEE", { locale: ko })
+            }
+          />
         ) : (
           (home || view === "month") && (
             <DayEvents
@@ -893,7 +947,7 @@ function CalendarContent({
 }
 export function CalendarView(props: CalendarProps) {
   return (
-    <Suspense fallback={<ListSkeleton label="달력을 준비하고 있어요" />}>
+    <Suspense fallback={<EventListSkeleton title="일정" />}>
       <CalendarContent {...props} />
     </Suspense>
   );

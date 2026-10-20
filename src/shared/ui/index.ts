@@ -29,3 +29,4 @@ export type { TextVariant, StatusVariant } from "./ui.variants";
 export { GroupLabel } from "./group-label";
 export { onboardingStyles, wordmarkStyles } from "./onboarding.variants";
 export { Input } from "./input";
+export { Skeleton, SkeletonSection, SkeletonStatus } from "./skeleton";

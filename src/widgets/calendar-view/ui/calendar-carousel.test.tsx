@@ -213,14 +213,14 @@ describe("CAL-07 SCN-CAL-8 스와이프 선택", () => {
     const { container, rerender } = render(
       <CalendarView events={[]} categories={[]} today="2026-12-31" />,
     );
-    const label = { name: "일정을 준비하고 있어요" };
-    expect(screen.queryByRole("status", label)).not.toBeInTheDocument();
+    const label = { name: /불러오고 있어요/ };
+    expect(screen.queryByRole("group", label)).not.toBeInTheDocument();
     expect(
-      container.querySelector('[aria-label="일정을 준비하고 있어요"]'),
+      container.querySelector('[role="group"][aria-busy="true"]'),
     ).toBeInTheDocument();
     api.selectedScrollSnap.mockReturnValue(2);
     act(() => handlers.get("select")?.());
-    expect(screen.getByRole("status", label)).toBeVisible();
+    expect(screen.getByRole("group", label)).toBeVisible();
     holidayState.pendingYears = [];
     holidayState.isPending = false;
     holidayState.names = { "2027-01-01": "신정" };
@@ -228,7 +228,7 @@ describe("CAL-07 SCN-CAL-8 스와이프 선택", () => {
     expect(
       screen.getByRole("listitem", { name: "신정, 공휴일" }),
     ).toBeVisible();
-    expect(screen.queryByRole("status", label)).not.toBeInTheDocument();
+    expect(screen.queryByRole("group", label)).not.toBeInTheDocument();
   });
   it("동작 줄이기에서는 손을 놓자마자 선택 장으로 이동해요", () => {
     vi.stubGlobal("matchMedia", () => ({ matches: true }));

@@ -9,3 +9,4 @@ export {
   homeSettingsSchema,
   type HomeSettings,
 } from "./model/home-settings.schema";
+export { homeSettingsQueryOptions } from "./model/use-home-settings";

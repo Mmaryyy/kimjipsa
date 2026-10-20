@@ -7,7 +7,7 @@ import {
 } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type * as UserModule from "@/entities/user";
-import { ToastProvider } from "@/shared/ui";
+import { SkeletonStatus, ToastProvider } from "@/shared/ui";
 import { HomeSettings } from "./home-settings";
 const { useHomeSettings, mutateAsync } = vi.hoisted(() => ({
   useHomeSettings: vi.fn(),
@@ -101,11 +101,17 @@ describe("ACC-12 홈 구성 저장", () => {
     useHomeSettings.mockReturnValue({ isPending: true });
     render(
       <ToastProvider>
-        <HomeSettings />
+        <SkeletonStatus>
+          <HomeSettings />
+        </SkeletonStatus>
       </ToastProvider>,
     );
+    expect(screen.getAllByRole("status")).toHaveLength(1);
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "화면을 불러오고 있어요",
+    );
     expect(
-      screen.getByRole("status", { name: "홈 설정을 불러오고 있어요" }),
+      screen.getByRole("group", { name: "홈 설정을 불러오고 있어요" }),
     ).toBeVisible();
   });
   it("설정 조회 실패 시 기본값으로 덮어쓰지 않고 재시도해요", () => {

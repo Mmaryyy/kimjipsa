@@ -43,3 +43,9 @@ export { useDdayDismissals, useDismissDdayCard } from "./model/use-events";
 export { EventOccurrenceRow } from "./ui/event-occurrence-row";
 export { useCalendarClock } from "./model/use-calendar-clock";
 export { DdayOverview } from "./ui/dday-overview";
+export {
+  eventsQueryOptions,
+  categoriesQueryOptions,
+  dismissalsQueryOptions,
+} from "./model/use-events";
+export { EventListSkeleton, EventRowsSkeleton } from "./ui/event-list-skeleton";

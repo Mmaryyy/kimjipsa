@@ -55,9 +55,9 @@ describe("CAL-01~05 SCN-CAL-1~3 일정 목록", () => {
   it("로딩을 표시해요", () => {
     useEvents.mockReturnValue({ isPending: true, isError: false });
     render(<CalendarPage />);
-    expect(screen.getByRole("status")).toHaveAccessibleName(
-      "일정을 불러오고 있어요",
-    );
+    expect(
+      screen.getByRole("group", { name: "하루 일정을 불러오고 있어요" }),
+    ).toBeVisible();
   });
   it("빈 일 보기에는 시간대를 보여 주고 개인 일정 안내는 표시하지 않아요", () => {
     render(<CalendarPage />);
