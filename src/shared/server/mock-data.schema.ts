@@ -109,6 +109,7 @@ const invitesSchema = z
 
 // 파일마다 검증과 초기 변환을 한 곳에서 정해 호출 순서에 영향받지 않아요.
 export const mockDataSchemas = {
+  holidays: z.array(z.object({ date: z.iso.date(), name: z.string().min(1) })),
   family: familySchema,
   events: eventsSchema,
   "event-categories": eventCategoriesSchema,

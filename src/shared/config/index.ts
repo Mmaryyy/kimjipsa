@@ -28,3 +28,4 @@ export {
   mockPerspectiveCookie,
   mockStageCookie,
 } from "./mock-data";
+export { holidaysApiPath } from "./holiday-routes.constants";

@@ -2,9 +2,11 @@ import type { CSSProperties } from "react";
 import { categoryColors } from "./ui.constants";
 export function CategoryDot({
   color,
+  cssColor,
   label,
 }: {
   color?: keyof typeof categoryColors;
+  cssColor?: CSSProperties["color"];
   label?: string;
 }) {
   return (
@@ -16,7 +18,8 @@ export function CategoryDot({
       aria-hidden={label ? undefined : true}
       style={
         {
-          "--category-color": color ? categoryColors[color] : "var(--sys-teal)",
+          "--category-color":
+            cssColor ?? (color ? categoryColors[color] : "var(--sys-teal)"),
         } as CSSProperties
       }
     />

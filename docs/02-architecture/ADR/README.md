@@ -38,5 +38,8 @@
 | [0010](./0010-fsd-server-entry-points.md) | FSD 서버 전용 진입점: index.server.ts와 shared/server | 2026-10-16 | Accepted |
 | [0011](./0011-react-hook-form.md) | 폼: React Hook Form + @hookform/resolvers(Zod) | 2026-10-16 | Accepted |
 | [0012](./0012-event-time-detail-split.md) | 개인 일정 보호: 시간 테이블과 내용 테이블 분리 | 2026-10-16 | Accepted |
+| [0013](./0013-scheduled-jobs-pg-cron.md) | 예약 작업: Supabase pg_cron + 서버 라우트 | 2026-10-20 | Accepted |
+| [0014](./0014-public-holidays-data-go-kr.md) | 공휴일 데이터: 공공데이터포털 특일정보 API | 2026-10-20 | Accepted |
+| [0015](./0015-calendar-swipe-embla.md) | 달력 스와이프: embla-carousel-react | 2026-10-20 | Accepted |
 
 0001~0003의 날짜는 결정이 `AGENTS.md`의 "확정된 주요 결정"에 반영된 날(커밋 c1281e5)이다. 실제 결정일을 아는 경우 고친다. 0004~0007은 사용자가 승인한 날이다.

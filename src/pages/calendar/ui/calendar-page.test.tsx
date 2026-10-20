@@ -1,3 +1,6 @@
+vi.mock("@/entities/holiday", () => ({
+  useHolidays: () => ({ names: {}, isPending: false }),
+}));
 import type * as EventModule from "@/entities/event";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -47,10 +50,10 @@ describe("CAL-01~05 SCN-CAL-1~3 일정 목록", () => {
       "일정을 불러오고 있어요",
     );
   });
-  it("빈 일 보기에도 시간대와 개인 일정 안내를 보여 줘요", () => {
+  it("빈 일 보기에는 시간대를 보여 주고 개인 일정 안내는 표시하지 않아요", () => {
     render(<CalendarPage />);
     expect(screen.getByText("08:00")).toBeVisible();
-    expect(screen.getByText(/은 시간만 보여요/)).toBeVisible();
+    expect(screen.queryByText(/은 시간만 보여요/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "일정 추가" })).toBeVisible();
   });
   it("조회 실패를 빈 목록으로 표시하지 않고 재시도해요", () => {
@@ -87,9 +90,9 @@ describe("CAL-01~05 SCN-CAL-1~3 일정 목록", () => {
       ],
     });
     render(<CalendarPage />);
-    expect(screen.getAllByText("개인 일정")[0]).toBeInTheDocument();
+    expect(screen.getByText(/개인 일정/)).toBeVisible();
     expect(
-      screen.queryByRole("button", { name: "개인 일정" }),
+      screen.queryByRole("button", { name: /개인 일정/ }),
     ).not.toBeInTheDocument();
     expect(screen.queryByText("수정하기")).not.toBeInTheDocument();
   });

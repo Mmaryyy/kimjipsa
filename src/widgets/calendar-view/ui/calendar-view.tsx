@@ -1,7 +1,7 @@
 "use client";
 import { Suspense } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, LockKeyhole, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import {
   eachDayOfInterval,
   endOfMonth,
@@ -20,12 +20,14 @@ import {
   type EventCategory,
   type EventOccurrence,
 } from "@/entities/event";
+import { useHolidays, type Holiday } from "@/entities/holiday";
 import { eventRoutes } from "@/shared/config";
 import { cn } from "@/shared/lib";
 import {
   categoryColors,
   EmptyState,
   List,
+  ListRow,
   ListSkeleton,
   PageHeader,
   GroupLabel,
@@ -49,20 +51,20 @@ type CalendarProps = {
 };
 
 function getCalendarNumberTone({
-  selected,
   today,
   outside,
   sunday,
+  holiday,
 }: {
-  selected: boolean;
   today: boolean;
   outside: boolean;
   sunday: boolean;
+  holiday: boolean;
 }) {
-  if (selected) return "selected";
+  if (outside) return "outside";
+  if (holiday) return "sunday";
   if (today) return "today";
   if (sunday) return "sunday";
-  if (outside) return "outside";
   return "default";
 }
 
@@ -74,6 +76,7 @@ function CalendarDate({
   categories,
   onSelect,
   month,
+  holidayName,
 }: {
   day: Date;
   selected: string;
@@ -82,6 +85,7 @@ function CalendarDate({
   categories: EventCategory[];
   onSelect: (date: string) => void;
   month?: number;
+  holidayName?: string;
 }) {
   const date = format(day, "yyyy-MM-dd");
   const daily = occurrences.filter(
@@ -91,14 +95,15 @@ function CalendarDate({
   const isSelected = date === selected;
   const outside = month !== undefined && day.getMonth() !== month;
   const numberTone = getCalendarNumberTone({
-    selected: isSelected,
     today: isToday,
     outside,
     sunday: day.getDay() === 0,
+    holiday: Boolean(holidayName),
   });
   const accessibleLabel = [
     format(day, "M월 d일 EEEE", { locale: ko }),
     `일정 ${daily.length}개`,
+    holidayName,
     isToday && "오늘",
     isSelected && "선택됨",
   ]
@@ -113,6 +118,7 @@ function CalendarDate({
       data-today={isToday}
       data-selected={isSelected}
       data-sunday={day.getDay() === 0}
+      data-holiday={Boolean(holidayName)}
       aria-label={accessibleLabel}
       aria-current={isToday ? "date" : undefined}
       aria-pressed={isSelected}
@@ -133,10 +139,25 @@ function CalendarDate({
       <span
         className={calendarNumberStyles({
           tone: numberTone,
+          selected: isSelected,
         })}
       >
         {format(day, "d")}
       </span>
+      {month !== undefined && (
+        <span
+          className={cn(
+            "block h-4 w-full truncate text-center text-caption-xs tracking-[-0.03em]",
+            "sm:text-caption-sm sm:tracking-[var(--type-caption-sm-tracking)]",
+            outside
+              ? "text-[var(--label-tertiary)]"
+              : "text-[var(--sys-red-ic)]",
+          )}
+          aria-hidden="true"
+        >
+          {holidayName}
+        </span>
+      )}
       <span
         className="flex h-1.25 gap-0.75 [&_i]:size-1.25 [&_i]:rounded-[var(--r-round)]"
         aria-hidden="true"
@@ -156,7 +177,46 @@ function CalendarDate({
   );
 }
 
+function HolidayRow({
+  holiday,
+  className,
+  timeClassName,
+}: {
+  holiday: Holiday;
+  className?: string;
+  timeClassName?: string;
+}) {
+  return (
+    <ListRow
+      aria-label={`${holiday.name}, 공휴일`}
+      className={className}
+      leading={
+        <>
+          <Text
+            aria-hidden="true"
+            variant="caption"
+            className={cn(
+              "w-[60px] shrink-0 text-muted-foreground tabular-nums",
+              timeClassName,
+            )}
+          >
+            종일
+          </Text>
+          <span
+            aria-hidden="true"
+            className="size-2.5 shrink-0 rounded-full bg-[var(--sys-red-ic)]"
+          />
+        </>
+      }
+      description="공휴일"
+    >
+      <Text className="text-[var(--sys-red-ic)]">{holiday.name}</Text>
+    </ListRow>
+  );
+}
+
 function DayEvents({
+  holiday,
   date,
   today,
   home,
@@ -166,6 +226,7 @@ function DayEvents({
   onOpen,
   onAdd,
 }: {
+  holiday?: Holiday;
   date: string;
   today: string;
   home: boolean;
@@ -216,6 +277,11 @@ function DayEvents({
           )
         }
       />
+      {holiday && (
+        <List>
+          <HolidayRow holiday={holiday} />
+        </List>
+      )}
       {daily.length === 0 ? (
         <EmptyState
           layout="row"
@@ -250,7 +316,9 @@ function WeekEvents({
   ownerNames,
   onOpen,
   today,
+  holidayNames,
 }: {
+  holidayNames: Record<string, string>;
   days: Date[];
   occurrences: EventOccurrence[];
   categories: EventCategory[];
@@ -266,18 +334,27 @@ function WeekEvents({
           (item) => item.startDate <= date && item.endDate >= date,
         );
         return (
-          <section key={date} aria-label={date}>
+          <section
+            key={date}
+            aria-label={[date, holidayNames[date]].filter(Boolean).join(", ")}
+          >
             <GroupLabel
               as="h3"
-              className={
-                date === today ? "text-[var(--accent-text)]" : undefined
-              }
+              className={cn(
+                date === today && "text-[var(--accent-text)]",
+                (day.getDay() === 0 || holidayNames[date]) &&
+                  "text-[var(--sys-red-ic)]",
+              )}
             >
               {format(day, "M월 d일 EEEE", { locale: ko })}
+              {holidayNames[date] && ` · ${holidayNames[date]}`}
               {date === today && " · 오늘"}
             </GroupLabel>
-            {daily.length ? (
+            {daily.length || holidayNames[date] ? (
               <List>
+                {holidayNames[date] && (
+                  <HolidayRow holiday={{ date, name: holidayNames[date] }} />
+                )}
                 {daily.map((occurrence) => (
                   <EventOccurrenceRow
                     key={occurrence.event.id}
@@ -335,7 +412,7 @@ function TimelineEvent({
     <>
       <span
         aria-hidden="true"
-        className="size-2 shrink-0 rounded-full"
+        className="size-2.5 shrink-0 rounded-full"
         style={
           masked
             ? { boxShadow: "inset 0 0 0 1.5px var(--sys-gray3)" }
@@ -394,12 +471,14 @@ function TimelineEvent({
 }
 
 function DayTimeline({
+  holiday,
   date,
   occurrences,
   categories,
   ownerNames,
   onOpen,
 }: {
+  holiday?: Holiday;
   occurrences: EventOccurrence[];
   categories: EventCategory[];
   ownerNames?: Record<string, string>;
@@ -466,6 +545,13 @@ function DayTimeline({
           : "등록된 일정이 없어요"}
       </Text>
       <ul className="mt-3">
+        {holiday && (
+          <HolidayRow
+            holiday={holiday}
+            className="items-start py-[9px]"
+            timeClassName="w-13 pt-0.5 text-caption-sm text-[var(--label-tertiary)]"
+          />
+        )}
         {rows
           .filter((row) => row.events.length || row.id.startsWith("hour-"))
           .map((row) => (
@@ -500,39 +586,6 @@ function DayTimeline({
   );
 }
 
-function PrivateEventNotice({
-  occurrences,
-  ownerNames,
-}: {
-  occurrences: EventOccurrence[];
-  ownerNames?: Record<string, string>;
-}) {
-  const privateOwners = [
-    ...new Set(
-      occurrences
-        .filter(({ event }) => !event.details)
-        .map(({ event }) => event.ownerId && ownerNames?.[event.ownerId])
-        .filter(Boolean),
-    ),
-  ];
-  return (
-    <Text as="p" variant="caption" className="mt-3 text-muted-foreground">
-      {privateOwners.length
-        ? `${privateOwners.join("·")}님의 `
-        : "다른 구성원의 "}
-      <span className="inline-flex items-center gap-1 whitespace-nowrap">
-        <LockKeyhole
-          size={12}
-          className="text-[var(--icon-tertiary)]"
-          aria-hidden="true"
-        />
-        개인 일정
-      </span>
-      은 시간만 보여요.
-    </Text>
-  );
-}
-
 function CalendarContent({
   events,
   categories,
@@ -555,6 +608,11 @@ function CalendarContent({
     start = startOfWeek(selected, { weekStartsOn: 0 });
     end = endOfWeek(selected, { weekStartsOn: 0 });
   }
+  const { names: holidayNames, isPending: holidaysPending } = useHolidays(
+    start.getFullYear(),
+    end.getFullYear(),
+  );
+  const selectedHoliday = holidayNames[date];
   const days = eachDayOfInterval({ start, end });
   const occurrences = occurrencesInRange(
     events,
@@ -567,7 +625,14 @@ function CalendarContent({
     { value: "day", label: "일", odId: "view-day" },
   ] as const;
   return (
-    <div className="min-w-0">
+    <div
+      className={cn(
+        "min-w-0",
+        view === "day" &&
+          (selectedHoliday || selected.getDay() === 0) &&
+          "[&_h1]:text-[var(--sys-red-ic)]",
+      )}
+    >
       {!home && (
         <PageHeader
           odId="calendar"
@@ -617,6 +682,15 @@ function CalendarContent({
             </div>
           }
         >
+          {view === "day" && (
+            <Text
+              as="p"
+              variant="caption"
+              className="h-5 truncate text-[var(--sys-red-ic)]"
+            >
+              {selectedHoliday}
+            </Text>
+          )}
           <div className="mt-2 flex items-center gap-3">
             <SegmentedControl
               odId="cal-view"
@@ -644,8 +718,13 @@ function CalendarContent({
         }
       >
         <div data-od-id={!home ? "cal-grid" : undefined}>
-          {home && view === "day" ? null : view === "day" ? (
+          {!home && holidaysPending && view !== "month" ? (
+            <ListSkeleton label="일정을 준비하고 있어요" />
+          ) : home && view === "day" ? null : view === "day" ? (
             <DayTimeline
+              holiday={
+                selectedHoliday ? { date, name: selectedHoliday } : undefined
+              }
               date={date}
               occurrences={occurrences}
               categories={categories}
@@ -660,6 +739,7 @@ function CalendarContent({
               ownerNames={ownerNames}
               onOpen={onOpen}
               today={today}
+              holidayNames={holidayNames}
             />
           ) : (
             <nav
@@ -668,7 +748,7 @@ function CalendarContent({
               className={cn(
                 "mt-1 grid min-w-0 grid-cols-7",
                 view === "month" && [
-                  "[&>button]:min-h-14 lg:[&>button]:min-h-21",
+                  "[&>button]:min-h-14 [&>button]:gap-0 lg:[&>button]:min-h-21",
                   "[&>button>span:nth-child(2)]:size-7.5",
                   "[&>button:nth-child(n+8)>span:first-child]:hidden",
                 ],
@@ -684,27 +764,34 @@ function CalendarContent({
                   occurrences={occurrences}
                   categories={categories}
                   onSelect={onDateChange}
+                  holidayName={holidayNames[format(day, "yyyy-MM-dd")]}
                 />
               ))}
             </nav>
           )}
         </div>
-        {(home || view === "month") && (
-          <DayEvents
-            date={date}
-            today={today}
-            home={home}
-            occurrences={occurrences}
-            categories={categories}
-            ownerNames={ownerNames}
-            onOpen={onOpen}
-            onAdd={onAdd}
-          />
+        {!home && view === "month" && holidaysPending ? (
+          <ListSkeleton label="일정을 준비하고 있어요" />
+        ) : (
+          (home || view === "month") && (
+            <DayEvents
+              holiday={
+                !home && selectedHoliday
+                  ? { date, name: selectedHoliday }
+                  : undefined
+              }
+              date={date}
+              today={today}
+              home={home}
+              occurrences={occurrences}
+              categories={categories}
+              ownerNames={ownerNames}
+              onOpen={onOpen}
+              onAdd={onAdd}
+            />
+          )
         )}
       </div>
-      {!home && (
-        <PrivateEventNotice occurrences={occurrences} ownerNames={ownerNames} />
-      )}
     </div>
   );
 }

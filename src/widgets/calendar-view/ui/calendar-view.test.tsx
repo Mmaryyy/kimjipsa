@@ -1,3 +1,6 @@
+vi.mock("@/entities/holiday", () => ({
+  useHolidays: () => ({ names: {}, isPending: false }),
+}));
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { CalendarEvent } from "@/entities/event";
@@ -65,11 +68,14 @@ describe("CAL-07 SCN-CAL-8 월·주·일 URL 상태", () => {
     expect(screen.getByRole("region", { name: "오늘 일정" })).toBeVisible();
     expect(screen.queryByRole("radio")).not.toBeInTheDocument();
   });
-  describe.each([false, true])("홈 주간 스트립 %s", (home) => {
+  describe.each([
+    ["month", false],
+    ["week", true],
+  ])("%s 보기 홈 주간 스트립 %s", (view, home) => {
     it.each(["2026-12-30", "2026-12-31"])(
       "%s 선택 시 오늘과 선택 날짜를 구분해요",
       (selected) => {
-        location.search = `view=${home ? "week" : "month"}&date=${selected}`;
+        location.search = `view=${view}&date=${selected}`;
         render(<CalendarView {...props} home={home} defaultView="week" />);
         const today = screen.getByRole("button", {
           name: /12월 31일 목요일, 일정 0개, 오늘/,
@@ -84,8 +90,7 @@ describe("CAL-07 SCN-CAL-8 월·주·일 URL 상태", () => {
         );
         expect(chosen).toHaveAttribute("aria-pressed", "true");
         expect(chosen.children[1]).toHaveClass(
-          "bg-foreground",
-          "text-background",
+          "bg-[var(--fill-secondary)]",
           "font-semibold",
         );
         if (selected !== props.today) {
@@ -93,16 +98,29 @@ describe("CAL-07 SCN-CAL-8 월·주·일 URL 상태", () => {
             "text-[var(--accent-text)]",
             "font-bold",
           );
-          expect(today.children[1]).not.toHaveClass("bg-foreground");
+          expect(today.children[1]).not.toHaveClass(
+            "bg-[var(--fill-secondary)]",
+          );
+          expect(chosen.children[1]).toHaveClass("text-foreground");
           expect(chosen).not.toHaveAttribute("aria-current");
         } else {
           expect(today).toBe(chosen);
-          expect(today.children[1]).not.toHaveClass(
-            "text-[var(--accent-text)]",
-          );
+          expect(today.children[1]).toHaveClass("text-[var(--accent-text)]");
         }
       },
     );
+  });
+  it("선택한 일요일은 빨강을, 달 밖 날짜는 보조색을 유지해요", () => {
+    location.search = "view=month&date=2026-12-27";
+    render(<CalendarView {...props} />);
+    const sunday = screen.getByRole("button", { name: /12월 27일.*선택됨/ });
+    expect(sunday.children[1]).toHaveClass(
+      "bg-[var(--fill-secondary)]",
+      "text-[var(--sys-red-ic)]",
+      "font-semibold",
+    );
+    const outside = screen.getByRole("button", { name: /11월 29일/ });
+    expect(outside.children[1]).toHaveClass("text-[var(--label-tertiary)]");
   });
   it("잘못된 URL은 오늘과 기본 보기로 대체해요", () => {
     location.search = "view=invalid&date=2026-02-30";

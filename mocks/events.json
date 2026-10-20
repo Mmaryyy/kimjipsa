@@ -1,26 +1,5 @@
 [
   {
-    "id": "10000000-0000-4000-8000-000000000100",
-    "owner_id": "10000000-0000-4000-8000-000000000002",
-    "visibility": "shared",
-    "start_date": "2026-10-03",
-    "end_date": "2026-10-03",
-    "start_time": null,
-    "end_time": null,
-    "is_all_day": true,
-    "kind": "event",
-    "event_details": {
-      "title": "개천절",
-      "place": "",
-      "memo": "",
-      "category_id": "10000000-0000-4000-8000-000000000015",
-      "dday_style": "normal",
-      "celebrate_message": ""
-    },
-    "mock_start_offset": -11,
-    "mock_end_offset": -11
-  },
-  {
     "id": "10000000-0000-4000-8000-000000000101",
     "owner_id": "10000000-0000-4000-8000-000000000002",
     "visibility": "shared",

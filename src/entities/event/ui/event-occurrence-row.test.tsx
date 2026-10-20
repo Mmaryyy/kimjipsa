@@ -75,10 +75,10 @@ describe("CAL-02 CAL-07 기간 일정의 날짜별 시간 표시", () => {
 describe("CAL-06 CAL-16 SCN-CAL-9 D-day 라벨 표시", () => {
   describe.each([true, false])("날짜 표시 %s", (showDdayDate) => {
     it.each([
-      ["2026-10-19", "D-Day", "font-bold", "text-[color:var(--error-text)]"],
-      ["2026-10-20", "D-1", "font-semibold", "text-[color:var(--info-text)]"],
-      ["2026-10-24", "D-5", "font-semibold", "text-[color:var(--info-text)]"],
-      ["2026-10-26", "D-7", "font-semibold", "text-[color:var(--info-text)]"],
+      ["2026-10-19", "D-Day", "font-bold", "text-[color:var(--accent-text)]"],
+      ["2026-10-20", "D-1", "font-semibold", "text-[color:var(--accent-text)]"],
+      ["2026-10-24", "D-5", "font-semibold", "text-[color:var(--accent-text)]"],
+      ["2026-10-26", "D-7", "font-semibold", "text-[color:var(--accent-text)]"],
       ["2026-10-27", "D-8", "font-normal", "text-foreground"],
       ["2027-10-16", "D-362", "font-normal", "text-foreground"],
     ])("%s의 %s를 단계별로 표시해요", (date, label, weight, color) => {
@@ -96,19 +96,35 @@ describe("CAL-06 CAL-16 SCN-CAL-9 D-day 라벨 표시", () => {
         />,
       );
 
-      expect(screen.getByText(label)).toHaveClass(
+      const ddayBadge = screen.getByText(label);
+      const ddayLabel = ddayBadge.parentElement;
+      expect(ddayLabel).toHaveClass(
         "block",
-        "w-[4.5em]",
         "shrink-0",
         "text-left",
         "whitespace-nowrap",
         "tabular-nums",
+        "w-[4.5em]",
         weight,
         color,
         showDdayDate
           ? "text-[length:var(--type-title-size)]"
           : "text-[length:var(--type-caption-size)]",
       );
+      expect(ddayLabel).not.toHaveClass("text-[color:var(--error-text)]");
+      expect(ddayLabel).not.toHaveClass("text-[color:var(--info-text)]");
+      if (label === "D-Day") {
+        expect(ddayBadge).toHaveClass(
+          "-ml-2",
+          "inline-block",
+          "rounded-control",
+          "bg-[var(--accent-soft)]",
+          "px-2",
+          "py-0.5",
+        );
+      } else {
+        expect(ddayBadge).not.toHaveClass("bg-[var(--accent-soft)]");
+      }
     });
   });
 });

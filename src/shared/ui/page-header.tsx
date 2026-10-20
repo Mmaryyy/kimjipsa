@@ -10,8 +10,10 @@ export function PageHeader({
   navigation,
   children,
   titleOdId,
+  titleAriaLabel,
 }: {
   title: string;
+  titleAriaLabel?: string;
   actions?: ReactNode;
   navigation?: ReactNode;
   children?: ReactNode;
@@ -31,6 +33,7 @@ export function PageHeader({
       <div className="flex items-center gap-2 [&_h1]:min-w-0 [&_h1]:flex-1">
         <Text
           as="h1"
+          aria-label={titleAriaLabel}
           variant={titleVariant}
           data-od-id={titleOdId ?? (odId && `${odId}-title`)}
         >

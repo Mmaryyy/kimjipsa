@@ -11,11 +11,19 @@ export const ddayLabelStyles = cva(
           "text-[length:var(--type-caption-size)] leading-[var(--type-caption-lh)]",
       },
       tone: {
-        today: "font-bold text-[color:var(--error-text)]",
-        soon: "font-semibold text-[color:var(--info-text)]",
+        today: "font-bold text-[color:var(--accent-text)]",
+        soon: "font-semibold text-[color:var(--accent-text)]",
         distant: "font-normal text-foreground",
       },
     },
     defaultVariants: { size: "caption", tone: "distant" },
   },
 );
+
+export const ddayBadgeStyles = cva("", {
+  variants: {
+    today: {
+      true: "-ml-2 inline-block rounded-control bg-[var(--accent-soft)] px-2 py-0.5",
+    },
+  },
+});

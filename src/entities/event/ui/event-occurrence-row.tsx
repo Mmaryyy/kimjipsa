@@ -6,7 +6,10 @@ import { CategoryDot, ListRow, TextButton, Text } from "@/shared/ui";
 import type { EventCategory } from "../api/type";
 import type { EventOccurrence } from "../lib/event-occurrences.utils";
 import { kstDate } from "../lib/dday.utils";
-import { ddayLabelStyles } from "./event-occurrence-row.variants";
+import {
+  ddayBadgeStyles,
+  ddayLabelStyles,
+} from "./event-occurrence-row.variants";
 
 export function EventOccurrenceRow({
   occurrence,
@@ -32,6 +35,13 @@ export function EventOccurrenceRow({
   const owner = event.ownerId ? ownerNames?.[event.ownerId] : undefined;
   const privateEvent = event.visibility === "private";
   const celebrated = event.details?.ddayStyle === "celebrate";
+  const dotColor = privateEvent
+    ? "var(--sys-gray3)"
+    : celebrated && showDdayCountdown
+      ? "var(--celebrate)"
+      : category
+        ? undefined
+        : "var(--label-tertiary)";
   const ddayTone =
     dday?.daysUntil === 0
       ? "today"
@@ -98,15 +108,7 @@ export function EventOccurrenceRow({
               {time}
             </Text>
           )}
-          {privateEvent ? (
-            <span className="size-2 flex-none rounded-[var(--r-round)] bg-[var(--sys-gray3)]" />
-          ) : celebrated && showDdayCountdown ? (
-            <span className="size-2 flex-none rounded-[var(--r-round)] bg-[var(--celebrate)]" />
-          ) : category ? (
-            <CategoryDot color={category.color} />
-          ) : (
-            <span className="size-2 flex-none rounded-[var(--r-round)] bg-[var(--label-tertiary)]" />
-          )}
+          <CategoryDot color={category?.color} cssColor={dotColor} />
         </>
       }
       description={metadata}
@@ -119,7 +121,9 @@ export function EventOccurrenceRow({
               tone: ddayTone,
             })}
           >
-            {dday.label}
+            <span className={ddayBadgeStyles({ today: ddayTone === "today" })}>
+              {dday.label}
+            </span>
           </Text>
         ) : privateEvent ? (
           <LockKeyhole
