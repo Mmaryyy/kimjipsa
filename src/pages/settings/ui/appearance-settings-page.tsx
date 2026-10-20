@@ -45,7 +45,7 @@ export function AppearanceSettingsPage() {
       ])}
       data-od-id="settings-main"
     >
-      <PageHeader odId="settings" titleVariant="display" title="설정" />
+      <PageHeader odId="settings" title="설정" />
       <AccountSettings />
       <PlannedSettingsSection title="알림" odId="set-notify" />
       <HomeSettings />

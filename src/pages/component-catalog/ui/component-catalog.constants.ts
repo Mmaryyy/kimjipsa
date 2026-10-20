@@ -5,7 +5,6 @@ import {
 } from "@/shared/ui";
 
 const textSamples = {
-  display: null,
   "title-lg": null,
   title: null,
   "title-sm": null,

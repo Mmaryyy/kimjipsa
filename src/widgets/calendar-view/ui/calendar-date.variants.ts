@@ -12,23 +12,27 @@ export const calendarNumberStyles = cva(
     variants: {
       tone: {
         default: "text-foreground",
-        today: "text-[var(--accent-text)]",
+        saturday: "text-[var(--accent-text)]",
         outside: "text-[var(--label-tertiary)]",
         sunday: "text-[var(--sys-red-ic)]",
       },
+      today: {
+        true: "font-bold border-[1.5px] border-dashed border-current",
+        false: "",
+      },
       selected: {
-        true: "bg-[var(--fill-secondary)] font-semibold",
+        true: "bg-[var(--fill-secondary)]",
         false: "",
       },
     },
     compoundVariants: [
-      { selected: false, tone: "today", className: "font-bold" },
+      { selected: true, today: false, className: "font-semibold" },
       {
         selected: false,
-        tone: ["default", "outside", "sunday"],
+        today: false,
         className: "font-medium",
       },
     ],
-    defaultVariants: { selected: false, tone: "default" },
+    defaultVariants: { selected: false, today: false, tone: "default" },
   },
 );

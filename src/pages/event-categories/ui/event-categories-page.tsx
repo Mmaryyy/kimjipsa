@@ -47,7 +47,6 @@ export function EventCategoriesPage() {
       <PageHeader
         odId="lists"
         title="일정 카테고리"
-        titleVariant="display"
         navigation={
           <Link
             href={settingsPath}

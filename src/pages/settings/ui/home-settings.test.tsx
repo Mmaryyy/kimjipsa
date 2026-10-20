@@ -1,6 +1,13 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type * as UserModule from "@/entities/user";
+import { ToastProvider } from "@/shared/ui";
 import { HomeSettings } from "./home-settings";
 const { useHomeSettings, mutateAsync } = vi.hoisted(() => ({
   useHomeSettings: vi.fn(),
@@ -21,14 +28,23 @@ describe("ACC-12 홈 구성 저장", () => {
     });
   });
   it("뷰·위젯 표시·개수를 사용자 설정으로 저장해요", async () => {
-    render(<HomeSettings />);
+    render(
+      <ToastProvider>
+        <HomeSettings />
+      </ToastProvider>,
+    );
     fireEvent.click(screen.getByRole("radio", { name: "월" }));
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(screen.getByRole("radio", { name: "10개" })).toBeEnabled(),
+    );
     fireEvent.click(screen.getByRole("radio", { name: "10개" }));
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.getByRole("switch")).toBeEnabled());
     fireEvent.click(screen.getByRole("switch", { name: "다가오는 일정" }));
     expect(
       screen.queryByRole("radio", { name: "10개" }),
     ).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "홈 구성 저장하기" }));
     await waitFor(() =>
       expect(mutateAsync).toHaveBeenCalledWith({
         homeView: "month",
@@ -37,19 +53,57 @@ describe("ACC-12 홈 구성 저장", () => {
       }),
     );
   });
+  it("저장 중에도 포커스를 유지하고 최신 변경을 이어 저장해요", async () => {
+    let finishSave: () => void = () => {};
+    mutateAsync.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finishSave = resolve;
+        }),
+    );
+    render(
+      <ToastProvider>
+        <HomeSettings />
+      </ToastProvider>,
+    );
+    const month = screen.getByRole("radio", { name: "월" });
+    month.focus();
+    fireEvent.click(month);
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
+    expect(month).toHaveFocus();
+    expect(month).toBeEnabled();
+    fireEvent.click(screen.getByRole("radio", { name: "10개" }));
+    fireEvent.click(screen.getByRole("switch", { name: "다가오는 일정" }));
+    await act(async () => {});
+    expect(mutateAsync).toHaveBeenCalledTimes(1);
+    await act(async () => finishSave());
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(2));
+    expect(mutateAsync).toHaveBeenLastCalledWith({
+      homeView: "month",
+      upcomingEnabled: false,
+      upcomingCount: 10,
+    });
+    expect(screen.getByRole("switch")).not.toBeChecked();
+  });
   it("저장에 실패하면 오류를 알리고 다시 저장할 수 있어요", async () => {
     mutateAsync.mockRejectedValueOnce(new Error("저장 실패"));
-    render(<HomeSettings />);
+    render(
+      <ToastProvider>
+        <HomeSettings />
+      </ToastProvider>,
+    );
     fireEvent.click(screen.getByRole("radio", { name: "3개" }));
-    fireEvent.click(screen.getByRole("button", { name: "홈 구성 저장하기" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("저장 실패");
-    expect(
-      screen.getByRole("button", { name: "홈 구성 저장하기" }),
-    ).toBeEnabled();
+    expect(await screen.findByText("저장 실패")).toBeVisible();
+    expect(screen.getByRole("radio", { name: "5개" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "3개" })).toBeEnabled();
   });
   it("설정 조회 중에는 로딩을 보여 줘요", () => {
     useHomeSettings.mockReturnValue({ isPending: true });
-    render(<HomeSettings />);
+    render(
+      <ToastProvider>
+        <HomeSettings />
+      </ToastProvider>,
+    );
     expect(
       screen.getByRole("status", { name: "홈 설정을 불러오고 있어요" }),
     ).toBeVisible();
@@ -61,7 +115,11 @@ describe("ACC-12 홈 구성 저장", () => {
       error: new Error("설정 조회 실패"),
       refetch,
     });
-    render(<HomeSettings />);
+    render(
+      <ToastProvider>
+        <HomeSettings />
+      </ToastProvider>,
+    );
     fireEvent.click(screen.getByRole("button", { name: "다시 시도하기" }));
     expect(refetch).toHaveBeenCalledOnce();
     expect(

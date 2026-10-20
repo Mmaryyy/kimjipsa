@@ -55,10 +55,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
         className={cn([
           "mx-auto min-w-0 max-w-[var(--content-max)] bg-background px-4 pt-0",
           "pb-[calc(var(--bottom-navigation-offset)+env(safe-area-inset-bottom))] lg:max-w-280",
-          "lg:px-10 lg:pb-10 lg:data-[home=true]:max-w-[var(--content-max)]",
+          "lg:px-10 lg:pb-10",
           "group-data-[public=true]/app:pb-0",
         ])}
-        data-home={pathname === accountRoutes.home}
         tabIndex={-1}
       >
         {process.env.NODE_ENV === "development" && <MockDataToolbar />}

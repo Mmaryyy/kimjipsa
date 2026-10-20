@@ -27,7 +27,7 @@ function CelebrationCard({
   return (
     <article
       ref={bannerRef}
-      className="relative overflow-hidden bg-[var(--fill-quaternary)] px-4 pt-4.5 pb-4"
+      className="relative overflow-hidden bg-[var(--fill-quaternary)] p-4 pt-4.5 rounded-sm"
       aria-label={`${event.details?.title} 축하`}
     >
       <Text
@@ -45,7 +45,7 @@ function CelebrationCard({
         {event.details?.celebrateMessage || "소중한 날을 축하해요!"}
       </Text>
       <TextButton
-        className="absolute right-0 top-2"
+        className="absolute right-2 top-2 p-1 min-h-0!"
         aria-label="오늘 축하 닫기"
         onClick={onDismiss}
         disabled={dismissing}

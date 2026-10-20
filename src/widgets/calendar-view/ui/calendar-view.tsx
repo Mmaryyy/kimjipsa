@@ -1,8 +1,11 @@
 "use client";
-import { Suspense } from "react";
+import { Suspense, type CSSProperties } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
+  addDays,
+  addMonths,
+  addWeeks,
   eachDayOfInterval,
   endOfMonth,
   endOfWeek,
@@ -13,6 +16,7 @@ import {
 import { ko } from "date-fns/locale";
 import {
   kstDate,
+  calendarWeekTitle,
   occurrencesInRange,
   EventOccurrenceRow,
   type CalendarView as View,
@@ -36,6 +40,7 @@ import {
   Text,
   TextButton,
 } from "@/shared/ui";
+import { CalendarCarousel } from "./calendar-carousel";
 import { calendarNumberStyles } from "./calendar-date.variants";
 import { useCalendarLocation } from "../model/use-calendar-location";
 
@@ -51,20 +56,20 @@ type CalendarProps = {
 };
 
 function getCalendarNumberTone({
-  today,
   outside,
   sunday,
+  saturday,
   holiday,
 }: {
-  today: boolean;
+  saturday: boolean;
   outside: boolean;
   sunday: boolean;
   holiday: boolean;
 }) {
   if (outside) return "outside";
   if (holiday) return "sunday";
-  if (today) return "today";
   if (sunday) return "sunday";
+  if (saturday) return "saturday";
   return "default";
 }
 
@@ -95,11 +100,18 @@ function CalendarDate({
   const isSelected = date === selected;
   const outside = month !== undefined && day.getMonth() !== month;
   const numberTone = getCalendarNumberTone({
-    today: isToday,
+    saturday: day.getDay() === 6,
     outside,
     sunday: day.getDay() === 0,
     holiday: Boolean(holidayName),
   });
+  const weekdayTone = getCalendarNumberTone({
+    outside: false,
+    holiday: false,
+    sunday: day.getDay() === 0,
+    saturday: day.getDay() === 6,
+  });
+  const holidayLabel = holidayName?.replace(/\s/g, "");
   const accessibleLabel = [
     format(day, "M월 d일 EEEE", { locale: ko }),
     `일정 ${daily.length}개`,
@@ -111,7 +123,10 @@ function CalendarDate({
     .join(", ");
   return (
     <TextButton
-      className="group/calendar-date flex min-w-0 flex-col gap-1 px-0 pt-2 pb-2.5 text-foreground outline-none"
+      className={cn([
+        "group/calendar-date @container flex min-w-0 flex-col gap-1",
+        "px-0 pt-2 pb-2.5 text-foreground outline-none",
+      ])}
       onClick={() => onSelect(date)}
       data-od-id={`${month !== undefined ? "month" : "week"}-day-${date}`}
       data-outside={month !== undefined && day.getMonth() !== month}
@@ -129,9 +144,12 @@ function CalendarDate({
             "text-[length:var(--type-caption-sm-size)] font-normal",
             "tracking-[var(--type-caption-sm-tracking)]",
           ],
-          day.getDay() === 0
-            ? "text-[var(--sys-red-ic)]"
-            : "text-muted-foreground",
+          {
+            default: "text-muted-foreground",
+            outside: "text-[var(--label-tertiary)]",
+            saturday: "text-[var(--accent-text)]",
+            sunday: "text-[var(--sys-red-ic)]",
+          }[weekdayTone],
         )}
       >
         {format(day, "EEEEE", { locale: ko })}
@@ -140,6 +158,7 @@ function CalendarDate({
         className={calendarNumberStyles({
           tone: numberTone,
           selected: isSelected,
+          today: isToday,
         })}
       >
         {format(day, "d")}
@@ -147,15 +166,21 @@ function CalendarDate({
       {month !== undefined && (
         <span
           className={cn(
-            "block h-4 w-full truncate text-center text-caption-xs tracking-[-0.03em]",
-            "sm:text-caption-sm sm:tracking-[var(--type-caption-sm-tracking)]",
+            "-mt-1 block h-4 w-full truncate text-center",
+            "tracking-[min(-0.03em,calc(100cqi/var(--holiday-chars)-0.9em))]",
+            "text-[length:clamp(9px,calc(100cqi/var(--holiday-chars)),11px)]",
             outside
               ? "text-[var(--label-tertiary)]"
               : "text-[var(--sys-red-ic)]",
           )}
+          style={
+            {
+              "--holiday-chars": Math.max(1, holidayLabel?.length ?? 0),
+            } as CSSProperties
+          }
           aria-hidden="true"
         >
-          {holidayName}
+          {holidayLabel}
         </span>
       )}
       <span
@@ -341,7 +366,8 @@ function WeekEvents({
             <GroupLabel
               as="h3"
               className={cn(
-                date === today && "text-[var(--accent-text)]",
+                date === today && "font-bold text-foreground",
+                day.getDay() === 6 && "text-[var(--accent-text)]",
                 (day.getDay() === 0 || holidayNames[date]) &&
                   "text-[var(--sys-red-ic)]",
               )}
@@ -586,6 +612,104 @@ function DayTimeline({
   );
 }
 
+function calendarRange(date: string, view: View) {
+  const selected = kstDate(date);
+  if (view === "month")
+    return {
+      start: startOfWeek(startOfMonth(selected)),
+      end: endOfWeek(endOfMonth(selected)),
+    };
+  if (view === "week")
+    return { start: startOfWeek(selected), end: endOfWeek(selected) };
+  return { start: selected, end: selected };
+}
+
+function CalendarPanel({
+  events,
+  categories,
+  today,
+  home = false,
+  ownerNames,
+  onOpen,
+  date,
+  view,
+  onDateChange,
+  holidayNames,
+  holidaysPending,
+}: CalendarProps & {
+  date: string;
+  view: View;
+  onDateChange: (date: string) => void;
+  holidayNames: Record<string, string>;
+  holidaysPending: boolean;
+}) {
+  const selected = kstDate(date);
+  const { start, end } = calendarRange(date, view);
+  const days = eachDayOfInterval({ start, end });
+  const occurrences = occurrencesInRange(
+    events,
+    format(start, "yyyy-MM-dd"),
+    format(end, "yyyy-MM-dd"),
+  );
+  const selectedHoliday = holidayNames[date];
+  if (home && view === "day") return null;
+  if (!home && holidaysPending && view !== "month") {
+    return <ListSkeleton label="일정을 준비하고 있어요" />;
+  }
+  if (view === "day") {
+    return (
+      <DayTimeline
+        holiday={selectedHoliday ? { date, name: selectedHoliday } : undefined}
+        date={date}
+        occurrences={occurrences}
+        categories={categories}
+        ownerNames={ownerNames}
+        onOpen={onOpen}
+      />
+    );
+  }
+  if (view === "week" && !home) {
+    return (
+      <WeekEvents
+        days={days}
+        occurrences={occurrences}
+        categories={categories}
+        ownerNames={ownerNames}
+        onOpen={onOpen}
+        today={today}
+        holidayNames={holidayNames}
+      />
+    );
+  }
+  return (
+    <nav
+      aria-label={home && view === "week" ? "이번 주" : "달력"}
+      data-od-id={home && view === "week" ? "week-strip" : undefined}
+      className={cn(
+        "mt-1 grid min-w-0 grid-cols-7",
+        view === "month" && [
+          "[&>button]:min-h-14 lg:[&>button]:min-h-21",
+          "[&>button:nth-child(n+8)>span:first-child]:hidden",
+        ],
+      )}
+    >
+      {days.map((day) => (
+        <CalendarDate
+          key={day.toISOString()}
+          day={day}
+          month={view === "month" ? selected.getMonth() : undefined}
+          selected={date}
+          today={today}
+          occurrences={occurrences}
+          categories={categories}
+          onSelect={onDateChange}
+          holidayName={holidayNames[format(day, "yyyy-MM-dd")]}
+        />
+      ))}
+    </nav>
+  );
+}
+
 function CalendarContent({
   events,
   categories,
@@ -599,21 +723,57 @@ function CalendarContent({
   const { view, date, onViewChange, onDateChange, onMove } =
     useCalendarLocation(defaultView, today);
   const selected = kstDate(date);
-  let start = selected;
-  let end = selected;
-  if (view === "month") {
-    start = startOfWeek(startOfMonth(selected));
-    end = endOfWeek(endOfMonth(selected));
-  } else if (view === "week") {
-    start = startOfWeek(selected, { weekStartsOn: 0 });
-    end = endOfWeek(selected, { weekStartsOn: 0 });
-  }
-  const { names: holidayNames, isPending: holidaysPending } = useHolidays(
-    start.getFullYear(),
-    end.getFullYear(),
+  const { start, end } = calendarRange(date, view);
+  const move = { month: addMonths, week: addWeeks, day: addDays }[view];
+  const previousRange = calendarRange(
+    format(move(selected, -1), "yyyy-MM-dd"),
+    view,
   );
+  const nextRange = calendarRange(
+    format(move(selected, 1), "yyyy-MM-dd"),
+    view,
+  );
+  const {
+    names: holidayNames,
+    isPending,
+    pendingYears,
+  } = useHolidays(
+    (home ? start : previousRange.start).getFullYear(),
+    (home ? end : nextRange.end).getFullYear(),
+  );
+  // Neighbor years warm the query cache without blocking the current calendar.
+  const holidaysPending = pendingYears
+    ? pendingYears.some(
+        (year) => year >= start.getFullYear() && year <= end.getFullYear(),
+      )
+    : isPending;
+  // useEvents already supplies all periods from the same TanStack Query cache.
+  const renderPanel = (panelDate: string) => {
+    const range = calendarRange(panelDate, view);
+    const panelHolidaysPending = pendingYears
+      ? pendingYears.some(
+          (year) =>
+            year >= range.start.getFullYear() &&
+            year <= range.end.getFullYear(),
+        )
+      : isPending;
+    return (
+      <CalendarPanel
+        events={events}
+        categories={categories}
+        today={today}
+        home={home}
+        ownerNames={ownerNames}
+        onOpen={onOpen}
+        date={panelDate}
+        view={view}
+        onDateChange={onDateChange}
+        holidayNames={holidayNames}
+        holidaysPending={panelHolidaysPending}
+      />
+    );
+  };
   const selectedHoliday = holidayNames[date];
-  const days = eachDayOfInterval({ start, end });
   const occurrences = occurrencesInRange(
     events,
     format(start, "yyyy-MM-dd"),
@@ -624,89 +784,66 @@ function CalendarContent({
     { value: "week", label: "주", odId: "view-week" },
     { value: "day", label: "일", odId: "view-day" },
   ] as const;
+  const title =
+    view === "day"
+      ? format(selected, "M월 d일 EEEE", { locale: ko })
+      : view === "week"
+        ? calendarWeekTitle(date)
+        : format(selected, "yyyy년 M월");
+  const previousLabel = { month: "이전 달", week: "이전 주", day: "전날" }[
+    view
+  ];
+  const nextLabel = { month: "다음 달", week: "다음 주", day: "다음 날" }[view];
   return (
-    <div
-      className={cn(
-        "min-w-0",
-        view === "day" &&
-          (selectedHoliday || selected.getDay() === 0) &&
-          "[&_h1]:text-[var(--sys-red-ic)]",
-      )}
-    >
+    <div className="min-w-0">
       {!home && (
         <PageHeader
           odId="calendar"
           titleOdId="cal-title"
-          title={
-            view === "day"
-              ? format(selected, "M월 d일 EEEE", { locale: ko })
-              : format(selected, "yyyy년 M월")
-          }
-          titleVariant="display"
-          navigation={
-            <div className="flex items-center gap-2">
-              <TextButton
-                aria-label={
-                  view === "month"
-                    ? "이전 달"
-                    : view === "week"
-                      ? "이전 주"
-                      : "전날"
-                }
-                data-od-id="cal-prev"
-                onClick={() => onMove(-1)}
-              >
-                <ChevronLeft size={22} />
-              </TextButton>
-              <TextButton
-                aria-label={
-                  view === "month"
-                    ? "다음 달"
-                    : view === "week"
-                      ? "다음 주"
-                      : "다음 날"
-                }
-                data-od-id="cal-next"
-                onClick={() => onMove(1)}
-              >
-                <ChevronRight size={22} />
-              </TextButton>
-              <TextButton
-                className="ml-auto"
-                aria-label="일정 추가"
-                data-od-id="cal-add"
-                onClick={onAdd}
-              >
-                <Plus size={22} />
-              </TextButton>
-            </div>
+          title={title}
+          titleAriaLabel={view === "week" ? title : undefined}
+          actions={
+            <TextButton data-od-id="cal-add" onClick={onAdd} size={"sm"}>
+              일정 추가
+            </TextButton>
           }
         >
-          {view === "day" && (
-            <Text
-              as="p"
-              variant="caption"
-              className="h-5 truncate text-[var(--sys-red-ic)]"
-            >
-              {selectedHoliday}
-            </Text>
-          )}
-          <div className="mt-2 flex items-center gap-3">
+          <span role="status" className="sr-only" aria-atomic="true">
+            {title}
+          </span>
+          <div className="mt-2 flex items-center justify-between gap-3">
             <SegmentedControl
               odId="cal-view"
               label="보기"
-              className="w-full max-w-[280px]"
               options={options}
               value={view}
               onValueChange={onViewChange}
             />
-            <TextButton
-              size="sm"
-              data-od-id="cal-today"
-              onClick={() => onDateChange(today)}
-            >
-              오늘
-            </TextButton>
+            <div className="flex shrink-0 items-center">
+              <TextButton
+                className="size-11 text-muted-foreground [&_svg]:text-[var(--icon-secondary)]"
+                aria-label={previousLabel}
+                data-od-id="cal-prev"
+                onClick={() => onMove(-1)}
+              >
+                <ChevronLeft size={20} aria-hidden="true" />
+              </TextButton>
+              <TextButton
+                className="min-h-11 min-w-11 text-muted-foreground"
+                data-od-id="cal-today"
+                onClick={() => onDateChange(today)}
+              >
+                오늘
+              </TextButton>
+              <TextButton
+                className="size-11 text-muted-foreground [&_svg]:text-[var(--icon-secondary)]"
+                aria-label={nextLabel}
+                data-od-id="cal-next"
+                onClick={() => onMove(1)}
+              >
+                <ChevronRight size={20} aria-hidden="true" />
+              </TextButton>
+            </div>
           </div>
         </PageHeader>
       )}
@@ -718,56 +855,15 @@ function CalendarContent({
         }
       >
         <div data-od-id={!home ? "cal-grid" : undefined}>
-          {!home && holidaysPending && view !== "month" ? (
-            <ListSkeleton label="일정을 준비하고 있어요" />
-          ) : home && view === "day" ? null : view === "day" ? (
-            <DayTimeline
-              holiday={
-                selectedHoliday ? { date, name: selectedHoliday } : undefined
-              }
-              date={date}
-              occurrences={occurrences}
-              categories={categories}
-              ownerNames={ownerNames}
-              onOpen={onOpen}
-            />
-          ) : view === "week" && !home ? (
-            <WeekEvents
-              days={days}
-              occurrences={occurrences}
-              categories={categories}
-              ownerNames={ownerNames}
-              onOpen={onOpen}
-              today={today}
-              holidayNames={holidayNames}
-            />
+          {home ? (
+            renderPanel(date)
           ) : (
-            <nav
-              aria-label={home && view === "week" ? "이번 주" : "달력"}
-              data-od-id={home && view === "week" ? "week-strip" : undefined}
-              className={cn(
-                "mt-1 grid min-w-0 grid-cols-7",
-                view === "month" && [
-                  "[&>button]:min-h-14 [&>button]:gap-0 lg:[&>button]:min-h-21",
-                  "[&>button>span:nth-child(2)]:size-7.5",
-                  "[&>button:nth-child(n+8)>span:first-child]:hidden",
-                ],
-              )}
-            >
-              {days.map((day) => (
-                <CalendarDate
-                  key={day.toISOString()}
-                  day={day}
-                  month={view === "month" ? selected.getMonth() : undefined}
-                  selected={date}
-                  today={today}
-                  occurrences={occurrences}
-                  categories={categories}
-                  onSelect={onDateChange}
-                  holidayName={holidayNames[format(day, "yyyy-MM-dd")]}
-                />
-              ))}
-            </nav>
+            <CalendarCarousel
+              date={date}
+              view={view}
+              onDateChange={onDateChange}
+              renderPanel={renderPanel}
+            />
           )}
         </div>
         {!home && view === "month" && holidaysPending ? (

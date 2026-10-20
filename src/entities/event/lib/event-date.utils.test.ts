@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { eventSchema } from "../model/event.schema";
-import { eventDateInput, eventTimeLabel } from "./event-date.utils";
+import {
+  calendarWeekTitle,
+  eventDateInput,
+  eventTimeLabel,
+} from "./event-date.utils";
 const input = {
   title: "일정",
   place: "",
@@ -53,5 +57,22 @@ describe("CAL-01~02 SCN-CAL-1 날짜와 선택 시각", () => {
       "2026-10-16 ~ 2026-10-17 · 종일",
     );
     expect(eventTimeLabel({ ...event, isAllDay: false })).toBe("시간 미정");
+  });
+});
+
+describe("CAL-07 목요일 기준 주 보기 제목", () => {
+  it.each([
+    ["2026-09-27", "2026년 10월 1주차"],
+    ["2026-10-03", "2026년 10월 1주차"],
+    ["2026-10-04", "2026년 10월 2주차"],
+    ["2026-10-31", "2026년 10월 5주차"],
+    ["2026-11-01", "2026년 11월 1주차"],
+    ["2026-12-27", "2026년 12월 5주차"],
+    ["2027-01-01", "2026년 12월 5주차"],
+    ["2027-01-02", "2026년 12월 5주차"],
+    ["2027-01-03", "2027년 1월 1주차"],
+    ["2028-02-29", "2028년 3월 1주차"],
+  ])("%s의 연월과 주차를 목요일로 정해요", (date, expected) => {
+    expect(calendarWeekTitle(date)).toBe(expected);
   });
 });

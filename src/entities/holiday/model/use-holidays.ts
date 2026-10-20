@@ -22,5 +22,6 @@ export function useHolidays(startYear: number, endYear: number) {
         : holiday.name;
     }
   }
-  return { names, isPending: queries.some((query) => query.isPending) };
+  const pendingYears = years.filter((_, index) => queries[index].isPending);
+  return { names, isPending: pendingYears.length > 0, pendingYears };
 }

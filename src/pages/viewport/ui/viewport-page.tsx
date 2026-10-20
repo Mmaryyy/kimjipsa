@@ -109,7 +109,7 @@ export function ViewportPage() {
         >
           설정으로 돌아가기
         </Link>
-        <Text as="h1" variant="display" className="mt-4">
+        <Text as="h1" variant="title-lg" className="mt-4">
           화면 정보
         </Text>
         <Text as="p" variant="body-sm" className="mt-2 text-muted-foreground">

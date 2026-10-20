@@ -3,7 +3,6 @@ import { cva, type VariantProps } from "class-variance-authority";
 export const textStyles = cva("[overflow-wrap:anywhere]", {
   variants: {
     variant: {
-      display: "text-display",
       "title-lg": "text-title-lg",
       title: "text-title",
       "title-sm": "text-title-sm",

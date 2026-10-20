@@ -22,7 +22,11 @@ export {
   reorderCategory,
   deleteCategory,
 } from "./api/api";
-export { eventDateInput, eventTimeLabel } from "./lib/event-date.utils";
+export {
+  calendarWeekTitle,
+  eventDateInput,
+  eventTimeLabel,
+} from "./lib/event-date.utils";
 export {
   calendarViews,
   calendarDdayLimit,

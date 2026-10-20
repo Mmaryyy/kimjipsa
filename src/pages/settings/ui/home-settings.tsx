@@ -1,5 +1,5 @@
 "use client";
-import { useCallback } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { calendarViews } from "@/entities/event";
@@ -10,45 +10,69 @@ import {
   type HomeSettings as Settings,
 } from "@/entities/user";
 import {
-  Button,
   ErrorState,
   FormFieldRow,
   ListSkeleton,
   GroupLabel,
   SegmentedControl,
   Switch,
-  Text,
+  Toast,
 } from "@/shared/ui";
 function HomeSettingsForm({ settings }: { settings: Settings }) {
   const save = useSaveHomeSettings();
+  const savedSettings = useRef(settings);
+  const saving = useRef(false);
+  const pendingSettings = useRef<Settings | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [toastOpen, setToastOpen] = useState(false);
+  const [message, setMessage] = useState("");
   const {
     control,
     handleSubmit,
     reset,
-    setError,
-    formState: { errors, isDirty, isSubmitting },
+    formState: { errors },
   } = useForm<Settings>({
     resolver: zodResolver(homeSettingsSchema),
     defaultValues: settings,
   });
   const onSubmit = useCallback(
     async (values: Settings) => {
+      pendingSettings.current = values;
+      if (saving.current) return;
+      saving.current = true;
+      setIsSaving(true);
+      setToastOpen(false);
       try {
-        await save.mutateAsync(values);
-        reset(values);
-      } catch (error) {
-        setError("root", {
-          message:
-            error instanceof Error ? error.message : "저장하지 못했어요.",
-        });
+        while (pendingSettings.current) {
+          const nextSettings = pendingSettings.current;
+          pendingSettings.current = null;
+          try {
+            await save.mutateAsync(nextSettings);
+            savedSettings.current = nextSettings;
+            setMessage("홈 구성을 저장했어요");
+          } catch (error) {
+            setMessage(
+              error instanceof Error ? error.message : "저장하지 못했어요.",
+            );
+          }
+          // A completed request must never overwrite a newer edit in the form.
+          if (!pendingSettings.current) reset(savedSettings.current);
+        }
+      } finally {
+        saving.current = false;
+        setIsSaving(false);
+        setToastOpen(true);
       }
     },
-    [reset, save, setError],
+    [reset, save],
   );
   const upcomingEnabled = useWatch({ control, name: "upcomingEnabled" });
   return (
-    <form className="grid gap-3" onSubmit={handleSubmit(onSubmit)}>
-      <fieldset disabled={isSubmitting} className="grid min-w-0 gap-2">
+    <form
+      className="grid gap-3"
+      onSubmit={(event) => void handleSubmit(onSubmit)(event)}
+    >
+      <fieldset aria-busy={isSaving} className="grid min-w-0 gap-2">
         <legend className="sr-only">홈 구성</legend>
         <FormFieldRow
           label="캘린더 보기"
@@ -69,7 +93,10 @@ function HomeSettingsForm({ settings }: { settings: Settings }) {
                     label: option.label.slice(0, 1),
                   }))}
                   value={field.value}
-                  onValueChange={field.onChange}
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    void handleSubmit(onSubmit)();
+                  }}
                   {...props}
                 />
               )}
@@ -86,7 +113,10 @@ function HomeSettingsForm({ settings }: { settings: Settings }) {
                   {...props}
                   data-od-id="s-widget"
                   checked={field.value}
-                  onCheckedChange={field.onChange}
+                  onCheckedChange={(value) => {
+                    field.onChange(value);
+                    void handleSubmit(onSubmit)();
+                  }}
                 />
               )}
             />
@@ -112,7 +142,10 @@ function HomeSettingsForm({ settings }: { settings: Settings }) {
                       label: `${count}개`,
                     }))}
                     value={String(field.value)}
-                    onValueChange={(value) => field.onChange(Number(value))}
+                    onValueChange={(value) => {
+                      field.onChange(Number(value));
+                      void handleSubmit(onSubmit)();
+                    }}
                     {...props}
                   />
                 )}
@@ -121,19 +154,12 @@ function HomeSettingsForm({ settings }: { settings: Settings }) {
           </FormFieldRow>
         )}
       </fieldset>
-      {errors.root && (
-        <Text as="p" role="alert" className="text-error-text">
-          {errors.root.message}
-        </Text>
-      )}
-      {save.isSuccess && !isDirty && (
-        <Text as="p" role="status">
-          홈 구성을 저장했어요.
-        </Text>
-      )}
-      <Button type="submit" disabled={isSubmitting || !isDirty}>
-        {isSubmitting ? "저장하고 있어요" : "홈 구성 저장하기"}
-      </Button>
+      <Toast
+        open={toastOpen}
+        onOpenChange={setToastOpen}
+        message={message}
+        duration={2500}
+      />
     </form>
   );
 }

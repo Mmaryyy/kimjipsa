@@ -1,3 +1,12 @@
+vi.mock("@/widgets/calendar-view/ui/calendar-carousel", () => ({
+  CalendarCarousel: ({
+    date,
+    renderPanel,
+  }: {
+    date: string;
+    renderPanel: (date: string) => React.ReactNode;
+  }) => renderPanel(date),
+}));
 import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CalendarView } from "./calendar-view";
@@ -114,13 +123,15 @@ describe("CAL-17 공휴일 표시", () => {
         isPending: false,
       });
       rerender(<CalendarView {...props} />);
-      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("status", { name: "일정을 준비하고 있어요" }),
+      ).not.toBeInTheDocument();
       expect(
         screen.getByRole("listitem", { name: "한글날, 공휴일" }),
       ).toBeVisible();
     },
   );
-  it("일 보기 제목은 보이는 날짜와 같고 캡션이 공휴일을 읽어요", () => {
+  it("일 보기 제목은 날짜만 읽고 공휴일 이름은 목록에서 한 번만 읽어요", () => {
     location.search = "view=day&date=2026-10-09";
     render(<CalendarView {...props} />);
     expect(screen.getByRole("heading", { level: 1 })).toHaveAccessibleName(
@@ -129,6 +140,10 @@ describe("CAL-17 공휴일 표시", () => {
     expect(screen.getByRole("heading", { level: 1 })).not.toHaveAttribute(
       "aria-label",
     );
+    const holidayName = screen.getByText("한글날");
+    expect(
+      screen.getByRole("listitem", { name: "한글날, 공휴일" }),
+    ).toContainElement(holidayName);
   });
   it("홈 오늘 일정에는 공휴일 행을 넣지 않아요", () => {
     location.search = "date=2026-10-09";
@@ -148,5 +163,32 @@ describe("CAL-17 공휴일 표시", () => {
     expect(screen.getByRole("navigation", { name: "달력" })).toBeVisible();
     expect(screen.queryByText("개천절")).not.toBeInTheDocument();
     expect(screen.getByText("등록된 일정이 없어요")).toBeVisible();
+  });
+});
+
+describe("CAL-07 CAL-17 토요일·오늘 표시", () => {
+  it.each([
+    ["2026-10-10", "text-[var(--accent-text)]"],
+    ["2026-10-11", "text-[var(--sys-red-ic)]"],
+    ["2026-10-03", "text-[var(--sys-red-ic)]"],
+    ["2026-10-20", "text-foreground"],
+  ])("오늘 %s는 요일 색·굵게·점선과 선택 채움을 함께 써요", (today, color) => {
+    location.search = `view=month&date=${today}`;
+    useHolidays.mockReturnValue({
+      isPending: false,
+      names: { "2026-10-03": "개천절" },
+    });
+    render(<CalendarView {...props} today={today} />);
+    const button = screen.getByRole("button", { name: /오늘, 선택됨/ });
+    expect(button).toHaveAttribute("aria-current", "date");
+    expect(button.children[1]).toHaveClass(
+      color,
+      "font-bold",
+      "border-[1.5px]",
+      "border-dashed",
+      "border-current",
+      "size-8",
+      "bg-[var(--fill-secondary)]",
+    );
   });
 });

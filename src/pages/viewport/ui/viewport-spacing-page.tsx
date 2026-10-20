@@ -122,7 +122,7 @@ export function ViewportSpacingPage() {
           10월 19일 월요일 · 도토리네
         </Text>
         <div className="flex items-center gap-2 [&_h1]:min-w-0 [&_h1]:flex-1">
-          <Text as="h1" variant="display" data-od-id="viewport-spacing-title">
+          <Text as="h1" variant="title-lg" data-od-id="viewport-spacing-title">
             오늘
           </Text>
         </div>

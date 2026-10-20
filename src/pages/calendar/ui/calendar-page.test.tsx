@@ -1,3 +1,12 @@
+vi.mock("@/widgets/calendar-view/ui/calendar-carousel", () => ({
+  CalendarCarousel: ({
+    date,
+    renderPanel,
+  }: {
+    date: string;
+    renderPanel: (date: string) => React.ReactNode;
+  }) => renderPanel(date),
+}));
 vi.mock("@/entities/holiday", () => ({
   useHolidays: () => ({ names: {}, isPending: false }),
 }));

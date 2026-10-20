@@ -2,7 +2,6 @@ import { clsx, type ClassValue } from "clsx";
 import { extendTailwindMerge } from "tailwind-merge";
 
 const fontSizeNames = [
-  "display",
   "title-lg",
   "title",
   "title-sm",

@@ -6,7 +6,6 @@ export function PageHeader({
   actions,
   subtitle,
   odId,
-  titleVariant = "title-lg",
   navigation,
   children,
   titleOdId,
@@ -20,7 +19,6 @@ export function PageHeader({
   titleOdId?: string;
   subtitle?: string;
   odId?: string;
-  titleVariant?: "title-lg" | "display";
 }) {
   return (
     <header className="kj-page-header" data-od-id={odId && `${odId}-header`}>
@@ -30,15 +28,17 @@ export function PageHeader({
           {subtitle}
         </Text>
       )}
-      <div className="flex items-center gap-2 [&_h1]:min-w-0 [&_h1]:flex-1">
-        <Text
-          as="h1"
-          aria-label={titleAriaLabel}
-          variant={titleVariant}
-          data-od-id={titleOdId ?? (odId && `${odId}-title`)}
-        >
-          {title}
-        </Text>
+      <div className="relative flex items-center gap-2 [&_h1]:min-w-0 [&_h1]:flex-1">
+        <div className="flex min-w-0 flex-1 items-center">
+          <Text
+            as="h1"
+            aria-label={titleAriaLabel}
+            variant="title-lg"
+            data-od-id={titleOdId ?? (odId && `${odId}-title`)}
+          >
+            {title}
+          </Text>
+        </div>
         {actions && (
           <div
             className={cn([

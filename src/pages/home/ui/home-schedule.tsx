@@ -1,18 +1,14 @@
 "use client";
+
 import {
   DdayOverview,
-  kstDate,
-  useEvents,
-  useEventCategories,
-  useCalendarClock,
   eventDateInput,
+  kstDate,
   upcomingOccurrences,
+  useCalendarClock,
+  useEventCategories,
+  useEvents,
 } from "@/entities/event";
-import { useFamily } from "@/features/family";
-import { format } from "date-fns";
-import { ko } from "date-fns/locale";
-import { useHomeSettings } from "@/entities/user";
-import { CalendarView } from "@/widgets/calendar-view";
 import {
   ErrorState,
   ListSkeleton,
@@ -20,8 +16,14 @@ import {
   SectionHeader,
   Text,
 } from "@/shared/ui";
+
+import { CalendarView } from "@/widgets/calendar-view";
 import { CelebrationCards } from "./celebration-cards";
 import { UpcomingEvents } from "./upcoming-events";
+import { format } from "date-fns";
+import { ko } from "date-fns/locale";
+import { useFamily } from "@/features/family";
+import { useHomeSettings } from "@/entities/user";
 export function HomeSchedule() {
   const instant = useCalendarClock();
   const events = useEvents();
@@ -61,7 +63,6 @@ export function HomeSchedule() {
     <>
       <PageHeader
         odId="home"
-        titleVariant="display"
         title="오늘"
         subtitle={`${format(kstDate(today), "M월 d일 EEEE", { locale: ko })} · ${family.data?.name ?? ""}`}
       />

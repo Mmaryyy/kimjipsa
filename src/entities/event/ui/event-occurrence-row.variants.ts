@@ -20,10 +20,14 @@ export const ddayLabelStyles = cva(
   },
 );
 
-export const ddayBadgeStyles = cva("", {
-  variants: {
-    today: {
-      true: "-ml-2 inline-block rounded-control bg-[var(--accent-soft)] px-2 py-0.5",
+export const ddayBadgeStyles = cva(
+  "-ml-2 inline-block rounded-control px-2 py-0.5",
+  {
+    variants: {
+      today: {
+        true: "bg-[var(--accent-soft)]",
+        false: "bg-sys-gray5",
+      },
     },
   },
-});
+);

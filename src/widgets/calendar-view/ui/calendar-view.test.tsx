@@ -1,3 +1,12 @@
+vi.mock("@/widgets/calendar-view/ui/calendar-carousel", () => ({
+  CalendarCarousel: ({
+    date,
+    renderPanel,
+  }: {
+    date: string;
+    renderPanel: (date: string) => React.ReactNode;
+  }) => renderPanel(date),
+}));
 vi.mock("@/entities/holiday", () => ({
   useHolidays: () => ({ names: {}, isPending: false }),
 }));
@@ -19,6 +28,7 @@ describe("CAL-07 SCN-CAL-8 월·주·일 URL 상태", () => {
   beforeEach(() => {
     location.search = "";
     replace.mockClear();
+    vi.spyOn(window.history, "replaceState").mockImplementation(replace);
   });
   it("월 보기의 날짜를 선택하면 목록 날짜를 URL에 기록해요", () => {
     render(<CalendarView {...props} />);
@@ -28,8 +38,9 @@ describe("CAL-07 SCN-CAL-8 월·주·일 URL 상태", () => {
       screen.getByRole("button", { name: "12월 30일 수요일, 일정 0개" }),
     );
     expect(replace).toHaveBeenCalledWith(
+      null,
+      "",
       "/calendar?view=month&date=2026-12-30",
-      { scroll: false },
     );
   });
   it("URL 날짜와 보기를 복원하고 다음 달과 일 보기 이동을 기록해요", () => {
@@ -40,13 +51,15 @@ describe("CAL-07 SCN-CAL-8 월·주·일 URL 상태", () => {
     ).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "다음 달" }));
     expect(replace).toHaveBeenLastCalledWith(
+      null,
+      "",
       "/calendar?view=month&date=2027-01-31&filter=keep",
-      { scroll: false },
     );
     fireEvent.click(screen.getByRole("radio", { name: "일" }));
     expect(replace).toHaveBeenLastCalledWith(
-      "/calendar?view=day&date=2026-12-31&filter=keep",
-      { scroll: false },
+      null,
+      "",
+      "/calendar?view=day&date=2027-01-31&filter=keep",
     );
   });
   it.each([
@@ -58,6 +71,50 @@ describe("CAL-07 SCN-CAL-8 월·주·일 URL 상태", () => {
     render(<CalendarView {...props} />);
     expect(screen.getByRole("button", { name: previous })).toBeVisible();
     expect(screen.getByRole("button", { name: next })).toBeVisible();
+  });
+  it.each([
+    ["month", "이전 달", "다음 달", "2026-11-30", "2026-12-30"],
+    ["week", "이전 주", "다음 주", "2026-12-24", "2026-12-31"],
+    ["day", "전날", "다음 날", "2026-12-30", "2026-12-31"],
+  ])(
+    "%s 헤더는 이전·오늘·다음 버튼으로 날짜를 이동해요",
+    (view, previous, next, previousDate, nextDate) => {
+      location.search = `view=${view}&date=2026-12-31`;
+      render(<CalendarView {...props} />);
+      const previousButton = screen.getByRole("button", { name: previous });
+      const nextButton = screen.getByRole("button", { name: next });
+      const todayButton = screen.getByRole("button", { name: "오늘" });
+      expect(previousButton.nextElementSibling).toBe(todayButton);
+      expect(todayButton.nextElementSibling).toBe(nextButton);
+      fireEvent.click(previousButton);
+      expect(replace).toHaveBeenLastCalledWith(
+        null,
+        "",
+        `/calendar?view=${view}&date=${previousDate}`,
+      );
+      fireEvent.click(nextButton);
+      expect(replace).toHaveBeenLastCalledWith(
+        null,
+        "",
+        `/calendar?view=${view}&date=${nextDate}`,
+      );
+    },
+  );
+  it("주 제목과 접근성 이름에 목요일 기준 주차를 표시해요", () => {
+    location.search = "view=week&date=2027-01-02";
+    const onAdd = vi.fn();
+    render(<CalendarView {...props} onAdd={onAdd} />);
+    expect(
+      screen.getByRole("heading", { level: 1, name: "2026년 12월 5주차" }),
+    ).toHaveTextContent("2026년 12월 5주차");
+    fireEvent.click(screen.getByRole("button", { name: "일정 추가" }));
+    expect(onAdd).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByRole("button", { name: "오늘" }));
+    expect(replace).toHaveBeenLastCalledWith(
+      null,
+      "",
+      "/calendar?view=week&date=2026-12-31",
+    );
   });
   it("홈 주간 스트립은 일요일부터 시작하고 선택 날짜를 안내해요", () => {
     render(<CalendarView {...props} home defaultView="week" />);
@@ -91,12 +148,13 @@ describe("CAL-07 SCN-CAL-8 월·주·일 URL 상태", () => {
         expect(chosen).toHaveAttribute("aria-pressed", "true");
         expect(chosen.children[1]).toHaveClass(
           "bg-[var(--fill-secondary)]",
-          "font-semibold",
+          selected === props.today ? "font-bold" : "font-semibold",
         );
         if (selected !== props.today) {
           expect(today.children[1]).toHaveClass(
-            "text-[var(--accent-text)]",
+            "text-foreground",
             "font-bold",
+            "border-dashed",
           );
           expect(today.children[1]).not.toHaveClass(
             "bg-[var(--fill-secondary)]",
@@ -105,7 +163,10 @@ describe("CAL-07 SCN-CAL-8 월·주·일 URL 상태", () => {
           expect(chosen).not.toHaveAttribute("aria-current");
         } else {
           expect(today).toBe(chosen);
-          expect(today.children[1]).toHaveClass("text-[var(--accent-text)]");
+          expect(today.children[1]).toHaveClass(
+            "text-foreground",
+            "border-dashed",
+          );
         }
       },
     );
@@ -163,6 +224,7 @@ describe("CAL-07 일간·주간 일정 구성", () => {
   beforeEach(() => {
     location.search = "view=day&date=2026-10-14";
     replace.mockClear();
+    vi.spyOn(window.history, "replaceState").mockImplementation(replace);
   });
 
   it("빈 날은 안내를 보여 주고 빈 시간 줄은 화면 읽기 도구에서 숨겨요", () => {
