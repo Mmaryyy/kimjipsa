@@ -12,6 +12,7 @@ import {
 } from "@/entities/event";
 import { ErrorState, PageHeader, SectionHeader, Text } from "@/shared/ui";
 
+import { NotificationBell } from "@/entities/notification";
 import { CalendarView } from "@/widgets/calendar-view";
 import { CelebrationCards } from "./celebration-cards";
 import { UpcomingEvents } from "./upcoming-events";
@@ -56,7 +57,12 @@ export function HomeSchedule() {
   );
   return (
     <>
-      <PageHeader odId="home" title="오늘" subtitle={subtitle} />
+      <PageHeader
+        odId="home"
+        title="오늘"
+        subtitle={subtitle}
+        actions={<NotificationBell />}
+      />
       {events.data && (
         <CelebrationCards events={events.data} instant={instant} />
       )}

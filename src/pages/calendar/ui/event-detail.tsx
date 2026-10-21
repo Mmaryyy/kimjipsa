@@ -1,6 +1,11 @@
 "use client";
 import { useState } from "react";
-import { useEvent, useEventCategories, eventTimeLabel } from "@/entities/event";
+import {
+  useEvent,
+  useEventCategories,
+  eventTimeLabel,
+  reminderLabel,
+} from "@/entities/event";
 import {
   Button,
   TextButton,
@@ -65,6 +70,7 @@ export function EventDetail({
   const category = categories.data.find(
     (category) => category.id === details.categoryId,
   );
+  const deleteDescription = "삭제한 일정은 되돌릴 수 없어요.";
   return (
     <article className="grid gap-4">
       <Text as="h2" variant="title">
@@ -85,6 +91,14 @@ export function EventDetail({
         </div>
       )}
       <dl className="grid gap-2">
+        <dt className="text-muted-foreground">알림</dt>
+        <dd>
+          {reminderLabel(
+            event.data.remindBefore === undefined
+              ? 30
+              : event.data.remindBefore,
+          )}
+        </dd>
         <dt className="text-muted-foreground">장소</dt>
         <dd className="break-words">
           {details.place || "등록한 장소가 없어요"}
@@ -120,7 +134,7 @@ export function EventDetail({
         }}
         targetName={details.title}
         title="일정을 삭제할까요?"
-        description={deleteError?.message ?? "삭제한 일정은 되돌릴 수 없어요."}
+        description={deleteError?.message ?? deleteDescription}
         onConfirm={onDelete}
         pending={deleting}
       />

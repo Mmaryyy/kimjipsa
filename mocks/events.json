@@ -15,7 +15,8 @@
       "memo": "",
       "category_id": "10000000-0000-4000-8000-000000000014",
       "dday_style": "normal",
-      "celebrate_message": ""
+      "celebrate_message": "",
+      "remind_before": 30
     },
     "mock_start_offset": -5,
     "mock_end_offset": -5
@@ -36,7 +37,8 @@
       "memo": "",
       "category_id": "10000000-0000-4000-8000-000000000011",
       "dday_style": "normal",
-      "celebrate_message": ""
+      "celebrate_message": "",
+      "remind_before": 10
     },
     "mock_start_offset": -2,
     "mock_end_offset": -2
@@ -57,7 +59,8 @@
       "memo": "",
       "category_id": "10000000-0000-4000-8000-000000000012",
       "dday_style": "normal",
-      "celebrate_message": ""
+      "celebrate_message": "",
+      "remind_before": null
     },
     "mock_start_offset": 0,
     "mock_end_offset": 0
@@ -78,7 +81,8 @@
       "memo": "",
       "category_id": "10000000-0000-4000-8000-000000000015",
       "dday_style": "normal",
-      "celebrate_message": ""
+      "celebrate_message": "",
+      "remind_before": 60
     },
     "mock_start_offset": 0,
     "mock_end_offset": 0
@@ -99,7 +103,8 @@
       "memo": "7시 20분에 성수역 3번 출구",
       "category_id": "10000000-0000-4000-8000-000000000013",
       "dday_style": "normal",
-      "celebrate_message": ""
+      "celebrate_message": "",
+      "remind_before": 1440
     },
     "mock_start_offset": 0,
     "mock_end_offset": 0
@@ -120,7 +125,8 @@
       "memo": "",
       "category_id": "10000000-0000-4000-8000-000000000010",
       "dday_style": "normal",
-      "celebrate_message": ""
+      "celebrate_message": "",
+      "remind_before": 30
     },
     "mock_start_offset": 1,
     "mock_end_offset": 1
@@ -141,7 +147,8 @@
       "memo": "",
       "category_id": "10000000-0000-4000-8000-000000000014",
       "dday_style": "normal",
-      "celebrate_message": ""
+      "celebrate_message": "",
+      "remind_before": 10
     },
     "mock_start_offset": 3,
     "mock_end_offset": 3
@@ -162,7 +169,8 @@
       "memo": "",
       "category_id": "10000000-0000-4000-8000-000000000013",
       "dday_style": "normal",
-      "celebrate_message": ""
+      "celebrate_message": "",
+      "remind_before": null
     },
     "mock_start_offset": 3,
     "mock_end_offset": 3
@@ -183,7 +191,8 @@
       "memo": "",
       "category_id": "10000000-0000-4000-8000-000000000015",
       "dday_style": "normal",
-      "celebrate_message": ""
+      "celebrate_message": "",
+      "remind_before": 60
     },
     "mock_start_offset": 4,
     "mock_end_offset": 4
@@ -204,7 +213,8 @@
       "memo": "",
       "category_id": "10000000-0000-4000-8000-000000000012",
       "dday_style": "celebrate",
-      "celebrate_message": ""
+      "celebrate_message": "",
+      "remind_before": 1440
     },
     "mock_start_offset": 5,
     "mock_end_offset": 5
@@ -225,7 +235,8 @@
       "memo": "",
       "category_id": "10000000-0000-4000-8000-000000000011",
       "dday_style": "normal",
-      "celebrate_message": ""
+      "celebrate_message": "",
+      "remind_before": 30
     },
     "mock_start_offset": 7,
     "mock_end_offset": 7
@@ -246,7 +257,8 @@
       "memo": "",
       "category_id": "10000000-0000-4000-8000-000000000012",
       "dday_style": "normal",
-      "celebrate_message": ""
+      "celebrate_message": "",
+      "remind_before": 10
     },
     "mock_start_offset": 10,
     "mock_end_offset": 10
@@ -267,7 +279,8 @@
       "memo": "",
       "category_id": "10000000-0000-4000-8000-000000000010",
       "dday_style": "normal",
-      "celebrate_message": ""
+      "celebrate_message": "",
+      "remind_before": null
     },
     "mock_start_offset": 14,
     "mock_end_offset": 14
@@ -288,7 +301,8 @@
       "memo": "",
       "category_id": "10000000-0000-4000-8000-000000000010",
       "dday_style": "normal",
-      "celebrate_message": ""
+      "celebrate_message": "",
+      "remind_before": 60
     },
     "mock_start_offset": -3,
     "mock_end_offset": -3
@@ -309,7 +323,8 @@
       "memo": "",
       "category_id": "10000000-0000-4000-8000-000000000010",
       "dday_style": "celebrate",
-      "celebrate_message": ""
+      "celebrate_message": "",
+      "remind_before": 1440
     },
     "mock_start_offset": 0,
     "mock_end_offset": 0,

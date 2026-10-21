@@ -22,6 +22,18 @@ vi.mock("@/entities/event", async (original) => ({
   useEventCategories,
   deleteEvent,
 }));
+const familyMembers = vi.hoisted(() => ({
+  members: [
+    { user_id: "me", display_name: "지수" },
+    { user_id: "spouse", display_name: "민호" },
+  ],
+}));
+vi.mock("@/features/family", () => ({
+  useFamily: () => ({ data: familyMembers }),
+}));
+vi.mock("@/features/account", () => ({
+  useAccount: () => ({ data: { userId: "me" } }),
+}));
 const refetch = vi.fn();
 function renderDetail() {
   return render(
@@ -37,6 +49,10 @@ function renderDetail() {
 describe("CAL-12 SCN-CAL-7 상세와 삭제 확인", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    familyMembers.members = [
+      { user_id: "me", display_name: "지수" },
+      { user_id: "spouse", display_name: "민호" },
+    ];
     useEvent.mockReturnValue({
       isPending: false,
       isError: false,
@@ -80,6 +96,33 @@ describe("CAL-12 SCN-CAL-7 상세와 삭제 확인", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "취소하기" }));
     expect(deleteEvent).not.toHaveBeenCalled();
+  });
+  it("공유 일정 삭제는 배우자에게도 알려 준다고 안내해요", () => {
+    renderDetail();
+    fireEvent.click(screen.getByRole("button", { name: "일정 삭제" }));
+    expect(screen.getByRole("alertdialog")).toHaveTextContent(
+      "삭제한 일정은 되돌릴 수 없어요.",
+    );
+  });
+  it("구성원이 여럿이어도 되돌릴 수 없다고 안내해요", () => {
+    familyMembers.members.push({ user_id: "third", display_name: "가족" });
+    renderDetail();
+    fireEvent.click(screen.getByRole("button", { name: "일정 삭제" }));
+    expect(screen.getByRole("alertdialog")).toHaveTextContent(
+      "삭제한 일정은 되돌릴 수 없어요.",
+    );
+  });
+  it("개인 일정 삭제는 되돌릴 수 없다고 안내해요", () => {
+    // The fixture's visibility is the only difference from a shared event.
+    useEvent.mockReturnValue({
+      ...useEvent(),
+      data: { ...useEvent().data, visibility: "private" },
+    });
+    renderDetail();
+    fireEvent.click(screen.getByRole("button", { name: "일정 삭제" }));
+    expect(screen.getByRole("alertdialog")).toHaveTextContent(
+      "삭제한 일정은 되돌릴 수 없어요.",
+    );
   });
   it("확인 버튼을 눌러야 삭제해요", async () => {
     renderDetail();

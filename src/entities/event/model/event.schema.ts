@@ -7,6 +7,15 @@ const time = z
   .nullable();
 export const eventSchema = z
   .object({
+    remindBefore: z
+      .union([
+        z.literal(10),
+        z.literal(30),
+        z.literal(60),
+        z.literal(1440),
+        z.null(),
+      ])
+      .default(30),
     kind: z.enum(["event", "dday"]).default("event"),
     ddayStyle: z.enum(["normal", "celebrate"]).default("normal"),
     celebrateMessage: z.string().trim().default(""),

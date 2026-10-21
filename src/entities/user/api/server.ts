@@ -1,3 +1,4 @@
+import { notificationSettingsSchema } from "../model/notification-settings.schema";
 import { homeSettingsSchema } from "../model/home-settings.schema";
 import "server-only";
 import { profileSchema } from "../model/profile.schema";
@@ -14,6 +15,7 @@ import type { Account } from "./type";
 import { providers, type LoginProvider } from "../model/providers.constants";
 import type { FamilyRole } from "@/entities/family/@x/user";
 const databaseErrors = {
+  invalid_notification_settings: [400, "알림 설정을 확인해 주세요."],
   unauthorized: [401, "로그인이 필요해요."],
   identity_policy_violation: [
     409,
@@ -202,6 +204,48 @@ export async function saveHomeSettings(input: unknown) {
     home_view: settings.homeView,
     upcoming_enabled: settings.upcomingEnabled,
     upcoming_count: settings.upcomingCount,
+  });
+  throwDatabaseError(error);
+  return null;
+}
+
+export async function getNotificationSettings() {
+  const context = await mockContext();
+  if (context) {
+    const account = await mockAccount();
+    if (!account?.userId)
+      throw new ApiError("unauthorized", "로그인이 필요해요.", 401);
+    return notificationSettingsSchema.parse(
+      context.values.get(`notify:${account.userId}`) ??
+        (await mockJson("notification-settings")),
+    );
+  }
+  const { client, user } = await authenticatedClient();
+  const { data, error } = await client
+    .from("users")
+    .select("push_enabled, morning_summary_time")
+    .eq("id", user.id)
+    .single();
+  throwDatabaseError(error);
+  return notificationSettingsSchema.parse({
+    pushEnabled: data?.push_enabled,
+    morningSummaryTime: data?.morning_summary_time.slice(0, 5),
+  });
+}
+export async function saveNotificationSettings(input: unknown) {
+  const settings = notificationSettingsSchema.parse(input);
+  const context = await mockContext();
+  if (context) {
+    const account = await mockAccount();
+    if (!account?.userId)
+      throw new ApiError("unauthorized", "로그인이 필요해요.", 401);
+    context.values.set(`notify:${account.userId}`, settings);
+    return null;
+  }
+  const { client } = await authenticatedClient();
+  const { error } = await client.rpc("save_notification_settings", {
+    push_enabled: settings.pushEnabled,
+    morning_summary_time: settings.morningSummaryTime,
   });
   throwDatabaseError(error);
   return null;

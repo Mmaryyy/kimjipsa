@@ -10,3 +10,12 @@ export {
   type HomeSettings,
 } from "./model/home-settings.schema";
 export { homeSettingsQueryOptions } from "./model/use-home-settings";
+
+export {
+  useNotificationSettings,
+  useSaveNotificationSettings,
+} from "./model/use-notification-settings";
+export {
+  notificationSettingsSchema,
+  type NotificationSettings,
+} from "./model/notification-settings.schema";

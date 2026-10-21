@@ -10,6 +10,7 @@ export type EventRecord = {
   is_all_day: boolean;
   kind?: "event" | "dday";
   event_details: {
+    remind_before?: CalendarEvent["remindBefore"];
     dday_style?: "normal" | "celebrate";
     celebrate_message?: string;
     title: string;
@@ -37,6 +38,12 @@ export function filterEventForRequester(
     };
   }
   return {
+    ...(details && {
+      remindBefore:
+        event.event_details?.remind_before === undefined
+          ? 30
+          : event.event_details.remind_before,
+    }),
     kind: event.kind ?? "event",
     id: event.id,
     ownerId: event.owner_id,

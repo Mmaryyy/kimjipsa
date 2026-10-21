@@ -1,3 +1,6 @@
+vi.mock("@/entities/notification", () => ({
+  NotificationBell: () => <span aria-label="알림" />,
+}));
 vi.mock("@/entities/holiday", () => ({
   useHolidays: () => ({ names: {}, isPending: false }),
 }));

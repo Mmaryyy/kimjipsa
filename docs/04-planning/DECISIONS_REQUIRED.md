@@ -7,11 +7,11 @@
 | DEC-001 | 개인 일정 컬럼 보호 구조 | 높음 | 일정 스키마, Realtime, 첫 마이그레이션 | CONFIRMED (ADR-0012) |
 | DEC-002 | 언어·UI·날짜 스택 | 높음 | 프로젝트 초기화 | CONFIRMED (ADR-0004) |
 | DEC-003 | AI 키 암호화 방식 | 높음 | ACC-08, 챗봇 | PENDING |
-| DEC-004 | 예약 작업(알림·요약·삭제) 실행 방식 | 높음 | CAL-09~11, BOT-12, BOT-14 | PENDING |
+| DEC-004 | 예약 작업(알림·요약·삭제) 실행 방식 | 높음 | CAL-09~11, BOT-12, BOT-14 | CONFIRMED (ADR-0013) |
 | DEC-005 | 동일 이메일 로그인 수단 분리 | 중간 | ACC-01 | CONFIRMED (ADR-0009) |
 | DEC-006 | 서버 상태·폼·검증 라이브러리 | 중간 | 데이터 계층 구현 | CONFIRMED (ADR-0005, 폼 라이브러리는 ADR-0011) |
 | DEC-007 | 테스트 도구 | 중간 | 테스트 작성 | CONFIRMED (ADR-0006) |
-| DEC-008 | 알림 요구사항의 마일스톤 배치 | 중간 | ROADMAP, M1 범위 | PENDING |
+| DEC-008 | 알림 요구사항의 마일스톤 배치 | 중간 | ROADMAP, M1 범위 | CONFIRMED |
 | DEC-009 | 데이터 모델 공백 | 중간 | 스키마 확정 | CONFIRMED (제안안 승인, 차후 수정 가능) |
 | DEC-010 | 판정 기준 모호 항목 | 낮음 | INV-16, CART-05, CART-12 | PENDING |
 | DEC-011 | 영수증 이미지 저장 | 낮음(M3) | INV-17 | PENDING |

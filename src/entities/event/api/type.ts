@@ -16,6 +16,7 @@ export type EventDetails = {
   categoryId: string;
 };
 export type CalendarEvent = {
+  remindBefore?: EventInput["remindBefore"];
   kind: "event" | "dday";
   id: string;
   ownerId: string | null;

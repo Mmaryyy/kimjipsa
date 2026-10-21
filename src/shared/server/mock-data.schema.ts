@@ -33,6 +33,15 @@ const eventSchema = z.object({
   kind: z.enum(["event", "dday"]),
   event_details: z
     .object({
+      remind_before: z
+        .union([
+          z.literal(10),
+          z.literal(30),
+          z.literal(60),
+          z.literal(1440),
+          z.null(),
+        ])
+        .default(30),
       dday_style: z.enum(["normal", "celebrate"]),
       celebrate_message: z.string(),
       title: z.string(),
@@ -117,9 +126,38 @@ export const mockDataSchemas = {
     }),
   ),
   holidays: z.array(z.object({ date: z.iso.date(), name: z.string().min(1) })),
+  notifications: z
+    .array(
+      z.object({
+        id: z.uuid(),
+        user_id: z.uuid(),
+        family_id: z.uuid(),
+        kind: z.enum(["event_created", "event_updated", "event_deleted"]),
+        payload: z.object({
+          eventId: z.uuid(),
+          actorName: z.string(),
+          eventTitle: z.string().optional(),
+          eventDeleted: z.boolean().optional(),
+        }),
+        read_at: z.string().nullable(),
+        created_at: z.string(),
+      }),
+    )
+    .transform((records) =>
+      records.map((record, index) => ({
+        ...record,
+        created_at: new Date(
+          Date.now() - index * 86400000 - (60 + index * 47) * 60000,
+        ).toISOString(),
+      })),
+    ),
   family: familySchema,
   events: eventsSchema,
   "event-categories": eventCategoriesSchema,
+  "notification-settings": z.object({
+    pushEnabled: z.boolean(),
+    morningSummaryTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  }),
   "home-settings": homeSettingsSchema,
   invites: invitesSchema,
 };

@@ -129,3 +129,20 @@ describe("CAL-06 CAL-16 SCN-CAL-9~10 D-day 등록", () => {
     );
   });
 });
+
+describe("CAL-11 SCN-CAL-5 알림 시점 입력", () => {
+  it("기본 30분 전을 보여 주고 없음으로 바꿔 저장해요", async () => {
+    render(
+      <EventForm event={event} categories={categories} onSaved={() => {}} />,
+    );
+    const reminder = screen.getByRole("combobox", { name: "알림" });
+    expect(reminder).toHaveValue("30");
+    fireEvent.change(reminder, { target: { value: "none" } });
+    fireEvent.click(screen.getByRole("button", { name: "저장하기" }));
+    await waitFor(() =>
+      expect(onSave).toHaveBeenCalledWith(
+        expect.objectContaining({ remindBefore: null }),
+      ),
+    );
+  });
+});

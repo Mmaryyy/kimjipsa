@@ -33,7 +33,9 @@ cart_items N─0..1 inventory_items;  cart_items N─1 users(added_by, checked_b
 | 챗봇 최소화 여부 | 사용자별 기억 | BOT-01 |
 | 챗봇 기억 on/off | 끄면 새 대화가 요약되어 쌓이지 않음 | BOT-13 |
 
-DEC-009 ① 처리(2026-10-16, 제안안): `push_subscriptions`(`user_id`, `endpoint`, `keys`, `created_at`)와 `notifications`(`user_id`, `family_id`, `kind`, `payload`, `read_at`, `created_at`)를 둔다. 개인 일정 알림의 `payload`에는 일정 내용을 넣지 않는다. 테이블은 알림을 만드는 Phase(P5)에서 추가한다.
+DEC-009 ① 처리(2026-10-16 제안안 승인, 2026-10-21 P5a 구현): `push_subscriptions`(`user_id`, `endpoint`, `keys`, `created_at`)와 `notifications`(`user_id`, `family_id`, `kind`, `payload`, `read_at`, `created_at`)를 둔다. 개인 일정 알림의 `payload`에는 일정 내용을 넣지 않는다. P5a에서 `notifications`에 `id`(uuid PK)와 위 필드를 추가했다. kind는 event_created·event_updated·event_deleted이며 payload는 eventId·actorName·eventTitle(공유 일정만)·eventDeleted(삭제 후 이동 방지)다. 작성 행위자를 제외한 같은 가정 구성원에게 일정 RPC와 같은 트랜잭션에서 생성한다. 개인 일정은 생성하지 않고, 개인으로 전환하면 이전 알림의 eventTitle을 제거한다. 본인·현재 가정의 알림만 조회하고 read_at만 수정할 수 있으며 직접 생성은 허용하지 않는다. 푸시 구독 테이블은 P5b에서 추가한다.
+
+사용자별 알림 설정은 기존 홈 설정과 같은 `users`의 `push_enabled`(boolean, 기본 true), `morning_summary_time`(time, 기본 10:00)에 저장한다. `save_notification_settings` RPC는 본인 설정만 갱신하며 분 단위 HH:mm만 허용한다. P5a에서는 푸시 구독이나 발송을 하지 않는다.
 
 ### families
 | 필드 | 설명 | 출처 |
@@ -77,11 +79,11 @@ DEC-009 ① 처리(2026-10-16, 제안안): `push_subscriptions`(`user_id`, `endp
 | --- | --- | --- |
 | `title`, `place`, `memo` | 제목 필수, 장소·메모 선택 | 개인 일정이면 배우자에게 비공개 |
 | `category_id` | 카테고리 | 카테고리가 일정 성격을 드러낼 수 있어 내용 쪽에 둠 |
-| `remind_before` | 시작 전 알림(분) | 기본 30 |
+| `remind_before` | 시작 전 알림(분) | 기본 30, 기존 일정도 30분 전으로 채움. null은 없음, 허용 값 10·30·60·1440 |
 | `dday_style` | `normal` / `celebrate` | `dday`일 때만 사용 |
 | `celebrate_message` | 축하 문구 | 선택. 비어 있으면 기본 문구(DEC-009 ②) |
 
-시간 미정 일정은 달력의 그날 칸 맨 아래에 시각 없이 표시한다(종일 일정과 별개). 시작 시각이 없는 일정은 시작 전 알림(`remind_before`)을 보낼 기준이 없다 → P5에서 정한다.
+시간 미정 일정은 달력의 그날 칸 맨 아래에 시각 없이 표시한다(종일 일정과 별개). 종일·시간 미정 일정의 시작 전 알림은 그날 00:00을 기준으로 한다(2026-10-21 사용자 결정). P5a는 저장만 하고 발송은 P5b에서 구현한다.
 
 파생(저장 안 함): D-day 남은 일수, N주년(등록 연도 기준, 등록한 해는 표시 안 함).
 

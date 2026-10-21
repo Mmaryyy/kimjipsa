@@ -130,7 +130,10 @@ function CalendarContent() {
   const params = useSearchParams();
   const parsedDate = z.iso.date().safeParse(params?.get("date"));
   const initialDate = parsedDate.success ? parsedDate.data : undefined;
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const parsedEvent = z.uuid().safeParse(params?.get("event"));
+  const [selectedId, setSelectedId] = useState<string | null>(
+    parsedEvent.success ? parsedEvent.data : null,
+  );
   const [creating, setCreating] = useState(params?.get("create") === "1");
   return (
     <div data-od-id="calendar-main">

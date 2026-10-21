@@ -15,6 +15,7 @@ import {
   type EventCategory,
   type EventInput,
   eventDateInput,
+  reminderOptions,
 } from "@/entities/event";
 import {
   Button,
@@ -36,6 +37,7 @@ function initialValues(
 ): EventFormInput {
   const now = new Date();
   return {
+    remindBefore: event?.remindBefore === undefined ? 30 : event.remindBefore,
     kind: event?.kind ?? "event",
     ddayStyle: event?.details?.ddayStyle ?? "normal",
     celebrateMessage: event?.details?.celebrateMessage ?? "",
@@ -229,15 +231,42 @@ export function EventForm({
             시각을 모두 비우면 시간 미정으로 저장돼요.
           </Text>
         )}
-        <div
-          className="flex min-h-11 items-center justify-between gap-3"
-          data-od-id="f-remind"
+        <FormFieldRow
+          label="알림"
+          htmlFor="event-remind"
+          invalid={!!errors.remindBefore}
+          error={errors.remindBefore?.message}
         >
-          <span>알림</span>
-          <Text variant="caption" className="text-muted-foreground">
-            준비 중
-          </Text>
-        </div>
+          {(props) => (
+            <Controller
+              control={control}
+              name="remindBefore"
+              render={({ field }) => (
+                <select
+                  {...props}
+                  data-od-id="f-remind"
+                  value={field.value === null ? "none" : field.value}
+                  onChange={(event) =>
+                    field.onChange(
+                      event.target.value === "none"
+                        ? null
+                        : Number(event.target.value),
+                    )
+                  }
+                >
+                  {reminderOptions.map((option) => (
+                    <option
+                      key={String(option.value)}
+                      value={option.value ?? "none"}
+                    >
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              )}
+            />
+          )}
+        </FormFieldRow>
         <GroupLabel>분류</GroupLabel>
         <FormFieldRow
           label="카테고리"

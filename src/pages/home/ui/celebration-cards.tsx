@@ -9,6 +9,7 @@ import {
 import { X } from "lucide-react";
 import { format } from "date-fns";
 import { TextButton, ErrorState, Text } from "@/shared/ui";
+import { cn } from "@/shared/lib";
 import { useConfettiBurst } from "../model/use-confetti-burst";
 function CelebrationCard({
   event,
@@ -27,7 +28,10 @@ function CelebrationCard({
   return (
     <article
       ref={bannerRef}
-      className="relative overflow-hidden bg-[var(--fill-quaternary)] p-4 pt-4.5 rounded-sm"
+      className={cn([
+        "relative overflow-hidden bg-[var(--fill-quaternary)] p-4 pt-4.5 rounded-sm",
+        "lg:flex lg:min-h-[160px] lg:flex-col lg:justify-center lg:px-6",
+      ])}
       aria-label={`${event.details?.title} 축하`}
     >
       <Text
@@ -37,15 +41,22 @@ function CelebrationCard({
       >
         오늘 · {format(kstDate(date), "yyyy년 M월 d일")}
       </Text>
-      <Text as="h2" variant="title" className="mt-0.5 pr-6">
+      <Text as="h2" variant="title" className={cn(["mt-0.5 pr-6", "lg:mt-2"])}>
         {event.details?.title}
         {anniversary > 0 && ` ${anniversary}주년`}
       </Text>
-      <Text as="p" variant="body-sm" className="mt-1 text-muted-foreground">
+      <Text
+        as="p"
+        variant="body-sm"
+        className={cn(["mt-1 text-muted-foreground", "lg:mt-2.5"])}
+      >
         {event.details?.celebrateMessage || "소중한 날을 축하해요!"}
       </Text>
       <TextButton
-        className="absolute right-2 top-2 p-1 min-h-0!"
+        className={cn([
+          "absolute right-2 top-2 p-1 min-h-0!",
+          "lg:right-4 lg:top-4",
+        ])}
         aria-label="오늘 축하 닫기"
         onClick={onDismiss}
         disabled={dismissing}

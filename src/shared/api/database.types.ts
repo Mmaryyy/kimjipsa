@@ -22,6 +22,8 @@ type UserRow<Provider extends string> = {
   terms_accepted_at: string;
   privacy_accepted_at: string;
   terms_version: string;
+  push_enabled: boolean;
+  morning_summary_time: string;
   home_view: string;
   upcoming_enabled: boolean;
   upcoming_count: number;
@@ -46,6 +48,26 @@ export type Database<
 > = {
   public: {
     Tables: {
+      notifications: Table<
+        {
+          id: string;
+          user_id: string;
+          family_id: string;
+          kind: string;
+          payload: Json;
+          read_at: string | null;
+          created_at: string;
+        },
+        {
+          user_id: string;
+          family_id: string;
+          kind: string;
+          payload: Json;
+          read_at?: string | null;
+          created_at?: string;
+          id?: string;
+        }
+      >;
       event_categories: Table<
         {
           id: string;
@@ -99,6 +121,7 @@ export type Database<
             category_id: string;
             dday_style: string;
             celebrate_message: string;
+            remind_before: number | null;
           },
           {
             event_id: string;
@@ -109,6 +132,7 @@ export type Database<
             category_id: string;
             dday_style?: string;
             celebrate_message?: string;
+            remind_before?: number | null;
           }
         >,
         "Relationships"
@@ -131,12 +155,20 @@ export type Database<
         UserRow<Provider>,
         Omit<
           UserRow<Provider>,
-          "home_view" | "upcoming_enabled" | "upcoming_count"
+          | "home_view"
+          | "upcoming_enabled"
+          | "upcoming_count"
+          | "push_enabled"
+          | "morning_summary_time"
         > &
           Partial<
             Pick<
               UserRow<Provider>,
-              "home_view" | "upcoming_enabled" | "upcoming_count"
+              | "home_view"
+              | "upcoming_enabled"
+              | "upcoming_count"
+              | "push_enabled"
+              | "morning_summary_time"
             >
           >
       >;
@@ -169,11 +201,16 @@ export type Database<
           event_start_time: string | null;
           event_end_time: string | null;
           event_is_all_day: boolean;
+          event_remind_before?: number | null;
           event_kind?: string;
           event_dday_style?: string;
           event_celebrate_message?: string;
         };
         Returns: string;
+      };
+      save_notification_settings: {
+        Args: { push_enabled: boolean; morning_summary_time: string };
+        Returns: undefined;
       };
       save_home_settings: {
         Args: {

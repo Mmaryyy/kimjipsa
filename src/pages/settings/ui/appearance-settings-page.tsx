@@ -3,6 +3,7 @@ import { cn } from "@/shared/lib";
 import Link from "next/link";
 import { viewportPath } from "@/shared/config";
 
+import { NotificationSettings } from "./notification-settings";
 import { HomeSettings } from "./home-settings";
 import { useSignOut } from "@/features/account";
 import { AccountSettings } from "./account-settings";
@@ -47,11 +48,8 @@ export function AppearanceSettingsPage() {
     >
       <PageHeader odId="settings" title="설정" />
       <AccountSettings />
-      <PlannedSettingsSection title="알림" odId="set-notify" />
+      <NotificationSettings />
       <HomeSettings />
-      <HouseholdSettings />
-      <PlannedSettingsSection title="AI 집사" odId="set-ai" />
-      <PlannedSettingsSection title="기억" odId="set-memory" />
       <section data-od-id="set-appearance">
         <GroupLabel>화면</GroupLabel>
         <div className="flex min-h-11 items-center justify-between gap-3">
@@ -59,6 +57,10 @@ export function AppearanceSettingsPage() {
           <ThemeModeSelector />
         </div>
       </section>
+      <AccountSettings section="members" />
+      <HouseholdSettings />
+      <PlannedSettingsSection title="AI 집사" odId="set-ai" />
+      <PlannedSettingsSection title="기억" odId="set-memory" />
       <section
         data-od-id="set-account"
         aria-labelledby="account-settings-title"

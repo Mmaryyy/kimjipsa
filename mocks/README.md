@@ -100,3 +100,5 @@ P4.5는 새 서비스 화면을 만들지 않고 기존 P1~P4 화면에 데이�
 실서비스는 `.env.local`의 `DATA_GO_KR_SERVICE_KEY`(일반 키 또는 URL 인코딩 키)를 사용하고,
 키 없음·통신 실패·응답 검증 실패 시 공휴일 없이 달력이 동작한다.
 연도 입력은 1900~2100의 네 자리 정수만 받는다.
+
+P5a: `notifications.json`은 공유 일정 추가·변경·삭제 알림, `notification-settings.json`은 사용자별 알림 설정을 제공한다. `events.json`의 `remind_before`는 null·10·30·60·1440분 예시다. 알림·읽음·설정 변경은 목업 세션과 사용자별로 유지된다.

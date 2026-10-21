@@ -2,7 +2,8 @@
 import { cn } from "@/shared/lib";
 
 import { Dialog } from "radix-ui";
-import type { ReactNode } from "react";
+import { X } from "lucide-react";
+import type { ComponentProps, ReactNode } from "react";
 import { TextButton } from "./text-button";
 import type { OverlayProps } from "./overlay.types";
 export function Sheet({
@@ -18,6 +19,9 @@ export function Sheet({
   closePosition = "start",
   odId,
   closeOdId,
+  className,
+  closeIcon = false,
+  onCloseAutoFocus,
 }: OverlayProps & {
   children: ReactNode;
   action?: ReactNode;
@@ -25,6 +29,9 @@ export function Sheet({
   closePosition?: "start" | "end";
   odId?: string;
   closeOdId?: string;
+  className?: string;
+  closeIcon?: boolean;
+  onCloseAutoFocus?: ComponentProps<typeof Dialog.Content>["onCloseAutoFocus"];
 }) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -38,7 +45,9 @@ export function Sheet({
             "[overflow-wrap:anywhere] shadow-[var(--shadow-sheet)] animate-sheet-in md:top-1/2",
             "md:bottom-auto md:left-1/2 md:max-h-[var(--sheet-desktop-max-height)] md:w-130",
             "md:-translate-1/2 motion-reduce:animate-none",
+            className,
           ])}
+          onCloseAutoFocus={onCloseAutoFocus}
           data-theme={theme}
           data-od-id={odId}
         >
@@ -50,16 +59,28 @@ export function Sheet({
           >
             {closePosition === "start" && (
               <Dialog.Close asChild>
-                <TextButton data-od-id={closeOdId}>{closeLabel}</TextButton>
+                <TextButton data-od-id={closeOdId} aria-label={closeLabel}>
+                  {closeIcon ? (
+                    <X aria-hidden className="size-5" />
+                  ) : (
+                    closeLabel
+                  )}
+                </TextButton>
               </Dialog.Close>
             )}
             {closePosition === "end" && <div />}
             <Dialog.Title className="text-headline">{title}</Dialog.Title>
-            <div>
+            <div className={closeIcon ? "flex items-center gap-3" : undefined}>
               {action}
               {closePosition === "end" && (
                 <Dialog.Close asChild>
-                  <TextButton data-od-id={closeOdId}>{closeLabel}</TextButton>
+                  <TextButton data-od-id={closeOdId} aria-label={closeLabel}>
+                    {closeIcon ? (
+                      <X aria-hidden className="size-5" />
+                    ) : (
+                      closeLabel
+                    )}
+                  </TextButton>
                 </Dialog.Close>
               )}
             </div>

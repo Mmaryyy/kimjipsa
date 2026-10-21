@@ -49,3 +49,5 @@ export {
   dismissalsQueryOptions,
 } from "./model/use-events";
 export { EventListSkeleton, EventRowsSkeleton } from "./ui/event-list-skeleton";
+
+export { reminderOptions, reminderLabel } from "./model/reminder.constants";

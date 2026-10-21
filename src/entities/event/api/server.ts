@@ -1,4 +1,5 @@
 import "server-only";
+import { notifyMockEventChange } from "./mock-notifications";
 import { z } from "zod";
 import { tz } from "@date-fns/tz";
 import { format } from "date-fns";
@@ -49,7 +50,9 @@ async function eventContext(auth?: AuthContext) {
   return { client, userId: user.id, familyId: membership.data.family_id };
 }
 const selection =
-  "id, owner_id, visibility, start_date, end_date, start_time, end_time, is_all_day, kind, event_details(title, place, memo, category_id, dday_style, celebrate_message)";
+  "id, owner_id, visibility, start_date, end_date, start_time, end_time, " +
+  "is_all_day, kind, " +
+  "event_details(remind_before, title, place, memo, category_id, dday_style, celebrate_message)";
 const recordSchema = z.object({
   id: z.uuid(),
   owner_id: z.uuid().nullable(),
@@ -62,6 +65,13 @@ const recordSchema = z.object({
   kind: z.enum(["event", "dday"]),
   event_details: z
     .object({
+      remind_before: z.union([
+        z.literal(10),
+        z.literal(30),
+        z.literal(60),
+        z.literal(1440),
+        z.null(),
+      ]),
       dday_style: z.enum(["normal", "celebrate"]),
       celebrate_message: z.string(),
       title: z.string(),
@@ -186,6 +196,7 @@ export async function saveEvent(
       is_all_day: event.isAllDay,
       kind: event.kind,
       event_details: {
+        remind_before: event.remindBefore,
         title: event.title,
         place: event.place,
         memo: event.memo,
@@ -194,6 +205,11 @@ export async function saveEvent(
         celebrate_message: event.celebrateMessage,
       },
     };
+    await notifyMockEventChange(
+      record,
+      target ? "event_updated" : "event_created",
+      event.title,
+    );
     if (target) Object.assign(target, record);
     else events.push(record);
     return record.id;
@@ -213,6 +229,7 @@ export async function saveEvent(
       throw new ApiError("event_forbidden", errors.event_forbidden[1], 403);
   }
   const { data, error } = await client.rpc("save_event", {
+    event_remind_before: event.remindBefore,
     event_kind: event.kind,
     event_dday_style: event.ddayStyle,
     event_celebrate_message: event.celebrateMessage,
@@ -229,6 +246,12 @@ export async function saveEvent(
     event_is_all_day: event.isAllDay,
   });
   throwDatabaseError(error, errors);
+  if (data === null)
+    throw new ApiError(
+      "database_error",
+      "저장하지 못했어요. 다시 시도해 주세요.",
+      500,
+    );
   return data;
 }
 export async function deleteEvent(id: string, auth?: AuthContext) {
@@ -236,6 +259,11 @@ export async function deleteEvent(id: string, auth?: AuthContext) {
   if (mock) {
     const events = await mockEvents();
     const target = requireEditableMockEvent(events, id, mock.userId);
+    await notifyMockEventChange(
+      target,
+      "event_deleted",
+      target.event_details?.title ?? "공유 일정",
+    );
     events.splice(events.indexOf(target as (typeof events)[number]), 1);
     for (const [key, value] of mock.values) {
       if (key.startsWith("dday-dismissals:") && Array.isArray(value))
