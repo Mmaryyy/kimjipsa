@@ -95,3 +95,16 @@ describe("CAL-06 CAL-16 SCN-CAL-9 예정 D-day 목록", () => {
     expect(screen.queryByRole("list")).not.toBeInTheDocument();
   });
 });
+
+it("CAL-06 SCN-CAL-9 홈과 캘린더 D-day 섹션에서 당일 기념일을 유지해요", () => {
+  render(
+    <DdayOverview
+      events={[dday("오늘 기념일", "2020-10-19")]}
+      categories={[]}
+      instant={instant}
+    />,
+  );
+  expect(screen.getByText("오늘 기념일")).toBeVisible();
+  expect(screen.getByText("D-Day")).toBeVisible();
+  expect(screen.getByText(/6주년/)).toBeVisible();
+});

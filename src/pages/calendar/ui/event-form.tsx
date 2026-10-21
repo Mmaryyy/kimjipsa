@@ -1,20 +1,11 @@
 "use client";
-import { cn } from "@/shared/lib";
-
-import { useCallback, type FormEvent } from "react";
-import {
-  Controller,
-  useForm,
-  useWatch,
-  type UseFormRegister,
-  type FieldErrors,
-} from "react-hook-form";
+import { useCallback, useEffect, type FormEvent } from "react";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   type CalendarEvent,
   type EventCategory,
   type EventInput,
-  eventDateInput,
   reminderOptions,
 } from "@/entities/event";
 import {
@@ -30,12 +21,14 @@ import {
   type EventFormInput,
 } from "../model/event-form.schema";
 import { useEventEditor } from "../model/use-event-editor";
+import { defaultEventRange } from "../lib/event-wheel.utils";
+import { EventDateFields } from "./event-date-fields";
 function initialValues(
   event: CalendarEvent | undefined,
   categories: EventCategory[],
   initialDate?: string,
 ): EventFormInput {
-  const now = new Date();
+  const defaults = defaultEventRange(initialDate);
   return {
     remindBefore: event?.remindBefore === undefined ? 30 : event.remindBefore,
     kind: event?.kind ?? "event",
@@ -47,77 +40,29 @@ function initialValues(
     categoryId: event?.details?.categoryId ?? categories[0]?.id ?? "",
     visibility: event?.visibility ?? "shared",
     isAllDay: event?.isAllDay ?? false,
-    startDate:
-      event?.startDate ?? initialDate ?? eventDateInput(now.toISOString()),
-    endDate: event?.endDate ?? initialDate ?? eventDateInput(now.toISOString()),
-    startTime: event?.startTime ?? "",
-    endTime: event?.endTime ?? "",
+    isTimeUnknown: Boolean(
+      event && !event.isAllDay && !event.startTime && !event.endTime,
+    ),
+    startDate: event?.startDate ?? defaults.startDate,
+    endDate: event?.endDate ?? defaults.endDate,
+    startTime: event ? (event.startTime ?? "") : defaults.startTime,
+    endTime: event ? (event.endTime ?? "") : defaults.endTime,
   };
 }
-function EventDateField({
-  prefix,
-  isAllDay,
-  register,
-  errors,
-}: {
-  prefix: "start" | "end";
-  isAllDay: boolean;
-  register: UseFormRegister<EventFormInput>;
-  errors: FieldErrors<EventFormInput>;
-}) {
-  const dateField = prefix === "start" ? "startDate" : "endDate";
-  const timeField = prefix === "start" ? "startTime" : "endTime";
-  const label = prefix === "start" ? "시작" : "종료";
-  const error = errors[dateField]?.message ?? errors[timeField]?.message;
-  return (
-    <FormFieldRow
-      label={label}
-      htmlFor={`event-${prefix}`}
-      invalid={Boolean(error)}
-      error={error}
-    >
-      {(props) => (
-        <div
-          className={cn([
-            "flex min-w-0 items-center justify-end gap-2 [&_input[type=date]]:min-w-0",
-            "[&_input[type=date]]:w-32 [&_input[type=time]]:min-w-0 [&_input[type=time]]:w-22",
-          ])}
-        >
-          <input
-            {...props}
-            data-od-id={`f-${prefix}-date`}
-            {...register(dateField)}
-            type="date"
-          />
-          {!isAllDay && (
-            <input
-              id={`event-${prefix}-time`}
-              aria-label={`${label} 시각 (선택)`}
-              aria-invalid={Boolean(errors[timeField]) || undefined}
-              aria-describedby={props["aria-describedby"]}
-              data-od-id={`f-${prefix}-time`}
-              {...register(timeField)}
-              type="time"
-            />
-          )}
-        </div>
-      )}
-    </FormFieldRow>
-  );
-}
-
 export function EventForm({
   event,
   categories,
   onSaved,
   formId,
   initialDate,
+  onDirtyChange,
 }: {
   event?: CalendarEvent;
   categories: EventCategory[];
   onSaved: () => void;
   formId?: string;
   initialDate?: string;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const { onSave } = useEventEditor(event?.id, onSaved);
   const {
@@ -126,21 +71,38 @@ export function EventForm({
     handleSubmit,
     setError,
     setValue,
-    formState: { errors, isSubmitting },
+    getValues,
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<EventFormInput, unknown, EventInput>({
     resolver: zodResolver(eventFormSchema),
     defaultValues: initialValues(event, categories, initialDate),
   });
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
   const isAllDay = useWatch({ control, name: "isAllDay" });
+  const isTimeUnknown = useWatch({ control, name: "isTimeUnknown" });
   const kind = useWatch({ control, name: "kind" });
   const ddayStyle = useWatch({ control, name: "ddayStyle" });
   const onAllDayChange = useCallback(
     (checked: boolean) => {
       if (checked) {
+        setValue("isTimeUnknown", false, { shouldDirty: true });
         setValue("startTime", "", { shouldDirty: true });
         setValue("endTime", "", { shouldDirty: true });
       }
       setValue("isAllDay", checked, { shouldDirty: true });
+    },
+    [setValue],
+  );
+  const onTimeUnknownChange = useCallback(
+    (checked: boolean) => {
+      setValue("isTimeUnknown", checked, { shouldDirty: true });
+      if (checked) {
+        setValue("isAllDay", false, { shouldDirty: true });
+        setValue("startTime", "", { shouldDirty: true });
+        setValue("endTime", "", { shouldDirty: true });
+      }
     },
     [setValue],
   );
@@ -212,23 +174,30 @@ export function EventForm({
             )}
           </FormFieldRow>
         )}
-        <EventDateField
-          prefix="start"
-          isAllDay={isAllDay || kind === "dday"}
-          register={register}
-          errors={errors}
-        />
         {kind !== "dday" && (
-          <EventDateField
-            prefix="end"
-            isAllDay={isAllDay}
-            register={register}
-            errors={errors}
-          />
+          <FormFieldRow label="시간 미정" htmlFor="event-time-unknown">
+            {(props) => (
+              <Switch
+                {...props}
+                data-od-id="f-time-unknown"
+                checked={isTimeUnknown}
+                onCheckedChange={onTimeUnknownChange}
+              />
+            )}
+          </FormFieldRow>
         )}
-        {kind !== "dday" && !isAllDay && (
+        <EventDateFields
+          control={control}
+          register={register}
+          getValues={getValues}
+          setValue={setValue}
+          errors={errors}
+          dateOnly={isAllDay || isTimeUnknown || kind === "dday"}
+          singleDate={kind === "dday"}
+        />
+        {kind !== "dday" && !isAllDay && !isTimeUnknown && (
           <Text as="p" variant="caption" className="text-muted-foreground">
-            시각을 모두 비우면 시간 미정으로 저장돼요.
+            시각을 정하지 않았다면 시간 미정을 켜 주세요.
           </Text>
         )}
         <FormFieldRow

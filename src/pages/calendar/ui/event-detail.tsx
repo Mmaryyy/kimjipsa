@@ -21,13 +21,18 @@ import { EventForm } from "./event-form";
 export function EventDetail({
   id,
   onClose,
+  editing,
+  onEditingChange,
+  onDirtyChange,
 }: {
   id: string;
   onClose: () => void;
+  editing: boolean;
+  onEditingChange: (editing: boolean) => void;
+  onDirtyChange: (dirty: boolean) => void;
 }) {
   const event = useEvent(id);
   const categories = useEventCategories();
-  const [editing, setEditing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const { onDelete, deleting, deleteError } = useEventEditor(id, onClose);
   if (event.isError)
@@ -61,6 +66,7 @@ export function EventDetail({
   if (editing && event.data.canEdit)
     return (
       <EventForm
+        onDirtyChange={onDirtyChange}
         key={id}
         event={event.data}
         categories={categories.data}
@@ -110,7 +116,7 @@ export function EventDetail({
       </dl>
       {event.data.canEdit && (
         <div className="flex gap-3">
-          <Button variant="gray" onClick={() => setEditing(true)}>
+          <Button variant="gray" onClick={() => onEditingChange(true)}>
             수정하기
           </Button>
           <TextButton

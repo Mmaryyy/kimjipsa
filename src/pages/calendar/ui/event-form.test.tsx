@@ -61,7 +61,7 @@ describe("CAL-01~03 SCN-CAL-1 일정 입력", () => {
     ).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "저장하기" })).toBeEnabled();
   });
-  it("종일을 켰다가 꺼도 시각 없이 저장해요", async () => {
+  it("종일을 켰다가 끄면 시작 시각을 입력해야 저장해요", async () => {
     render(
       <EventForm
         event={{ ...event, canChangeVisibility: true }}
@@ -76,17 +76,8 @@ describe("CAL-01~03 SCN-CAL-1 일정 입력", () => {
     fireEvent.click(allDay);
     fireEvent.click(allDay);
     fireEvent.click(screen.getByRole("button", { name: "저장하기" }));
-    await waitFor(() =>
-      expect(onSave).toHaveBeenCalledWith(
-        expect.objectContaining({
-          startDate: "2026-10-16",
-          endDate: "2026-10-16",
-          startTime: null,
-          endTime: null,
-          isAllDay: false,
-        }),
-      ),
-    );
+    expect(await screen.findByText("시작 시각을 입력해 주세요.")).toBeVisible();
+    expect(onSave).not.toHaveBeenCalled();
   });
 });
 
@@ -110,7 +101,7 @@ describe("CAL-06 CAL-16 SCN-CAL-9~10 D-day 등록", () => {
     expect(
       screen.queryByLabelText("종료", { exact: true }),
     ).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("시작 시각 (선택)")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("시작 시각")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("종료 시각 (선택)")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "저장하기" }));
     await waitFor(() =>
@@ -144,5 +135,134 @@ describe("CAL-11 SCN-CAL-5 알림 시점 입력", () => {
         expect.objectContaining({ remindBefore: null }),
       ),
     );
+  });
+});
+
+describe("CAL-01 CAL-02 SCN-CAL-1 P5.5 입력 방식", () => {
+  const originalMatchMedia = window.matchMedia;
+  afterEach(() => vi.stubGlobal("matchMedia", originalMatchMedia));
+
+  function mockPointer(coarse: boolean) {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn((query: string) => ({
+        matches: query === "(pointer: coarse)" && coarse,
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    );
+  }
+
+  it("fine에서는 좁은 화면도 날짜와 시각을 직접 입력해요", () => {
+    mockPointer(false);
+    render(
+      <EventForm event={event} categories={categories} onSaved={() => {}} />,
+    );
+    expect(screen.getByLabelText("시작", { exact: true })).toHaveAttribute(
+      "type",
+      "date",
+    );
+    expect(screen.getByLabelText("시작 시각")).toHaveAttribute("type", "time");
+  });
+
+  it("직접 입력에서도 시작 시각을 옮기면 종료가 기존 길이를 유지해요", () => {
+    mockPointer(false);
+    render(
+      <EventForm event={event} categories={categories} onSaved={() => {}} />,
+    );
+    fireEvent.change(screen.getByLabelText("시작 시각"), {
+      target: { value: "23:30" },
+    });
+    expect(screen.getByLabelText("종료 시각 (선택)")).toHaveValue("00:30");
+    expect(screen.getByLabelText("종료", { exact: true })).toHaveValue(
+      "2026-10-17",
+    );
+  });
+
+  it("coarse에서는 폭과 관계없이 시트 여는 버튼을 보여요", () => {
+    mockPointer(true);
+    render(
+      <EventForm event={event} categories={categories} onSaved={() => {}} />,
+    );
+    expect(
+      screen.getByRole("button", { name: "시작, 2026년 10월 16일, 오전 9:00" }),
+    ).toHaveAttribute("aria-haspopup", "dialog");
+    expect(screen.queryByLabelText("시작 시각")).not.toBeInTheDocument();
+  });
+
+  it("새 일정은 다음 정시와 한 시간 뒤 종료를 채우고 시간 미정은 꺼져 있어요", () => {
+    mockPointer(false);
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-21T23:30:00+09:00"));
+    try {
+      render(<EventForm categories={categories} onSaved={() => {}} />);
+      expect(screen.getByLabelText("시작", { exact: true })).toHaveValue(
+        "2026-10-22",
+      );
+      expect(screen.getByLabelText("시작 시각")).toHaveValue("00:00");
+      expect(screen.getByLabelText("종료 시각 (선택)")).toHaveValue("01:00");
+      expect(
+        screen.getByRole("switch", { name: "시간 미정" }),
+      ).not.toBeChecked();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("시간 미정을 켠 동안 안내를 숨기고 끄면 빈 시작 시각 저장을 막아요", async () => {
+    mockPointer(false);
+    render(
+      <EventForm event={event} categories={categories} onSaved={() => {}} />,
+    );
+    const toggle = screen.getByRole("switch", { name: "시간 미정" });
+    fireEvent.click(toggle);
+    expect(
+      screen.queryByText("시각을 정하지 않았다면 시간 미정을 켜 주세요."),
+    ).not.toBeInTheDocument();
+    fireEvent.click(toggle);
+    fireEvent.click(screen.getByRole("button", { name: "저장하기" }));
+    expect(await screen.findByText("시작 시각을 입력해 주세요.")).toBeVisible();
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it("시간 미정을 저장하고 다시 열면 스위치가 켜져 있어요", async () => {
+    mockPointer(false);
+    const form = render(
+      <EventForm event={event} categories={categories} onSaved={() => {}} />,
+    );
+    fireEvent.click(screen.getByRole("switch", { name: "시간 미정" }));
+    expect(screen.queryByLabelText("시작 시각")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "저장하기" }));
+    await waitFor(() =>
+      expect(onSave).toHaveBeenCalledWith(
+        expect.objectContaining({
+          startTime: null,
+          endTime: null,
+          isAllDay: false,
+        }),
+      ),
+    );
+    form.unmount();
+    render(
+      <EventForm
+        event={{ ...event, startTime: null, endTime: null }}
+        categories={categories}
+        onSaved={() => {}}
+      />,
+    );
+    expect(screen.getByRole("switch", { name: "시간 미정" })).toBeChecked();
+  });
+
+  it("종일과 시간 미정은 서로를 꺼요", () => {
+    mockPointer(false);
+    render(
+      <EventForm event={event} categories={categories} onSaved={() => {}} />,
+    );
+    fireEvent.click(screen.getByRole("switch", { name: "종일" }));
+    fireEvent.click(screen.getByRole("switch", { name: "시간 미정" }));
+    expect(screen.getByRole("switch", { name: "종일" })).not.toBeChecked();
+    fireEvent.click(screen.getByRole("switch", { name: "종일" }));
+    expect(screen.getByRole("switch", { name: "시간 미정" })).not.toBeChecked();
   });
 });

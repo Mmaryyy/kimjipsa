@@ -15,13 +15,8 @@ import {
   useCalendarClock,
 } from "@/entities/event";
 import { eventRoutes } from "@/shared/config";
-import {
-  EmptyState,
-  ErrorState,
-  ListSkeleton,
-  TextButton,
-  Sheet,
-} from "@/shared/ui";
+import { EmptyState, ErrorState, ListSkeleton, TextButton } from "@/shared/ui";
+import { EventEditorSheet } from "./event-editor-sheet";
 import { EventForm } from "./event-form";
 import { EventDetail } from "./event-detail";
 function EventList({
@@ -97,9 +92,11 @@ function EventList({
 function NewEvent({
   onSaved,
   initialDate,
+  onDirtyChange,
 }: {
   onSaved: () => void;
   initialDate?: string;
+  onDirtyChange: (dirty: boolean) => void;
 }) {
   const categories = useEventCategories();
   if (categories.isError)
@@ -119,6 +116,7 @@ function NewEvent({
     );
   return (
     <EventForm
+      onDirtyChange={onDirtyChange}
       formId="new-event-form"
       initialDate={initialDate}
       categories={categories.data}
@@ -135,6 +133,17 @@ function CalendarContent() {
     parsedEvent.success ? parsedEvent.data : null,
   );
   const [creating, setCreating] = useState(params?.get("create") === "1");
+  const [dirty, setDirty] = useState(false);
+  const [editing, setEditing] = useState(false);
+  function closeNew() {
+    setDirty(false);
+    setCreating(false);
+  }
+  function closeDetail() {
+    setDirty(false);
+    setEditing(false);
+    setSelectedId(null);
+  }
   return (
     <div data-od-id="calendar-main">
       <EventList onOpen={setSelectedId} onAdd={() => setCreating(true)} />
@@ -144,9 +153,12 @@ function CalendarContent() {
       >
         카테고리 관리하기
       </Link>
-      <Sheet
+      <EventEditorSheet
+        dirty={dirty}
         open={creating}
-        onOpenChange={setCreating}
+        onOpenChange={(open) => {
+          if (!open) closeNew();
+        }}
         title="새 일정"
         odId="sheet-new-event"
         closeLabel="취소"
@@ -161,14 +173,17 @@ function CalendarContent() {
         {creating && (
           <NewEvent
             initialDate={initialDate}
-            onSaved={() => setCreating(false)}
+            onDirtyChange={setDirty}
+            onSaved={closeNew}
           />
         )}
-      </Sheet>
-      <Sheet
+      </EventEditorSheet>
+      <EventEditorSheet
+        dirty={dirty}
+        editing={editing}
         open={selectedId !== null}
         onOpenChange={(open) => {
-          if (!open) setSelectedId(null);
+          if (!open) closeDetail();
         }}
         title="일정"
         odId="sheet-event-detail"
@@ -181,10 +196,13 @@ function CalendarContent() {
           <EventDetail
             key={selectedId}
             id={selectedId}
-            onClose={() => setSelectedId(null)}
+            onClose={closeDetail}
+            editing={editing}
+            onEditingChange={setEditing}
+            onDirtyChange={setDirty}
           />
         )}
-      </Sheet>
+      </EventEditorSheet>
     </div>
   );
 }

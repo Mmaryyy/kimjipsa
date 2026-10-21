@@ -69,7 +69,7 @@ export function EventOccurrenceRow({
     );
   let metadata = [
     event.startDate !== event.endDate &&
-      `${occurrence.startDate} ~ ${occurrence.endDate}`,
+      `${event.startDate} ~ ${event.endDate}`,
     event.details?.place,
     privateEvent ? owner && `${owner}님` : "둘 다",
   ]
@@ -93,7 +93,7 @@ export function EventOccurrenceRow({
       .join(" · ");
   }
   const time =
-    event.isAllDay || date > occurrence.startDate
+    event.isAllDay || date > event.startDate
       ? "종일"
       : (event.startTime ?? "시간 미정");
   return (

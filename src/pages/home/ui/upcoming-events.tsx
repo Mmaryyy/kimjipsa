@@ -6,12 +6,11 @@ import {
 } from "@/entities/event";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
-import { EmptyState, List, SectionHeader, GroupLabel, Text } from "@/shared/ui";
+import { EmptyState, List, SectionHeader, GroupLabel } from "@/shared/ui";
 export function UpcomingEvents({
   occurrences,
   categories,
   ownerNames,
-  count,
 }: {
   occurrences: EventOccurrence[];
   categories: EventCategory[];
@@ -21,15 +20,7 @@ export function UpcomingEvents({
   const dates = [...new Set(occurrences.map(({ startDate }) => startDate))];
   return (
     <section data-od-id="upcoming-widget" aria-labelledby="upcoming-title">
-      <SectionHeader
-        id="upcoming-title"
-        title="다가오는 일정"
-        action={
-          <Text variant="caption" className="text-muted-foreground">
-            {count}개
-          </Text>
-        }
-      />
+      <SectionHeader id="upcoming-title" title="다가오는 일정" />
       {dates.length === 0 && <EmptyState message="다가오는 일정이 없어요." />}
       {dates.map((date) => (
         <div key={date}>

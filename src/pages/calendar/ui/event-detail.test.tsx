@@ -42,7 +42,13 @@ function renderDetail() {
         new QueryClient({ defaultOptions: { queries: { retry: false } } })
       }
     >
-      <EventDetail id="event" onClose={vi.fn()} />
+      <EventDetail
+        id="event"
+        onClose={vi.fn()}
+        editing={false}
+        onEditingChange={vi.fn()}
+        onDirtyChange={vi.fn()}
+      />
     </QueryClientProvider>,
   );
 }

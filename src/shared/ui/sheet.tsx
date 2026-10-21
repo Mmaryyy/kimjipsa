@@ -22,6 +22,9 @@ export function Sheet({
   className,
   closeIcon = false,
   onCloseAutoFocus,
+  onOpenAutoFocus,
+  hideHeader = false,
+  overlayClassName,
 }: OverlayProps & {
   children: ReactNode;
   action?: ReactNode;
@@ -31,13 +34,16 @@ export function Sheet({
   closeOdId?: string;
   className?: string;
   closeIcon?: boolean;
+  hideHeader?: boolean;
+  overlayClassName?: string;
+  onOpenAutoFocus?: ComponentProps<typeof Dialog.Content>["onOpenAutoFocus"];
   onCloseAutoFocus?: ComponentProps<typeof Dialog.Content>["onCloseAutoFocus"];
 }) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       {trigger && <Dialog.Trigger asChild>{trigger}</Dialog.Trigger>}
       <Dialog.Portal>
-        <Dialog.Overlay className="kj-overlay" />
+        <Dialog.Overlay className={cn("kj-overlay", overlayClassName)} />
         <Dialog.Content
           className={cn([
             "fixed bottom-0 left-0 z-81 max-h-[var(--sheet-mobile-max-height)] w-full overflow-y-auto",
@@ -48,31 +54,20 @@ export function Sheet({
             className,
           ])}
           onCloseAutoFocus={onCloseAutoFocus}
+          onOpenAutoFocus={onOpenAutoFocus}
           data-theme={theme}
           data-od-id={odId}
         >
-          <header
-            className={cn([
-              "sticky top-0 z-1 grid min-h-12 grid-cols-[1fr_minmax(0,auto)_1fr] items-center gap-2",
-              "bg-background [&>:first-child]:justify-self-start [&>:last-child]:justify-self-end",
-            ])}
-          >
-            {closePosition === "start" && (
-              <Dialog.Close asChild>
-                <TextButton data-od-id={closeOdId} aria-label={closeLabel}>
-                  {closeIcon ? (
-                    <X aria-hidden className="size-5" />
-                  ) : (
-                    closeLabel
-                  )}
-                </TextButton>
-              </Dialog.Close>
-            )}
-            {closePosition === "end" && <div />}
-            <Dialog.Title className="text-headline">{title}</Dialog.Title>
-            <div className={closeIcon ? "flex items-center gap-3" : undefined}>
-              {action}
-              {closePosition === "end" && (
+          {hideHeader ? (
+            <Dialog.Title className="sr-only">{title}</Dialog.Title>
+          ) : (
+            <header
+              className={cn([
+                "sticky top-0 z-1 grid min-h-12 grid-cols-[1fr_minmax(0,auto)_1fr] items-center gap-2",
+                "bg-background [&>:first-child]:justify-self-start [&>:last-child]:justify-self-end",
+              ])}
+            >
+              {closePosition === "start" && (
                 <Dialog.Close asChild>
                   <TextButton data-od-id={closeOdId} aria-label={closeLabel}>
                     {closeIcon ? (
@@ -83,8 +78,26 @@ export function Sheet({
                   </TextButton>
                 </Dialog.Close>
               )}
-            </div>
-          </header>
+              {closePosition === "end" && <div />}
+              <Dialog.Title className="text-headline">{title}</Dialog.Title>
+              <div
+                className={closeIcon ? "flex items-center gap-3" : undefined}
+              >
+                {action}
+                {closePosition === "end" && (
+                  <Dialog.Close asChild>
+                    <TextButton data-od-id={closeOdId} aria-label={closeLabel}>
+                      {closeIcon ? (
+                        <X aria-hidden className="size-5" />
+                      ) : (
+                        closeLabel
+                      )}
+                    </TextButton>
+                  </Dialog.Close>
+                )}
+              </div>
+            </header>
+          )}
           <Dialog.Description className="sr-only">
             {description}
           </Dialog.Description>

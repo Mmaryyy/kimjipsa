@@ -23,9 +23,15 @@ const roots = [
 ];
 const fixtures = {
   [`src/shared/${first}/index.ts`]: "export type Example = string;",
+  [`src/shared/${first}/module/index.ts`]: "export type Example = string;",
+  [`src/shared/${first}/tsx-module/index.tsx`]: "export type Example = string;",
+  [`src/shared/${first}/module/internal.ts`]: "export type Example = string;",
+  [`src/shared/${first}/module/nested/index.ts`]:
+    "export type Example = string;",
   [`src/entities/${first}/index.ts`]: "export type Example = string;",
   [`src/entities/${second}/index.ts`]: "export type Example = string;",
   [`src/entities/${second}/lib/internal.ts`]: "export type Example = string;",
+  [`src/entities/${second}/lib/index.ts`]: "export type Example = string;",
   [`src/entities/${second}/@x/${first}.ts`]: "export type Example = string;",
   [`src/features/${first}/index.ts`]: "export type Example = string;",
   [`src/features/${second}/index.ts`]: "export type Example = string;",
@@ -126,6 +132,36 @@ const cases = [
     `src/shared/${first}/canary.ts`,
     "@/shared/lib",
     true,
+  ],
+  [
+    "shared 하위 모듈 진입점",
+    `src/pages/${first}/canary.ts`,
+    `@/shared/${first}/module`,
+    true,
+  ],
+  [
+    "shared 하위 모듈 TSX 진입점",
+    `src/pages/${first}/canary.ts`,
+    `@/shared/${first}/tsx-module`,
+    true,
+  ],
+  [
+    "shared 하위 모듈 내부 파일 직접 import",
+    `src/pages/${first}/canary.ts`,
+    `@/shared/${first}/module/internal`,
+    false,
+  ],
+  [
+    "shared 하위 모듈 내부 중첩 진입점",
+    `src/pages/${first}/canary.ts`,
+    `@/shared/${first}/module/nested`,
+    false,
+  ],
+  [
+    "entity 내부 세그먼트 진입점",
+    `src/pages/${first}/canary.ts`,
+    `@/entities/${second}/lib`,
+    false,
   ],
   [
     "entity @x 타입",

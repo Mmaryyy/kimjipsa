@@ -1,5 +1,5 @@
 import type { CalendarEvent, EventCategory } from "../api/type";
-import { upcomingOccurrences } from "../lib/event-occurrences.utils";
+import { ddayOccurrences } from "../lib/event-occurrences.utils";
 import { EventOccurrenceRow } from "./event-occurrence-row";
 import { EmptyState, List, SectionHeader } from "@/shared/ui";
 export function DdayOverview({
@@ -15,11 +15,7 @@ export function DdayOverview({
   onOpen?: (id: string) => void;
   limit?: number;
 }) {
-  const occurrences = upcomingOccurrences(
-    events.filter((event) => event.kind === "dday" && event.details !== null),
-    limit ?? events.length,
-    instant,
-  );
+  const occurrences = ddayOccurrences(events, limit ?? events.length, instant);
   return (
     <section
       className="min-w-0"

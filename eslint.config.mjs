@@ -74,7 +74,21 @@ export default defineConfig([
             {
               from: element("*"),
               disallow: {
-                to: element(layers, { fileInternalPath: "!index.{ts,tsx}" }),
+                to: element(
+                  layers.filter((layer) => layer !== "shared"),
+                  {
+                    fileInternalPath: "!index.{ts,tsx}",
+                  },
+                ),
+              },
+            },
+            // shared는 세그먼트와 한 단계 아래 모듈의 공개 진입점을 써요.
+            {
+              from: element("*"),
+              disallow: {
+                to: element("shared", {
+                  fileInternalPath: "!{index.{ts,tsx},*/index.{ts,tsx}}",
+                }),
               },
             },
             // 서버 API는 클라이언트 배럴과 분리한 공개 진입점만 써요.

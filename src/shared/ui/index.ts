@@ -15,6 +15,7 @@ export { SectionHeader } from "./section-header";
 export { FormFieldRow } from "./form-field-row";
 export { CategoryDot } from "./category-dot";
 export { ConfirmDialog } from "./confirm-dialog";
+export { Drawer } from "./drawer";
 export { Sheet } from "./sheet";
 export { Toast } from "./toast";
 export { ToastProvider } from "./toast-provider";

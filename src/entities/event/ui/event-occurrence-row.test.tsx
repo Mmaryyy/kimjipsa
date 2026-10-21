@@ -149,3 +149,20 @@ it.each(["2026-10-19", "2026-10-24", "2027-10-16"])(
     expect(screen.queryByText(/^D-(?:Day|\d+)$/)).not.toBeInTheDocument();
   },
 );
+
+it("CAL-02 CAL-13 SCN-CAL-8 내일로 묶은 진행 중 일정도 원래 기간과 종일을 보여요", () => {
+  render(
+    <EventOccurrenceRow
+      occurrence={{
+        event,
+        startDate: "2026-10-17",
+        endDate: event.endDate,
+        dday: null,
+      }}
+      categories={[]}
+    />,
+  );
+  expect(screen.getByText("종일")).toBeVisible();
+  expect(screen.getByText(/2026-10-16 ~ 2026-10-18/)).toBeVisible();
+  expect(screen.queryByText("10:30")).not.toBeInTheDocument();
+});

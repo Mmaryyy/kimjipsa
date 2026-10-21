@@ -36,6 +36,7 @@ export { kstDate, kstNow, nextDday } from "./lib/dday.utils";
 export {
   occurrencesInRange,
   upcomingOccurrences,
+  ddayOccurrences,
   compareOccurrences,
   type EventOccurrence,
 } from "./lib/event-occurrences.utils";

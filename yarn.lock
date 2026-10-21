@@ -1004,6 +1004,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@ncdai/react-wheel-picker@npm:1.2.3":
+  version: 1.2.3
+  resolution: "@ncdai/react-wheel-picker@npm:1.2.3"
+  peerDependencies:
+    react: ^16.8 || ^17.0 || ^18.0 || ^19.0.0 || ^19.0.0-rc
+  checksum: 10c0/9e0ce0df8d68fdb36a2e038da3e5be778f7325ccc2ab2d3e857e18d96f4a8c8e32317e7f14a18651130e8c825deb91606821cad53a62987993ba1de5ceaa3dc4
+  languageName: node
+  linkType: hard
+
 "@next/env@npm:16.4.1":
   version: 16.4.1
   resolution: "@next/env@npm:16.4.1"
@@ -1397,7 +1406,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@radix-ui/react-dialog@npm:1.3.1":
+"@radix-ui/react-dialog@npm:1.3.1, @radix-ui/react-dialog@npm:^1.1.1":
   version: 1.3.1
   resolution: "@radix-ui/react-dialog@npm:1.3.1"
   dependencies:
@@ -5518,6 +5527,7 @@ __metadata:
     "@dnd-kit/sortable": "npm:10.0.0"
     "@dnd-kit/utilities": "npm:3.2.2"
     "@hookform/resolvers": "npm:5.9.1"
+    "@ncdai/react-wheel-picker": "npm:1.2.3"
     "@playwright/test": "npm:1.64.1"
     "@supabase/ssr": "npm:0.12.7"
     "@supabase/supabase-js": "npm:2.117.3"
@@ -5553,6 +5563,7 @@ __metadata:
     tailwind-merge: "npm:3.7.0"
     tailwindcss: "npm:4.3.3"
     typescript: "npm:6.0.3"
+    vaul: "npm:1.1.2"
     vite: "npm:8.3.4"
     vitest: "npm:5.0.4"
     zod: "npm:4.6.7"
@@ -7651,6 +7662,18 @@ __metadata:
     "@types/react":
       optional: true
   checksum: 10c0/161599bf921cfaa41c85d2b01c871975ee99260f3e874c2d41c05890d41170297bdcf314bc5185e7a700de2034ac5b888e3efc8e9f35724f4918f53538d717c9
+  languageName: node
+  linkType: hard
+
+"vaul@npm:1.1.2":
+  version: 1.1.2
+  resolution: "vaul@npm:1.1.2"
+  dependencies:
+    "@radix-ui/react-dialog": "npm:^1.1.1"
+  peerDependencies:
+    react: ^16.8 || ^17.0 || ^18.0 || ^19.0.0 || ^19.0.0-rc
+    react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0.0 || ^19.0.0-rc
+  checksum: 10c0/a6da539eb5576c0004a6b17e3673ea1db2c34e80355860131183abf53279ce025bbd016d542c345d1cc8464ad12f9dc9860949c751055d8a84961e8472a53707
   languageName: node
   linkType: hard
 

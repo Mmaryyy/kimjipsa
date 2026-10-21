@@ -235,6 +235,7 @@ describe("CAL-17 절기·잡절 표시", () => {
     const specialDay = screen.getByRole("listitem", { name: "입하 · 절기" });
     const holiday = screen.getByRole("listitem", { name: "어린이날, 공휴일" });
     expect(specialDay).toBeVisible();
+    expect(within(specialDay).getByText("종일")).toBeVisible();
     expect(specialDay.parentElement).toBe(holiday.parentElement);
   });
   it.each(["week", "day"])(
@@ -243,6 +244,7 @@ describe("CAL-17 절기·잡절 표시", () => {
       location.search = `view=${view}&date=2026-04-06`;
       render(<CalendarView {...props} />);
       const row = screen.getByRole("listitem", { name: "한식 · 잡절" });
+      expect(within(row).getByText("종일")).toBeVisible();
       expect(within(row).getByText("한식 · 잡절")).toHaveClass(
         "text-[var(--label-secondary)]",
       );

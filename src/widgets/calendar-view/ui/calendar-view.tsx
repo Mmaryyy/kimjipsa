@@ -215,14 +215,29 @@ function CalendarDate({
   );
 }
 
+function AllDayTime({ timeline = false }: { timeline?: boolean }) {
+  return (
+    <Text
+      aria-hidden="true"
+      variant="caption"
+      className={cn(
+        "w-[60px] shrink-0 text-muted-foreground tabular-nums",
+        timeline && "w-13 pt-0.5 text-caption-sm text-[var(--label-tertiary)]",
+      )}
+    >
+      종일
+    </Text>
+  );
+}
+
 function HolidayRow({
   holiday,
   className,
-  timeClassName,
+  timeline,
 }: {
   holiday: Holiday;
   className?: string;
-  timeClassName?: string;
+  timeline?: boolean;
 }) {
   return (
     <ListRow
@@ -230,16 +245,7 @@ function HolidayRow({
       className={className}
       leading={
         <>
-          <Text
-            aria-hidden="true"
-            variant="caption"
-            className={cn(
-              "w-[60px] shrink-0 text-muted-foreground tabular-nums",
-              timeClassName,
-            )}
-          >
-            종일
-          </Text>
+          <AllDayTime timeline={timeline} />
           <span
             aria-hidden="true"
             className="size-2.5 shrink-0 rounded-full bg-[var(--sys-red-ic)]"
@@ -270,17 +276,7 @@ function SpecialDayRow({
       )}
       leading={
         <>
-          {timeline ? (
-            <Text
-              aria-hidden="true"
-              variant="caption-sm"
-              className="w-13 shrink-0 pt-0.5 text-[var(--label-tertiary)] tabular-nums"
-            >
-              종일
-            </Text>
-          ) : (
-            <span aria-hidden="true" className="w-[60px] shrink-0" />
-          )}
+          <AllDayTime timeline={timeline} />
           <span
             aria-hidden="true"
             className="size-2.5 shrink-0 rounded-full bg-[var(--label-secondary)]"
@@ -646,7 +642,7 @@ function DayTimeline({
           <HolidayRow
             holiday={holiday}
             className="items-start py-[9px]"
-            timeClassName="w-13 pt-0.5 text-caption-sm text-[var(--label-tertiary)]"
+            timeline
           />
         )}
         <SpecialDayRows days={specialDays} timeline />

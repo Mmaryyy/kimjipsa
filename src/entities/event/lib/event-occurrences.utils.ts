@@ -1,4 +1,4 @@
-import { differenceInCalendarDays, format } from "date-fns";
+import { addDays, differenceInCalendarDays, format } from "date-fns";
 import type { CalendarEvent } from "../api/type";
 import { ddayInYear, kstDate, kstNow, nextDday } from "./dday.utils";
 export type EventOccurrence = {
@@ -10,7 +10,8 @@ export type EventOccurrence = {
 export function compareOccurrences(a: EventOccurrence, b: EventOccurrence) {
   return (
     a.startDate.localeCompare(b.startDate) ||
-    Number(b.event.isAllDay) - Number(a.event.isAllDay) ||
+    Number(b.startDate > b.event.startDate || b.event.isAllDay) -
+      Number(a.startDate > a.event.startDate || a.event.isAllDay) ||
     (a.event.startTime ?? "99:99").localeCompare(
       b.event.startTime ?? "99:99",
     ) ||
@@ -72,13 +73,12 @@ export function upcomingOccurrences(
   count: number,
   instant = new Date(),
 ) {
-  const now = kstNow(instant);
-  const today = format(now, "yyyy-MM-dd");
-  const time = format(now, "HH:mm:ss");
+  const tomorrow = format(addDays(kstNow(instant), 1), "yyyy-MM-dd");
   const occurrences: EventOccurrence[] = [];
   for (const event of events) {
     if (event.kind === "dday") {
       const dday = nextDday(event.startDate, instant);
+      if (dday.date < tomorrow) continue;
       occurrences.push({
         event,
         startDate: dday.date,
@@ -87,27 +87,28 @@ export function upcomingOccurrences(
       });
       continue;
     }
-    const ongoingPeriod =
-      event.startDate < event.endDate &&
-      event.startDate <= today &&
-      event.endDate >= today &&
-      (event.endDate > today ||
-        event.isAllDay ||
-        event.endTime === null ||
-        `${event.endTime}:00` > time);
-    const future =
-      event.startDate > today ||
-      (event.startDate === today &&
-        (event.isAllDay ||
-          event.startTime === null ||
-          `${event.startTime}:00` >= time));
-    if (ongoingPeriod || future)
+    if (event.endDate >= tomorrow)
       occurrences.push({
         event,
-        startDate: event.startDate,
+        startDate: event.startDate < tomorrow ? tomorrow : event.startDate,
         endDate: event.endDate,
         dday: null,
       });
+  }
+  return occurrences.sort(compareOccurrences).slice(0, count);
+}
+
+/** D-day 섹션은 오늘을 포함한 다음 기념일만 계산한다. 위젯의 시작일 규칙과 독립적이다. */
+export function ddayOccurrences(
+  events: CalendarEvent[],
+  count: number,
+  instant = new Date(),
+) {
+  const occurrences: EventOccurrence[] = [];
+  for (const event of events) {
+    if (event.kind !== "dday" || event.details === null) continue;
+    const dday = nextDday(event.startDate, instant);
+    occurrences.push({ event, startDate: dday.date, endDate: dday.date, dday });
   }
   return occurrences.sort(compareOccurrences).slice(0, count);
 }

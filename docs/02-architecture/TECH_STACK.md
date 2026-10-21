@@ -30,6 +30,8 @@ PROPOSED 항목은 `docs/04-planning/DECISIONS_REQUIRED.md`의 결정 번호와 
 | 아이콘 | `lucide-react` (shadcn/ui 기본 아이콘 라이브러리) | CONFIRMED | 사용자 결정(2026-10-15, P0 코드 리뷰 r002-f1): shadcn 기본값을 따르고 바꾸지 않는다. `components.json`의 `iconLibrary: "lucide"`. P1 이후 아이콘을 쓰는 컴포넌트에서 사용 |
 | 축하 색종이 | `canvas-confetti` 1.9.4 | CONFIRMED | 사용자 요청(2026-10-19, CAL-16): 축하 카드 색종이, 약 4.4KB gzip. 홈에서 동적 로드하고 동작 줄이기·숨은 탭에서는 중지 |
 | 목록 순서 변경 | `@dnd-kit/core` 6.3.1 · `@dnd-kit/sortable` 10.0.0 · `@dnd-kit/utilities` 3.2.2 | CONFIRMED | 사용자 결정(2026-10-19, P4.9): 손잡이 드래그와 터치·키보드 정렬, 기존 카테고리 저장 RPC 사용 |
+| 모바일 일정 폼 | `vaul` 1.1.2 (정확한 버전) | CONFIRMED | 사용자 승인(2026-10-21, P5.5 r111-f1). [유지보수 중단](https://github.com/emilkowalski/vaul) 상태를 알고 채택. shadcn Drawer 구성의 `shared/ui/drawer.tsx` 한 곳에서 감싸 교체 가능하게 유지. `(pointer: coarse)` 일정 추가·수정 폼만 적용하고 휠은 기존 Sheet 유지 |
+| 모바일 날짜·시간 휠 | `@ncdai/react-wheel-picker` 1.2.3 | CONFIRMED | 사용자 지시(2026-10-21, P5.5): 필요한 라이브러리 적용. `shared/ui` 래퍼와 기존 Sheet 사용, `(pointer: coarse)`에서만 휠 선택 |
 | 날짜 | date-fns, 타임존 `Asia/Seoul` 고정(MVP) | CONFIRMED | ADR-0004 |
 | 서버 상태 | TanStack Query + Supabase Realtime 구독으로 캐시 갱신 | CONFIRMED | ADR-0005 (DEC-006) |
 | 검증 | Zod (서버 라우트·클라이언트 공유 스키마) | CONFIRMED | ADR-0005 |
