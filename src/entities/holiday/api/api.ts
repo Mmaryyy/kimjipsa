@@ -1,7 +1,7 @@
 import { request } from "@/shared/api";
 import { holidaysApiPath } from "@/shared/config";
-import type { Holiday } from "./type";
+import type { CalendarDayInfo } from "./type";
 
 export function fetchHolidays(year: number) {
-  return request<Holiday[]>(`${holidaysApiPath}?year=${year}`);
+  return request<CalendarDayInfo[]>(`${holidaysApiPath}?year=${year}`);
 }

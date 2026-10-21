@@ -1,5 +1,6 @@
 "use client";
 import { queryOptions, useQueries } from "@tanstack/react-query";
+import type { SpecialDay } from "../api/type";
 import { fetchHolidays } from "../api/api";
 import { holidayDisplayNames } from "../config/holiday-display-names.constants";
 
@@ -21,14 +22,28 @@ export function useHolidays(startYear: number, endYear: number) {
     queries: years.map(holidaysQueryOptions),
   });
   const names: Record<string, string> = {};
+  const specialDays: Record<string, SpecialDay[]> = {};
   for (const query of queries) {
     for (const holiday of query.data ?? []) {
       const displayName = holidayDisplayNames[holiday.name] ?? holiday.name;
+      if (holiday.kind === "solarTerm" || holiday.kind === "sundry") {
+        (specialDays[holiday.date] ??= []).push({
+          date: holiday.date,
+          name: displayName,
+          kind: holiday.kind,
+        });
+        continue;
+      }
       names[holiday.date] = names[holiday.date]
         ? `${names[holiday.date]} · ${displayName}`
         : displayName;
     }
   }
   const pendingYears = years.filter((_, index) => queries[index].isPending);
-  return { names, isPending: pendingYears.length > 0, pendingYears };
+  return {
+    names,
+    specialDays,
+    isPending: pendingYears.length > 0,
+    pendingYears,
+  };
 }

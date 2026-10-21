@@ -5,6 +5,7 @@ import { authenticatedClient } from "@/entities/user/index.server";
 import {
   holidayYearSchema,
   listHolidays,
+  listSpecialDays,
 } from "@/entities/holiday/index.server";
 
 export function holidaysGET(request: Request) {
@@ -20,6 +21,13 @@ export function holidaysGET(request: Request) {
     const year = holidayYearSchema.parse(
       new URL(request.url).searchParams.get("year"),
     );
-    return listHolidays(year);
+    const [holidays, specialDays] = await Promise.all([
+      listHolidays(year),
+      listSpecialDays(year),
+    ]);
+    return [
+      ...holidays.map((holiday) => ({ ...holiday, kind: "holiday" as const })),
+      ...specialDays,
+    ];
   });
 }

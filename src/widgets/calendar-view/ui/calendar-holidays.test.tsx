@@ -192,3 +192,84 @@ describe("CAL-07 CAL-17 토요일·오늘 표시", () => {
     );
   });
 });
+
+describe("CAL-17 절기·잡절 표시", () => {
+  beforeEach(() => {
+    useHolidays.mockReturnValue({
+      names: { "2026-05-05": "어린이날" },
+      specialDays: {
+        "2026-04-05": [{ date: "2026-04-05", name: "청명", kind: "solarTerm" }],
+        "2026-04-06": [{ date: "2026-04-06", name: "한식", kind: "sundry" }],
+        "2026-05-05": [{ date: "2026-05-05", name: "입하", kind: "solarTerm" }],
+      },
+      isPending: false,
+    });
+  });
+  it("CAL-17 월 이름은 회색이고 숫자는 평일·일요일 색과 일정 개수를 유지해요", () => {
+    location.search = "view=month&date=2026-04-06";
+    render(<CalendarView {...props} />);
+    const monday = screen.getByRole("button", {
+      name: /4월 6일 월요일, 일정 0개, 한식/,
+    });
+    expect(monday).toHaveAttribute("data-holiday", "false");
+    expect(monday.children[1]).toHaveClass("text-foreground");
+    expect(within(monday).getByText("한식")).toHaveClass(
+      "text-[var(--label-secondary)]",
+    );
+    const sunday = screen.getByRole("button", {
+      name: /4월 5일 일요일, 일정 0개, 청명/,
+    });
+    expect(sunday.children[1]).toHaveClass("text-[var(--sys-red-ic)]");
+  });
+  it("CAL-17 겹친 날 칸에는 공휴일만 보이고 aria와 목록에는 둘 다 있어요", () => {
+    location.search = "view=month&date=2026-05-05";
+    render(<CalendarView {...props} />);
+    const button = screen.getByRole("button", {
+      name: /일정 0개, 어린이날, 입하/,
+    });
+    expect(within(button).getByText("어린이날")).toBeVisible();
+    expect(within(button).queryByText("입하")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("listitem", { name: "어린이날, 공휴일" }),
+    ).toBeVisible();
+    const specialDay = screen.getByRole("listitem", { name: "입하 · 절기" });
+    const holiday = screen.getByRole("listitem", { name: "어린이날, 공휴일" });
+    expect(specialDay).toBeVisible();
+    expect(specialDay.parentElement).toBe(holiday.parentElement);
+  });
+  it.each(["week", "day"])(
+    "CAL-17 %s 목록에 회색 정적 줄을 표시해요",
+    (view) => {
+      location.search = `view=${view}&date=2026-04-06`;
+      render(<CalendarView {...props} />);
+      const row = screen.getByRole("listitem", { name: "한식 · 잡절" });
+      expect(within(row).getByText("한식 · 잡절")).toHaveClass(
+        "text-[var(--label-secondary)]",
+      );
+      expect(row.querySelector(".rounded-full")).toHaveClass(
+        "bg-[var(--label-secondary)]",
+      );
+      expect(within(row).queryByRole("button")).not.toBeInTheDocument();
+      expect(within(row).queryByRole("link")).not.toBeInTheDocument();
+      if (view === "week")
+        expect(
+          screen.getByRole("listitem", { name: "청명 · 절기" }),
+        ).toBeVisible();
+      else {
+        const empty = screen.getByText("등록된 일정이 없어요");
+        expect(empty).toBeVisible();
+        expect(
+          row.compareDocumentPosition(empty) & Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+      }
+    },
+  );
+  it("CAL-17 홈 오늘 일정에는 절기·잡절 행을 넣지 않아요", () => {
+    location.search = "date=2026-04-06";
+    render(<CalendarView {...props} home defaultView="week" />);
+    expect(
+      screen.queryByRole("listitem", { name: "한식 · 잡절" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("등록된 일정이 없어요")).toBeVisible();
+  });
+});

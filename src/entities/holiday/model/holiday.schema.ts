@@ -25,17 +25,28 @@ const holidayItemSchema = z.object({
   isHoliday: z.enum(["Y", "N"]),
 });
 
-export const holidayResponseSchema = z.object({
-  response: z.object({
-    header: z.object({ resultCode: z.literal("00") }),
-    body: z.object({
-      totalCount: z.number().int().nonnegative(),
-      items: z.union([
-        z.literal(""),
-        z.object({
-          item: z.union([holidayItemSchema, z.array(holidayItemSchema)]),
-        }),
-      ]),
-    }),
-  }),
+const specialDayItemSchema = holidayItemSchema.extend({
+  isHoliday: holidayItemSchema.shape.isHoliday.optional(),
 });
+
+function responseSchema(
+  itemSchema: typeof holidayItemSchema | typeof specialDayItemSchema,
+) {
+  return z.object({
+    response: z.object({
+      header: z.object({ resultCode: z.literal("00") }),
+      body: z.object({
+        totalCount: z.number().int().nonnegative(),
+        items: z.union([
+          z.literal(""),
+          z.object({
+            item: z.union([itemSchema, z.array(itemSchema)]),
+          }),
+        ]),
+      }),
+    }),
+  });
+}
+
+export const holidayResponseSchema = responseSchema(holidayItemSchema);
+export const specialDayResponseSchema = responseSchema(specialDayItemSchema);

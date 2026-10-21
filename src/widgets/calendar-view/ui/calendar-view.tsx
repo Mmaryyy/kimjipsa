@@ -26,7 +26,7 @@ import {
   type EventCategory,
   type EventOccurrence,
 } from "@/entities/event";
-import { useHolidays, type Holiday } from "@/entities/holiday";
+import { useHolidays, type Holiday, type SpecialDay } from "@/entities/holiday";
 import { eventRoutes } from "@/shared/config";
 import { cn } from "@/shared/lib";
 import {
@@ -86,6 +86,7 @@ function CalendarDate({
   onSelect,
   month,
   holidayName,
+  specialDays = [],
   loading,
 }: {
   day: Date;
@@ -96,6 +97,7 @@ function CalendarDate({
   onSelect: (date: string) => void;
   month?: number;
   holidayName?: string;
+  specialDays?: SpecialDay[];
   loading?: boolean;
 }) {
   const date = format(day, "yyyy-MM-dd");
@@ -117,11 +119,13 @@ function CalendarDate({
     sunday: day.getDay() === 0,
     saturday: day.getDay() === 6,
   });
-  const holidayLabel = holidayName?.replace(/\s/g, "");
+  const specialDayNames = specialDays.map((day) => day.name).join(" · ");
+  const holidayLabel = (holidayName || specialDayNames).replace(/\s/g, "");
   const accessibleLabel = [
     format(day, "M월 d일 EEEE", { locale: ko }),
     !loading && `일정 ${daily.length}개`,
     holidayName,
+    specialDayNames,
     isToday && "오늘",
     isSelected && "선택됨",
   ]
@@ -183,7 +187,9 @@ function CalendarDate({
             "text-[length:clamp(9px,calc(100cqi/var(--holiday-chars)/0.87),11px)]",
             outside
               ? "text-[var(--label-tertiary)]"
-              : "text-[var(--sys-red-ic)]",
+              : holidayName
+                ? "text-[var(--sys-red-ic)]"
+                : "text-[var(--label-secondary)]",
           )}
           aria-hidden="true"
         >
@@ -247,8 +253,65 @@ function HolidayRow({
   );
 }
 
+function SpecialDayRow({
+  day,
+  timeline,
+}: {
+  day: SpecialDay;
+  timeline: boolean;
+}) {
+  const label = `${day.name} · ${day.kind === "solarTerm" ? "절기" : "잡절"}`;
+  return (
+    <ListRow
+      aria-label={label}
+      className={cn(
+        "text-[var(--label-secondary)]",
+        timeline && "items-start py-[9px]",
+      )}
+      leading={
+        <>
+          {timeline ? (
+            <Text
+              aria-hidden="true"
+              variant="caption-sm"
+              className="w-13 shrink-0 pt-0.5 text-[var(--label-tertiary)] tabular-nums"
+            >
+              종일
+            </Text>
+          ) : (
+            <span aria-hidden="true" className="w-[60px] shrink-0" />
+          )}
+          <span
+            aria-hidden="true"
+            className="size-2.5 shrink-0 rounded-full bg-[var(--label-secondary)]"
+          />
+        </>
+      }
+    >
+      <Text className="text-[var(--label-secondary)]">{label}</Text>
+    </ListRow>
+  );
+}
+
+function SpecialDayRows({
+  days = [],
+  timeline = false,
+}: {
+  days?: SpecialDay[];
+  timeline?: boolean;
+}) {
+  return days.map((day) => (
+    <SpecialDayRow
+      key={`${day.kind}:${day.name}`}
+      day={day}
+      timeline={timeline}
+    />
+  ));
+}
+
 function DayEvents({
   holiday,
+  specialDays,
   date,
   today,
   home,
@@ -259,6 +322,7 @@ function DayEvents({
   onAdd,
 }: {
   holiday?: Holiday;
+  specialDays?: SpecialDay[];
   date: string;
   today: string;
   home: boolean;
@@ -309,9 +373,10 @@ function DayEvents({
           )
         }
       />
-      {holiday && (
+      {(holiday || (!home && specialDays && specialDays.length > 0)) && (
         <List>
-          <HolidayRow holiday={holiday} />
+          {holiday && <HolidayRow holiday={holiday} />}
+          {!home && <SpecialDayRows days={specialDays} />}
         </List>
       )}
       {daily.length === 0 ? (
@@ -349,7 +414,9 @@ function WeekEvents({
   onOpen,
   today,
   holidayNames,
+  specialDays,
 }: {
+  specialDays: Record<string, SpecialDay[]>;
   holidayNames: Record<string, string>;
   days: Date[];
   occurrences: EventOccurrence[];
@@ -368,7 +435,13 @@ function WeekEvents({
         return (
           <section
             key={date}
-            aria-label={[date, holidayNames[date]].filter(Boolean).join(", ")}
+            aria-label={[
+              date,
+              holidayNames[date],
+              ...(specialDays[date] ?? []).map((day) => day.name),
+            ]
+              .filter(Boolean)
+              .join(", ")}
           >
             <GroupLabel
               as="h3"
@@ -383,11 +456,12 @@ function WeekEvents({
               {holidayNames[date] && ` · ${holidayNames[date]}`}
               {date === today && " · 오늘"}
             </GroupLabel>
-            {daily.length || holidayNames[date] ? (
+            {daily.length || holidayNames[date] || specialDays[date]?.length ? (
               <List>
                 {holidayNames[date] && (
                   <HolidayRow holiday={{ date, name: holidayNames[date] }} />
                 )}
+                <SpecialDayRows days={specialDays[date]} />
                 {daily.map((occurrence) => (
                   <EventOccurrenceRow
                     key={occurrence.event.id}
@@ -505,6 +579,7 @@ function TimelineEvent({
 
 function DayTimeline({
   holiday,
+  specialDays,
   date,
   occurrences,
   categories,
@@ -512,6 +587,7 @@ function DayTimeline({
   onOpen,
 }: {
   holiday?: Holiday;
+  specialDays?: SpecialDay[];
   occurrences: EventOccurrence[];
   categories: EventCategory[];
   ownerNames?: Record<string, string>;
@@ -565,18 +641,6 @@ function DayTimeline({
   ];
   return (
     <>
-      <Text
-        as="p"
-        variant="caption"
-        className={cn(
-          "mt-3 text-muted-foreground",
-          occurrences.length > 0 && "sr-only",
-        )}
-      >
-        {occurrences.length > 0
-          ? `일정 ${occurrences.length}개`
-          : "등록된 일정이 없어요"}
-      </Text>
       <ul className="mt-3">
         {holiday && (
           <HolidayRow
@@ -585,6 +649,14 @@ function DayTimeline({
             timeClassName="w-13 pt-0.5 text-caption-sm text-[var(--label-tertiary)]"
           />
         )}
+        <SpecialDayRows days={specialDays} timeline />
+        <li className={cn("py-[9px]", occurrences.length > 0 && "sr-only")}>
+          <Text as="p" variant="caption" className="text-muted-foreground">
+            {occurrences.length > 0
+              ? `일정 ${occurrences.length}개`
+              : "등록된 일정이 없어요"}
+          </Text>
+        </li>
         {rows
           .filter((row) => row.events.length || row.id.startsWith("hour-"))
           .map((row) => (
@@ -642,6 +714,7 @@ function CalendarPanel({
   view,
   onDateChange,
   holidayNames,
+  specialDays,
   holidaysPending,
   loading,
 }: CalendarProps & {
@@ -649,6 +722,7 @@ function CalendarPanel({
   view: View;
   onDateChange: (date: string) => void;
   holidayNames: Record<string, string>;
+  specialDays: Record<string, SpecialDay[]>;
   holidaysPending: boolean;
 }) {
   const selected = kstDate(date);
@@ -700,6 +774,7 @@ function CalendarPanel({
   if (view === "day") {
     return (
       <DayTimeline
+        specialDays={specialDays[date]}
         holiday={selectedHoliday ? { date, name: selectedHoliday } : undefined}
         date={date}
         occurrences={occurrences}
@@ -719,6 +794,7 @@ function CalendarPanel({
         onOpen={onOpen}
         today={today}
         holidayNames={holidayNames}
+        specialDays={specialDays}
       />
     );
   }
@@ -748,6 +824,7 @@ function CalendarPanel({
           categories={categories}
           onSelect={onDateChange}
           holidayName={holidayNames[format(day, "yyyy-MM-dd")]}
+          specialDays={specialDays[format(day, "yyyy-MM-dd")]}
         />
       ))}
     </nav>
@@ -780,6 +857,7 @@ function CalendarContent({
   );
   const {
     names: holidayNames,
+    specialDays = {},
     isPending,
     pendingYears,
   } = useHolidays(
@@ -815,6 +893,7 @@ function CalendarContent({
         view={view}
         onDateChange={onDateChange}
         holidayNames={holidayNames}
+        specialDays={specialDays}
         holidaysPending={panelHolidaysPending}
       />
     );
@@ -925,6 +1004,7 @@ function CalendarContent({
         ) : (
           (home || view === "month") && (
             <DayEvents
+              specialDays={home ? undefined : specialDays[date]}
               holiday={
                 !home && selectedHoliday
                   ? { date, name: selectedHoliday }

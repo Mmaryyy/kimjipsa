@@ -1,0 +1,312 @@
+[
+  {
+    "date": "2026-01-05",
+    "name": "소한",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2026-01-20",
+    "name": "대한",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2026-02-04",
+    "name": "입춘",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2026-02-19",
+    "name": "우수",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2026-03-05",
+    "name": "경칩",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2026-03-20",
+    "name": "춘분",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2026-04-05",
+    "name": "청명",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2026-04-20",
+    "name": "곡우",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2026-05-05",
+    "name": "입하",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2026-05-21",
+    "name": "소만",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2026-06-06",
+    "name": "망종",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2026-06-21",
+    "name": "하지",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2026-07-07",
+    "name": "소서",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2026-07-23",
+    "name": "대서",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2026-08-07",
+    "name": "입추",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2026-08-23",
+    "name": "처서",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2026-09-07",
+    "name": "백로",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2026-09-23",
+    "name": "추분",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2026-10-08",
+    "name": "한로",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2026-10-23",
+    "name": "상강",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2026-11-07",
+    "name": "입동",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2026-11-22",
+    "name": "소설",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2026-12-07",
+    "name": "대설",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2026-12-22",
+    "name": "동지",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2027-01-05",
+    "name": "소한",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2027-01-20",
+    "name": "대한",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2027-02-04",
+    "name": "입춘",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2027-02-19",
+    "name": "우수",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2027-03-06",
+    "name": "경칩",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2027-03-21",
+    "name": "춘분",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2027-04-05",
+    "name": "청명",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2027-04-20",
+    "name": "곡우",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2027-05-06",
+    "name": "입하",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2027-05-21",
+    "name": "소만",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2027-06-06",
+    "name": "망종",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2027-06-21",
+    "name": "하지",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2027-07-07",
+    "name": "소서",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2027-07-23",
+    "name": "대서",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2027-08-08",
+    "name": "입추",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2027-08-23",
+    "name": "처서",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2027-09-08",
+    "name": "백로",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2027-09-23",
+    "name": "추분",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2027-10-08",
+    "name": "한로",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2027-10-24",
+    "name": "상강",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2027-11-08",
+    "name": "입동",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2027-11-22",
+    "name": "소설",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2027-12-07",
+    "name": "대설",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2027-12-22",
+    "name": "동지",
+    "kind": "solarTerm"
+  },
+  {
+    "date": "2026-03-03",
+    "name": "정월대보름",
+    "kind": "sundry"
+  },
+  {
+    "date": "2026-04-06",
+    "name": "한식",
+    "kind": "sundry"
+  },
+  {
+    "date": "2026-06-19",
+    "name": "단오",
+    "kind": "sundry"
+  },
+  {
+    "date": "2026-07-15",
+    "name": "초복",
+    "kind": "sundry"
+  },
+  {
+    "date": "2026-07-25",
+    "name": "중복",
+    "kind": "sundry"
+  },
+  {
+    "date": "2026-08-14",
+    "name": "말복",
+    "kind": "sundry"
+  },
+  {
+    "date": "2026-08-19",
+    "name": "칠석",
+    "kind": "sundry"
+  },
+  {
+    "date": "2027-02-21",
+    "name": "정월대보름",
+    "kind": "sundry"
+  },
+  {
+    "date": "2027-04-06",
+    "name": "한식",
+    "kind": "sundry"
+  },
+  {
+    "date": "2027-06-09",
+    "name": "단오",
+    "kind": "sundry"
+  },
+  {
+    "date": "2027-07-20",
+    "name": "초복",
+    "kind": "sundry"
+  },
+  {
+    "date": "2027-07-30",
+    "name": "중복",
+    "kind": "sundry"
+  },
+  {
+    "date": "2027-08-08",
+    "name": "칠석",
+    "kind": "sundry"
+  },
+  {
+    "date": "2027-09-09",
+    "name": "말복",
+    "kind": "sundry"
+  }
+]

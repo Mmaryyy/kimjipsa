@@ -53,7 +53,9 @@ describe("ACC-12 CAL-07 P4.12 홈 쿼리 캐시", () => {
           ? settings
           : url === "/api/family"
             ? family
-            : [];
+            : url.includes("/api/holidays")
+              ? [{ date: "2031-06-06", name: "망종", kind: "solarTerm" }]
+              : [];
         return new Response(JSON.stringify({ ok: true, data }));
       });
       vi.stubGlobal("fetch", fetch);
@@ -70,6 +72,10 @@ describe("ACC-12 CAL-07 P4.12 홈 쿼리 캐시", () => {
       expect(result.current.settings.data).toEqual(settings);
       expect(result.current.family.data).toEqual(family);
       expect(result.current.holidays.isPending).toBe(false);
+      expect(result.current.holidays.names).toEqual({});
+      expect(result.current.holidays.specialDays).toEqual({
+        "2031-06-06": [{ date: "2031-06-06", name: "망종", kind: "solarTerm" }],
+      });
       unmount();
       client.clear();
     },
