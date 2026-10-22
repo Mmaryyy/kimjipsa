@@ -33,3 +33,14 @@ export function eventTimeLabel(event: {
   const end = `${event.endDate}${event.endTime ? ` ${event.endTime}` : ""}`;
   return `${start} ~ ${end}`;
 }
+
+/** 여러 날 일정의 마지막 날은 시작 시각 대신 종료 시각을 보여 준다. */
+export function eventDayTimeLabel(
+  event: Parameters<typeof eventTimeLabel>[0],
+  date: string,
+) {
+  if (event.isAllDay) return "종일";
+  if (date === event.startDate) return event.startTime ?? "시간 미정";
+  if (date === event.endDate && event.endTime) return `~${event.endTime}`;
+  return "종일";
+}

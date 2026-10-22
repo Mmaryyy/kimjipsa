@@ -2,7 +2,7 @@ import { cva } from "class-variance-authority";
 
 export const calendarNumberStyles = cva(
   [
-    "grid size-8 place-items-center rounded-[var(--r-round)]",
+    "grid size-6 place-items-center rounded-[var(--r-round)]",
     "text-[length:var(--type-body-size)] tabular-nums",
     "group-focus-visible/calendar-date:outline-2",
     "group-focus-visible/calendar-date:outline-[var(--accent)]",

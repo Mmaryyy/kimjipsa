@@ -16,6 +16,7 @@ import {
 import { ko } from "date-fns/locale";
 import {
   kstDate,
+  eventDayTimeLabel,
   calendarWeekTitle,
   occurrencesInRange,
   EventOccurrenceRow,
@@ -45,6 +46,12 @@ import {
 } from "@/shared/ui";
 import { CalendarCarousel } from "./calendar-carousel";
 import { calendarNumberStyles } from "./calendar-date.variants";
+import { monthEventBarStyles } from "./month-event-bar.variants";
+import {
+  monthEventBars,
+  monthEventDots,
+  type MonthEventBar,
+} from "../model/month-event-bars.utils";
 import { useCalendarLocation } from "../model/use-calendar-location";
 
 type CalendarProps = {
@@ -88,7 +95,9 @@ function CalendarDate({
   holidayName,
   specialDays = [],
   loading,
+  bars = [],
 }: {
+  bars?: MonthEventBar[];
   day: Date;
   selected: string;
   today: string;
@@ -104,6 +113,7 @@ function CalendarDate({
   const daily = occurrences.filter(
     (item) => item.startDate <= date && item.endDate >= date,
   );
+  const dots = month === undefined ? daily : monthEventDots(daily, bars);
   const isToday = date === today;
   const isSelected = date === selected;
   const outside = month !== undefined && day.getMonth() !== month;
@@ -136,6 +146,13 @@ function CalendarDate({
       className={cn([
         "group/calendar-date @container flex min-w-0 flex-col gap-1",
         "px-0 pt-2 pb-2.5 text-foreground outline-none",
+        month !== undefined && [
+          "relative gap-[var(--calendar-date-gap)] pb-0",
+          "[--calendar-date-gap:var(--sp-1)]",
+          "[--calendar-bar-height:calc(var(--spacing)*2)]",
+          // 글자 안쪽 여백까지 포함한 보이는 간격에 막대 간격을 맞춘다.
+          "[--calendar-mark-gap:calc(var(--calendar-date-gap)+var(--spacing)*0.25)]",
+        ],
       ])}
       onClick={() => onSelect(date)}
       data-od-id={`${month !== undefined ? "month" : "week"}-day-${date}`}
@@ -148,6 +165,7 @@ function CalendarDate({
       aria-current={isToday ? "date" : undefined}
       aria-pressed={isSelected}
     >
+      {/* 일자 */}
       <span
         className={cn(
           [
@@ -169,22 +187,26 @@ function CalendarDate({
         )}
       </span>
       <span
-        className={calendarNumberStyles({
-          tone: numberTone,
-          selected: isSelected,
-          today: isToday,
-        })}
+        className={cn(
+          calendarNumberStyles({
+            tone: numberTone,
+            selected: isSelected,
+            today: isToday,
+          }),
+          month !== undefined && "shrink-0 leading-none",
+        )}
       >
         {loading ? <Skeleton className="h-5 w-5" /> : format(day, "d")}
       </span>
       {month !== undefined && (
         <span
           className={cn(
-            "-mt-1 block h-4 w-full truncate text-center",
+            "block h-[1em] w-full shrink-0 truncate text-center",
             "max-w-[calc(var(--holiday-chars)*0.87em)]",
             "tracking-normal",
             // 스위트 한글 폭(약 0.86em)에 여유를 두고 기본 자간으로 6글자를 맞춘다.
             "text-[length:clamp(9px,calc(100cqi/var(--holiday-chars)/0.87),11px)]",
+            "leading-none",
             outside
               ? "text-[var(--label-tertiary)]"
               : holidayName
@@ -197,19 +219,60 @@ function CalendarDate({
         </span>
       )}
       <span
-        className="flex h-1.25 gap-0.75 [&_i]:size-1.25 [&_i]:rounded-[var(--r-round)]"
-        aria-hidden="true"
+        className={cn(
+          "flex shrink-0 flex-col items-center",
+          month !== undefined &&
+            "relative h-[calc(var(--spacing)*1.25+var(--calendar-bar-height)*2+var(--calendar-mark-gap)*2)] w-full",
+        )}
       >
-        {daily.slice(0, 3).map(({ event }) => {
-          const category = categories.find(
-            (category) => category.id === event.details?.categoryId,
-          );
-          const color =
-            event.visibility !== "private" && category
-              ? categoryColors[category.color]
-              : "var(--sys-gray3)";
-          return <i key={event.id} style={{ background: color }} />;
-        })}
+        <span
+          className="flex h-1.25 gap-0.75 [&_i]:size-1.25 [&_i]:rounded-[var(--r-round)]"
+          aria-hidden="true"
+        >
+          {dots.slice(0, 3).map(({ event }) => {
+            const category = categories.find(
+              (category) => category.id === event.details?.categoryId,
+            );
+            const color =
+              event.visibility !== "private" && category
+                ? categoryColors[category.color]
+                : "var(--sys-gray3)";
+            return <i key={event.id} style={{ background: color }} />;
+          })}
+        </span>
+        {month !== undefined && (
+          <span
+            className={cn([
+              "absolute inset-x-0 bottom-0 block",
+              "h-[calc(var(--calendar-bar-height)*2+var(--calendar-mark-gap))]",
+            ])}
+            aria-hidden="true"
+          >
+            {bars.map((bar) => {
+              const { event } = bar.occurrence;
+              const category = categories.find(
+                (category) => category.id === event.details?.categoryId,
+              );
+              const color =
+                event.visibility !== "private" && category
+                  ? categoryColors[category.color]
+                  : "var(--sys-gray3)";
+              return (
+                <i
+                  key={event.id}
+                  data-slot="month-event-bar"
+                  data-lane={bar.lane}
+                  className={monthEventBarStyles({
+                    start: bar.startsHere && date === bar.startDate,
+                    end: bar.endsHere && date === bar.endDate,
+                    lane: bar.lane,
+                  })}
+                  style={{ backgroundColor: color }}
+                />
+              );
+            })}
+          </span>
+        )}
       </span>
     </TextButton>
   );
@@ -492,14 +555,17 @@ function TimelineEvent({
   ownerNames,
   onOpen,
   showTime,
+  date,
 }: {
   occurrence: EventOccurrence;
   categories: EventCategory[];
   ownerNames?: Record<string, string>;
   onOpen?: (id: string) => void;
   showTime: boolean;
+  date: string;
 }) {
   const { event, dday } = occurrence;
+  const time = eventDayTimeLabel(event, date);
   const masked = event.details === null;
   const owner = event.ownerId ? ownerNames?.[event.ownerId] : undefined;
   const category = categories.find(
@@ -525,12 +591,12 @@ function TimelineEvent({
       <span className="min-w-0 break-words">
         {masked ? (
           <>
-            {showTime && event.startTime && `${event.startTime} `}
+            {showTime && `${time} `}
             개인 일정{owner && ` · ${owner} 님`}
           </>
         ) : (
           <>
-            {showTime && event.startTime && `${event.startTime} `}
+            {showTime && `${time} `}
             {event.details?.title}
             {dday && (
               <span className="block text-caption text-muted-foreground">
@@ -590,16 +656,16 @@ function DayTimeline({
   onOpen?: (id: string) => void;
   date: string;
 }) {
-  const allDay = occurrences.filter(
-    ({ event, startDate, dday }) => dday || event.isAllDay || date > startDate,
-  );
+  const timeOf = ({ event, dday }: EventOccurrence) =>
+    dday ? "종일" : eventDayTimeLabel(event, date);
+  const slotTime = (occurrence: EventOccurrence) =>
+    timeOf(occurrence).replace("~", "");
+  const allDay = occurrences.filter((item) => timeOf(item) === "종일");
   const undetermined = occurrences.filter(
-    ({ event, startDate, dday }) =>
-      !dday && !event.isAllDay && !event.startTime && date === startDate,
+    (item) => timeOf(item) === "시간 미정",
   );
   const timed = occurrences.filter(
-    ({ event, startDate, dday }) =>
-      !dday && !event.isAllDay && event.startTime && date === startDate,
+    (item) => timeOf(item) !== "종일" && timeOf(item) !== "시간 미정",
   );
   const hours = Array.from({ length: 15 }, (_, index) =>
     String(8 + index).padStart(2, "0"),
@@ -609,23 +675,19 @@ function DayTimeline({
     {
       id: "before-hours",
       label: "08:00 이전",
-      events: timed.filter(
-        ({ event }) => event.startTime !== null && event.startTime < "08:00",
-      ),
+      events: timed.filter((item) => slotTime(item) < "08:00"),
       showTime: true,
     },
     ...hours.map((hour) => ({
       id: `hour-${hour}`,
       label: `${hour}:00`,
-      events: timed.filter(({ event }) => event.startTime?.startsWith(hour)),
+      events: timed.filter((item) => slotTime(item).startsWith(hour)),
       showTime: true,
     })),
     {
       id: "after-hours",
       label: "23:00 이후",
-      events: timed.filter(
-        ({ event }) => event.startTime !== null && event.startTime >= "23:00",
-      ),
+      events: timed.filter((item) => slotTime(item) >= "23:00"),
       showTime: true,
     },
     {
@@ -674,6 +736,7 @@ function DayTimeline({
                     key={occurrence.event.id}
                     occurrence={occurrence}
                     showTime={row.showTime}
+                    date={date}
                     categories={categories}
                     ownerNames={ownerNames}
                     onOpen={onOpen}
@@ -729,6 +792,14 @@ function CalendarPanel({
     format(start, "yyyy-MM-dd"),
     format(end, "yyyy-MM-dd"),
   );
+  const bars =
+    view === "month" && !loading
+      ? monthEventBars(
+          occurrences,
+          format(start, "yyyy-MM-dd"),
+          format(end, "yyyy-MM-dd"),
+        )
+      : [];
   const selectedHoliday = holidayNames[date];
   if (home && view === "day") return null;
   if (!home && (loading || holidaysPending) && view === "week") {
@@ -812,6 +883,11 @@ function CalendarPanel({
         <CalendarDate
           key={day.toISOString()}
           day={day}
+          bars={bars.filter(
+            (bar) =>
+              bar.startDate <= format(day, "yyyy-MM-dd") &&
+              bar.endDate >= format(day, "yyyy-MM-dd"),
+          )}
           loading={loading}
           month={view === "month" ? selected.getMonth() : undefined}
           selected={date}

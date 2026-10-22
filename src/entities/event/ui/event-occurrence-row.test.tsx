@@ -30,8 +30,10 @@ describe("CAL-02 CAL-07 기간 일정의 날짜별 시간 표시", () => {
   it.each([
     ["2026-10-16", false, "10:30"],
     ["2026-10-17", false, "종일"],
-    ["2026-10-18", false, "종일"],
+    ["2026-10-18", false, "~11:30"],
     ["2026-10-16", true, "종일"],
+    ["2026-10-17", true, "종일"],
+    ["2026-10-18", true, "종일"],
   ])("%s 날짜에는 짧은 시간만 보여 줘요", (date, isAllDay, label) => {
     render(
       <EventOccurrenceRow
@@ -47,7 +49,9 @@ describe("CAL-02 CAL-07 기간 일정의 날짜별 시간 표시", () => {
     );
     expect(screen.getByText(label)).toBeVisible();
     expect(
-      screen.getByText(isAllDay ? "공유" : "공유 · 11:30까지"),
+      screen.getByText(
+        isAllDay || date === event.endDate ? "공유" : "공유 · 11:30까지",
+      ),
     ).toBeVisible();
     expect(
       screen.queryByText(/2026-10-16 ~ 2026-10-18/),

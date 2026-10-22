@@ -187,7 +187,7 @@ describe("CAL-07 CAL-17 토요일·오늘 표시", () => {
       "border-[1.5px]",
       "border-dashed",
       "border-current",
-      "size-8",
+      "size-6",
       "bg-[var(--fill-secondary)]",
     );
   });

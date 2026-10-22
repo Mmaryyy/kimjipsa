@@ -265,6 +265,29 @@ describe("CAL-07 일간·주간 일정 구성", () => {
     expect(screen.queryByText("공유")).not.toBeInTheDocument();
   });
 
+  it.each(["09:00", "07:30", "23:30"])(
+    "CAL-02 마지막 날은 종료 시각 %s의 시간 줄에 표시해요",
+    (endTime) => {
+      render(
+        <CalendarView
+          {...props}
+          events={[{ ...timelineEvent, startDate: "2026-10-13", endTime }]}
+          onOpen={vi.fn()}
+        />,
+      );
+      const slot =
+        endTime < "08:00"
+          ? "08:00 이전"
+          : endTime >= "23:00"
+            ? "23:00 이후"
+            : `${endTime.slice(0, 2)}:00`;
+      expect(timelineSlot(slot).getByRole("button")).toHaveTextContent(
+        `~${endTime} 치과 정기검진`,
+      );
+      expect(screen.queryByText("종일")).not.toBeInTheDocument();
+    },
+  );
+
   it("같은 시간의 일정을 쌓고 개인 일정은 시각과 이름을 보여 줘요", () => {
     render(
       <CalendarView
@@ -297,7 +320,12 @@ describe("CAL-07 일간·주간 일정 구성", () => {
         {...props}
         events={[
           { ...timelineEvent, id: "all-day", isAllDay: true },
-          { ...timelineEvent, id: "period", startDate: "2026-10-13" },
+          {
+            ...timelineEvent,
+            id: "period",
+            startDate: "2026-10-13",
+            endDate: "2026-10-15",
+          },
           { ...timelineEvent, id: "dday", kind: "dday" },
           { ...timelineEvent, id: "unknown", startTime: null, endTime: null },
         ]}

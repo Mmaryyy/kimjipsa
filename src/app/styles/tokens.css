@@ -501,9 +501,10 @@
   --sp-8: 32px;
   --sp-10: 40px;
   /* Shape — no cards, no rounded containers.
-     Lists / sections / sheets: 0. Buttons / inputs: 4px.
+     Lists / sections / sheets: 0. Calendar event bars: 2px. Buttons / inputs: 4px.
      --r-round is reserved for native round controls only (switch knob, status dot). */
   --r-none: 0;
+  --r-bar: 2px;
   --r-control: 4px;
   --r-round: 999px;
   --hairline: 0.5px solid var(--separator);

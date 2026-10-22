@@ -329,5 +329,71 @@
     "mock_start_offset": 0,
     "mock_end_offset": 0,
     "mock_years_ago": 1
+  },
+  {
+    "id": "10000000-0000-4000-8000-000000000116",
+    "owner_id": "10000000-0000-4000-8000-000000000002",
+    "visibility": "shared",
+    "start_date": "2026-10-15",
+    "end_date": "2026-10-19",
+    "start_time": null,
+    "end_time": null,
+    "is_all_day": true,
+    "kind": "event",
+    "event_details": {
+      "title": "가족 여행",
+      "place": "",
+      "memo": "",
+      "category_id": "10000000-0000-4000-8000-000000000010",
+      "dday_style": "normal",
+      "celebrate_message": "",
+      "remind_before": 30
+    },
+    "mock_start_offset": 1,
+    "mock_end_offset": 5
+  },
+  {
+    "id": "10000000-0000-4000-8000-000000000117",
+    "owner_id": "10000000-0000-4000-8000-000000000002",
+    "visibility": "shared",
+    "start_date": "2026-10-16",
+    "end_date": "2026-10-18",
+    "start_time": null,
+    "end_time": null,
+    "is_all_day": true,
+    "kind": "event",
+    "event_details": {
+      "title": "집 정리 기간",
+      "place": "",
+      "memo": "",
+      "category_id": "10000000-0000-4000-8000-000000000013",
+      "dday_style": "normal",
+      "celebrate_message": "",
+      "remind_before": 30
+    },
+    "mock_start_offset": 2,
+    "mock_end_offset": 4
+  },
+  {
+    "id": "10000000-0000-4000-8000-000000000118",
+    "owner_id": "10000000-0000-4000-8000-000000000003",
+    "visibility": "private",
+    "start_date": "2026-10-20",
+    "end_date": "2026-10-22",
+    "start_time": null,
+    "end_time": null,
+    "is_all_day": true,
+    "kind": "event",
+    "event_details": {
+      "title": "개인 휴가",
+      "place": "",
+      "memo": "",
+      "category_id": "10000000-0000-4000-8000-000000000011",
+      "dday_style": "normal",
+      "celebrate_message": "",
+      "remind_before": 30
+    },
+    "mock_start_offset": 6,
+    "mock_end_offset": 8
   }
 ]

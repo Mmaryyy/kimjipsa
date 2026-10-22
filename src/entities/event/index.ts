@@ -26,6 +26,7 @@ export {
   calendarWeekTitle,
   eventDateInput,
   eventTimeLabel,
+  eventDayTimeLabel,
 } from "./lib/event-date.utils";
 export {
   calendarViews,

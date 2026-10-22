@@ -13,6 +13,8 @@ import { eventRoutes } from "@/shared/config";
 import { format } from "date-fns";
 import { kstDate } from "../lib/dday.utils";
 
+import { eventDayTimeLabel } from "../lib/event-date.utils";
+
 export function EventOccurrenceRow({
   occurrence,
   categories,
@@ -72,11 +74,15 @@ export function EventOccurrenceRow({
         {titleText}
       </Link>
     );
+  const time = eventDayTimeLabel(event, date);
   let metadata = [
     visibilityLabel,
     privateEvent && privateOwnerLabel,
     event.details?.place,
-    !event.isAllDay && event.endTime && `${event.endTime}까지`,
+    !event.isAllDay &&
+      !time.startsWith("~") &&
+      event.endTime &&
+      `${event.endTime}까지`,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -93,10 +99,6 @@ export function EventOccurrenceRow({
       .filter(Boolean)
       .join(" · ");
   }
-  const time =
-    event.isAllDay || date > event.startDate
-      ? "종일"
-      : (event.startTime ?? "시간 미정");
   return (
     <ListRow
       className={!event.details ? "text-muted-foreground" : undefined}
