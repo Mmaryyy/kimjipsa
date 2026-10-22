@@ -46,7 +46,12 @@ describe("CAL-02 CAL-07 기간 일정의 날짜별 시간 표시", () => {
       />,
     );
     expect(screen.getByText(label)).toBeVisible();
-    expect(screen.getByText(/2026-10-16 ~ 2026-10-18/)).toBeVisible();
+    expect(
+      screen.getByText(isAllDay ? "공유" : "공유 · 11:30까지"),
+    ).toBeVisible();
+    expect(
+      screen.queryByText(/2026-10-16 ~ 2026-10-18/),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText(/2026-10-16 10:30/)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "여행" })).toBeVisible();
   });
@@ -69,7 +74,46 @@ describe("CAL-02 CAL-07 기간 일정의 날짜별 시간 표시", () => {
       />,
     );
     expect(screen.getByText("시간 미정")).toBeVisible();
+    expect(screen.getByText("공유")).toBeVisible();
   });
+});
+
+describe("CAL-03 CAL-04 일정 보조 정보 순서", () => {
+  it.each([
+    ["shared", true, "카페", "공유 · 카페 · 11:30까지"],
+    ["private", true, "카페", "개인 일정 · 나 · 카페 · 11:30까지"],
+    ["private", false, "", "개인 일정 · 민호 님 · 11:30까지"],
+  ] as const)(
+    "%s 편집 가능 %s 장소 %s",
+    (visibility, canEdit, place, metadata) => {
+      render(
+        <EventOccurrenceRow
+          occurrence={{
+            event: {
+              ...event,
+              visibility,
+              canEdit,
+              details: canEdit ? { ...event.details!, place } : null,
+            },
+            startDate: event.startDate,
+            endDate: event.endDate,
+            dday: null,
+          }}
+          categories={[]}
+          ownerNames={{ me: "민호" }}
+        />,
+      );
+
+      expect(screen.getByText(metadata)).toBeVisible();
+      if (visibility === "private") {
+        if (canEdit) {
+          expect(screen.queryByLabelText("개인 일정")).not.toBeInTheDocument();
+        } else {
+          expect(screen.getByLabelText("개인 일정")).toBeVisible();
+        }
+      }
+    },
+  );
 });
 
 describe("CAL-06 CAL-16 SCN-CAL-9 D-day 라벨 표시", () => {
@@ -150,7 +194,7 @@ it.each(["2026-10-19", "2026-10-24", "2027-10-16"])(
   },
 );
 
-it("CAL-02 CAL-13 SCN-CAL-8 내일로 묶은 진행 중 일정도 원래 기간과 종일을 보여요", () => {
+it("CAL-02 CAL-13 SCN-CAL-8 내일로 묶은 진행 중 일정은 종일과 종료 시각을 보여요", () => {
   render(
     <EventOccurrenceRow
       occurrence={{
@@ -163,6 +207,7 @@ it("CAL-02 CAL-13 SCN-CAL-8 내일로 묶은 진행 중 일정도 원래 기간�
     />,
   );
   expect(screen.getByText("종일")).toBeVisible();
-  expect(screen.getByText(/2026-10-16 ~ 2026-10-18/)).toBeVisible();
+  expect(screen.getByText("공유 · 11:30까지")).toBeVisible();
+  expect(screen.queryByText(/2026-10-16 ~ 2026-10-18/)).not.toBeInTheDocument();
   expect(screen.queryByText("10:30")).not.toBeInTheDocument();
 });

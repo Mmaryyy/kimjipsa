@@ -173,9 +173,7 @@ function NotificationsList({
       title="알림"
       description="최근 알림 30개를 확인할 수 있어요."
       odId="notifications-main"
-      closeOdId="notifications-close"
-      closePosition="end"
-      closeIcon
+      showCloseButton
       className="h-[var(--sheet-mobile-max-height)] md:h-[var(--sheet-desktop-max-height)]"
       onCloseAutoFocus={(event) => {
         event.preventDefault();

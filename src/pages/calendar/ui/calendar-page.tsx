@@ -161,8 +161,14 @@ function CalendarContent() {
         }}
         title="새 일정"
         odId="sheet-new-event"
-        closeLabel="취소"
-        closeOdId="new-cancel"
+        leadingAction={(onOpenChange) => (
+          <TextButton
+            data-od-id="new-cancel"
+            onClick={() => onOpenChange(false)}
+          >
+            취소
+          </TextButton>
+        )}
         action={
           <TextButton data-od-id="new-save" type="submit" form="new-event-form">
             추가
@@ -180,16 +186,13 @@ function CalendarContent() {
       </EventEditorSheet>
       <EventEditorSheet
         dirty={dirty}
-        editing={editing}
         open={selectedId !== null}
         onOpenChange={(open) => {
           if (!open) closeDetail();
         }}
         title="일정"
         odId="sheet-event-detail"
-        closeLabel="완료"
-        closePosition="end"
-        closeOdId="detail-done"
+        showCloseButton
         description="일정 내용을 확인하고 수정하거나 삭제해요."
       >
         {selectedId && (

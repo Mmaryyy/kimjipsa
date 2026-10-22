@@ -72,6 +72,9 @@ describe("CAL-01~03 SCN-CAL-1 일정 입력", () => {
     expect(
       screen.getByRole("switch", { name: "개인 일정" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText("기본은 가족 모두가 함께 보는 공유 일정이에요."),
+    ).toBeVisible();
     const allDay = screen.getByRole("switch", { name: "종일" });
     fireEvent.click(allDay);
     fireEvent.click(allDay);

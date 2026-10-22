@@ -37,6 +37,11 @@ function HomeSettingsForm({ settings }: { settings: Settings }) {
   });
   const onSubmit = useCallback(
     async (values: Settings) => {
+      const unchanged = (next: Settings) =>
+        next.homeView === savedSettings.current.homeView &&
+        next.upcomingEnabled === savedSettings.current.upcomingEnabled &&
+        next.upcomingCount === savedSettings.current.upcomingCount;
+      if (!saving.current && unchanged(values)) return;
       pendingSettings.current = values;
       if (saving.current) return;
       saving.current = true;
@@ -46,6 +51,7 @@ function HomeSettingsForm({ settings }: { settings: Settings }) {
         while (pendingSettings.current) {
           const nextSettings = pendingSettings.current;
           pendingSettings.current = null;
+          if (unchanged(nextSettings)) continue;
           try {
             await save.mutateAsync(nextSettings);
             savedSettings.current = nextSettings;

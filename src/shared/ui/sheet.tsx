@@ -1,12 +1,11 @@
 "use client";
-import { cn } from "@/shared/lib";
+import { cn, useMediaQuery } from "@/shared/lib";
 
 import { Dialog } from "radix-ui";
-import { X } from "lucide-react";
-import type { ComponentProps, ReactNode } from "react";
-import { TextButton } from "./text-button";
-import type { OverlayProps } from "./overlay.types";
-export function Sheet({
+import { SheetHeader } from "./sheet-header";
+import { Drawer } from "./drawer";
+import type { SheetProps } from "./overlay.types";
+function DesktopSheet({
   open,
   onOpenChange,
   title,
@@ -15,30 +14,15 @@ export function Sheet({
   theme,
   children,
   action,
-  closeLabel = "닫기",
-  closePosition = "start",
+  leadingAction,
+  showCloseButton = false,
   odId,
-  closeOdId,
   className,
-  closeIcon = false,
   onCloseAutoFocus,
   onOpenAutoFocus,
   hideHeader = false,
   overlayClassName,
-}: OverlayProps & {
-  children: ReactNode;
-  action?: ReactNode;
-  closeLabel?: string;
-  closePosition?: "start" | "end";
-  odId?: string;
-  closeOdId?: string;
-  className?: string;
-  closeIcon?: boolean;
-  hideHeader?: boolean;
-  overlayClassName?: string;
-  onOpenAutoFocus?: ComponentProps<typeof Dialog.Content>["onOpenAutoFocus"];
-  onCloseAutoFocus?: ComponentProps<typeof Dialog.Content>["onCloseAutoFocus"];
-}) {
+}: SheetProps) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       {trigger && <Dialog.Trigger asChild>{trigger}</Dialog.Trigger>}
@@ -58,45 +42,20 @@ export function Sheet({
           data-theme={theme}
           data-od-id={odId}
         >
-          {hideHeader ? (
+          {hideHeader && !showCloseButton ? (
             <Dialog.Title className="sr-only">{title}</Dialog.Title>
           ) : (
-            <header
-              className={cn([
-                "sticky top-0 z-1 grid min-h-12 grid-cols-[1fr_minmax(0,auto)_1fr] items-center gap-2",
-                "bg-background [&>:first-child]:justify-self-start [&>:last-child]:justify-self-end",
-              ])}
-            >
-              {closePosition === "start" && (
-                <Dialog.Close asChild>
-                  <TextButton data-od-id={closeOdId} aria-label={closeLabel}>
-                    {closeIcon ? (
-                      <X aria-hidden className="size-5" />
-                    ) : (
-                      closeLabel
-                    )}
-                  </TextButton>
-                </Dialog.Close>
-              )}
-              {closePosition === "end" && <div />}
-              <Dialog.Title className="text-headline">{title}</Dialog.Title>
-              <div
-                className={closeIcon ? "flex items-center gap-3" : undefined}
-              >
-                {action}
-                {closePosition === "end" && (
-                  <Dialog.Close asChild>
-                    <TextButton data-od-id={closeOdId} aria-label={closeLabel}>
-                      {closeIcon ? (
-                        <X aria-hidden className="size-5" />
-                      ) : (
-                        closeLabel
-                      )}
-                    </TextButton>
-                  </Dialog.Close>
-                )}
-              </div>
-            </header>
+            <div className="sticky top-0 z-1 bg-background">
+              <SheetHeader
+                title={
+                  <Dialog.Title className="text-headline">{title}</Dialog.Title>
+                }
+                action={action}
+                leadingAction={leadingAction}
+                showCloseButton={showCloseButton}
+                onOpenChange={onOpenChange}
+              />
+            </div>
           )}
           <Dialog.Description className="sr-only">
             {description}
@@ -106,4 +65,12 @@ export function Sheet({
       </Dialog.Portal>
     </Dialog.Root>
   );
+}
+
+export function Sheet(props: SheetProps) {
+  const coarse = useMediaQuery("(pointer: coarse)");
+  if (coarse) {
+    return <Drawer {...props} />;
+  }
+  return <DesktopSheet {...props} />;
 }

@@ -5,7 +5,7 @@ import { cn } from "@/shared/lib";
 import { useState } from "react";
 import { useAccount, ProfileForm } from "@/features/account";
 import { useFamily, InviteShare } from "@/features/family";
-import { roles } from "@/entities/family";
+import { FamilyRoleIcon } from "@/entities/family";
 import {
   EmptyState,
   ErrorState,
@@ -46,6 +46,7 @@ export function AccountSettings({
         <section data-od-id="set-profile">
           <GroupLabel>내 정보</GroupLabel>
           <Sheet
+            showCloseButton
             open={editingName}
             onOpenChange={setEditingName}
             title="표시 이름 수정"
@@ -100,10 +101,17 @@ export function AccountSettings({
                       {Array.from(member.display_name)[0]}
                     </span>
                   }
-                  description={roles[member.role]}
                 >
-                  {member.display_name}
-                  {isMe && " (나)"}
+                  <span className="whitespace-nowrap">
+                    {member.display_name}
+                    {isMe && " (나)"}
+                    {member.role !== "member" && (
+                      <>
+                        {" "}
+                        <FamilyRoleIcon role={member.role} />
+                      </>
+                    )}
+                  </span>
                 </ListRow>
               );
             })}

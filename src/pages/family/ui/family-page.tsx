@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { roles } from "@/entities/family";
+import { FamilyRoleIcon } from "@/entities/family";
 import { useAccount, ProfileForm } from "@/features/account";
 import { useFamily, InviteShare } from "@/features/family";
 import { accountRoutes } from "@/shared/config";
@@ -12,7 +12,6 @@ import {
   ListSkeleton,
   PageHeader,
   SectionHeader,
-  StatusBadge,
 } from "@/shared/ui";
 export function FamilyPage() {
   const family = useFamily();
@@ -38,11 +37,16 @@ export function FamilyPage() {
       />
     );
   const members = family.data.members.map((member) => (
-    <ListRow
-      key={member.user_id}
-      trailing={<StatusBadge variant="info">{roles[member.role]}</StatusBadge>}
-    >
-      {member.display_name}
+    <ListRow key={member.user_id}>
+      <span className="whitespace-nowrap">
+        {member.display_name}
+        {member.role !== "member" && (
+          <>
+            {" "}
+            <FamilyRoleIcon role={member.role} />
+          </>
+        )}
+      </span>
     </ListRow>
   ));
   return (

@@ -41,6 +41,54 @@ describe("ACC-11 SCN-ACC-5 알림 설정 저장", () => {
     save.mockResolvedValue(null);
     mutation.isPending = false;
   });
+  it("시각을 바꾸지 않고 닫거나 저장된 시각으로 돌리면 요청하지 않아요", async () => {
+    render(
+      <ToastProvider>
+        <NotificationSettings />
+      </ToastProvider>,
+    );
+    const input = screen.getByLabelText("아침 요약");
+    await act(async () => {
+      fireEvent.blur(input);
+    });
+    expect(save).not.toHaveBeenCalled();
+    fireEvent.change(input, { target: { value: "08:30" } });
+    fireEvent.change(input, { target: { value: "10:00" } });
+    await act(async () => {
+      fireEvent.blur(input);
+    });
+    expect(save).not.toHaveBeenCalled();
+    expect(
+      screen.queryByText("알림 설정을 저장했어요"),
+    ).not.toBeInTheDocument();
+  });
+  it("같은 시각의 중복 저장은 앞선 요청 성공 뒤 건너뛰어요", async () => {
+    let finish!: () => void;
+    save.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    render(
+      <ToastProvider>
+        <NotificationSettings />
+      </ToastProvider>,
+    );
+    const input = screen.getByLabelText("아침 요약");
+    fireEvent.change(input, { target: { value: "08:30" } });
+    fireEvent.blur(input);
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    await act(async () => {
+      fireEvent.blur(input);
+    });
+    await act(async () => finish());
+    expect(save).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      fireEvent.blur(input);
+    });
+    expect(save).toHaveBeenCalledTimes(1);
+  });
   it("스위치를 바꾸면 즉시 저장하고 켜짐·꺼짐 안내를 보여 줘요", async () => {
     render(
       <ToastProvider>

@@ -10,35 +10,37 @@ import {
   hourTo12,
   hourTo24,
   initialWheelRange,
-  moveEventStart,
+  moveRangeStart,
   timeLabel,
   todayInSeoul,
-  type EventDateRange,
-} from "../lib/event-wheel.utils";
+  type DateTimeRange,
+} from "./date-time.utils";
 import {
   hourOptions,
   minuteOptions,
   periodOptions,
-} from "../model/event-wheel.constants";
-import { dateTimeTabStyles } from "./event-date-time-sheet.variants";
+} from "./date-time.constants";
+import { dateTimeTabStyles } from "./date-time-sheet.variants";
 
 type DateTimeSheetProps = {
-  range: EventDateRange;
+  range: DateTimeRange;
   initialTab: "start" | "end";
   dateOnly: boolean;
   singleDate: boolean;
-  onConfirm: (range: EventDateRange) => void;
-  onClose: () => void;
+  timeOnly?: boolean;
+  onConfirm: (range: DateTimeRange) => void;
+  onOpenChange: (open: boolean) => void;
   onRestoreFocus: () => void;
 };
 
-export function EventDateTimeSheet({
+export function DateTimeSheet({
   range,
   initialTab,
   dateOnly,
   singleDate,
+  timeOnly = false,
   onConfirm,
-  onClose,
+  onOpenChange,
   onRestoreFocus,
 }: DateTimeSheetProps) {
   const [draft, setDraft] = useState(() => initialWheelRange(range, dateOnly));
@@ -66,7 +68,7 @@ export function EventDateTimeSheet({
   function onChange(date: string, time: string) {
     setDraft((current) => {
       if (tab === "end") return { ...current, endDate: date, endTime: time };
-      const next = moveEventStart(current, date, time);
+      const next = moveRangeStart(current, date, time);
       return singleDate ? { ...next, endDate: date } : next;
     });
   }
@@ -79,11 +81,9 @@ export function EventDateTimeSheet({
   return (
     <Sheet
       open
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
-      title="날짜와 시간 선택"
-      description="시작 또는 종료를 고른 뒤 휠을 위아래로 움직여 선택해 주세요. 확인을 누르면 적용돼요."
+      onOpenChange={onOpenChange}
+      title={timeOnly ? "시각 선택" : "날짜와 시간 선택"}
+      description="휠을 위아래로 움직여 선택해 주세요. 확인을 누르면 적용돼요."
       hideHeader
       overlayClassName="z-82"
       odId="sheet-event-date-time"
@@ -106,7 +106,7 @@ export function EventDateTimeSheet({
           if (singleDate && value === "end") return null;
           const date = value === "start" ? draft.startDate : draft.endDate;
           const time = value === "start" ? draft.startTime : draft.endTime;
-          const label = value === "start" ? "시작" : "종료";
+          const label = timeOnly ? "시각" : value === "start" ? "시작" : "종료";
           return (
             <button
               key={value}
@@ -122,14 +122,14 @@ export function EventDateTimeSheet({
               <span className={dateOnly ? "text-headline" : "text-title"}>
                 {dateOnly ? dateLabel(date) : timeLabel(time)}
               </span>
-              {!dateOnly && (
+              {!dateOnly && !timeOnly && (
                 <span className="text-caption">{dateLabel(date)}</span>
               )}
             </button>
           );
         })}
       </div>
-      <div className="relative my-6">
+      <div className="relative my-6" data-vaul-no-drag>
         <div
           aria-hidden
           className={cn([
@@ -138,13 +138,15 @@ export function EventDateTimeSheet({
           ])}
         />
         <WheelPickerWrapper key={tab}>
-          <WheelPicker
-            label="날짜"
-            className={dateOnly ? undefined : "flex-[2.5]"}
-            options={options}
-            value={date}
-            onValueChange={(date) => onChange(date, time)}
-          />
+          {!timeOnly && (
+            <WheelPicker
+              label="날짜"
+              className={dateOnly ? undefined : "flex-[2.5]"}
+              options={options}
+              value={date}
+              onValueChange={(date) => onChange(date, time)}
+            />
+          )}
           {!dateOnly && (
             <>
               <WheelPicker
@@ -177,7 +179,10 @@ export function EventDateTimeSheet({
         </p>
       )}
       <div className="flex justify-end gap-8 pt-2">
-        <TextButton data-od-id="wheel-cancel" onClick={onClose}>
+        <TextButton
+          data-od-id="wheel-cancel"
+          onClick={() => onOpenChange(false)}
+        >
           취소
         </TextButton>
         <TextButton

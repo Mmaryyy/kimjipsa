@@ -228,6 +228,7 @@ function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
       <SectionHeader title="시트와 확인창" />
       <div className="flex flex-wrap items-center gap-4 py-4">
         <Sheet
+          showCloseButton
           open={sheetOpen}
           onOpenChange={setSheetOpen}
           theme={theme}

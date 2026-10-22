@@ -11,7 +11,6 @@ import {
   type NotificationSettings as Settings,
 } from "@/entities/user";
 import {
-  Input,
   ErrorState,
   FormFieldRow,
   GroupLabel,
@@ -20,6 +19,8 @@ import {
   Text,
   TextButton,
 } from "@/shared/ui";
+import { DateTimeInput, todayInSeoul } from "@/shared/ui/date-time-input";
+
 function NotificationSettingsForm({ settings }: { settings: Settings }) {
   const save = useSaveNotificationSettings();
   const push = useWebPush();
@@ -38,9 +39,14 @@ function NotificationSettingsForm({ settings }: { settings: Settings }) {
   });
   const onSubmit = useCallback(
     async (values: Settings) => {
-      setToastOpen(false);
       const persist = async () => {
         const previous = savedSettings.current;
+        if (
+          values.pushEnabled === previous.pushEnabled &&
+          values.morningSummaryTime === previous.morningSummaryTime
+        )
+          return;
+        setToastOpen(false);
         try {
           await save.mutateAsync(values);
           savedSettings.current = values;
@@ -141,18 +147,32 @@ function NotificationSettingsForm({ settings }: { settings: Settings }) {
               name="morningSummaryTime"
               control={control}
               render={({ field }) => (
-                <div className="w-35">
-                  <Input
-                    {...props}
-                    {...field}
-                    type="time"
-                    data-od-id="s-morning-time"
-                    onBlur={() => {
+                <DateTimeInput
+                  label="아침 요약"
+                  controlProps={props}
+                  pickerOdId="s-morning-time"
+                  timeOnly
+                  singleDate
+                  range={{
+                    startDate: todayInSeoul(),
+                    endDate: todayInSeoul(),
+                    startTime: field.value,
+                    endTime: field.value,
+                  }}
+                  timeInputProps={{
+                    ...field,
+                    "data-od-id": "s-morning-time",
+                    onBlur: () => {
                       field.onBlur();
                       void handleSubmit(onSubmit)();
-                    }}
-                  />
-                </div>
+                    },
+                  }}
+                  onConfirm={(range) => {
+                    field.onChange(range.startTime);
+                    field.onBlur();
+                    void handleSubmit(onSubmit)();
+                  }}
+                />
               )}
             />
           )}

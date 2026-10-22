@@ -157,7 +157,7 @@ export function ViewportSpacingPage() {
           {spacingSchedule.map((event) => (
             <ListRow
               key={event.id}
-              description="도토리네 · 둘 다"
+              description="도토리네 · 공유"
               leading={
                 <Text
                   variant="caption"

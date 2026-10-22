@@ -88,7 +88,7 @@ export function EventDetail({
         {eventTimeLabel(event.data)}
       </Text>
       <Text as="p" variant="caption">
-        {event.data.visibility === "private" ? "개인 일정" : "둘 다"}
+        {event.data.visibility === "private" ? "개인 일정" : "공유 일정"}
       </Text>
       {category && (
         <div className="flex items-center gap-2">

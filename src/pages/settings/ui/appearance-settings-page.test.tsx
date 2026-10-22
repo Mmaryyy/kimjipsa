@@ -8,6 +8,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { setThemeMode } from "@/shared/lib";
 import type * as SharedApi from "@/shared/api";
 import { AppearanceSettingsPage } from "./appearance-settings-page";
 
@@ -129,5 +130,30 @@ describe("ACC-15 설정에서 로그아웃", () => {
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/login"));
     expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+});
+
+describe("ACC-12 화면 모드 저장", () => {
+  it("같은 모드는 로컬 저장과 변경 알림을 반복하지 않아요", () => {
+    document.documentElement.dataset.themeMode = "system";
+    const persist = vi.spyOn(Storage.prototype, "setItem");
+    const notify = vi.fn();
+    window.addEventListener("kj:theme-mode", notify);
+    try {
+      setThemeMode("system");
+      expect(persist).not.toHaveBeenCalled();
+      expect(notify).not.toHaveBeenCalled();
+      setThemeMode("dark");
+      expect(persist).toHaveBeenCalledTimes(1);
+      expect(notify).toHaveBeenCalledTimes(1);
+      setThemeMode("dark");
+      expect(persist).toHaveBeenCalledTimes(1);
+      expect(notify).toHaveBeenCalledTimes(1);
+    } finally {
+      persist.mockRestore();
+      window.removeEventListener("kj:theme-mode", notify);
+      delete document.documentElement.dataset.themeMode;
+      delete document.documentElement.dataset.theme;
+    }
   });
 });

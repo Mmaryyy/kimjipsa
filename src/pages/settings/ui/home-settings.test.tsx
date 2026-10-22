@@ -27,6 +27,46 @@ describe("ACC-12 홈 구성 저장", () => {
       data: { homeView: "week", upcomingEnabled: true, upcomingCount: 5 },
     });
   });
+  it("선택된 보기와 표시 개수를 다시 고르면 저장하지 않아요", async () => {
+    render(
+      <ToastProvider>
+        <HomeSettings />
+      </ToastProvider>,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByRole("radio", { name: "주" }));
+      fireEvent.click(screen.getByRole("radio", { name: "5개" }));
+    });
+    expect(mutateAsync).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("radio", { name: "월" }));
+    await screen.findByText("홈 구성을 저장했어요");
+    await act(async () => {
+      fireEvent.click(screen.getByRole("radio", { name: "월" }));
+    });
+    expect(mutateAsync).toHaveBeenCalledTimes(1);
+  });
+  it("저장 중 같은 값을 다시 선택해도 중복 요청하지 않아요", async () => {
+    let finish!: () => void;
+    mutateAsync.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    render(
+      <ToastProvider>
+        <HomeSettings />
+      </ToastProvider>,
+    );
+    const month = screen.getByRole("radio", { name: "월" });
+    fireEvent.click(month);
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
+    await act(async () => {
+      fireEvent.click(month);
+    });
+    await act(async () => finish());
+    expect(mutateAsync).toHaveBeenCalledTimes(1);
+  });
   it("뷰·위젯 표시·개수를 사용자 설정으로 저장해요", async () => {
     render(
       <ToastProvider>

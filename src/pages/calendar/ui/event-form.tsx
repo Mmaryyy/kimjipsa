@@ -21,14 +21,14 @@ import {
   type EventFormInput,
 } from "../model/event-form.schema";
 import { useEventEditor } from "../model/use-event-editor";
-import { defaultEventRange } from "../lib/event-wheel.utils";
+import { defaultDateRange } from "@/shared/ui/date-time-input";
 import { EventDateFields } from "./event-date-fields";
 function initialValues(
   event: CalendarEvent | undefined,
   categories: EventCategory[],
   initialDate?: string,
 ): EventFormInput {
-  const defaults = defaultEventRange(initialDate);
+  const defaults = defaultDateRange(initialDate);
   return {
     remindBefore: event?.remindBefore === undefined ? 30 : event.remindBefore,
     kind: event?.kind ?? "event",
@@ -71,7 +71,6 @@ export function EventForm({
     handleSubmit,
     setError,
     setValue,
-    getValues,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<EventFormInput, unknown, EventInput>({
     resolver: zodResolver(eventFormSchema),
@@ -189,7 +188,6 @@ export function EventForm({
         <EventDateFields
           control={control}
           register={register}
-          getValues={getValues}
           setValue={setValue}
           errors={errors}
           dateOnly={isAllDay || isTimeUnknown || kind === "dday"}
@@ -282,7 +280,7 @@ export function EventForm({
           </FormFieldRow>
         )}
         <Text as="p" variant="caption" className="text-muted-foreground">
-          기본은 둘 다 참석하는 공유 일정이에요.
+          기본은 가족 모두가 함께 보는 공유 일정이에요.
         </Text>
         <FormFieldRow label="일정 종류" htmlFor="event-kind">
           {(props) => (

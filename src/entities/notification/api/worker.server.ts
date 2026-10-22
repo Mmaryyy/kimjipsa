@@ -57,11 +57,7 @@ export async function dispatchPendingPush() {
               !entry.payload.eventDeleted
             ? `${eventRoutes.calendar}?event=${eventId}`
             : notificationsPath;
-      // Change notices stay generic on the lock screen, including after a privacy change.
-      const body =
-        entry.kind.startsWith("event_") && entry.kind !== "event_reminder"
-          ? "공유 일정이 변경되었어요. 앱에서 확인해 주세요."
-          : notificationMessage(entry);
+      const body = notificationMessage(entry);
       await Promise.all(
         entry.subscriptions.map(async (subscription) => {
           const result = await sendWebPush(subscription, {

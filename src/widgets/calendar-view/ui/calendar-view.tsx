@@ -526,7 +526,7 @@ function TimelineEvent({
         {masked ? (
           <>
             {showTime && event.startTime && `${event.startTime} `}
-            개인 일정{owner && ` · ${owner}님`}
+            개인 일정{owner && ` · ${owner} 님`}
           </>
         ) : (
           <>

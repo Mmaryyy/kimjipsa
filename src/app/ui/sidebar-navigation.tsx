@@ -4,6 +4,7 @@ import { cn } from "@/shared/lib";
 import Link from "next/link";
 import { useAccount } from "@/features/account";
 import { useFamily } from "@/features/family";
+import { FamilyRoleIcon } from "@/entities/family";
 import { accountRoutes } from "@/shared/config";
 import { NavigationLinkList } from "./navigation-link-list";
 export function SidebarNavigation({ pathname }: { pathname: string }) {
@@ -31,9 +32,14 @@ export function SidebarNavigation({ pathname }: { pathname: string }) {
         </small>
       </Link>
       <NavigationLinkList pathname={pathname} />
-      <div className="mt-auto p-3 text-[length:var(--type-caption-size)] text-muted-foreground">
+      <div className="mt-auto p-3 text-[length:var(--type-caption-size)] whitespace-nowrap text-muted-foreground">
         {account.data?.profile?.displayName}
-        {account.data?.membership?.role === "admin" && " · 관리자"}
+        {account.data?.membership && (
+          <>
+            {" "}
+            <FamilyRoleIcon role={account.data.membership.role} />
+          </>
+        )}
       </div>
     </nav>
   );

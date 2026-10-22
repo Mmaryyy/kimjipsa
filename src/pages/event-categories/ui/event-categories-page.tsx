@@ -79,7 +79,9 @@ export function EventCategoriesPage() {
           if (!open) setEditing(undefined);
         }}
         odId="lists-sheet"
-        closeLabel="취소"
+        leadingAction={(onOpenChange) => (
+          <TextButton onClick={() => onOpenChange(false)}>취소</TextButton>
+        )}
         title={editing ? "카테고리 수정" : "새 카테고리"}
         action={
           <TextButton

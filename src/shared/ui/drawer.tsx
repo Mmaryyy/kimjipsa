@@ -1,10 +1,12 @@
 "use client";
 
-import { useRef, type ReactNode } from "react";
+import { createContext, useContext, useRef } from "react";
 import { Drawer as DrawerPrimitive } from "vaul";
 import { cn } from "@/shared/lib";
-import type { OverlayProps } from "./overlay.types";
-import { TextButton } from "./text-button";
+import type { SheetProps } from "./overlay.types";
+import { SheetHeader } from "./sheet-header";
+
+const DrawerContext = createContext(false);
 
 /** Vaul을 쓰는 유일한 진입점. 폼 스크롤과 드래그 판정은 같은 스크롤 컨테이너에서 처리한다. */
 export function Drawer({
@@ -14,19 +16,18 @@ export function Drawer({
   description,
   children,
   action,
-  closeLabel = "취소",
-  closePosition = "start",
+  leadingAction,
   odId,
-  closeOdId,
   theme,
-}: OverlayProps & {
-  children: ReactNode;
-  action?: ReactNode;
-  closeLabel?: string;
-  closePosition?: "start" | "end";
-  odId?: string;
-  closeOdId?: string;
-}) {
+  trigger,
+  className,
+  hideHeader = false,
+  overlayClassName,
+  onOpenAutoFocus,
+  onCloseAutoFocus,
+}: SheetProps) {
+  const nested = useContext(DrawerContext);
+  const Root = nested ? DrawerPrimitive.NestedRoot : DrawerPrimitive.Root;
   const contentRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   function onChange(next: boolean) {
@@ -37,55 +38,67 @@ export function Drawer({
     }
     onOpenChange(next);
   }
-  const closeButton = (
-    <DrawerPrimitive.Close asChild>
-      <TextButton data-od-id={closeOdId}>{closeLabel}</TextButton>
-    </DrawerPrimitive.Close>
-  );
   return (
-    <DrawerPrimitive.Root
+    <Root
       open={open}
       onOpenChange={onChange}
       shouldScaleBackground={false}
       repositionInputs={false}
+      autoFocus
     >
-      <DrawerPrimitive.Portal>
-        <DrawerPrimitive.Overlay ref={overlayRef} className="kj-overlay" />
-        <DrawerPrimitive.Content
-          ref={contentRef}
-          data-theme={theme}
-          data-od-id={odId}
-          className={cn([
-            "fixed inset-x-0 bottom-0 z-81 max-h-[var(--sheet-mobile-max-height)]",
-            "overflow-y-auto overscroll-contain rounded-t-[var(--sp-6)] bg-background px-4",
-            "pb-[calc(var(--sp-6)+env(safe-area-inset-bottom))] text-foreground",
-            "[overflow-wrap:anywhere] shadow-[var(--shadow-sheet)] outline-none after:hidden",
-          ])}
-        >
-          <div className="sticky top-0 z-1 bg-background pt-3">
-            <div
-              aria-hidden
-              className="mx-auto h-1 w-10 rounded-full bg-[var(--sys-gray3)]"
-            />
-            <header className="grid min-h-12 grid-cols-[1fr_minmax(0,auto)_1fr] items-center gap-2">
-              <div className="justify-self-start">
-                {closePosition === "start" && closeButton}
-              </div>
-              <DrawerPrimitive.Title className="text-headline">
-                {title}
-              </DrawerPrimitive.Title>
-              <div className="justify-self-end">
-                {action}
-                {closePosition === "end" && closeButton}
-              </div>
-            </header>
-          </div>
-          <DrawerPrimitive.Description className="sr-only">
-            {description}
-          </DrawerPrimitive.Description>
-          {children}
-        </DrawerPrimitive.Content>
-      </DrawerPrimitive.Portal>
-    </DrawerPrimitive.Root>
+      <DrawerContext.Provider value={true}>
+        {trigger && (
+          <DrawerPrimitive.Trigger asChild>{trigger}</DrawerPrimitive.Trigger>
+        )}
+        <DrawerPrimitive.Portal>
+          <DrawerPrimitive.Overlay
+            ref={overlayRef}
+            className={cn("kj-overlay", overlayClassName)}
+          />
+          <DrawerPrimitive.Content
+            ref={contentRef}
+            onOpenAutoFocus={onOpenAutoFocus}
+            onCloseAutoFocus={onCloseAutoFocus}
+            data-theme={theme}
+            data-od-id={odId}
+            className={cn([
+              "fixed inset-x-0 bottom-0 z-81 max-h-[var(--sheet-mobile-max-height)]",
+              "overflow-y-auto overscroll-contain rounded-t-[var(--sp-6)] bg-background px-4",
+              "pb-[calc(var(--sp-6)+env(safe-area-inset-bottom))] text-foreground",
+              "[overflow-wrap:anywhere] shadow-[var(--shadow-sheet)] outline-none after:hidden",
+              className,
+            ])}
+          >
+            <div className="sticky top-0 z-1 bg-background pt-3">
+              <div
+                aria-hidden
+                className="mx-auto h-1 w-10 rounded-full bg-[var(--sys-gray3)]"
+              />
+              {hideHeader ? (
+                <DrawerPrimitive.Title className="sr-only">
+                  {title}
+                </DrawerPrimitive.Title>
+              ) : (
+                <SheetHeader
+                  title={
+                    <DrawerPrimitive.Title className="text-headline">
+                      {title}
+                    </DrawerPrimitive.Title>
+                  }
+                  action={action}
+                  leadingAction={leadingAction}
+                  showCloseButton={false}
+                  onOpenChange={onChange}
+                />
+              )}
+            </div>
+            <DrawerPrimitive.Description className="sr-only">
+              {description}
+            </DrawerPrimitive.Description>
+            {children}
+          </DrawerPrimitive.Content>
+        </DrawerPrimitive.Portal>
+      </DrawerContext.Provider>
+    </Root>
   );
 }

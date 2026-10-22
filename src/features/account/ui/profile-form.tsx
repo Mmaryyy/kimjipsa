@@ -31,6 +31,7 @@ function LegalDocumentSheet({ kind }: { kind: LegalDocumentKind }) {
   const label = kind === "terms" ? "이용약관 보기" : "개인정보 처리방침 보기";
   return (
     <Sheet
+      showCloseButton
       open={open}
       onOpenChange={setOpen}
       title={legalDocumentTitles[kind]}

@@ -1,8 +1,14 @@
 import { useState } from "react";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { EventEditorSheet } from "./event-editor-sheet";
-import { EventDateTimeSheet } from "./event-date-time-sheet";
+import { DateTimeSheet } from "@/shared/ui/date-time-input";
 
 function Editor() {
   const [open, setOpen] = useState(true);
@@ -13,16 +19,19 @@ function Editor() {
       open={open}
       onOpenChange={setOpen}
       dirty={dirty}
+      showCloseButton
       title="새 일정"
       description="일정 입력"
-      closeLabel="취소"
+      leadingAction={(onOpenChange) => (
+        <button onClick={() => onOpenChange(false)}>취소</button>
+      )}
     >
       <input aria-label="제목" onChange={() => setDirty(true)} />
       <button id="dates" onClick={() => setWheel(true)}>
         날짜 선택
       </button>
       {wheel && (
-        <EventDateTimeSheet
+        <DateTimeSheet
           range={{
             startDate: "2026-10-21",
             endDate: "2026-10-21",
@@ -33,7 +42,7 @@ function Editor() {
           dateOnly={false}
           singleDate={false}
           onConfirm={() => setWheel(false)}
-          onClose={() => setWheel(false)}
+          onOpenChange={setWheel}
           onRestoreFocus={() => document.getElementById("dates")?.focus()}
         />
       )}
@@ -41,6 +50,7 @@ function Editor() {
   );
 }
 function pointer(coarse: boolean) {
+  vi.stubGlobal("PointerEvent", MouseEvent);
   vi.stubGlobal(
     "matchMedia",
     vi.fn((query: string) => ({
@@ -81,10 +91,56 @@ describe("CAL-01 CAL-02 SCN-CAL-1 P5.5 일정 폼 오버레이", () => {
       fireEvent.click(screen.getByRole("button", { name: "취소하기" }));
       expect(screen.getByLabelText("제목")).toHaveValue("약속");
       fireEvent.click(screen.getByRole("button", { name: "취소" }));
-      fireEvent.click(screen.getByRole("button", { name: "닫기" }));
+      fireEvent.click(
+        within(screen.getByRole("alertdialog")).getByRole("button", {
+          name: "닫기",
+        }),
+      );
       await waitFor(() =>
         expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
       );
+    },
+  );
+  it.each([
+    [true, "ESC"],
+    [true, "바깥"],
+    [true, "취소"],
+    [false, "X"],
+    [false, "ESC"],
+  ] as const)(
+    "터치 여부 %s에서 %s로 닫기도 변경 사항 확인을 거쳐요",
+    async (coarse, action) => {
+      pointer(coarse);
+      render(<Editor />);
+      const title = screen.getByLabelText("제목");
+      await waitFor(() =>
+        expect(screen.getByRole("button", { name: "취소" })).toHaveFocus(),
+      );
+      fireEvent.change(title, { target: { value: "약속" } });
+      if (coarse) {
+        expect(
+          screen.queryByRole("button", { name: "닫기" }),
+        ).not.toBeInTheDocument();
+      }
+      if (action === "ESC") {
+        fireEvent.keyDown(title, { key: "Escape" });
+      } else if (action === "바깥") {
+        // Radix의 바깥 누르기 리스너가 붙은 뒤 전체 클릭 순서를 보내요.
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        const overlay = document.querySelector(".kj-overlay");
+        expect(overlay).toBeInTheDocument();
+        fireEvent.pointerDown(overlay!, { button: 0 });
+        fireEvent.pointerUp(overlay!, { button: 0 });
+        fireEvent.click(overlay!, { button: 0 });
+      } else {
+        const name = action === "X" ? "닫기" : "취소";
+        fireEvent.click(screen.getByRole("button", { name }));
+      }
+      expect(screen.getByRole("alertdialog")).toBeVisible();
+      fireEvent.click(screen.getByRole("button", { name: "취소하기" }));
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+      expect(title).toHaveValue("약속");
+      expect(screen.getByRole("dialog", { name: "새 일정" })).toBeVisible();
     },
   );
   it("Drawer 위 휠은 ESC로 휠만 닫고 연 행으로 포커스가 돌아와요", async () => {

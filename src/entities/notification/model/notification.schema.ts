@@ -7,6 +7,7 @@ export const notificationSchema = z.object({
     "event_created",
     "event_updated",
     "event_deleted",
+    "event_participants_changed",
     "event_reminder",
     "morning_summary",
   ]),

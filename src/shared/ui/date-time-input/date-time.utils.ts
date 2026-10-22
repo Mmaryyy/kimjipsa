@@ -12,7 +12,7 @@ import {
 } from "date-fns";
 import { ko } from "date-fns/locale";
 
-export type EventDateRange = {
+export type DateTimeRange = {
   startDate: string;
   endDate: string;
   startTime: string;
@@ -64,11 +64,11 @@ export function dateOptions(date: string, today: string, otherDate = date) {
 }
 
 /** 시각이 각각 선택인 기존 일정도 빈 시각을 채우지 않고 날짜 길이를 보존한다. */
-export function moveEventStart(
-  range: EventDateRange,
+export function moveRangeStart(
+  range: DateTimeRange,
   startDate: string,
   startTime: string,
-): EventDateRange {
+): DateTimeRange {
   if (
     ![range.startDate, range.endDate, startDate].every((date) =>
       isValid(wheelDate(date)),
@@ -101,14 +101,14 @@ export function moveEventStart(
   };
 }
 
-export function initialWheelRange(range: EventDateRange, dateOnly: boolean) {
+export function initialWheelRange(range: DateTimeRange, dateOnly: boolean) {
   return dateOnly ? { ...range, startTime: "", endTime: "" } : { ...range };
 }
 
-export function defaultEventRange(
+export function defaultDateRange(
   initialDate?: string,
   instant = new Date(),
-): EventDateRange {
+): DateTimeRange {
   const nextHour = startOfHour(
     addMinutes(new TZDate(instant, "Asia/Seoul"), 60),
   );

@@ -4,6 +4,7 @@ import {
   ddayLabelStyles,
 } from "./event-occurrence-row.variants";
 
+import { eventVisibility } from "../model/event.constants";
 import type { EventCategory } from "../api/type";
 import type { EventOccurrence } from "../lib/event-occurrences.utils";
 import Link from "next/link";
@@ -34,7 +35,11 @@ export function EventOccurrenceRow({
     (category) => category.id === event.details?.categoryId,
   );
   const owner = event.ownerId ? ownerNames?.[event.ownerId] : undefined;
+  const ownerLabel = owner && `${owner} 님`;
   const privateEvent = event.visibility === "private";
+  const ownPrivateEvent = privateEvent && event.canEdit;
+  const visibilityLabel = eventVisibility[event.visibility];
+  const privateOwnerLabel = ownPrivateEvent ? "나" : ownerLabel;
   const celebrated = event.details?.ddayStyle === "celebrate";
   const dotColor = privateEvent
     ? "var(--sys-gray3)"
@@ -68,17 +73,13 @@ export function EventOccurrenceRow({
       </Link>
     );
   let metadata = [
-    event.startDate !== event.endDate &&
-      `${event.startDate} ~ ${event.endDate}`,
+    visibilityLabel,
+    privateEvent && privateOwnerLabel,
     event.details?.place,
-    privateEvent ? owner && `${owner}님` : "둘 다",
+    !event.isAllDay && event.endTime && `${event.endTime}까지`,
   ]
     .filter(Boolean)
     .join(" · ");
-  if (!event.details)
-    metadata = [owner && `${owner}님`, event.endTime && `${event.endTime}까지`]
-      .filter(Boolean)
-      .join(" · ");
   if (dday) {
     const dateFormat = dday.anniversary > 0 ? "yyyy년 M월 d일" : "M월 d일";
     metadata = [
@@ -126,7 +127,7 @@ export function EventOccurrenceRow({
               {dday.label}
             </span>
           </Text>
-        ) : privateEvent ? (
+        ) : privateEvent && !ownPrivateEvent ? (
           <LockKeyhole
             size={16}
             aria-label="개인 일정"

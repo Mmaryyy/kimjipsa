@@ -1,25 +1,21 @@
 "use client";
 
 import { useState, type ComponentProps } from "react";
-import { useMediaQuery } from "@/shared/lib";
-import { ConfirmDialog, Drawer, Sheet } from "@/shared/ui";
+import { ConfirmDialog, Sheet } from "@/shared/ui";
 
 export function EventEditorSheet({
   dirty,
-  editing = true,
   onOpenChange,
   ...props
-}: ComponentProps<typeof Sheet> & { dirty: boolean; editing?: boolean }) {
-  const coarse = useMediaQuery("(pointer: coarse)");
+}: ComponentProps<typeof Sheet> & { dirty: boolean }) {
   const [confirming, setConfirming] = useState(false);
-  const Overlay = coarse && editing ? Drawer : Sheet;
   function onChange(open: boolean) {
     if (!open && dirty) setConfirming(true);
     else onOpenChange(open);
   }
   return (
     <>
-      <Overlay {...props} onOpenChange={onChange} />
+      <Sheet {...props} onOpenChange={onChange} />
       <ConfirmDialog
         open={confirming && props.open}
         onOpenChange={setConfirming}

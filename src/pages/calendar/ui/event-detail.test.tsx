@@ -96,6 +96,7 @@ describe("CAL-12 SCN-CAL-7 상세와 삭제 확인", () => {
   afterEach(cleanup);
   it("일정 제목이 있는 확인창에서 취소하면 삭제하지 않아요", () => {
     renderDetail();
+    expect(screen.getByText("공유 일정")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "일정 삭제" }));
     expect(screen.getByRole("alertdialog")).toHaveAccessibleName(
       "‘병원 예약’ 일정을 삭제할까요?",

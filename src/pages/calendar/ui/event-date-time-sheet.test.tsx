@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { EventDateTimeSheet } from "./event-date-time-sheet";
-import type { EventDateRange } from "../lib/event-wheel.utils";
+import { DateTimeSheet } from "@/shared/ui/date-time-input";
+import type { DateTimeRange } from "@/shared/ui/date-time-input";
 
 const range = {
   startDate: "2026-10-21",
@@ -15,7 +15,7 @@ function Editor({
   initial = range,
   dateOnly = false,
 }: {
-  initial?: EventDateRange;
+  initial?: DateTimeRange;
   dateOnly?: boolean;
 }) {
   const [value, setValue] = useState(initial);
@@ -29,12 +29,14 @@ function Editor({
         </button>
       ))}
       {tab && (
-        <EventDateTimeSheet
+        <DateTimeSheet
           range={value}
           initialTab={tab}
           dateOnly={dateOnly}
           singleDate={false}
-          onClose={() => setTab(null)}
+          onOpenChange={(open) => {
+            if (!open) setTab(null);
+          }}
           onConfirm={(next) => {
             setValue(next);
             setTab(null);

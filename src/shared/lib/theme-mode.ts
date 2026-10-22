@@ -11,6 +11,7 @@ function applyThemeMode(mode: ThemeMode) {
 }
 
 export function setThemeMode(mode: ThemeMode) {
+  if (mode === getThemeModeSnapshot()) return;
   applyThemeMode(mode);
   try {
     localStorage.setItem(themeModeStorageKey, mode);

@@ -1,7 +1,7 @@
 import type { categoryColors } from "@/shared/ui";
 export const eventPollingIntervalMs = 30_000;
 export const eventVisibility = {
-  shared: "둘 다",
+  shared: "공유",
   private: "개인 일정",
 } as const;
 export const eventCategoryColors = {

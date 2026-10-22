@@ -100,15 +100,26 @@ describe("CAL-09 알림 목록", () => {
   });
   it("SCN-CAL-5 알림을 읽은 다음 일정 상세로 이동해요", async () => {
     render(<NotificationsPage />);
-    fireEvent.click(screen.getByRole("button", { name: /민호님이/ }));
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /‘치과 정기검진’ 일정이 변경되었어요\./,
+      }),
+    );
     await waitFor(() =>
       expect(replace).toHaveBeenCalledWith("/calendar?event=event"),
     );
     expect(mutateAsync).toHaveBeenCalledWith({ id: "notice" });
   });
-  it.each(["event_deleted", "event_updated"])(
+  it.each([
+    ["event_deleted", /‘치과 정기검진’ 일정이 삭제되었어요\./],
+    ["event_updated", /‘치과 정기검진’ 일정이 변경되었어요\./],
+    [
+      "event_participants_changed",
+      /‘치과 정기검진’ 일정의 참가 인원이 변경되었어요\./,
+    ],
+  ])(
     "SCN-CAL-5 삭제된 일정의 %s 알림은 읽고 시트를 닫아요",
-    async (kind) => {
+    async (kind, message) => {
       useNotifications.mockReturnValue({
         data: [
           {
@@ -119,7 +130,7 @@ describe("CAL-09 알림 목록", () => {
         ],
       });
       render(<NotificationsPage />);
-      fireEvent.click(screen.getByRole("button", { name: /민호님이/ }));
+      fireEvent.click(screen.getByRole("button", { name: message }));
       await waitFor(() => expect(mutateAsync).toHaveBeenCalled());
       await waitFor(() =>
         expect(replace).toHaveBeenCalledWith("/", { scroll: false }),
@@ -135,7 +146,11 @@ describe("CAL-09 알림 목록", () => {
   it("SCN-CAL-5 읽음 저장이 실패하면 이동하지 않고 오류를 보여 줘요", async () => {
     mutateAsync.mockRejectedValue(new Error("읽음 저장 실패"));
     render(<NotificationsPage />);
-    fireEvent.click(screen.getByRole("button", { name: /민호님이/ }));
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /‘치과 정기검진’ 일정이 변경되었어요\./,
+      }),
+    );
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "읽음 저장 실패",
     );

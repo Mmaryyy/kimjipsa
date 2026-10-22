@@ -262,7 +262,7 @@ describe("CAL-07 일간·주간 일정 구성", () => {
     expect(onOpen).toHaveBeenCalledWith("dentist");
     expect(screen.queryByText("치과 병원")).not.toBeInTheDocument();
     expect(screen.queryByText("검진 메모")).not.toBeInTheDocument();
-    expect(screen.queryByText("둘 다")).not.toBeInTheDocument();
+    expect(screen.queryByText("공유")).not.toBeInTheDocument();
   });
 
   it("같은 시간의 일정을 쌓고 개인 일정은 시각과 이름을 보여 줘요", () => {
@@ -287,7 +287,7 @@ describe("CAL-07 일간·주간 일정 구성", () => {
     );
     const slot = timelineSlot("10:00");
     expect(slot.getAllByRole("button")).toHaveLength(2);
-    expect(slot.getByText("10:15 개인 일정 · 민호님")).toBeVisible();
+    expect(slot.getByText("10:15 개인 일정 · 민호 님")).toBeVisible();
     expect(slot.queryByLabelText("개인 일정")).not.toBeInTheDocument();
   });
 

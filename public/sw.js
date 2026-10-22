@@ -12,7 +12,7 @@ self.addEventListener("push", (event) => {
     /* Show a safe fallback. */
   }
   event.waitUntil(
-    self.registration.showNotification("김집사", {
+    self.registration.showNotification("일정 알림", {
       body:
         typeof payload.body === "string" ? payload.body : "새 알림이 있어요.",
       tag: payload.id,
