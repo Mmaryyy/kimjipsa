@@ -34,6 +34,9 @@ create table private.notification_push_log (
   created_at timestamptz not null default now(),
   primary key (notification_id, endpoint)
 );
+-- No policies: only the security definer worker (table owner) reads and writes these logs.
+alter table private.notification_schedule_log enable row level security;
+alter table private.notification_push_log enable row level security;
 revoke all on private.notification_schedule_log, private.notification_push_log from public, anon, authenticated;
 
 -- No general service-role credential is needed by the application. Only this
