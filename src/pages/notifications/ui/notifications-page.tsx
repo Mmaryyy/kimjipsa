@@ -1,11 +1,11 @@
 "use client";
-import { useState } from "react";
+import { LoaderCircle } from "lucide-react";
+import { useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format, subDays } from "date-fns";
 import { tz } from "@date-fns/tz";
 import {
   useNotifications,
-  useUnreadNotificationCount,
   useMarkNotificationsRead,
   notificationMessage,
   type Notification,
@@ -55,10 +55,12 @@ function NotificationsSkeleton() {
 function NotificationRow({
   notification,
   disabled,
+  pending,
   onRead,
 }: {
   notification: Notification;
   disabled: boolean;
+  pending: boolean;
   onRead: (notification: Notification) => void;
 }) {
   const unread = notification.read_at === null;
@@ -67,6 +69,7 @@ function NotificationRow({
       <TextButton
         className="w-full justify-start gap-3 whitespace-normal text-left font-normal text-foreground"
         disabled={disabled}
+        aria-busy={pending}
         onClick={() => onRead(notification)}
       >
         <span
@@ -81,6 +84,12 @@ function NotificationRow({
           {unread && <span className="sr-only">안 읽음: </span>}
           {notificationMessage(notification)}
         </span>
+        {pending && (
+          <LoaderCircle
+            aria-label="읽음 처리 중"
+            className="size-4 shrink-0 animate-spin motion-reduce:animate-none"
+          />
+        )}
         <time
           dateTime={notification.created_at}
           className="flex-none text-caption text-muted-foreground"
@@ -98,9 +107,13 @@ function NotificationsList({
 }) {
   const notifications = useNotifications();
   const mark = useMarkNotificationsRead();
-  const unreadCount = useUnreadNotificationCount();
+  const busy = useRef(false);
+  const [pendingId, setPendingId] = useState<string | null>(null);
   const [failure, setFailure] = useState("");
   const onRead = async (notification?: Notification) => {
+    if (busy.current) return;
+    busy.current = true;
+    setPendingId(notification?.id ?? "all");
     setFailure("");
     try {
       await mark.mutateAsync(notification ? { id: notification.id } : {});
@@ -119,12 +132,20 @@ function NotificationsList({
         );
       else if (notification) onNavigate();
     } catch (error) {
+      busy.current = false;
+      setPendingId(null);
       setFailure(
         error instanceof Error ? error.message : "읽음 처리하지 못했어요.",
       );
+    } finally {
+      if (!notification) {
+        busy.current = false;
+        setPendingId(null);
+      }
     }
   };
-  const unread = (unreadCount.data ?? 0) > 0;
+  const unread =
+    notifications.data?.some((entry) => entry.read_at === null) ?? false;
   const groups = new Map<string, Notification[]>();
   const now = new Date();
   for (const entry of notifications.data ?? []) {
@@ -155,7 +176,8 @@ function NotificationsList({
             <NotificationRow
               key={notification.id}
               notification={notification}
-              disabled={mark.isPending}
+              disabled={pendingId !== null}
+              pending={pendingId === notification.id}
               onRead={(entry) => {
                 void onRead(entry);
               }}
@@ -184,12 +206,19 @@ function NotificationsList({
       action={
         <TextButton
           data-od-id="notifications-read-all"
-          disabled={!unread || mark.isPending}
+          disabled={!unread || pendingId !== null}
+          aria-busy={pendingId === "all"}
           onClick={() => {
             void onRead();
           }}
         >
-          모두 읽음
+          {pendingId === "all" && (
+            <LoaderCircle
+              aria-hidden
+              className="size-4 animate-spin motion-reduce:animate-none"
+            />
+          )}
+          {pendingId === "all" ? "읽음 처리 중" : "모두 읽음"}
         </TextButton>
       }
     >

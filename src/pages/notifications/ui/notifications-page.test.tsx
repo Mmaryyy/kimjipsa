@@ -11,7 +11,6 @@ import { SkeletonStatus } from "@/shared/ui";
 import { NotificationsPage } from "./notifications-page";
 const {
   useNotifications,
-  useUnreadNotificationCount,
   mutateAsync,
   replace,
   back,
@@ -23,7 +22,6 @@ const {
   replace: vi.fn(),
   back: vi.fn(),
   useSearchParams: vi.fn(),
-  useUnreadNotificationCount: vi.fn(),
   refetch: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({
@@ -33,7 +31,6 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/entities/notification", async (original) => ({
   ...(await original<typeof Notifications>()),
   useNotifications,
-  useUnreadNotificationCount,
   useMarkNotificationsRead: () => ({ mutateAsync, isPending: false }),
 }));
 const notification = {
@@ -48,7 +45,6 @@ beforeEach(() => {
   vi.clearAllMocks();
   window.history.replaceState(null, "", "/?notifications=open");
   useSearchParams.mockReturnValue(new URLSearchParams("notifications=open"));
-  useUnreadNotificationCount.mockReturnValue({ data: 1 });
   mutateAsync.mockResolvedValue(null);
   useNotifications.mockReturnValue({
     data: [notification],
@@ -158,7 +154,6 @@ describe("CAL-09 알림 목록", () => {
   });
   it("SCN-CAL-5 빈 알림을 안내해요", () => {
     useNotifications.mockReturnValue({ data: [] });
-    useUnreadNotificationCount.mockReturnValue({ data: 0 });
     render(<NotificationsPage />);
     expect(screen.getByText("아직 알림이 없어요")).toBeVisible();
     expect(screen.getByRole("button", { name: "모두 읽음" })).toBeDisabled();

@@ -8,7 +8,6 @@ import {
   listEvents,
 } from "@/entities/event/index.server";
 import {
-  countUnreadNotifications,
   listNotifications,
   markNotificationsRead,
 } from "@/entities/notification/index.server";
@@ -124,13 +123,17 @@ describe("CAL-09 앱 내 변경 알림", () => {
       "eventTitle",
     );
   });
-  it("SCN-CAL-5 최근 30개만 보여 주고 안 읽은 수는 전체에서 세어요", async () => {
+  it("SCN-CAL-5 최근 30개만 보여 주고 모두 읽음 처리해요", async () => {
     for (let index = 0; index < 35; index++) await saveEvent(input());
     state.perspective = 1;
     expect(await listNotifications()).toHaveLength(30);
-    expect(await countUnreadNotifications()).toBe(35);
+    expect(
+      (await listNotifications()).filter((entry) => !entry.read_at),
+    ).toHaveLength(30);
     await markNotificationsRead({});
-    expect(await countUnreadNotifications()).toBe(0);
+    expect(
+      (await listNotifications()).every((entry) => entry.read_at !== null),
+    ).toBe(true);
   });
   it("SCN-CAL-5 본인 알림만 하나씩 또는 모두 읽음 처리해요", async () => {
     await saveEvent(input());

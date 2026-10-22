@@ -1,6 +1,5 @@
 export {
   useNotifications,
-  useUnreadNotificationCount,
   useMarkNotificationsRead,
   notificationsQueryKey,
 } from "./model/use-notifications";

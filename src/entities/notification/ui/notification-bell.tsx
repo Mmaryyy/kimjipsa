@@ -1,10 +1,11 @@
 "use client";
 import { TextButton } from "@/shared/ui";
 import { Bell } from "lucide-react";
-import { useUnreadNotificationCount } from "../model/use-notifications";
+import { useNotifications } from "../model/use-notifications";
 export function NotificationBell() {
-  const notifications = useUnreadNotificationCount();
-  const count = notifications.data ?? 0;
+  const notifications = useNotifications();
+  const count =
+    notifications.data?.filter((entry) => entry.read_at === null).length ?? 0;
   return (
     <TextButton
       onClick={() => {

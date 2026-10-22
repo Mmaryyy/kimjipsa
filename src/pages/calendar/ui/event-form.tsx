@@ -1,4 +1,5 @@
 "use client";
+import { useMediaQuery } from "@/shared/lib";
 import { useCallback, useEffect, type FormEvent } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -64,6 +65,7 @@ export function EventForm({
   initialDate?: string;
   onDirtyChange?: (dirty: boolean) => void;
 }) {
+  const coarse = useMediaQuery("(pointer: coarse)");
   const { onSave } = useEventEditor(event?.id, onSaved);
   const {
     register,
@@ -151,7 +153,7 @@ export function EventForm({
               {...props}
               data-od-id="f-title"
               {...register("title")}
-              autoFocus
+              autoFocus={!coarse}
             />
           )}
         </FormFieldRow>

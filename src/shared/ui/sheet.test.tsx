@@ -55,7 +55,7 @@ describe.each([true, false])("r127-f1 Sheet 터치 여부 %s", (coarse) => {
       const dialog = screen.getByRole("dialog", { name: "시트" });
       const close = within(dialog).queryByRole("button", { name: "닫기" });
       const focusTarget = coarse
-        ? within(dialog).getByRole("button", { name: "내용 동작" })
+        ? dialog
         : within(dialog).getByRole("button", { name: "닫기" });
       await waitFor(() => expect(focusTarget).toHaveFocus());
       if (coarse) {

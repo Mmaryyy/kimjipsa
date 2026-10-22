@@ -1,9 +1,5 @@
 import "server-only";
-export {
-  countUnreadNotifications,
-  listNotifications,
-  markNotificationsRead,
-} from "./api/server";
+export { listNotifications, markNotificationsRead } from "./api/server";
 export {
   hasPushSubscription,
   savePushSubscription,

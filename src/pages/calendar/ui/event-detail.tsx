@@ -66,6 +66,7 @@ export function EventDetail({
   if (editing && event.data.canEdit)
     return (
       <EventForm
+        formId="edit-event-form"
         onDirtyChange={onDirtyChange}
         key={id}
         event={event.data}

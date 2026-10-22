@@ -155,6 +155,7 @@ function CalendarContent() {
       </Link>
       <EventEditorSheet
         dirty={dirty}
+        formId="new-event-form"
         open={creating}
         onOpenChange={(open) => {
           if (!open) closeNew();
@@ -186,13 +187,30 @@ function CalendarContent() {
       </EventEditorSheet>
       <EventEditorSheet
         dirty={dirty}
+        formId={editing ? "edit-event-form" : undefined}
         open={selectedId !== null}
         onOpenChange={(open) => {
           if (!open) closeDetail();
         }}
         title="일정"
         odId="sheet-event-detail"
-        showCloseButton
+        showCloseButton={!editing}
+        leadingAction={
+          editing
+            ? (onOpenChange) => (
+                <TextButton onClick={() => onOpenChange(false)}>
+                  취소
+                </TextButton>
+              )
+            : undefined
+        }
+        action={
+          editing ? (
+            <TextButton type="submit" form="edit-event-form">
+              저장
+            </TextButton>
+          ) : undefined
+        }
         description="일정 내용을 확인하고 수정하거나 삭제해요."
       >
         {selectedId && (

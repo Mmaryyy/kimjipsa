@@ -9,6 +9,8 @@ type ConfirmDialogProps = OverlayProps & {
   confirmLabel?: string;
   onConfirm: () => void;
   pending?: boolean;
+  cancelLabel?: string;
+  secondaryAction?: { label: string; onClick: () => void };
   destructive?: boolean;
 };
 
@@ -22,6 +24,8 @@ export function ConfirmDialog({
   onConfirm,
   pending = false,
   destructive = true,
+  cancelLabel = "취소하기",
+  secondaryAction,
   trigger,
   theme,
 }: ConfirmDialogProps) {
@@ -47,10 +51,20 @@ export function ConfirmDialog({
           <div className="mt-4 grid grid-cols-2 gap-2">
             <AlertDialog.Cancel asChild>
               <Button variant="gray" disabled={pending}>
-                취소하기
+                {cancelLabel}
               </Button>
             </AlertDialog.Cancel>
+            {secondaryAction && (
+              <Button
+                variant="gray"
+                disabled={pending}
+                onClick={secondaryAction.onClick}
+              >
+                {secondaryAction.label}
+              </Button>
+            )}
             <Button
+              className={secondaryAction ? "col-span-2" : undefined}
               variant={destructive ? "danger" : "primary"}
               disabled={pending}
               onClick={onConfirm}

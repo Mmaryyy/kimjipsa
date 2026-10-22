@@ -7,7 +7,3 @@ export function fetchNotifications() {
 export function markNotificationsRead(input: { id?: string }) {
   return request<null>(notificationsApiPath, input);
 }
-
-export function fetchUnreadNotificationCount() {
-  return request<number>(`${notificationsApiPath}?unread=count`);
-}

@@ -88,12 +88,12 @@ describe("CAL-01 CAL-02 SCN-CAL-1 P5.5 일정 폼 오버레이", () => {
       });
       fireEvent.click(screen.getByRole("button", { name: "취소" }));
       expect(screen.getByRole("alertdialog")).toBeVisible();
-      fireEvent.click(screen.getByRole("button", { name: "취소하기" }));
+      fireEvent.click(screen.getByRole("button", { name: "계속 편집" }));
       expect(screen.getByLabelText("제목")).toHaveValue("약속");
       fireEvent.click(screen.getByRole("button", { name: "취소" }));
       fireEvent.click(
         within(screen.getByRole("alertdialog")).getByRole("button", {
-          name: "닫기",
+          name: "저장 안 함",
         }),
       );
       await waitFor(() =>
@@ -113,9 +113,7 @@ describe("CAL-01 CAL-02 SCN-CAL-1 P5.5 일정 폼 오버레이", () => {
       pointer(coarse);
       render(<Editor />);
       const title = screen.getByLabelText("제목");
-      await waitFor(() =>
-        expect(screen.getByRole("button", { name: "취소" })).toHaveFocus(),
-      );
+      await waitFor(() => expect(screen.getByRole("dialog")).toBeVisible());
       fireEvent.change(title, { target: { value: "약속" } });
       if (coarse) {
         expect(
@@ -137,7 +135,7 @@ describe("CAL-01 CAL-02 SCN-CAL-1 P5.5 일정 폼 오버레이", () => {
         fireEvent.click(screen.getByRole("button", { name }));
       }
       expect(screen.getByRole("alertdialog")).toBeVisible();
-      fireEvent.click(screen.getByRole("button", { name: "취소하기" }));
+      fireEvent.click(screen.getByRole("button", { name: "계속 편집" }));
       expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
       expect(title).toHaveValue("약속");
       expect(screen.getByRole("dialog", { name: "새 일정" })).toBeVisible();

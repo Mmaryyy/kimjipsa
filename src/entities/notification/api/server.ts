@@ -64,24 +64,6 @@ export async function listNotifications() {
   throwDatabaseError(error);
   return z.array(notificationSchema).parse(data);
 }
-export async function countUnreadNotifications() {
-  const context = await notificationContext();
-  if (context.mock)
-    return (await mockJson("notifications")).filter(
-      (entry) =>
-        entry.user_id === context.userId &&
-        entry.family_id === context.familyId &&
-        entry.read_at === null,
-    ).length;
-  const { count, error } = await context.client
-    .from("notifications")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", context.userId)
-    .eq("family_id", context.familyId)
-    .is("read_at", null);
-  throwDatabaseError(error);
-  return count ?? 0;
-}
 export async function markNotificationsRead(input: unknown) {
   const { id } = markNotificationsSchema.parse(input);
   const context = await notificationContext();

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useRef } from "react";
+import { createContext, useContext, useEffect, useRef } from "react";
 import { Drawer as DrawerPrimitive } from "vaul";
 import { cn } from "@/shared/lib";
 import type { SheetProps } from "./overlay.types";
@@ -8,7 +8,7 @@ import { SheetHeader } from "./sheet-header";
 
 const DrawerContext = createContext(false);
 
-/** Vaul을 쓰는 유일한 진입점. 폼 스크롤과 드래그 판정은 같은 스크롤 컨테이너에서 처리한다. */
+/** Vaul을 쓰는 유일한 진입점. 손잡이만 드래그하고 본문은 독립적으로 스크롤한다. */
 export function Drawer({
   open,
   onOpenChange,
@@ -30,6 +30,32 @@ export function Drawer({
   const Root = nested ? DrawerPrimitive.NestedRoot : DrawerPrimitive.Root;
   const contentRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const viewport = window.visualViewport;
+    const updateViewport = () => {
+      const height = viewport?.height ?? window.innerHeight;
+      const bottom = Math.max(
+        0,
+        window.innerHeight - height - (viewport?.offsetTop ?? 0),
+      );
+      contentRef.current?.style.setProperty(
+        "--drawer-viewport-height",
+        `${height}px`,
+      );
+      contentRef.current?.style.setProperty("bottom", `${bottom}px`);
+    };
+    const frame = requestAnimationFrame(updateViewport);
+    viewport?.addEventListener("resize", updateViewport);
+    viewport?.addEventListener("scroll", updateViewport);
+    window.addEventListener("resize", updateViewport);
+    return () => {
+      cancelAnimationFrame(frame);
+      viewport?.removeEventListener("resize", updateViewport);
+      viewport?.removeEventListener("scroll", updateViewport);
+      window.removeEventListener("resize", updateViewport);
+    };
+  }, [open]);
   function onChange(next: boolean) {
     // 닫기를 보류한 제어형 폼도 드래그 위치에서 벗어나 원래 자리에 남아야 한다.
     if (!next) {
@@ -44,7 +70,8 @@ export function Drawer({
       onOpenChange={onChange}
       shouldScaleBackground={false}
       repositionInputs={false}
-      autoFocus
+      handleOnly
+      autoFocus={false}
     >
       <DrawerContext.Provider value={true}>
         {trigger && (
@@ -57,21 +84,30 @@ export function Drawer({
           />
           <DrawerPrimitive.Content
             ref={contentRef}
-            onOpenAutoFocus={onOpenAutoFocus}
+            style={{ touchAction: "pan-y" }}
+            onOpenAutoFocus={(event) => {
+              onOpenAutoFocus?.(event);
+              if (!event.defaultPrevented)
+                contentRef.current?.focus({ preventScroll: true });
+              event.preventDefault();
+            }}
             onCloseAutoFocus={onCloseAutoFocus}
             data-theme={theme}
             data-od-id={odId}
             className={cn([
-              "fixed inset-x-0 bottom-0 z-81 max-h-[var(--sheet-mobile-max-height)]",
-              "overflow-y-auto overscroll-contain rounded-t-[var(--sp-6)] bg-background px-4",
-              "pb-[calc(var(--sp-6)+env(safe-area-inset-bottom))] text-foreground",
+              "fixed inset-x-0 bottom-0 z-81 flex flex-col",
+              "[--drawer-safe-height:calc(var(--drawer-viewport-height,100dvh)-env(safe-area-inset-top))]",
+              "max-h-[min(var(--sheet-mobile-max-height),var(--drawer-safe-height))]",
+              "overflow-hidden rounded-t-[var(--sp-6)] bg-background px-4",
+              "text-foreground",
               "[overflow-wrap:anywhere] shadow-[var(--shadow-sheet)] outline-none after:hidden",
               className,
             ])}
           >
-            <div className="sticky top-0 z-1 bg-background pt-3">
-              <div
-                aria-hidden
+            <div className="shrink-0 bg-background pt-3">
+              <DrawerPrimitive.Handle
+                preventCycle
+                style={{ touchAction: "none" }}
                 className="mx-auto h-1 w-10 rounded-full bg-[var(--sys-gray3)]"
               />
               {hideHeader ? (
@@ -95,7 +131,14 @@ export function Drawer({
             <DrawerPrimitive.Description className="sr-only">
               {description}
             </DrawerPrimitive.Description>
-            {children}
+            <div
+              className={cn([
+                "min-h-0 flex-1 overflow-y-auto overscroll-contain",
+                "pb-[calc(var(--sp-6)+env(safe-area-inset-bottom))]",
+              ])}
+            >
+              {children}
+            </div>
           </DrawerPrimitive.Content>
         </DrawerPrimitive.Portal>
       </DrawerContext.Provider>
