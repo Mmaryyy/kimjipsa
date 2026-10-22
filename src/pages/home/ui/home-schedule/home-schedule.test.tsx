@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type * as EventModule from "@/entities/event";
 import type * as UserModule from "@/entities/user";
 import { SkeletonStatus } from "@/shared/ui";
-import { HomeSchedule } from "./home-schedule";
+import HomeSchedule from ".";
 const { useEvents, useEventCategories, useHomeSettings } = vi.hoisted(() => ({
   useEvents: vi.fn(),
   useEventCategories: vi.fn(),

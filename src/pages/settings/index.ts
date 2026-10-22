@@ -1,1 +1,1 @@
-export { AppearanceSettingsPage } from "./ui/appearance-settings-page";
+export { default as AppearanceSettingsPage } from "./ui/appearance-settings-page";

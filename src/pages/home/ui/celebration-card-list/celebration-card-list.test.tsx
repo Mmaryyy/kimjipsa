@@ -1,8 +1,11 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import type * as EventModule from "@/entities/event";
+
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+
 import type { CalendarEvent } from "@/entities/event";
-import { CelebrationCards } from "./celebration-cards";
+import CelebrationCardList from ".";
+
 const { useDdayDismissals, dismiss } = vi.hoisted(() => ({
   useDdayDismissals: vi.fn(),
   dismiss: vi.fn(),
@@ -44,7 +47,7 @@ describe("CAL-16 SCN-CAL-10 당일 축하", () => {
   });
   it("등록한 해에는 주년 없이 문구를 보여 주고 닫음 저장을 요청해요", () => {
     render(
-      <CelebrationCards
+      <CelebrationCardList
         events={[event]}
         instant={new Date("2026-10-11T12:00:00+09:00")}
       />,
@@ -61,14 +64,14 @@ describe("CAL-16 SCN-CAL-10 당일 축하", () => {
       isPending: false,
     });
     const { rerender } = render(
-      <CelebrationCards
+      <CelebrationCardList
         events={[event]}
         instant={new Date("2026-10-11T12:00:00+09:00")}
       />,
     );
     expect(screen.queryByRole("article")).not.toBeInTheDocument();
     rerender(
-      <CelebrationCards
+      <CelebrationCardList
         events={[event]}
         instant={new Date("2027-10-11T12:00:00+09:00")}
       />,
@@ -79,14 +82,14 @@ describe("CAL-16 SCN-CAL-10 당일 축하", () => {
   });
   it("당일이 아니거나 내용이 가려진 개인 D-day는 축하 화면에 노출하지 않아요", () => {
     const { rerender } = render(
-      <CelebrationCards
+      <CelebrationCardList
         events={[event]}
         instant={new Date("2027-10-10T12:00:00+09:00")}
       />,
     );
     expect(screen.queryByRole("article")).not.toBeInTheDocument();
     rerender(
-      <CelebrationCards
+      <CelebrationCardList
         events={[{ ...event, visibility: "private", details: null }]}
         instant={new Date("2027-10-11T12:00:00+09:00")}
       />,
@@ -101,7 +104,7 @@ describe("CAL-16 SCN-CAL-10 당일 축하", () => {
       refetch,
     });
     render(
-      <CelebrationCards
+      <CelebrationCardList
         events={[event]}
         instant={new Date("2026-10-11T12:00:00+09:00")}
       />,

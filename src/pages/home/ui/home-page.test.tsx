@@ -1,8 +1,9 @@
-import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { HomePage } from "./home-page";
+import { render, screen } from "@testing-library/react";
 
-vi.mock("./home-schedule", () => ({ HomeSchedule: () => <h1>오늘</h1> }));
+import HomePage from ".";
+
+vi.mock("./home-schedule", () => ({ default: () => <h1>오늘</h1> }));
 
 describe("CAL-13 홈 화면 조립", () => {
   it("일정 위젯이 제공하는 오늘 머리를 한 번만 보여 줘요", () => {

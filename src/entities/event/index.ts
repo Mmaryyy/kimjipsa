@@ -52,4 +52,7 @@ export {
 } from "./model/use-events";
 export { EventListSkeleton, EventRowsSkeleton } from "./ui/event-list-skeleton";
 
-export { reminderOptions, reminderLabel } from "./model/reminder.constants";
+export {
+  reminderOptions,
+  type ReminderOptionValue,
+} from "./model/reminder.constants";

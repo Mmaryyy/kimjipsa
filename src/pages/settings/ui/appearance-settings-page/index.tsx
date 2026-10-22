@@ -1,39 +1,25 @@
 "use client";
-import { cn } from "@/shared/lib";
-import Link from "next/link";
-import { viewportPath } from "@/shared/config";
 
-import { NotificationSettings } from "./notification-settings";
-import { HomeSettings } from "./home-settings";
-import { useSignOut } from "@/features/account";
-import { AccountSettings } from "./account-settings";
-import { HouseholdSettings } from "./household-settings";
 import {
-  TextButton,
-  Text,
-  ThemeModeSelector,
   GroupLabel,
   PageHeader,
+  Text,
+  TextButton,
+  ThemeModeSelector,
 } from "@/shared/ui";
 
-function PlannedSettingsSection({
-  title,
-  odId,
-}: {
-  title: string;
-  odId: string;
-}) {
-  return (
-    <section data-od-id={odId} aria-label={title}>
-      <GroupLabel>{title}</GroupLabel>
-      <Text as="p" variant="caption" className="text-muted-foreground">
-        준비 중이에요.
-      </Text>
-    </section>
-  );
-}
+import AccountSettings from "../account-settings";
+import HomeSettings from "../home-settings";
+import HouseholdSettings from "../household-settings";
+import Link from "next/link";
+import NotificationSettings from "../notification-settings";
+import PlannedSettingsSection from "./PlannedSection";
+import SettingsRow from "../settings-row";
+import { cn } from "@/shared/lib";
+import { useSignOut } from "@/features/account";
+import { viewportPath } from "@/shared/config";
 
-export function AppearanceSettingsPage() {
+const AppearanceSettingsPage = () => {
   const { onSignOut, pending, error } = useSignOut();
 
   return (
@@ -52,10 +38,7 @@ export function AppearanceSettingsPage() {
       <HomeSettings />
       <section data-od-id="set-appearance">
         <GroupLabel>화면</GroupLabel>
-        <div className="flex min-h-11 items-center justify-between gap-3">
-          <span>모드</span>
-          <ThemeModeSelector />
-        </div>
+        <SettingsRow label="모드" action={<ThemeModeSelector />} />
       </section>
       <AccountSettings section="members" />
       <HouseholdSettings />
@@ -74,15 +57,15 @@ export function AppearanceSettingsPage() {
         >
           로그아웃
         </TextButton>
-        <div
-          className="flex min-h-11 items-center justify-between gap-3"
-          data-od-id="s-withdraw"
-        >
-          <span className="text-muted-foreground">탈퇴하기</span>
-          <Text variant="caption" className="text-muted-foreground">
-            준비 중
-          </Text>
-        </div>
+        <SettingsRow
+          odId="s-withdraw"
+          label={<span className="text-muted-foreground">탈퇴하기</span>}
+          action={
+            <Text variant="caption" className="text-muted-foreground">
+              준비 중
+            </Text>
+          }
+        />
         {error && (
           <Text as="p" role="alert" className="text-error-text">
             {error}
@@ -101,4 +84,6 @@ export function AppearanceSettingsPage() {
       )}
     </div>
   );
-}
+};
+
+export default AppearanceSettingsPage;

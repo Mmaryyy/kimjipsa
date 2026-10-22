@@ -8,14 +8,14 @@ import {
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type * as UserEntity from "@/entities/user";
 import { ToastProvider } from "@/shared/ui";
-import { NotificationSettings } from "./notification-settings";
+import NotificationSettings from ".";
 const { save, mutation, enablePush, checkPush } = vi.hoisted(() => ({
   save: vi.fn(),
   enablePush: vi.fn(),
   checkPush: vi.fn(),
   mutation: { isPending: false },
 }));
-vi.mock("../api/web-push", () => ({
+vi.mock("../../api/web-push", () => ({
   hasWebPushSubscription: checkPush,
   enableWebPush: enablePush,
 }));

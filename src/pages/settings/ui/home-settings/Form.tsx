@@ -1,31 +1,25 @@
-"use client";
-import { HomeSettingsSkeleton } from "./settings-skeleton";
 import { useCallback, useRef, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { calendarViews } from "@/entities/event";
 import {
   homeSettingsSchema,
-  useHomeSettings,
   useSaveHomeSettings,
   type HomeSettings as Settings,
 } from "@/entities/user";
-import {
-  ErrorState,
-  FormFieldRow,
-  GroupLabel,
-  SegmentedControl,
-  Switch,
-  Toast,
-} from "@/shared/ui";
-function HomeSettingsForm({ settings }: { settings: Settings }) {
+import { FormFieldRow, SegmentedControl, Switch, Toast } from "@/shared/ui";
+import { isEqual } from "lodash-es";
+
+const HomeSettingsForm = ({ settings }: { settings: Settings }) => {
   const save = useSaveHomeSettings();
   const savedSettings = useRef(settings);
   const saving = useRef(false);
   const pendingSettings = useRef<Settings | null>(null);
+
   const [isSaving, setIsSaving] = useState(false);
   const [toastOpen, setToastOpen] = useState(false);
   const [message, setMessage] = useState("");
+
   const {
     control,
     handleSubmit,
@@ -35,12 +29,11 @@ function HomeSettingsForm({ settings }: { settings: Settings }) {
     resolver: zodResolver(homeSettingsSchema),
     defaultValues: settings,
   });
+
   const onSubmit = useCallback(
     async (values: Settings) => {
       const unchanged = (next: Settings) =>
-        next.homeView === savedSettings.current.homeView &&
-        next.upcomingEnabled === savedSettings.current.upcomingEnabled &&
-        next.upcomingCount === savedSettings.current.upcomingCount;
+        isEqual(next, savedSettings.current);
       if (!saving.current && unchanged(values)) return;
       pendingSettings.current = values;
       if (saving.current) return;
@@ -168,25 +161,6 @@ function HomeSettingsForm({ settings }: { settings: Settings }) {
       />
     </form>
   );
-}
-export function HomeSettings() {
-  const settings = useHomeSettings();
-  let content;
-  if (settings.isError)
-    content = (
-      <ErrorState
-        message={settings.error.message}
-        onRetry={() => {
-          void settings.refetch();
-        }}
-      />
-    );
-  else if (settings.isPending) content = <HomeSettingsSkeleton />;
-  else content = <HomeSettingsForm settings={settings.data} />;
-  return (
-    <section data-od-id="set-home" aria-labelledby="home-settings-title">
-      <GroupLabel id="home-settings-title">홈 화면</GroupLabel>
-      {content}
-    </section>
-  );
-}
+};
+
+export default HomeSettingsForm;

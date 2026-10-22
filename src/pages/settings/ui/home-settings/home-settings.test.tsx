@@ -1,3 +1,6 @@
+import type * as UserModule from "@/entities/user";
+
+import { SkeletonStatus, ToastProvider } from "@/shared/ui";
 import {
   act,
   fireEvent,
@@ -6,9 +9,8 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type * as UserModule from "@/entities/user";
-import { SkeletonStatus, ToastProvider } from "@/shared/ui";
-import { HomeSettings } from "./home-settings";
+
+import HomeSettings from "./";
 const { useHomeSettings, mutateAsync } = vi.hoisted(() => ({
   useHomeSettings: vi.fn(),
   mutateAsync: vi.fn(),

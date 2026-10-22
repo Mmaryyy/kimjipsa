@@ -10,14 +10,12 @@ import {
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { setThemeMode } from "@/shared/lib";
 import type * as SharedApi from "@/shared/api";
-import { AppearanceSettingsPage } from "./appearance-settings-page";
+import AppearanceSettingsPage from ".";
 
-vi.mock("./notification-settings", () => ({
-  NotificationSettings: () => <div />,
-}));
-vi.mock("./home-settings", () => ({ HomeSettings: () => <div /> }));
-vi.mock("./account-settings", () => ({ AccountSettings: () => <div /> }));
-vi.mock("./household-settings", () => ({ HouseholdSettings: () => <div /> }));
+vi.mock("../notification-settings", () => ({ default: () => <div /> }));
+vi.mock("../home-settings", () => ({ default: () => <div /> }));
+vi.mock("../account-settings", () => ({ default: () => <div /> }));
+vi.mock("../household-settings", () => ({ default: () => <div /> }));
 
 const { signOut, replace } = vi.hoisted(() => ({
   signOut: vi.fn(),

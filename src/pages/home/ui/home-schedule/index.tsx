@@ -12,15 +12,16 @@ import {
 } from "@/entities/event";
 import { ErrorState, PageHeader, SectionHeader, Text } from "@/shared/ui";
 
-import { NotificationBell } from "@/entities/notification";
 import { CalendarView } from "@/widgets/calendar-view";
-import { CelebrationCards } from "./celebration-cards";
-import { UpcomingEvents } from "./upcoming-events";
+import CelebrationCardList from "../celebration-card-list";
+import { NotificationBell } from "@/entities/notification";
+import UpcomingEvents from "../upcoming-events";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { useFamily } from "@/features/family";
 import { useHomeSettings } from "@/entities/user";
-export function HomeSchedule() {
+
+const HomeSchedule = () => {
   const instant = useCalendarClock();
   const events = useEvents();
   const categories = useEventCategories();
@@ -29,6 +30,7 @@ export function HomeSchedule() {
   const failed = [events, categories, settings, family].find(
     (query) => query.isError,
   );
+
   if (failed?.error)
     return (
       <ErrorState
@@ -38,6 +40,7 @@ export function HomeSchedule() {
         }}
       />
     );
+
   const loading = events.isPending || categories.isPending || family.isPending;
   const homeSettings = settings.data ?? {
     homeView: "week",
@@ -55,6 +58,7 @@ export function HomeSchedule() {
       member.display_name,
     ]),
   );
+
   return (
     <>
       <PageHeader
@@ -64,7 +68,7 @@ export function HomeSchedule() {
         actions={<NotificationBell />}
       />
       {events.data && (
-        <CelebrationCards events={events.data} instant={instant} />
+        <CelebrationCardList events={events.data} instant={instant} />
       )}
       <div className="grid min-w-0 gap-10 lg:grid-cols-[1.4fr_1fr]">
         <div>
@@ -123,4 +127,6 @@ export function HomeSchedule() {
       </div>
     </>
   );
-}
+};
+
+export default HomeSchedule;

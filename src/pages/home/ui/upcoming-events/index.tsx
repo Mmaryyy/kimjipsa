@@ -7,16 +7,15 @@ import {
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { EmptyState, List, SectionHeader, GroupLabel } from "@/shared/ui";
-export function UpcomingEvents({
-  occurrences,
-  categories,
-  ownerNames,
-}: {
+
+interface Props {
   occurrences: EventOccurrence[];
   categories: EventCategory[];
   ownerNames?: Record<string, string>;
   count: number;
-}) {
+}
+
+const UpcomingEvents = ({ occurrences, categories, ownerNames }: Props) => {
   const dates = [...new Set(occurrences.map(({ startDate }) => startDate))];
   return (
     <section data-od-id="upcoming-widget" aria-labelledby="upcoming-title">
@@ -43,4 +42,6 @@ export function UpcomingEvents({
       ))}
     </section>
   );
-}
+};
+
+export default UpcomingEvents;

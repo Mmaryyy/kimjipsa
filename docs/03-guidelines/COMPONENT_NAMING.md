@@ -16,7 +16,7 @@ React 컴포넌트를 만들거나 고치고, 이름을 정할 때 읽는다. �
 | Feature Composition | 기능 또는 업무 흐름            | `features/<feature>/ui`, `widgets`            | `EventVisibilityToggle`, `InventoryOverview` |
 
 - 모든 컴포넌트에 도메인 접두사를 붙이지 않는다. 도메인을 모르는 UI는 도메인 이름 없이, 도메인이 붙은 컴포넌트만 비즈니스 의미와 책임으로 이름을 짓는다.
-- 파일 이름은 안에 든 컴포넌트 이름을 따른다(kebab-case, `CODING_STANDARDS.md` §3). 한 파일에 여러 컴포넌트를 묶는 `controls.tsx` 같은 이름은 쓰지 않는다.
+- 컴포넌트는 폴더 하나로 둔다: kebab-case 폴더 + 대표 컴포넌트 `index.tsx` + 그 컴포넌트 전용 하위 컴포넌트는 짧은 PascalCase 파일(`Card.tsx`). 파일 이름은 짧아도 안의 컴포넌트 이름은 전체 이름(`CelebrationCard`)으로 짓고 default export한다. 상세는 `CODING_STANDARDS.md` §3(사용자 결정, 2026-10-22). 한 파일에 여러 컴포넌트를 묶는 `controls.tsx` 같은 이름은 쓰지 않는다.
 
 ## 2. UI 컴포넌트 네이밍
 

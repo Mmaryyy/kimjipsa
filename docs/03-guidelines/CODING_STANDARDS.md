@@ -35,18 +35,29 @@
 - React 예약 prop인 `key`를 일반 prop 이름으로 쓰지 않는다. `fieldKey`처럼 쓴다.
 - 파일 역할 접미사를 정확히 쓴다: 데이터는 `*.constants.ts`, CVA 선언은 `*.variants.ts`, 순수 함수는 `*.utils.ts`.
 - 훅은 `useXxx`로 짓고, 컴포넌트에 내보내는 핸들러는 `onXxx`로 이름 붙여 `useCallback`으로 감싼다.
-- 컴포넌트 이름과 시맨틱 HTML 규칙은 `COMPONENT_NAMING.md`를 따른다(사용자 결정, 2026-10-15). 처음 보는 사람도 목적과 쓰임을 짐작할 수 있는 범용 이름을 쓰고(`BottomNavigation`, `PageHeader`), `LargeTitle` 같은 디자인 용어나 `controls.tsx` 같은 묶음 파일명은 쓰지 않는다. 파일 이름은 안에 든 컴포넌트 이름을 따른다.
+- 컴포넌트 이름과 시맨틱 HTML 규칙은 `COMPONENT_NAMING.md`를 따른다(사용자 결정, 2026-10-15). 처음 보는 사람도 목적과 쓰임을 짐작할 수 있는 범용 이름을 쓰고(`BottomNavigation`, `PageHeader`), `LargeTitle` 같은 디자인 용어나 `controls.tsx` 같은 묶음 파일명은 쓰지 않는다.
+- 컴포넌트 파일 배치와 내보내기(사용자 결정, 2026-10-22):
+  - 컴포넌트 하나는 폴더 하나다. 폴더 이름은 컴포넌트의 역할을 kebab-case로 쓰고(`celebration-cards/`), 대표 컴포넌트는 그 폴더의 `index.tsx`에 둔다.
+  - 그 컴포넌트에서만 쓰는 하위 컴포넌트는 같은 폴더에 짧은 PascalCase 파일로 둔다(`Card.tsx`, `Form.tsx`). 맥락은 폴더 이름이 준다. 두 곳 이상에서 쓰이면 §2에 따라 공용으로 올린다.
+  - 파일 안의 컴포넌트 이름은 짧은 파일 이름과 달리 전체 이름으로 짓는다: `Card.tsx` 안은 `const CelebrationCard = () => {}`. DevTools·오류 스택·검색에서 헷갈리지 않게 하기 위해서다.
+  - 컴포넌트는 `const 이름 = (props: Props) => {}`로 쓰고, props 타입은 `interface Props`로 둔다. 파일 끝에서 `export default 이름`으로 내보낸다.
+  - 가져오는 쪽의 import 이름은 컴포넌트 이름과 같게 쓴다(`import CelebrationCard from "./Card"`). default export는 이름을 아무렇게나 붙일 수 있어서, 이 규칙이 없으면 검색과 이름 바꾸기가 끊긴다.
+  - 테스트는 같은 폴더에 `<폴더 이름>.test.tsx`로 둔다(`celebration-cards/celebration-cards.test.tsx`). 테스트에서 이 폴더를 mock할 때는 `{ default: … }`를 돌려준다.
+  - 슬라이스의 public API(`index.ts`)는 이름을 고정해 내보낸다: `export { default as HomeSettings } from "./ui/home-settings"`. 슬라이스 밖에서는 계속 named import를 쓴다.
+  - 적용 범위: 새로 만들거나 고치는 컴포넌트부터 적용한다. 기존 kebab-case 단일 파일은 그 컴포넌트를 손댈 때 옮기고, 한꺼번에 옮기지 않는다.
 
 ## 4. 타입과 단일 원천
 
 - 도메인 키, 라벨, 옵션은 한 곳에서 `as const`로 정의하고 나머지는 거기서 파생한다. 예를 들어 재고 상태(`enough`, `low`, `none`)와 일정 공개 범위(`shared`, `private`)의 값, 화면 라벨, 색, union 타입을 따로 유지하지 않는다.
 - 상수와 매핑의 누락은 `satisfies Record<DomainType, ...>`로 컴파일 때 검증한다.
+- 값에 라벨을 붙이는 옵션 목록은 `{ value, label }[]`를 `as const`로 두고, 값으로 라벨을 꺼낼 때는 `getOptionLabel(value, options, defaultNotice)`(`@/shared/lib`)를 쓴다. `find`·`filter`나 삼항 연쇄로 직접 찾지 않는다. 화면에 나가는 곳에서는 맞는 옵션이 없을 때 내부 값이 그대로 보이지 않게 `defaultNotice`를 넘긴다(사용자 결정, 2026-10-22).
 - 래핑하는 컴포넌트의 props는 손으로 다시 적지 말고 `ComponentProps<typeof Component>`에서 가져온다.
 - 타입만 쓰는 import는 `import type`을 쓴다.
 - 라우트 경로와 라벨도 상수 한 곳에서 정의하고, 링크와 이동은 그 상수를 쓴다.
 - `false`, `0`, 빈 문자열, `null`, `undefined`를 같은 빈 값으로 취급하지 않는다. 수량 `0`은 유효한 값이므로 `!value`로 빈 값을 판정하지 않는다.
 - 목록 응답이 상세 필드를 포함한다고 가정하지 않는다. 표시 로직은 타입만 보지 말고 실제 응답에 필요한 필드가 있는지 확인한다.
 - `any`와 `as any`로 타입 오류를 넘기지 않는다. 응답 타입을 정의해서 쓴다.
+- 범용 유틸(깊은 비교, debounce, groupBy 등)은 직접 만들지 말고 `lodash-es`에서 named import로 가져온다(`import { isEqual } from "lodash-es"`). `lodash`(CommonJS)는 전체가 번들에 들어갈 수 있어 쓰지 않는다. `map`·`filter`·`includes`처럼 네이티브로 똑같이 짧게 쓸 수 있는 것은 네이티브를 쓴다(사용자 결정, 2026-10-22).
 
 ## 5. 상태와 파생 값
 

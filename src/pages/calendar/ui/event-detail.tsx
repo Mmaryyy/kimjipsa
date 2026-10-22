@@ -4,8 +4,10 @@ import {
   useEvent,
   useEventCategories,
   eventTimeLabel,
-  reminderLabel,
+  reminderOptions,
+  type ReminderOptionValue,
 } from "@/entities/event";
+import { getOptionLabel } from "@/shared/lib";
 import {
   Button,
   TextButton,
@@ -100,10 +102,12 @@ export function EventDetail({
       <dl className="grid gap-2">
         <dt className="text-muted-foreground">알림</dt>
         <dd>
-          {reminderLabel(
+          {getOptionLabel<ReminderOptionValue | null>(
             event.data.remindBefore === undefined
               ? 30
               : event.data.remindBefore,
+            reminderOptions,
+            "없음",
           )}
         </dd>
         <dt className="text-muted-foreground">장소</dt>

@@ -1,27 +1,21 @@
 "use client";
-import { useWebPush } from "../model/use-web-push";
-import { NotificationSettingsSkeleton } from "./settings-skeleton";
+import { useWebPush } from "../../model/use-web-push";
 import { useCallback, useRef, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   notificationSettingsSchema,
-  useNotificationSettings,
   useSaveNotificationSettings,
   type NotificationSettings as Settings,
 } from "@/entities/user";
-import {
-  ErrorState,
-  FormFieldRow,
-  GroupLabel,
-  Switch,
-  Toast,
-  Text,
-  TextButton,
-} from "@/shared/ui";
+import { FormFieldRow, Switch, Toast, Text, TextButton } from "@/shared/ui";
 import { DateTimeInput, todayInSeoul } from "@/shared/ui/date-time-input";
 
-function NotificationSettingsForm({ settings }: { settings: Settings }) {
+interface Props {
+  settings: Settings;
+}
+
+const NotificationSettingsForm = ({ settings }: Props) => {
   const save = useSaveNotificationSettings();
   const push = useWebPush();
   const savedSettings = useRef(settings);
@@ -190,28 +184,6 @@ function NotificationSettingsForm({ settings }: { settings: Settings }) {
       />
     </form>
   );
-}
-export function NotificationSettings() {
-  const settings = useNotificationSettings();
-  let content;
-  if (settings.isError)
-    content = (
-      <ErrorState
-        message={settings.error.message}
-        onRetry={() => {
-          void settings.refetch();
-        }}
-      />
-    );
-  else if (settings.isPending) content = <NotificationSettingsSkeleton />;
-  else content = <NotificationSettingsForm settings={settings.data} />;
-  return (
-    <section
-      data-od-id="set-notify"
-      aria-labelledby="notification-settings-title"
-    >
-      <GroupLabel id="notification-settings-title">알림</GroupLabel>
-      {content}
-    </section>
-  );
-}
+};
+
+export default NotificationSettingsForm;

@@ -32,6 +32,7 @@ PROPOSED 항목은 `docs/04-planning/DECISIONS_REQUIRED.md`의 결정 번호와 
 | 목록 순서 변경 | `@dnd-kit/core` 6.3.1 · `@dnd-kit/sortable` 10.0.0 · `@dnd-kit/utilities` 3.2.2 | CONFIRMED | 사용자 결정(2026-10-19, P4.9): 손잡이 드래그와 터치·키보드 정렬, 기존 카테고리 저장 RPC 사용 |
 | 모바일 일정 폼 | `vaul` 1.1.2 (정확한 버전) | CONFIRMED | 사용자 승인(2026-10-21, P5.5 r111-f1). [유지보수 중단](https://github.com/emilkowalski/vaul) 상태를 알고 채택. shadcn Drawer 구성의 `shared/ui/drawer.tsx` 한 곳에서 감싸 교체 가능하게 유지. `(pointer: coarse)` 일정 추가·수정 폼만 적용하고 휠은 기존 Sheet 유지 |
 | 모바일 날짜·시간 휠 | `@ncdai/react-wheel-picker` 1.2.3 | CONFIRMED | 사용자 지시(2026-10-21, P5.5): 필요한 라이브러리 적용. `shared/ui` 래퍼와 기존 Sheet 사용, `(pointer: coarse)`에서만 휠 선택 |
+| 범용 유틸 | `lodash-es` 4.18.1 · `@types/lodash-es` 4.17.12 | CONFIRMED | 사용자 결정(2026-10-22): 직접 구현한 유틸을 대체할 수 있고 앞으로 쓸 곳이 많음. ES 모듈판이라 쓴 함수만 번들에 들어감. `lodash`(CommonJS)는 쓰지 않고 `lodash-es`에서 named import(`CODING_STANDARDS.md` §4) |
 | 날짜 | date-fns, 타임존 `Asia/Seoul` 고정(MVP) | CONFIRMED | ADR-0004 |
 | 서버 상태 | TanStack Query + Supabase Realtime 구독으로 캐시 갱신 | CONFIRMED | ADR-0005 (DEC-006) |
 | 검증 | Zod (서버 라우트·클라이언트 공유 스키마) | CONFIRMED | ADR-0005 |

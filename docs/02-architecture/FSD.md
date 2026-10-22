@@ -25,6 +25,7 @@ import는 위에서 아래로만 한다. 같은 레이어의 다른 슬라이스
 - **pages만 예외다.** 라우트가 여러 개인 도메인은 `pages/<domain>/<route>`가 각각 독립 슬라이스다. 나머지 페이지는 `pages/<page>`가 슬라이스다.
 - 두 라우트가 함께 쓰는 도메인 로직은 `entities/<domain>/lib`로 내린다.
 - **세그먼트**는 `ui/`(화면), `model/`(상태, 훅, 파생 값), `api/`(호출, 타입, 상수), `lib/`(순수 함수), `config/`다. 필요한 것만 만든다.
+- `ui/` 안의 컴포넌트는 컴포넌트마다 폴더 하나다(`ui/celebration-cards/index.tsx`, 하위 `Card.tsx`, 테스트 `celebration-cards.test.tsx`). 파일 이름·내보내기 규칙은 `docs/03-guidelines/CODING_STANDARDS.md` §3.
 - entities는 `entities/<domain>/{api,model,ui,lib}` 구조로 두고 흐름은 `api → model(상태·훅) → ui`다. 전역 상태 스토어는 필요할 때만 `model/`에 둔다.
 - **public API**: 슬라이스 밖에서는 `@/entities/event`처럼 슬라이스의 `index.ts`로만 가져온다. `@/entities/event/api/type` 같은 깊은 import는 금지한다.
 - shared 레이어에 한해 `shared/<세그먼트>/<모듈>/index.{ts,tsx}`도 공개 진입점으로 허용한다. 하위 모듈의 내부 파일을 직접 import하는 것은 금지한다.
