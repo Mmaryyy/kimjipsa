@@ -33,7 +33,7 @@ cart_items N─0..1 inventory_items;  cart_items N─1 users(added_by, checked_b
 | 챗봇 최소화 여부 | 사용자별 기억 | BOT-01 |
 | 챗봇 기억 on/off | 끄면 새 대화가 요약되어 쌓이지 않음 | BOT-13 |
 
-DEC-009 ① 처리(2026-10-16 제안안 승인, 2026-10-21 P5a 구현): `push_subscriptions`(`user_id`, `endpoint`, `keys`, `created_at`)와 `notifications`(`user_id`, `family_id`, `kind`, `payload`, `read_at`, `created_at`)를 둔다. 개인 일정 알림의 `payload`에는 일정 내용을 넣지 않는다. P5a에서 `notifications`에 `id`(uuid PK)와 위 필드를 추가했다. kind는 event_created·event_updated·event_deleted이며 payload는 eventId·actorName·eventTitle(공유 일정만)·eventDeleted(삭제 후 이동 방지)다. 작성 행위자를 제외한 같은 가정 구성원에게 일정 RPC와 같은 트랜잭션에서 생성한다. 개인 일정은 생성하지 않고, 개인으로 전환하면 이전 알림의 eventTitle을 제거한다. 본인·현재 가정의 알림만 조회하고 read_at만 수정할 수 있으며 직접 생성은 허용하지 않는다. 푸시 구독 테이블은 P5b에서 추가한다.
+DEC-009 ① 처리(2026-10-16 제안안 승인, 2026-10-21 P5a 구현): `push_subscriptions`(`user_id`, `endpoint`, `keys`, `created_at`)와 `notifications`(`user_id`, `family_id`, `kind`, `payload`, `read_at`, `created_at`)를 둔다. 개인 일정의 시작 전 알림에는 본인만 수신하는 제목·시작 시각을 허용한다(2026-10-22 사용자 결정). 배우자 변경 알림에는 개인 일정 내용을 넣지 않는다. P5a에서 `notifications`에 `id`(uuid PK)와 위 필드를 추가했다. kind는 event_created·event_updated·event_deleted이며 payload는 eventId·actorName·eventTitle(공유 일정만)·eventDeleted(삭제 후 이동 방지)다. 작성 행위자를 제외한 같은 가정 구성원에게 일정 RPC와 같은 트랜잭션에서 생성한다. 개인 일정은 생성하지 않고, 개인으로 전환하면 이전 알림의 eventTitle을 제거한다. 본인·현재 가정의 알림만 조회하고 read_at만 수정할 수 있으며 직접 생성은 허용하지 않는다. 푸시 구독 테이블은 P5b에서 추가한다.
 
 사용자별 알림 설정은 기존 홈 설정과 같은 `users`의 `push_enabled`(boolean, 기본 true), `morning_summary_time`(time, 기본 10:00)에 저장한다. `save_notification_settings` RPC는 본인 설정만 갱신하며 분 단위 HH:mm만 허용한다. P5a에서는 푸시 구독이나 발송을 하지 않는다.
 
@@ -150,3 +150,13 @@ DEC-009 처리(2026-10-16, 제안안 승인, 필요하면 차후 수정): ② �
 | 챗봇 판단 | `pending_actions` 생성 → 확인 시 변경, 5분 후 만료 | BOT-08 |
 | 대화 종료 | `memories` 갱신 | BOT-12 |
 | 탈퇴 | 본인 private `events`, `conversations`, `memories` 삭제. 공유 데이터 유지. 마지막 관리자 규칙 적용 | ACC-15 |
+
+### P5b 푸시·예약 알림 (2026-10-21)
+
+`push_subscriptions`는 위 확정 필드로 구현하며 endpoint가 기본 키이고 본인만 조회·등록·갱신·삭제한다. API는 브라우저 푸시 서비스의 HTTPS 주소와 키 형식을 검사한다. 다른 사용자가 소유한 endpoint를 덮어쓸 수 없다.
+
+알림 kind에 `event_reminder`·`morning_summary`를 추가한다. 시작 전 payload는 eventId·date·eventTitle·startTime(시각 또는 종일·시간 미정), 아침 요약은 date·eventIds·times·count다. 시작 전 알림은 제목과 시작 시각을 보여 주며 장소·메모는 담지 않는다. 목록과 푸시에서 시각순 요약을 표시한다. 개인 일정은 본인만 예약 대상으로 계산하고 RPC에서도 수신 권한을 재확인한다. 앱 내 알림은 푸시 설정과 무관하게 생성한다.
+
+`private.notification_schedule_log`(dedupe_key PK, notification_id unique FK, created_at)는 예약 중복을, `private.notification_push_log`(notification_id FK, endpoint, created_at, PK(notification_id, endpoint))는 푸시 중복을 막는다. 두 기록은 일반 사용자에게 노출하지 않는다. `notification_worker`는 Vault cron_secret을 검사하는 서버 작업 전용 RPC다. 성공한 기기의 선점은 유지하고, 404·410은 구독을 삭제한다. 그 밖의 오류·타임아웃은 실패한 주소의 선점만 해제해 5분 보충 창 안에서 다시 시도한다(ADR-0013).
+
+웹 푸시 on/off(`users.push_enabled`)는 계정 단위이며 모든 구독 기기에 함께 적용한다. 기기 구독 여부와 계정 설정은 별개다. 로그아웃 시 해당 기기의 구독만 삭제·해지하고 계정 설정은 유지한다.

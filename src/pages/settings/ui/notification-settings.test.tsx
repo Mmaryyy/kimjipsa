@@ -9,9 +9,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type * as UserEntity from "@/entities/user";
 import { ToastProvider } from "@/shared/ui";
 import { NotificationSettings } from "./notification-settings";
-const { save, mutation } = vi.hoisted(() => ({
+const { save, mutation, enablePush, checkPush } = vi.hoisted(() => ({
   save: vi.fn(),
+  enablePush: vi.fn(),
+  checkPush: vi.fn(),
   mutation: { isPending: false },
+}));
+vi.mock("../api/web-push", () => ({
+  hasWebPushSubscription: checkPush,
+  enableWebPush: enablePush,
 }));
 vi.mock("@/entities/user", async (original) => ({
   ...(await original<typeof UserEntity>()),
@@ -27,6 +33,10 @@ vi.mock("@/entities/user", async (original) => ({
 }));
 describe("ACC-11 SCN-ACC-5 알림 설정 저장", () => {
   beforeEach(() => {
+    checkPush.mockReset();
+    checkPush.mockResolvedValue(true);
+    enablePush.mockReset();
+    enablePush.mockResolvedValue(undefined);
     save.mockReset();
     save.mockResolvedValue(null);
     mutation.isPending = false;
@@ -38,6 +48,7 @@ describe("ACC-11 SCN-ACC-5 알림 설정 저장", () => {
       </ToastProvider>,
     );
     const toggle = screen.getByRole("switch", { name: "웹 푸시 알림" });
+    await waitFor(() => expect(toggle).toHaveAttribute("aria-checked", "true"));
     fireEvent.click(toggle);
     await waitFor(() =>
       expect(save).toHaveBeenCalledWith({
@@ -48,6 +59,24 @@ describe("ACC-11 SCN-ACC-5 알림 설정 저장", () => {
     expect(await screen.findByText("알림을 껐어요")).toBeInTheDocument();
     fireEvent.click(toggle);
     expect(await screen.findByText("알림을 켰어요")).toBeInTheDocument();
+    expect(enablePush).not.toHaveBeenCalled();
+  });
+  it("기기 권한 거부는 계정 설정을 바꾸지 않고 안내한다", async () => {
+    checkPush.mockResolvedValueOnce(false);
+    enablePush.mockRejectedValueOnce(
+      new Error("브라우저 설정에서 알림을 허용해 주세요."),
+    );
+    render(
+      <ToastProvider>
+        <NotificationSettings />
+      </ToastProvider>,
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: "이 기기에서 받기" }),
+    );
+    await screen.findByText("브라우저 설정에서 알림을 허용해 주세요.");
+    expect(screen.getByRole("switch")).toHaveAttribute("aria-checked", "true");
+    expect(save).not.toHaveBeenCalled();
   });
   it("시각은 blur에 저장하고 실패하면 직전 성공 값으로 복구해요", async () => {
     render(
@@ -74,6 +103,7 @@ describe("ACC-11 SCN-ACC-5 알림 설정 저장", () => {
       </ToastProvider>,
     );
     const toggle = screen.getByRole("switch");
+    await waitFor(() => expect(toggle).toHaveAttribute("aria-checked", "true"));
     fireEvent.click(toggle);
     await screen.findByText("알림을 껐어요");
     save.mockRejectedValueOnce(new Error("저장 실패"));
@@ -106,6 +136,12 @@ describe("ACC-11 SCN-ACC-5 알림 설정 저장", () => {
         <NotificationSettings />
       </ToastProvider>,
     );
+    await waitFor(() =>
+      expect(screen.getByRole("switch")).toHaveAttribute(
+        "aria-checked",
+        "true",
+      ),
+    );
     fireEvent.click(screen.getByRole("switch"));
     await waitFor(() => expect(save).toHaveBeenCalled());
     mutation.isPending = true;
@@ -119,5 +155,39 @@ describe("ACC-11 SCN-ACC-5 알림 설정 저장", () => {
     expect(input).toBeEnabled();
     expect(input).toHaveFocus();
     await act(async () => finish());
+  });
+  it("구독 확인 실패 중에도 계정 푸시를 끌 수 있다", async () => {
+    checkPush.mockRejectedValueOnce(new Error("구독 확인 실패"));
+    render(
+      <ToastProvider>
+        <NotificationSettings />
+      </ToastProvider>,
+    );
+    await screen.findByText("구독 확인 실패");
+    const toggle = screen.getByRole("switch");
+    expect(toggle).toHaveAttribute("aria-checked", "true");
+    expect(toggle).toBeEnabled();
+    fireEvent.click(toggle);
+    await waitFor(() =>
+      expect(save).toHaveBeenCalledWith({
+        pushEnabled: false,
+        morningSummaryTime: "10:00",
+      }),
+    );
+  });
+  it("이 기기에 구독이 없어도 계정 값을 표시하고 기기 연결을 안내한다", async () => {
+    checkPush.mockResolvedValueOnce(false);
+    render(
+      <ToastProvider>
+        <NotificationSettings />
+      </ToastProvider>,
+    );
+    const connect = await screen.findByRole("button", {
+      name: "이 기기에서 받기",
+    });
+    expect(screen.getByRole("switch")).toHaveAttribute("aria-checked", "true");
+    fireEvent.click(connect);
+    await waitFor(() => expect(enablePush).toHaveBeenCalledOnce());
+    expect(save).not.toHaveBeenCalled();
   });
 });

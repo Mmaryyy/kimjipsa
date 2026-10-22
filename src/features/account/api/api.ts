@@ -1,3 +1,4 @@
+import { removeCurrentPushSubscription } from "@/entities/notification";
 import type { LoginProvider } from "@/entities/user";
 import { isAuthSessionMissingError } from "@supabase/supabase-js";
 import { createBrowserSupabaseClient, request } from "@/shared/api";
@@ -21,6 +22,11 @@ export async function signOut() {
     return;
   }
   const client = createBrowserSupabaseClient();
+  try {
+    await removeCurrentPushSubscription();
+  } catch {
+    // Subscription cleanup must not prevent signing out, including offline.
+  }
   const { error } = await client.auth.signOut();
   if (error && !isAuthSessionMissingError(error)) {
     throw new Error("로그아웃하지 못했어요. 다시 시도해 주세요.");

@@ -8,3 +8,5 @@ export {
   deleteEventCategory,
 } from "./api/server";
 export { listDdayDismissals, dismissDdayCard } from "./api/server";
+
+export { nextDday } from "./lib/dday.utils";

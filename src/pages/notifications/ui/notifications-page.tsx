@@ -104,8 +104,13 @@ function NotificationsList({
     setFailure("");
     try {
       await mark.mutateAsync(notification ? { id: notification.id } : {});
-      if (
+      if (notification && notification.kind === "morning_summary")
+        onNavigate(
+          `${eventRoutes.calendar}?date=${notification.payload.date}&view=day`,
+        );
+      else if (
         notification &&
+        notification.payload.eventId &&
         notification.kind !== "event_deleted" &&
         !notification.payload.eventDeleted
       )

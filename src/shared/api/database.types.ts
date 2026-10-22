@@ -48,6 +48,10 @@ export type Database<
 > = {
   public: {
     Tables: {
+      push_subscriptions: Table<
+        { user_id: string; endpoint: string; keys: Json; created_at: string },
+        { user_id: string; endpoint: string; keys: Json; created_at?: string }
+      >;
       notifications: Table<
         {
           id: string;
@@ -188,6 +192,10 @@ export type Database<
     };
     Views: { [_ in never]: never };
     Functions: {
+      notification_worker: {
+        Args: { worker_secret: string; operation: string; input?: Json };
+        Returns: Json;
+      };
       save_event: {
         Args: {
           event_id: string | null;

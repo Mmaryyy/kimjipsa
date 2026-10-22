@@ -1,7 +1,8 @@
 "use client";
+import { useWebPush } from "../model/use-web-push";
 import { NotificationSettingsSkeleton } from "./settings-skeleton";
 import { useCallback, useRef, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   notificationSettingsSchema,
@@ -17,9 +18,11 @@ import {
   Switch,
   Toast,
   Text,
+  TextButton,
 } from "@/shared/ui";
 function NotificationSettingsForm({ settings }: { settings: Settings }) {
   const save = useSaveNotificationSettings();
+  const push = useWebPush();
   const savedSettings = useRef(settings);
   const saveQueue = useRef(Promise.resolve());
   const [toastOpen, setToastOpen] = useState(false);
@@ -62,12 +65,22 @@ function NotificationSettingsForm({ settings }: { settings: Settings }) {
     },
     [reset, save],
   );
+  const pushEnabled = useWatch({ control, name: "pushEnabled" });
+  const showPushError = useCallback((error: unknown) => {
+    setMessage(
+      error instanceof Error ? error.message : "푸시 설정을 바꾸지 못했어요.",
+    );
+    setToastOpen(true);
+  }, []);
   return (
     <form
       className="grid gap-3"
       onSubmit={(event) => void handleSubmit(onSubmit)(event)}
     >
-      <fieldset aria-busy={save.isPending} className="grid min-w-0 gap-2">
+      <fieldset
+        aria-busy={save.isPending || push.checking}
+        className="grid min-w-0 gap-2"
+      >
         <legend className="sr-only">알림 설정</legend>
         <FormFieldRow label="웹 푸시 알림" htmlFor="s-push">
           {(props) => (
@@ -79,6 +92,7 @@ function NotificationSettingsForm({ settings }: { settings: Settings }) {
                   {...props}
                   data-od-id="s-push"
                   checked={field.value}
+                  disabled={save.isPending}
                   onCheckedChange={(value) => {
                     field.onChange(value);
                     void handleSubmit(onSubmit)();
@@ -88,6 +102,34 @@ function NotificationSettingsForm({ settings }: { settings: Settings }) {
             />
           )}
         </FormFieldRow>
+        <Text as="p" variant="caption" className="text-muted-foreground">
+          모든 기기에 함께 적용돼요. 켜면 구독된 모든 기기에서 알림을 받아요.
+        </Text>
+        {pushEnabled && !push.subscribed && !push.checking && (
+          <div>
+            <TextButton
+              disabled={push.pending}
+              onClick={() => void push.onConnect().catch(showPushError)}
+            >
+              이 기기에서 받기
+            </TextButton>
+          </div>
+        )}
+        {push.failure && (
+          <div>
+            <Text
+              as="p"
+              variant="caption"
+              role="alert"
+              className="text-error-text"
+            >
+              {push.failure}
+            </Text>
+            <TextButton onClick={() => void push.onRetry()}>
+              다시 확인
+            </TextButton>
+          </div>
+        )}
         <FormFieldRow
           label="아침 요약"
           htmlFor="s-morning-time"

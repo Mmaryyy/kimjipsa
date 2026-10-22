@@ -34,4 +34,5 @@ export {
   notificationsPath,
   notificationsApiPath,
   notificationSettingsApiPath,
+  pushSubscriptionsApiPath,
 } from "./notification-routes.constants";

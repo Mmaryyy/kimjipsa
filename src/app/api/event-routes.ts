@@ -1,4 +1,6 @@
 import "server-only";
+import { after } from "next/server";
+import { dispatchPendingPush } from "@/entities/notification/index.server";
 import { authenticatedClient } from "@/entities/user/index.server";
 import {
   listDdayDismissals,
@@ -17,6 +19,19 @@ import {
   readJson,
 } from "@/shared/server";
 
+async function withPush<T>(action: () => Promise<T>) {
+  const result = await action();
+  if (!(await isServerMockDataEnabled()))
+    after(async () => {
+      try {
+        await dispatchPendingPush();
+      } catch {
+        console.error("event_push_dispatch_failed");
+      }
+    });
+  return result;
+}
+
 type Context = { params: Promise<{ id: string }> };
 async function authorized<T>(
   action: (
@@ -33,7 +48,9 @@ export function eventsGET(request: Request) {
 }
 export function eventsPOST(request: Request) {
   return handleRoute(request, () =>
-    authorized(async (auth) => saveEvent(await readJson(request), null, auth)),
+    authorized(async (auth) =>
+      withPush(async () => saveEvent(await readJson(request), null, auth)),
+    ),
   );
 }
 export function eventGET(request: Request, context: Context) {
@@ -44,13 +61,17 @@ export function eventGET(request: Request, context: Context) {
 export function eventPOST(request: Request, context: Context) {
   return handleRoute(request, () =>
     authorized(async (auth) =>
-      saveEvent(await readJson(request), (await context.params).id, auth),
+      withPush(async () =>
+        saveEvent(await readJson(request), (await context.params).id, auth),
+      ),
     ),
   );
 }
 export function eventDeletePOST(request: Request, context: Context) {
   return handleRoute(request, () =>
-    authorized(async (auth) => deleteEvent((await context.params).id, auth)),
+    authorized(async (auth) =>
+      withPush(async () => deleteEvent((await context.params).id, auth)),
+    ),
   );
 }
 export function categoriesGET(request: Request) {
