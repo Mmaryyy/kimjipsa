@@ -9,7 +9,7 @@ export { SegmentedControl } from "./segmented-control";
 export { FilterTabs } from "./filter-tabs";
 export { Switch } from "./switch";
 export { Checkbox } from "./checkbox";
-export { QuantityStepper } from "./quantity-stepper";
+export { default as QuantityStepper } from "./quantity-stepper";
 export { List, ListRow, ListGroupLabel } from "./list";
 export { SectionHeader } from "./section-header";
 export { FormFieldRow } from "./form-field-row";

@@ -1,4 +1,5 @@
 "use client";
+import InventorySummary from "../inventory-summary";
 
 import {
   DdayOverview,
@@ -111,12 +112,7 @@ const HomeSchedule = () => {
               instant={instant}
             />
           )}
-          <section data-od-id="stock-summary" aria-labelledby="stock-title">
-            <SectionHeader id="stock-title" title="확인할 재고" />
-            <Text as="p" variant="caption" className="text-muted-foreground">
-              준비 중이에요.
-            </Text>
-          </section>
+          <InventorySummary />
           <section data-od-id="cart-summary" aria-labelledby="cart-title">
             <SectionHeader id="cart-title" title="장바구니" />
             <Text as="p" variant="caption" className="text-muted-foreground">

@@ -3,6 +3,7 @@
 import { CategoryDot, ErrorState, GroupLabel, Text } from "@/shared/ui";
 
 import { ChevronRight } from "lucide-react";
+import InventorySettings from "../inventory-settings";
 import HouseholdSettingsSkeleton from "./Skeleton";
 import SettingsRow from "../settings-row";
 import { eventRoutes } from "@/shared/config";
@@ -44,23 +45,7 @@ const HouseholdSettings = () => {
           </span>
         }
       />
-      {[
-        { label: "재고 카테고리", odId: "s-inv-categories" },
-        { label: "보관 장소", odId: "s-locations" },
-        { label: "단위", odId: "s-units" },
-        { label: "유통기한 임박 기준", odId: "s-expiry-days" },
-      ].map(({ label, odId }) => (
-        <SettingsRow
-          key={odId}
-          label={label}
-          odId={odId}
-          action={
-            <Text variant="caption" className="text-muted-foreground">
-              준비 중
-            </Text>
-          }
-        />
-      ))}
+      <InventorySettings />
     </section>
   );
 };

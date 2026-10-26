@@ -1,3 +1,25 @@
+type InventoryRow = {
+  id: string;
+  family_id: string;
+  name: string;
+  mode: string;
+  quantity: number;
+  status: string;
+  unit_id: string | null;
+  category_id: string | null;
+  location_id: string | null;
+  min_quantity: number | null;
+  expires_on: string | null;
+};
+type InventoryMetaRow = {
+  id: string;
+  family_id: string;
+  name: string;
+  sort_order: number;
+  enabled?: boolean;
+  icon_kind?: string | null;
+  icon_value?: string;
+};
 // P2/P3/P4 migration contract. Regenerate with `supabase gen types typescript --local`
 // after applying the migration to a local Supabase instance.
 export type Json =
@@ -28,7 +50,7 @@ type UserRow<Provider extends string> = {
   upcoming_enabled: boolean;
   upcoming_count: number;
 };
-type FamilyRow = { id: string; name: string };
+type FamilyRow = { id: string; name: string; expiry_days: number };
 type MembershipRow<Role extends string> = {
   user_id: string;
   family_id: string;
@@ -48,6 +70,10 @@ export type Database<
 > = {
   public: {
     Tables: {
+      inventory_items: Table<InventoryRow, InventoryRow>;
+      inventory_categories: Table<InventoryMetaRow, InventoryMetaRow>;
+      locations: Table<InventoryMetaRow, InventoryMetaRow>;
+      units: Table<InventoryMetaRow, InventoryMetaRow>;
       push_subscriptions: Table<
         { user_id: string; endpoint: string; keys: Json; created_at: string },
         { user_id: string; endpoint: string; keys: Json; created_at?: string }
@@ -192,6 +218,8 @@ export type Database<
     };
     Views: { [_ in never]: never };
     Functions: {
+      write_inventory: { Args: { payload: Json }; Returns: string };
+      write_inventory_meta: { Args: { payload: Json }; Returns: undefined };
       notification_worker: {
         Args: { worker_secret: string; operation: string; input?: Json };
         Returns: Json;

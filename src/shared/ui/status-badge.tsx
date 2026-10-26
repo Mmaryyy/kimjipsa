@@ -1,8 +1,10 @@
 import type { ComponentProps } from "react";
 import { cn } from "@/shared/lib";
-import type { StatusVariant } from "./ui.variants";
+import type { StatusBadgeVariant } from "./ui.variants";
 import { statusBadgeStyles } from "./ui.variants";
-type StatusBadgeProps = ComponentProps<"span"> & { variant?: StatusVariant };
+type StatusBadgeProps = ComponentProps<"span"> & {
+  variant?: StatusBadgeVariant;
+};
 
 export function StatusBadge({
   variant = "info",

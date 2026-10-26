@@ -13,11 +13,11 @@
 | DEC-007 | 테스트 도구 | 중간 | 테스트 작성 | CONFIRMED (ADR-0006) |
 | DEC-008 | 알림 요구사항의 마일스톤 배치 | 중간 | ROADMAP, M1 범위 | CONFIRMED |
 | DEC-009 | 데이터 모델 공백 | 중간 | 스키마 확정 | CONFIRMED (제안안 승인, 차후 수정 가능) |
-| DEC-010 | 판정 기준 모호 항목 | 낮음 | INV-16, CART-05, CART-12 | PENDING |
+| DEC-010 | 판정 기준 모호 항목 | 낮음 | INV-16, CART-05, CART-12 | CONFIRMED |
 | DEC-011 | 영수증 이미지 저장 | 낮음(M3) | INV-17 | PENDING |
 | DEC-012 | AI 어댑터 구현 방식 | 낮음(M2) | 챗봇 | PENDING |
 | DEC-013 | 도메인·약관·모니터링·백업 | 중간 | 로그인 심사, 베타 | PENDING (P2 범위 결정, 나머지 대기) |
-| DEC-014 | 재고 카테고리 아이콘 | 낮음(M2, P6) | INV-07 스키마·화면 | PENDING |
+| DEC-014 | 재고 카테고리 아이콘 | 낮음(M2, P6) | INV-07 스키마·화면 | CONFIRMED |
 
 ---
 
@@ -176,7 +176,12 @@ MVP는 정규화 후 완전 일치 + 포함 관계, 최근 구매는 최근 90�
 ### Impact
 재고·장바구니 등록 흐름.
 ### Status
-PENDING
+CONFIRMED (2026-10-24, 권장안 승인)
+### Decided so far
+- 같은 이름(CART-12 포함): 앞뒤·중간 공백과 대소문자를 무시하고 정규화한 이름이 완전히 같으면 같은 이름이다.
+- 비슷한 이름(INV-16): 정규화한 이름에서 한쪽이 다른 쪽을 포함하면 비슷한 이름이다(예: '우유' ↔ '서울우유'). 한 글자 차이 같은 편집 거리 판정은 쓰지 않는다.
+- 최근 구매(CART-05): 최근 90일 동안 구매 완료한 횟수가 많은 순이다.
+- 판정 규칙은 한 곳에서 관리한다(`CODING_STANDARDS.md` §5).
 
 ## DEC-011
 ### Topic
@@ -246,7 +251,7 @@ P2 동의 기록(사용자 결정, 2026-10-16): `users.terms_accepted_at`, `priv
 ### Impact
 `REQUIREMENTS.md` INV-07, `DATA_MODEL.md`(`inventory_categories`), `ROADMAP.md` P6, 가정 설정 화면(ACC-13). 기능명세·기획서 원본에는 아직 반영하지 않았다(사용자 요청 시 아티팩트와 복사본을 함께 고친다). 새 라이브러리가 없으므로 ADR은 필요 없다.
 ### Status
-PENDING
+CONFIRMED (2026-10-24, 제안안 승인: 보이는 문자 한 글자, 서버 동일 검증, `icon_kind`·`icon_value`, 장식 처리)
 
 ## DEC-015
 ### Topic

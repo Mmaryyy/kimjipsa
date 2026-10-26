@@ -1,8 +1,38 @@
 import "server-only";
+
 import { tz } from "@date-fns/tz";
 import { addDays, format, subYears } from "date-fns";
 import { z } from "zod";
 import { categoryColors } from "@/shared/ui";
+
+// Raw mock JSON contracts stay in shared; entity input rules live in their own models.
+const inventoryItemSchema = z.object({
+  id: z.uuid(),
+  name: z.string(),
+  mode: z.enum(["quantity", "status"]),
+  quantity: z.number(),
+  status: z.enum(["enough", "low", "none"]),
+  unit_id: z.uuid().nullable(),
+  category_id: z.uuid().nullable(),
+  location_id: z.uuid().nullable(),
+  min_quantity: z.number().nullable(),
+  expires_on: z.iso.date().nullable(),
+  mock_expires_in_days: z.number().int().nullable(),
+});
+const inventoryMetaEntrySchema = z.object({
+  id: z.uuid(),
+  name: z.string(),
+  enabled: z.boolean().default(true),
+  sort_order: z.number().int().default(0),
+  icon_kind: z.enum(["lucide", "text"]).nullable().default(null),
+  icon_value: z.string().default(""),
+});
+const inventoryMetaSchema = z.object({
+  categories: z.array(inventoryMetaEntrySchema),
+  locations: z.array(inventoryMetaEntrySchema),
+  units: z.array(inventoryMetaEntrySchema),
+  expiry_days: z.number().int().nonnegative(),
+});
 
 const familySchema = z.object({
   id: z.uuid(),
@@ -118,6 +148,23 @@ const invitesSchema = z
 
 // 파일마다 검증과 초기 변환을 한 곳에서 정해 호출 순서에 영향받지 않아요.
 export const mockDataSchemas = {
+  "inventory-items": z.array(inventoryItemSchema).transform((items) =>
+    items.map(({ mock_expires_in_days, ...item }) => ({
+      ...item,
+      expires_on:
+        mock_expires_in_days === null
+          ? null
+          : format(
+              addDays(new Date(), mock_expires_in_days, {
+                in: tz("Asia/Seoul"),
+              }),
+              "yyyy-MM-dd",
+              { in: tz("Asia/Seoul") },
+            ),
+    })),
+  ),
+  "inventory-meta": inventoryMetaSchema,
+  "inventory-defaults": inventoryMetaSchema,
   "special-days": z.array(
     z.object({
       date: z.iso.date(),

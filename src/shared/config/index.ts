@@ -36,3 +36,8 @@ export {
   notificationSettingsApiPath,
   pushSubscriptionsApiPath,
 } from "./notification-routes.constants";
+
+export {
+  inventoryRoutes,
+  inventoryListPath,
+} from "./inventory-routes.constants";

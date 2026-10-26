@@ -34,6 +34,8 @@ export const statusBadgeStyles = cva(
         success: "text-success-text [--status-dot:var(--success)]",
         info: "text-info-text [--status-dot:var(--info)]",
         warning: "text-warning-text [--status-dot:var(--warning)]",
+        expiring:
+          "text-status-expiring-text [--status-dot:var(--status-expiring)]",
         error: "text-error-text [--status-dot:var(--error)]",
       },
     },
@@ -41,9 +43,11 @@ export const statusBadgeStyles = cva(
   },
 );
 
-export type StatusVariant = NonNullable<
+export type StatusBadgeVariant = NonNullable<
   VariantProps<typeof statusBadgeStyles>["variant"]
 >;
+
+export type StatusVariant = Exclude<StatusBadgeVariant, "expiring">;
 
 export const bannerStyles = cva(
   "flex items-start gap-3 p-3 [&_strong]:font-semibold text-caption",

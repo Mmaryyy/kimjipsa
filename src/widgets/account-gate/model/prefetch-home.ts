@@ -1,3 +1,7 @@
+import {
+  inventoryQueryOptions,
+  inventoryMetaQueryOptions,
+} from "@/entities/inventory-item";
 import { endOfMonth, endOfWeek, startOfMonth, startOfWeek } from "date-fns";
 import { z } from "zod";
 import type { QueryClient } from "@tanstack/react-query";
@@ -25,6 +29,8 @@ export async function prefetchHome(
   const start = startOfWeek(startOfMonth(selected)).getFullYear();
   const end = endOfWeek(endOfMonth(selected)).getFullYear();
   await Promise.allSettled([
+    client.prefetchQuery(inventoryQueryOptions),
+    client.prefetchQuery(inventoryMetaQueryOptions),
     client.prefetchQuery(eventsQueryOptions),
     client.prefetchQuery(categoriesQueryOptions),
     client.prefetchQuery(homeSettingsQueryOptions),

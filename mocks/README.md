@@ -102,3 +102,5 @@ P4.5는 새 서비스 화면을 만들지 않고 기존 P1~P4 화면에 데이�
 연도 입력은 1900~2100의 네 자리 정수만 받는다.
 
 P5a: `notifications.json`은 공유 일정 추가·변경·삭제 알림, `notification-settings.json`은 사용자별 알림 설정을 제공한다. `events.json`의 `remind_before`는 null·10·30·60·1440분 예시다. 알림·읽음·설정 변경은 목업 세션과 사용자별로 유지된다.
+
+P6 재고 목업: `inventory-items.json`은 `inventory.html`의 13개 품목과 이름·수량·기준을 따른다. `inventory-meta.json`은 선택 목록(샘플의 사용자 단위 모·단 포함), `inventory-defaults.json`은 초기화할 기본 목록이다. 유통기한은 `mock_expires_in_days`를 KST 오늘 기준으로 이동하며 null이면 유통기한이 없다.

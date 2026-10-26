@@ -1,0 +1,209 @@
+{
+  "categories": [
+    {
+      "id": "d7c1aa1f-4c1b-40b3-88ed-257ee3b73b84",
+      "name": "채소·과일",
+      "enabled": true,
+      "sort_order": 0,
+      "icon_kind": "lucide",
+      "icon_value": "carrot"
+    },
+    {
+      "id": "c74a0022-8754-4a5b-8bca-ba4391583a82",
+      "name": "정육·수산",
+      "enabled": true,
+      "sort_order": 1,
+      "icon_kind": "lucide",
+      "icon_value": "beef"
+    },
+    {
+      "id": "7f6eb754-9554-4d02-a16f-c1159ddbfaf7",
+      "name": "유제품·계란",
+      "enabled": true,
+      "sort_order": 2,
+      "icon_kind": "lucide",
+      "icon_value": "milk"
+    },
+    {
+      "id": "a24df632-7143-4d3a-84cd-27a39d546fe6",
+      "name": "가공식품",
+      "enabled": true,
+      "sort_order": 3,
+      "icon_kind": "lucide",
+      "icon_value": "pizza"
+    },
+    {
+      "id": "7c22d0d8-66b0-4a94-8a27-2a60a7ee54cf",
+      "name": "음료",
+      "enabled": true,
+      "sort_order": 4,
+      "icon_kind": "lucide",
+      "icon_value": "cup-soda"
+    },
+    {
+      "id": "423b98b9-2018-446d-b3e3-ced68ff639e9",
+      "name": "양념·소스",
+      "enabled": true,
+      "sort_order": 5,
+      "icon_kind": "lucide",
+      "icon_value": "flask-round"
+    },
+    {
+      "id": "3fca0401-5053-4b01-bece-a24b946fa8fa",
+      "name": "생활용품",
+      "enabled": true,
+      "sort_order": 6,
+      "icon_kind": "lucide",
+      "icon_value": "soap-dispenser-droplet"
+    },
+    {
+      "id": "e12cb39c-147d-41b4-8bb4-86a4e19feb98",
+      "name": "건강·뷰티",
+      "enabled": true,
+      "sort_order": 7,
+      "icon_kind": "lucide",
+      "icon_value": "heart-pulse"
+    },
+    {
+      "id": "006c5fbc-1462-40cf-83df-c1d910eb2f6b",
+      "name": "기타",
+      "enabled": true,
+      "sort_order": 8,
+      "icon_kind": "lucide",
+      "icon_value": "tag"
+    }
+  ],
+  "locations": [
+    {
+      "id": "5ffb7003-ecba-4e7f-a34d-a5ae2ada1754",
+      "name": "냉장실",
+      "enabled": true,
+      "sort_order": 0,
+      "icon_kind": null,
+      "icon_value": ""
+    },
+    {
+      "id": "5bbb79e4-a542-415d-b858-4f990181a098",
+      "name": "냉동실",
+      "enabled": true,
+      "sort_order": 1,
+      "icon_kind": null,
+      "icon_value": ""
+    },
+    {
+      "id": "2ed2fbce-1ca0-4e9b-ae8b-3ee5617473ed",
+      "name": "실온 식품장·팬트리",
+      "enabled": true,
+      "sort_order": 2,
+      "icon_kind": null,
+      "icon_value": ""
+    },
+    {
+      "id": "05b6171b-b647-4efe-80a7-1ee641be48bb",
+      "name": "욕실·세탁실",
+      "enabled": true,
+      "sort_order": 3,
+      "icon_kind": null,
+      "icon_value": ""
+    },
+    {
+      "id": "93a2402c-6c10-4d3b-be6a-78c9c05e0bc0",
+      "name": "서랍·수납장",
+      "enabled": true,
+      "sort_order": 4,
+      "icon_kind": null,
+      "icon_value": ""
+    }
+  ],
+  "units": [
+    {
+      "id": "863a0860-2cfb-4361-8067-727ee92c58ea",
+      "name": "개",
+      "enabled": true,
+      "sort_order": 0,
+      "icon_kind": null,
+      "icon_value": ""
+    },
+    {
+      "id": "c9db7ad0-94e7-4957-bd2a-04f669c35851",
+      "name": "팩",
+      "enabled": true,
+      "sort_order": 1,
+      "icon_kind": null,
+      "icon_value": ""
+    },
+    {
+      "id": "db31f3d4-fa39-4243-b5e8-c6a5ac1dc5d7",
+      "name": "병",
+      "enabled": true,
+      "sort_order": 2,
+      "icon_kind": null,
+      "icon_value": ""
+    },
+    {
+      "id": "4487ad6d-eb4c-463e-b310-a50a0825b8e5",
+      "name": "봉지",
+      "enabled": true,
+      "sort_order": 3,
+      "icon_kind": null,
+      "icon_value": ""
+    },
+    {
+      "id": "2bf69315-7490-4b71-af97-1e5ff38ab22f",
+      "name": "캔",
+      "enabled": true,
+      "sort_order": 4,
+      "icon_kind": null,
+      "icon_value": ""
+    },
+    {
+      "id": "62a7bdab-a106-44d8-b501-6c1fd4a8c017",
+      "name": "박스",
+      "enabled": true,
+      "sort_order": 5,
+      "icon_kind": null,
+      "icon_value": ""
+    },
+    {
+      "id": "826141d1-1a3d-4441-9fef-59100c3bc0da",
+      "name": "롤",
+      "enabled": true,
+      "sort_order": 6,
+      "icon_kind": null,
+      "icon_value": ""
+    },
+    {
+      "id": "d79b0e4c-f6bc-4702-92f6-6bd53cd7263d",
+      "name": "g",
+      "enabled": true,
+      "sort_order": 7,
+      "icon_kind": null,
+      "icon_value": ""
+    },
+    {
+      "id": "d145667e-c9f4-48e4-b607-5d271cff88d8",
+      "name": "kg",
+      "enabled": true,
+      "sort_order": 8,
+      "icon_kind": null,
+      "icon_value": ""
+    },
+    {
+      "id": "c4cf74e2-5d6a-4015-861f-88ffdcf907b0",
+      "name": "ml",
+      "enabled": true,
+      "sort_order": 9,
+      "icon_kind": null,
+      "icon_value": ""
+    },
+    {
+      "id": "78ed6a6a-8856-4736-83e7-a8501010a615",
+      "name": "L",
+      "enabled": true,
+      "sort_order": 10,
+      "icon_kind": null,
+      "icon_value": ""
+    }
+  ],
+  "expiry_days": 3
+}
