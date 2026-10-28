@@ -41,3 +41,4 @@ export {
   inventoryRoutes,
   inventoryListPath,
 } from "./inventory-routes.constants";
+export { cartRoutes } from "./cart-routes.constants";

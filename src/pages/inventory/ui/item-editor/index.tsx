@@ -30,6 +30,7 @@ interface Props {
   items: InventoryItem[];
   meta: InventoryMeta;
   onClose: () => void;
+  onUsedUp?: (item: InventoryItem) => void;
   onNotify: (message: string) => void;
 }
 const InventoryItemEditor = ({
@@ -39,6 +40,7 @@ const InventoryItemEditor = ({
   meta,
   onClose,
   onNotify,
+  onUsedUp,
 }: Props) => {
   const actions = useInventoryActions();
   const [editing, setEditing] = useState(!item);
@@ -161,8 +163,11 @@ const InventoryItemEditor = ({
     if (!item) return;
     try {
       await actions.onChange({ action: "used-up", id: item.id });
-      onNotify("다 쓴 품목으로 바꿨어요.");
-      onClose();
+      if (onUsedUp) onUsedUp(item);
+      else {
+        onNotify("다 쓴 품목으로 바꿨어요.");
+        onClose();
+      }
     } catch (error) {
       setError("root", {
         message: error instanceof Error ? error.message : "변경하지 못했어요.",

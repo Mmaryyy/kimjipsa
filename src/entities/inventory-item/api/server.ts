@@ -133,7 +133,10 @@ export async function writeInventory(raw: unknown) {
     throwDatabaseError(result.error, errors);
     return result.data;
   }
-  const items = await mockJson("inventory-items");
+  const [items, cart] = await Promise.all([
+    mockJson("inventory-items"),
+    mockJson("cart-items"),
+  ]);
   const index = command.id
     ? items.findIndex((item) => item.id === command.id)
     : -1;
@@ -166,8 +169,12 @@ export async function writeInventory(raw: unknown) {
     return saved.id;
   }
   const item = items[index]!;
-  if (command.action === "delete") items.splice(index, 1);
-  else if (command.action === "status") {
+  if (command.action === "delete") {
+    items.splice(index, 1);
+    for (const entry of cart)
+      if (entry.inventory_item_id === command.id)
+        entry.inventory_item_id = null;
+  } else if (command.action === "status") {
     if (item.mode !== "status")
       throw new ApiError(
         "invalid_inventory",
@@ -197,6 +204,7 @@ export async function writeInventoryMeta(raw: unknown) {
     throwDatabaseError(result.error, errors);
     return null;
   }
+  const cart = await mockJson("cart-items");
   const meta = await mockJson("inventory-meta");
   if (command.action === "expiry") {
     meta.expiry_days = command.days;
@@ -234,7 +242,8 @@ export async function writeInventoryMeta(raw: unknown) {
   } else if (command.action === "delete") {
     if (
       command.kind === "units" &&
-      items.some((item) => item.unit_id === target)
+      (items.some((item) => item.unit_id === target) ||
+        cart.some((item) => item.unit_id === target))
     )
       throw new ApiError("unit_in_use", errors.unit_in_use[1], 409);
     if (command.kind === "categories") {
@@ -247,7 +256,7 @@ export async function writeInventoryMeta(raw: unknown) {
         };
         entries.push(other);
       }
-      for (const item of items) {
+      for (const item of [...items, ...cart]) {
         if (item.category_id === target) item.category_id = other.id;
       }
     }
@@ -266,7 +275,7 @@ export async function writeInventoryMeta(raw: unknown) {
     }));
     if (command.kind === "categories") {
       const other = restored.find((entry) => entry.name === "기타")!;
-      for (const item of items) {
+      for (const item of [...items, ...cart]) {
         if (
           item.category_id &&
           !restored.some((entry) => entry.id === item.category_id)
@@ -280,7 +289,8 @@ export async function writeInventoryMeta(raw: unknown) {
           !restored.some((saved) => saved.id === entry.id) &&
           (command.kind === "locations" ||
             (command.kind === "units" &&
-              items.some((item) => item.unit_id === entry.id))),
+              (items.some((item) => item.unit_id === entry.id) ||
+                cart.some((item) => item.unit_id === entry.id)))),
       )
       .map((entry) => ({ ...entry, enabled: true }));
     meta[command.kind] = [...restored, ...retained];

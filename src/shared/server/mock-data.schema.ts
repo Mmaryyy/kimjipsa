@@ -163,6 +163,34 @@ export const mockDataSchemas = {
             ),
     })),
   ),
+  "cart-items": z
+    .array(
+      z.object({
+        id: z.uuid(),
+        name: z.string(),
+        quantity: z.number(),
+        unit_id: z.uuid().nullable(),
+        category_id: z.uuid().nullable(),
+        memo: z.string(),
+        link_url: z.string(),
+        added_by: z.uuid().nullable(),
+        checked_by: z.uuid().nullable(),
+        is_checked: z.boolean(),
+        inventory_item_id: z.uuid().nullable(),
+        purchased_at: z.string().nullable(),
+      }),
+    )
+    .transform((items) =>
+      items.map((item, index) => ({
+        ...item,
+        created_at: new Date(
+          Date.now() - (items.length - index) * 60000,
+        ).toISOString(),
+        purchased_at: item.purchased_at
+          ? new Date(Date.now() - (index + 1) * 86400000).toISOString()
+          : null,
+      })),
+    ),
   "inventory-meta": inventoryMetaSchema,
   "inventory-defaults": inventoryMetaSchema,
   "special-days": z.array(

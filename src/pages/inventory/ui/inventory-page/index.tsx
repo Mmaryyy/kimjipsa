@@ -1,4 +1,5 @@
 "use client";
+import { CartAddButton } from "@/features/cart-add";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
@@ -41,6 +42,7 @@ const InventoryPage = () => {
   const actions = useInventoryActions();
   const router = useRouter();
   const search = useSearchParams();
+  const [afterUsed, setAfterUsed] = useState<InventoryItem | null>(null);
   const [manage, setManage] = useState(false);
   const [editor, setEditor] = useState<InventoryItem | "new" | null>(null);
   const [message, setMessage] = useState("");
@@ -291,6 +293,10 @@ const InventoryPage = () => {
             meta={meta.data}
             onClose={() => setEditor(null)}
             onNotify={notify}
+            onUsedUp={(item) => {
+              setEditor(null);
+              setAfterUsed(item);
+            }}
           />
         )}
       </>
@@ -347,6 +353,49 @@ const InventoryPage = () => {
             </li>
           ))}
         </List>
+      </Sheet>
+      <Sheet
+        open={afterUsed !== null}
+        onOpenChange={(open) => {
+          if (!open) setAfterUsed(null);
+        }}
+        odId="sheet-after-used"
+        title={
+          afterUsed ? `${afterUsed.name} — 없음으로 바뀌었어요` : "다 썼어요"
+        }
+        description="장바구니에 담아 둘까요?"
+      >
+        <p className="py-3 text-center text-caption text-muted-foreground">
+          장바구니에 담아 둘까요?
+        </p>
+        {afterUsed && (
+          <div className="grid gap-2">
+            <CartAddButton
+              appearance="filled"
+              odId="after-add-cart"
+              onAdded={() => {
+                setAfterUsed(null);
+                notify("장바구니에 담았어요");
+              }}
+              item={{
+                name: afterUsed.name,
+                quantity: 1,
+                unit_id: afterUsed.unit_id,
+                category_id: afterUsed.category_id,
+                inventory_item_id: afterUsed.id,
+                memo: "",
+                link_url: "",
+              }}
+            />
+            <Button
+              variant="gray"
+              data-od-id="after-skip"
+              onClick={() => setAfterUsed(null)}
+            >
+              나중에
+            </Button>
+          </div>
+        )}
       </Sheet>
       <Toast
         open={!!message}

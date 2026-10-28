@@ -1,3 +1,19 @@
+type CartRow = {
+  id: string;
+  created_at: string;
+  family_id: string;
+  name: string;
+  quantity: number;
+  unit_id: string | null;
+  category_id: string | null;
+  memo: string;
+  link_url: string;
+  added_by: string | null;
+  checked_by: string | null;
+  is_checked: boolean;
+  inventory_item_id: string | null;
+  purchased_at: string | null;
+};
 type InventoryRow = {
   id: string;
   family_id: string;
@@ -70,6 +86,7 @@ export type Database<
 > = {
   public: {
     Tables: {
+      cart_items: Table<CartRow, CartRow>;
       inventory_items: Table<InventoryRow, InventoryRow>;
       inventory_categories: Table<InventoryMetaRow, InventoryMetaRow>;
       locations: Table<InventoryMetaRow, InventoryMetaRow>;
@@ -218,6 +235,8 @@ export type Database<
     };
     Views: { [_ in never]: never };
     Functions: {
+      frequent_cart_items: { Args: Record<string, never>; Returns: CartRow[] };
+      write_cart: { Args: { payload: Json }; Returns: Json };
       write_inventory: { Args: { payload: Json }; Returns: string };
       write_inventory_meta: { Args: { payload: Json }; Returns: undefined };
       notification_worker: {

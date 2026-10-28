@@ -5,7 +5,7 @@ import { AlertDialog } from "radix-ui";
 import { Button } from "./button";
 import type { OverlayProps } from "./overlay.types";
 type ConfirmDialogProps = OverlayProps & {
-  targetName: string;
+  targetName?: string;
   confirmLabel?: string;
   onConfirm: () => void;
   pending?: boolean;
@@ -43,7 +43,7 @@ export function ConfirmDialog({
           data-theme={theme}
         >
           <AlertDialog.Title className="text-headline">
-            ‘{targetName}’ {title}
+            {targetName ? `‘${targetName}’ ${title}` : title}
           </AlertDialog.Title>
           <AlertDialog.Description className="text-caption text-muted-foreground">
             {description}

@@ -30,6 +30,7 @@ beforeEach(() => {
     ["inventory-meta", meta],
     ["inventory-defaults", inventoryMetaSchema.parse(defaults)],
     ["inventory-items", items],
+    ["cart-items", []],
   ]);
 });
 describe("INV-01~08 목업 변경 경로", () => {
@@ -112,4 +113,42 @@ describe("INV-01~08 목업 변경 경로", () => {
       expect(meta.expiry_days).toBe(3);
     },
   );
+});
+
+describe("CART-04 CART-06 재고와 장바구니 연결", () => {
+  it("카테고리를 지우면 장바구니도 기타로 옮겨요", async () => {
+    const category = meta.categories.find((entry) => entry.name !== "기타")!;
+    const cart = [{ category_id: category.id }];
+    state.values.set("cart-items", cart);
+    await writeInventoryMeta({
+      action: "delete",
+      kind: "categories",
+      id: category.id,
+    });
+    expect(cart[0]?.category_id).toBe(
+      meta.categories.find((entry) => entry.name === "기타")?.id,
+    );
+  });
+  it("장바구니에서 쓰는 단위도 삭제를 막고 초기화할 때 유지해요", async () => {
+    const unit = {
+      ...meta.units[0]!,
+      id: crypto.randomUUID(),
+      name: "사용자 단위",
+    };
+    meta.units.push(unit);
+    state.values.set("cart-items", [{ unit_id: unit.id }]);
+    await expect(
+      writeInventoryMeta({ action: "delete", kind: "units", id: unit.id }),
+    ).rejects.toThrow("단위를 먼저");
+    await writeInventoryMeta({ action: "reset", kind: "units" });
+    expect(meta.units.some((entry) => entry.id === unit.id)).toBe(true);
+  });
+  it("재고를 삭제하면 장바구니 품목은 남기고 연결만 비워요", async () => {
+    const item = items[0]!;
+    const cart = [{ inventory_item_id: item.id }];
+    state.values.set("cart-items", cart);
+    await writeInventory({ action: "delete", id: item.id });
+    expect(cart).toHaveLength(1);
+    expect(cart[0]?.inventory_item_id).toBeNull();
+  });
 });

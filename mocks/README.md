@@ -34,15 +34,16 @@ Supabase URL·키·로그인이 없어도 스위치를 사용할 수 있다.
 
 ## JSON 구성과 다음 Phase 추가 방법
 
-| 파일                    | 내용                                                        |
-| ----------------------- | ----------------------------------------------------------- |
-| `holidays.json`         | 2026~2027 한국 공휴일과 대체공휴일(날짜 고정)               |
-| `special-days.json`     | 실제 API 응답 기준 2026~2027 절기 48건·잡절 14건(날짜 고정) |
-| `family.json`           | 가정과 두 구성원, 역할, 사용자 식별자                       |
-| `events.json`           | 프로토타입 공유·개인·종일·시작 시각만·D-day·축하 주년       |
-| `event-categories.json` | 도토리네·회사·병원·약속·가족·기타와 표시 순서               |
-| `home-settings.json`    | 기본 주 뷰, 다가오는 일정 켜짐, 5개 표시                    |
-| `invites.json`          | 사용 가능·사용됨·만료 초대, 현재 시각 기준 만료 일수        |
+| 파일                    | 내용                                                               |
+| ----------------------- | ------------------------------------------------------------------ |
+| `holidays.json`         | 2026~2027 한국 공휴일과 대체공휴일(날짜 고정)                      |
+| `special-days.json`     | 실제 API 응답 기준 2026~2027 절기 48건·잡절 14건(날짜 고정)        |
+| `cart-items.json`       | 장바구니·체크한 사람·구매 기록(구매일은 세션 시작일 기준으로 조정) |
+| `family.json`           | 가정과 두 구성원, 역할, 사용자 식별자                              |
+| `events.json`           | 프로토타입 공유·개인·종일·시작 시각만·D-day·축하 주년              |
+| `event-categories.json` | 도토리네·회사·병원·약속·가족·기타와 표시 순서                      |
+| `home-settings.json`    | 기본 주 뷰, 다가오는 일정 켜짐, 5개 표시                           |
+| `invites.json`          | 사용 가능·사용됨·만료 초대, 현재 시각 기준 만료 일수               |
 
 가정·이름·일정 제목·시각·장소·메모는 `prototype/home.html`, `calendar.html`의
 2026년 10월 14일 기준 샘플과 맞췄다. 프로토타입에서 숨긴 민호 개인 일정의
@@ -104,3 +105,7 @@ P4.5는 새 서비스 화면을 만들지 않고 기존 P1~P4 화면에 데이�
 P5a: `notifications.json`은 공유 일정 추가·변경·삭제 알림, `notification-settings.json`은 사용자별 알림 설정을 제공한다. `events.json`의 `remind_before`는 null·10·30·60·1440분 예시다. 알림·읽음·설정 변경은 목업 세션과 사용자별로 유지된다.
 
 P6 재고 목업: `inventory-items.json`은 `inventory.html`의 13개 품목과 이름·수량·기준을 따른다. `inventory-meta.json`은 선택 목록(샘플의 사용자 단위 모·단 포함), `inventory-defaults.json`은 초기화할 기본 목록이다. 유통기한은 `mock_expires_in_days`를 KST 오늘 기준으로 이동하며 null이면 유통기한이 없다.
+
+P7 장바구니의 목업 공동 편집은 1초 주기 조회로 동기화한다. 두 컨텍스트를
+비교할 때는 `kimjipsa-mock-session` 값을 같게 두고, 배우자 쪽에
+`kimjipsa-mock-perspective=spouse` 쿠키를 넣는다. 실제 모드는 Supabase Realtime을 쓴다.

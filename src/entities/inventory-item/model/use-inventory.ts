@@ -35,6 +35,7 @@ export function useInventory() {
 export const inventoryMetaQueryOptions = queryOptions({
   queryKey: ["inventory-meta"],
   queryFn: fetchInventoryMeta,
+  networkMode: "always",
   staleTime: 30_000,
   retryOnMount: false,
 });

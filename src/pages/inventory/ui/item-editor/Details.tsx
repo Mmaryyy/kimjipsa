@@ -1,5 +1,7 @@
+import { CartAddButton } from "@/features/cart-add";
 import {
   InventoryBadges,
+  inventoryState,
   type InventoryItem,
   type InventoryMeta,
 } from "@/entities/inventory-item";
@@ -72,6 +74,20 @@ const InventoryItemDetails = ({
         <Button data-od-id="item-used-up" disabled={pending} onClick={onUsedUp}>
           다 썼어요
         </Button>
+        {inventoryState(item) !== "enough" && (
+          <CartAddButton
+            appearance="filled"
+            item={{
+              name: item.name,
+              quantity: 1,
+              unit_id: item.unit_id,
+              category_id: item.category_id,
+              inventory_item_id: item.id,
+              memo: "",
+              link_url: "",
+            }}
+          />
+        )}
         <TextButton
           tone="danger"
           data-od-id="item-delete"

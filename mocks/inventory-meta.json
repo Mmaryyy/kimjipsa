@@ -219,6 +219,30 @@
       "sort_order": 12,
       "icon_kind": null,
       "icon_value": ""
+    },
+    {
+      "id": "7a01d4c3-2302-48df-8e51-071c0fd2f9a6",
+      "name": "판",
+      "enabled": true,
+      "sort_order": 13,
+      "icon_kind": null,
+      "icon_value": ""
+    },
+    {
+      "id": "49cbe10a-e428-4f08-a746-d592210d0bca",
+      "name": "망",
+      "enabled": true,
+      "sort_order": 14,
+      "icon_kind": null,
+      "icon_value": ""
+    },
+    {
+      "id": "2c387635-8360-40d8-8030-aaa6446a7248",
+      "name": "통",
+      "enabled": true,
+      "sort_order": 15,
+      "icon_kind": null,
+      "icon_value": ""
     }
   ],
   "expiry_days": 3

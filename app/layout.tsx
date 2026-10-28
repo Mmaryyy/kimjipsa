@@ -58,9 +58,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <ToastProvider>
           <QueryProvider>
             <AppLayout>{children}</AppLayout>
+            <ServiceWorkerRegistration />
           </QueryProvider>
         </ToastProvider>
-        <ServiceWorkerRegistration />
         <ThemeColorSync />
       </body>
     </html>

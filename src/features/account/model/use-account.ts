@@ -19,6 +19,7 @@ export function useAccount() {
   const queryClient = useQueryClient();
   return useQuery({
     queryKey: accountQueryKey,
+    networkMode: "always",
     // 공개 화면에 오래 머물러도 이 탭의 로그인 확인 이력을 유지해요.
     gcTime: Infinity,
     queryFn: async () => {
@@ -26,7 +27,20 @@ export function useAccount() {
         queryClient.getQueryData<Awaited<ReturnType<typeof fetchAccount>>>(
           accountQueryKey,
         );
-      const account = await fetchAccount();
+      let account: Awaited<ReturnType<typeof fetchAccount>>;
+      try {
+        account = await fetchAccount();
+      } catch (error) {
+        // Keep the authenticated shell mounted so the cart can show its last list offline.
+        // Authentication failures still follow the existing session-expiry path.
+        if (
+          previousAccount?.userId &&
+          error instanceof ApiError &&
+          error.code === "network_error"
+        )
+          return previousAccount;
+        throw error;
+      }
       // 최초 비로그인과 달리, 만료 응답은 마지막 계정 데이터를 덮지 않아요.
       if (previousAccount?.userId && !account.userId)
         throw new ApiError("UNAUTHORIZED", "로그인이 풀렸어요", 401);
