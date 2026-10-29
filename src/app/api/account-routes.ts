@@ -5,6 +5,7 @@ import {
   authenticatedClient,
   getAccount,
   saveProfile,
+  withdrawAccount,
 } from "@/entities/user/index.server";
 import {
   getFamily,
@@ -12,6 +13,7 @@ import {
   createInvite,
   previewInvite,
   acceptInvite,
+  changeMemberRole,
 } from "@/entities/family/index.server";
 import {
   isServerMockDataEnabled,
@@ -86,4 +88,14 @@ export async function authCallbackGET(request: Request) {
   const response = NextResponse.redirect(new URL(destination, url.origin));
   response.headers.set("Cache-Control", "private, no-store");
   return response;
+}
+
+export function withdrawPOST(request: Request) {
+  return handleRoute(request, withdrawAccount);
+}
+export function memberRolePOST(request: Request) {
+  return handleRoute(request, async () => {
+    if (!(await isServerMockDataEnabled())) await authenticatedClient();
+    return changeMemberRole(await readJson(request));
+  });
 }

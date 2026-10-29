@@ -48,7 +48,15 @@ async function mockAccount(): Promise<Account | null> {
   const family = await mockJson("family");
   const member = family.members[context.perspective]!;
   const stage = context.values.get("account-stage") ?? context.stage;
-  if (stage === "login")
+  if (
+    context.stage === "profile" &&
+    context.values.has(`withdrawn:${member.user_id}`)
+  ) {
+    context.values.delete(`withdrawn:${member.user_id}`);
+    context.values.set("account-stage", "profile");
+    return { userId: member.user_id, profile: null, membership: null };
+  }
+  if (stage === "login" || context.values.has(`withdrawn:${member.user_id}`))
     return { userId: null, profile: null, membership: null };
   const displayName = context.values.get(`display-name:${member.user_id}`);
   return {

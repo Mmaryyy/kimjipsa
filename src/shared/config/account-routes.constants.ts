@@ -11,7 +11,9 @@ export const accountRoutes = {
 export const accountApiRoutes = {
   account: "/api/account",
   profile: "/api/account/profile",
+  withdraw: "/api/account/withdraw",
   family: "/api/family",
+  memberRole: "/api/family/member-role",
   invites: "/api/invites",
 } as const;
 export function invitePath(token: string) {

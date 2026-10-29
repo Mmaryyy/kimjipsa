@@ -5,4 +5,5 @@ export {
   createInvite,
   previewInvite,
   acceptInvite,
+  changeMemberRole,
 } from "./api/server";

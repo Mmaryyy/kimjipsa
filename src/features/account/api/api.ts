@@ -61,6 +61,24 @@ export async function signOut() {
     throw new Error("로그아웃하지 못했어요. 다시 시도해 주세요.");
   }
 }
+// Clear private offline data before the irreversible request. A successful withdrawal
+// must leave the app even if the already-deleted auth session cannot be revoked.
+export async function withdrawAccount() {
+  await clearOfflineCart();
+  await request<null>(accountApiRoutes.withdraw, {});
+  try {
+    await removeCurrentPushSubscription();
+  } catch {
+    // Account deletion succeeded; device cleanup must not prevent leaving.
+  }
+  if (isMockDataEnabled()) {
+    document.cookie = `${mockStageCookie}=login; Path=/; SameSite=Lax`;
+  } else {
+    const client = createBrowserSupabaseClient();
+    await client.auth.signOut({ scope: "local" }).catch(() => undefined);
+  }
+  window.location.assign(accountRoutes.login);
+}
 export async function signIn(
   provider: LoginProvider,
   inviteToken?: string | null,

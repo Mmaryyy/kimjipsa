@@ -17,6 +17,7 @@ import PlannedSettingsSection from "./PlannedSection";
 import SettingsRow from "../settings-row";
 import { cn } from "@/shared/lib";
 import { useSignOut } from "@/features/account";
+import WithdrawAccount from "../withdraw-account";
 import { viewportPath } from "@/shared/config";
 
 const AppearanceSettingsPage = () => {
@@ -57,15 +58,7 @@ const AppearanceSettingsPage = () => {
         >
           로그아웃
         </TextButton>
-        <SettingsRow
-          odId="s-withdraw"
-          label={<span className="text-muted-foreground">탈퇴하기</span>}
-          action={
-            <Text variant="caption" className="text-muted-foreground">
-              준비 중
-            </Text>
-          }
-        />
+        <WithdrawAccount disabled={pending} />
         {error && (
           <Text as="p" role="alert" className="text-error-text">
             {error}

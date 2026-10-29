@@ -78,6 +78,7 @@ export function EventOccurrenceRow({
   let metadata = [
     visibilityLabel,
     privateEvent && privateOwnerLabel,
+    event.ownerId === null && "탈퇴한 사용자",
     event.details?.place,
     !event.isAllDay &&
       !time.startsWith("~") &&
@@ -89,6 +90,7 @@ export function EventOccurrenceRow({
   if (dday) {
     const dateFormat = dday.anniversary > 0 ? "yyyy년 M월 d일" : "M월 d일";
     metadata = [
+      event.ownerId === null && "탈퇴한 사용자",
       showDdayDate && format(kstDate(occurrence.startDate), dateFormat),
       dday.anniversary > 0
         ? `${dday.anniversary}주년`

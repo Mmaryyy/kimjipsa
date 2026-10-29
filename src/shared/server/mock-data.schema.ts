@@ -134,6 +134,8 @@ const invitesSchema = z
     z.object({
       token: z.uuid(),
       used: z.boolean(),
+      createdBy: z.uuid().nullable().optional(),
+      acceptedBy: z.uuid().nullable().optional(),
       mock_expires_in_days: z.number(),
     }),
   )

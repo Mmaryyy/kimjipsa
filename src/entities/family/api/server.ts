@@ -11,6 +11,11 @@ import {
 import type { Family, Invitation, InvitePreview } from "./type";
 import { roles, type FamilyRole } from "../model/roles.constants";
 const databaseErrors = {
+  last_admin: [409, "먼저 다른 구성원을 관리자로 지정해 주세요."],
+  role_forbidden: [403, "이 구성원의 역할을 바꿀 수 없어요."],
+  member_not_found: [404, "구성원을 찾을 수 없어요."],
+  family_required: [403, "가정에 먼저 참여해 주세요."],
+  invalid_role: [400, "역할을 확인해 주세요."],
   unauthorized: [401, "로그인이 필요해요."],
   forbidden: [403, "관리자만 초대 링크를 만들 수 있어요."],
   profile_required: [409, "약관에 동의하고 표시 이름을 먼저 정해 주세요."],
@@ -50,6 +55,8 @@ async function requireMockMember(admin = false) {
     throw new ApiError("unauthorized", databaseErrors.unauthorized[1], 401);
   const family = await mockFamily();
   const member = family.members[context.perspective]!;
+  if (context.values.has(`withdrawn:${member.user_id}`))
+    throw new ApiError("unauthorized", databaseErrors.unauthorized[1], 401);
   if (admin && member.role !== "admin")
     throw new ApiError("forbidden", databaseErrors.forbidden[1], 403);
   return { context, family, member };
@@ -59,7 +66,12 @@ export async function getFamily(): Promise<Family | null> {
     const { family, context } = await requireMockMember();
     const stage = context.values.get("account-stage") ?? context.stage;
     if (stage === "profile" || stage === "family") return null;
-    return family;
+    return {
+      ...family,
+      members: family.members.filter(
+        (member) => !context.values.has(`withdrawn:${member.user_id}`),
+      ),
+    };
   }
   const client = await createServerSupabaseClient<FamilyRole>();
   const { data: families, error } = await client
@@ -105,12 +117,16 @@ export async function createFamily(input: unknown) {
 }
 export async function createInvite(): Promise<Invitation> {
   if (await mockContext()) {
-    await requireMockMember(true);
+    const { member } = await requireMockMember(true);
     const invitation = {
       token: crypto.randomUUID(),
       expiresAt: new Date(Date.now() + 3 * 86400000).toISOString(),
     };
-    (await mockInvites()).push({ ...invitation, used: false });
+    (await mockInvites()).push({
+      ...invitation,
+      used: false,
+      createdBy: member.user_id,
+    });
     return invitation;
   }
   const client = await createServerSupabaseClient<FamilyRole>();
@@ -193,6 +209,7 @@ export async function acceptInvite(token: string) {
       (entry) => entry.token === inviteToken,
     )!;
     invitation.used = true;
+    invitation.acceptedBy = family.members[context.perspective]!.user_id;
     context.values.set("account-stage", "ready");
     return family.id;
   }
@@ -202,4 +219,49 @@ export async function acceptInvite(token: string) {
   });
   throwDatabaseError(error);
   return data;
+}
+
+const memberRoleSchema = z.object({
+  memberId: z.uuid(),
+  role: z.enum(Object.keys(roles) as [FamilyRole, ...FamilyRole[]]),
+});
+
+export async function changeMemberRole(input: unknown) {
+  const command = memberRoleSchema.parse(input);
+  if (await mockContext()) {
+    const { context, family, member: actor } = await requireMockMember();
+    const members = family.members.filter(
+      (member) => !context.values.has(`withdrawn:${member.user_id}`),
+    );
+    const target = members.find(
+      (member) => member.user_id === command.memberId,
+    );
+    if (!target)
+      throw new ApiError(
+        "member_not_found",
+        databaseErrors.member_not_found[1],
+        404,
+      );
+    if (actor.role !== "admin" || (target.role === "admin" && target !== actor))
+      throw new ApiError(
+        "role_forbidden",
+        databaseErrors.role_forbidden[1],
+        403,
+      );
+    if (
+      target.role === "admin" &&
+      command.role !== "admin" &&
+      !members.some((member) => member !== target && member.role === "admin")
+    )
+      throw new ApiError("last_admin", databaseErrors.last_admin[1], 409);
+    target.role = command.role;
+    return null;
+  }
+  const client = await createServerSupabaseClient<FamilyRole>();
+  const { error } = await client.rpc("change_member_role", {
+    member_id: command.memberId,
+    member_role: command.role,
+  });
+  throwDatabaseError(error);
+  return null;
 }

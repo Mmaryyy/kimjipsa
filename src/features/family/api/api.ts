@@ -1,6 +1,11 @@
 import { request } from "@/shared/api";
 import { accountApiRoutes, inviteApiPath } from "@/shared/config";
-import type { Family, Invitation, InvitePreview } from "@/entities/family";
+import type {
+  FamilyRole,
+  Family,
+  Invitation,
+  InvitePreview,
+} from "@/entities/family";
 export function fetchFamily() {
   return request<Family | null>(accountApiRoutes.family);
 }
@@ -15,4 +20,11 @@ export function fetchInvite(token: string) {
 }
 export function acceptInvite(token: string) {
   return request<string>(inviteApiPath(token), {});
+}
+
+export function changeMemberRole(input: {
+  memberId: string;
+  role: FamilyRole;
+}) {
+  return request<null>(accountApiRoutes.memberRole, input);
 }

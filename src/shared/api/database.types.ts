@@ -75,7 +75,7 @@ type MembershipRow<Role extends string> = {
 type InviteRow = {
   token: string;
   family_id: string;
-  created_by: string;
+  created_by: string | null;
   expires_at: string;
   accepted_by: string | null;
   accepted_at: string | null;
@@ -226,7 +226,7 @@ export type Database<
         {
           token?: string;
           family_id: string;
-          created_by: string;
+          created_by: string | null;
           expires_at?: string;
           accepted_by?: string | null;
           accepted_at?: string | null;
@@ -235,6 +235,11 @@ export type Database<
     };
     Views: { [_ in never]: never };
     Functions: {
+      withdraw_account: { Args: Record<string, never>; Returns: undefined };
+      change_member_role: {
+        Args: { member_id: string; member_role: Role };
+        Returns: undefined;
+      };
       frequent_cart_items: { Args: Record<string, never>; Returns: CartRow[] };
       write_cart: { Args: { payload: Json }; Returns: Json };
       write_inventory: { Args: { payload: Json }; Returns: string };

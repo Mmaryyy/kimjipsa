@@ -14,6 +14,7 @@ import {
   createInvite,
   fetchInvite,
   acceptInvite,
+  changeMemberRole,
 } from "../api/api";
 const familyQueryKey = ["family"] as const;
 export const familyQueryOptions = queryOptions({
@@ -103,4 +104,18 @@ export function useInviteShare() {
     error: mutation.error,
     shareMessage,
   };
+}
+
+export function useChangeMemberRole(onSaved?: () => void) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: changeMemberRole,
+    onSuccess: async () => {
+      onSaved?.();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: familyQueryKey }),
+        queryClient.invalidateQueries({ queryKey: ["account"] }),
+      ]);
+    },
+  });
 }

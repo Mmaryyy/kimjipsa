@@ -1,10 +1,12 @@
 "use client";
+import type { ReactNode } from "react";
 import { cn } from "@/shared/lib";
 
 import { AlertDialog } from "radix-ui";
 import { Button } from "./button";
 import type { OverlayProps } from "./overlay.types";
 type ConfirmDialogProps = OverlayProps & {
+  children?: ReactNode;
   targetName?: string;
   confirmLabel?: string;
   onConfirm: () => void;
@@ -28,6 +30,7 @@ export function ConfirmDialog({
   secondaryAction,
   trigger,
   theme,
+  children,
 }: ConfirmDialogProps) {
   return (
     <AlertDialog.Root open={open} onOpenChange={onOpenChange}>
@@ -48,6 +51,7 @@ export function ConfirmDialog({
           <AlertDialog.Description className="text-caption text-muted-foreground">
             {description}
           </AlertDialog.Description>
+          {children}
           <div className="mt-4 grid grid-cols-2 gap-2">
             <AlertDialog.Cancel asChild>
               <Button variant="gray" disabled={pending}>

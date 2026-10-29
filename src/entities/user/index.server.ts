@@ -6,3 +6,5 @@ export {
   getNotificationSettings,
   saveNotificationSettings,
 } from "./api/server";
+
+export { withdrawAccount } from "./api/withdraw";

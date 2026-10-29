@@ -93,6 +93,11 @@ export function EventDetail({
       <Text as="p" variant="caption">
         {event.data.visibility === "private" ? "개인 일정" : "공유 일정"}
       </Text>
+      {event.data.ownerId === null && (
+        <Text as="p" variant="caption">
+          작성자 · 탈퇴한 사용자
+        </Text>
+      )}
       {category && (
         <div className="flex items-center gap-2">
           <CategoryDot color={category.color} />

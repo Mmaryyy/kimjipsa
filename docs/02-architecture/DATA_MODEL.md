@@ -152,7 +152,7 @@ P6 구현: `families.expiry_days`(0~30 정수, 기본 3), `inventory_items`에 `
 | 직접 요청 | 도구가 해당 entity 직접 변경 → 결과 안내 | BOT-07 |
 | 챗봇 판단 | `pending_actions` 생성 → 확인 시 변경, 5분 후 만료 | BOT-08 |
 | 대화 종료 | `memories` 갱신 | BOT-12 |
-| 탈퇴 | 본인 private `events`, `conversations`, `memories` 삭제. 공유 데이터 유지. 마지막 관리자 규칙 적용 | ACC-15 |
+| 탈퇴 | 본인 private `events`, `conversations`, `memories` 삭제. 공유 데이터 유지(작성자 FK는 null). 안 쓴 `invitations` 삭제, 쓴 초대는 `created_by`·`accepted_by` null. 관리자가 남지 않으면 권한을 넘긴 뒤에만 탈퇴, 마지막 구성원이면 가정 삭제 | ACC-15 |
 
 ### P5b 푸시·예약 알림 (2026-10-21)
 
