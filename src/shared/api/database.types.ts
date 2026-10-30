@@ -133,6 +133,8 @@ export type Database<
       >;
       events: Table<
         {
+          recurrence: string | null;
+          recurrence_until: string | null;
           id: string;
           family_id: string;
           owner_id: string | null;
@@ -157,6 +159,49 @@ export type Database<
           kind?: string;
         }
       >;
+      event_exceptions: Omit<
+        Table<
+          {
+            event_id: string;
+            original_date: string;
+            family_id: string;
+            cancelled: boolean;
+            start_date: string;
+            end_date: string;
+            start_time: string | null;
+            end_time: string | null;
+            is_all_day: boolean;
+          },
+          never
+        >,
+        "Relationships"
+      > & { Relationships: [] };
+      event_exception_details: Omit<
+        Table<
+          {
+            event_id: string;
+            original_date: string;
+            family_id: string;
+            title: string;
+            place: string;
+            memo: string;
+            category_id: string;
+            remind_before: number | null;
+          },
+          never
+        >,
+        "Relationships"
+      > & {
+        Relationships: [
+          {
+            foreignKeyName: "event_exception_details_event_id_original_date_family_id_fkey";
+            columns: ["event_id", "original_date", "family_id"];
+            isOneToOne: true;
+            referencedRelation: "event_exceptions";
+            referencedColumns: ["event_id", "original_date", "family_id"];
+          },
+        ];
+      };
       event_details: Omit<
         Table<
           {
@@ -250,6 +295,9 @@ export type Database<
       };
       save_event: {
         Args: {
+          event_recurrence?: string | null;
+          occurrence_date?: string | null;
+          edit_scope?: string | null;
           event_id: string | null;
           event_title: string;
           event_place: string;
@@ -281,7 +329,14 @@ export type Database<
         Returns: undefined;
       };
       dismiss_dday_card: { Args: { event_id: string }; Returns: undefined };
-      delete_event: { Args: { event_id: string }; Returns: undefined };
+      delete_event: {
+        Args: {
+          event_id: string;
+          occurrence_date?: string | null;
+          edit_scope?: string | null;
+        };
+        Returns: undefined;
+      };
       save_event_category: {
         Args: {
           category_id: string | null;

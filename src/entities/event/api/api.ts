@@ -10,8 +10,9 @@ import type {
   EventInput,
   EventCategoryInput,
 } from "./type";
-export function fetchEvents() {
-  return request<CalendarEvent[]>(eventApiRoutes.events);
+export function fetchEvents(range?: { start: string; end: string }) {
+  const query = range ? `?${new URLSearchParams(range)}` : "";
+  return request<CalendarEvent[]>(`${eventApiRoutes.events}${query}`);
 }
 export function fetchEvent(id: string) {
   return request<CalendarEvent | null>(eventApiPath(id));
@@ -19,8 +20,8 @@ export function fetchEvent(id: string) {
 export function saveEvent(input: EventInput, id?: string) {
   return request<string>(id ? eventApiPath(id) : eventApiRoutes.events, input);
 }
-export function deleteEvent(id: string) {
-  return request<null>(`${eventApiPath(id)}/delete`, {});
+export function deleteEvent(id: string, scope?: "single" | "following") {
+  return request<null>(`${eventApiPath(id)}/delete`, { scope });
 }
 export function fetchCategories() {
   return request<EventCategory[]>(eventApiRoutes.categories);

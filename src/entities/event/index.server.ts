@@ -10,3 +10,5 @@ export {
 export { listDdayDismissals, dismissDdayCard } from "./api/server";
 
 export { nextDday } from "./lib/dday.utils";
+
+export { expandRecurrence, shiftDate } from "./lib/recurrence.utils";

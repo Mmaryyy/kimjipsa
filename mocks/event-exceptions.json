@@ -1,0 +1,59 @@
+[
+  {
+    "start_date": "2026-10-30",
+    "end_date": "2026-10-30",
+    "start_time": "09:00",
+    "end_time": null,
+    "is_all_day": false,
+    "event_details": {
+      "title": "이번 주는 실내 산책",
+      "place": "실내 공원",
+      "memo": "",
+      "category_id": "10000000-0000-4000-8000-000000000011",
+      "dday_style": "normal",
+      "celebrate_message": "",
+      "remind_before": 10
+    },
+    "event_id": "10000000-0000-4000-8000-000000000191",
+    "original_date": "2026-10-30",
+    "cancelled": false
+  },
+  {
+    "start_date": "2026-11-06",
+    "end_date": "2026-11-06",
+    "start_time": "09:00",
+    "end_time": null,
+    "is_all_day": false,
+    "event_details": {
+      "title": "매주 함께 산책",
+      "place": "실내 공원",
+      "memo": "",
+      "category_id": "10000000-0000-4000-8000-000000000011",
+      "dday_style": "normal",
+      "celebrate_message": "",
+      "remind_before": 10
+    },
+    "event_id": "10000000-0000-4000-8000-000000000191",
+    "original_date": "2026-11-06",
+    "cancelled": true
+  },
+  {
+    "start_date": "2026-10-30",
+    "end_date": "2026-10-30",
+    "start_time": "09:00",
+    "end_time": null,
+    "is_all_day": false,
+    "event_details": {
+      "title": "개인 상담 변경",
+      "place": "개인 상담실",
+      "memo": "개인 회차 메모",
+      "category_id": "10000000-0000-4000-8000-000000000011",
+      "dday_style": "normal",
+      "celebrate_message": "",
+      "remind_before": 10
+    },
+    "event_id": "10000000-0000-4000-8000-000000000193",
+    "original_date": "2026-10-30",
+    "cancelled": false
+  }
+]

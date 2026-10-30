@@ -10,7 +10,12 @@ import {
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import type { Database } from "@/shared/api";
-import { getEvent, listEvents, saveEvent } from "@/entities/event/index.server";
+import {
+  getEvent,
+  listEvents,
+  saveEvent,
+  shiftDate,
+} from "@/entities/event/index.server";
 const { requesterClient } = vi.hoisted(() => ({ requesterClient: vi.fn() }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/shared/server", async (original) => ({
@@ -173,6 +178,312 @@ run(
         await admin.from("families").delete().eq("id", id);
       for (const id of users) await admin.auth.admin.deleteUser(id);
     });
+    it("CAL-14 SCN-CAL-2 개인 반복 예외의 시간만 배우자에게 보여요", async () => {
+      const created = await owner.rpc("save_event", {
+        ...saveArgs(),
+        event_recurrence: "weekly",
+      });
+      expect(created.error).toBeNull();
+      const id = z.uuid().parse(created.data);
+      const single = {
+        ...saveArgs(),
+        event_id: id,
+        event_recurrence: "weekly",
+        occurrence_date: "2026-10-23",
+        edit_scope: "single",
+        event_title: "CANARY_EXCEPTION",
+        event_start_date: "2026-10-24",
+        event_end_date: "2026-10-24",
+      };
+      expect((await owner.rpc("save_event", single)).error).toBeNull();
+      const times = await spouse
+        .from("event_exceptions")
+        .select("*, event_exception_details(*)")
+        .eq("event_id", id);
+      expect(times.error).toBeNull();
+      expect(times.data).toHaveLength(1);
+      expect(times.data![0]).toMatchObject({
+        start_date: "2026-10-24",
+        event_exception_details: null,
+      });
+      const details = await spouse
+        .from("event_exception_details")
+        .select("*")
+        .eq("event_id", id);
+      expect(details.error).toBeNull();
+      expect(details.data).toEqual([]);
+      expect(JSON.stringify(times.data)).not.toContain("CANARY");
+      const outside = await outsider
+        .from("event_exceptions")
+        .select("*")
+        .eq("event_id", id);
+      expect(outside.error).toBeNull();
+      expect(outside.data).toEqual([]);
+      expect((await spouse.rpc("save_event", single)).error?.message).toBe(
+        "event_forbidden",
+      );
+      expect(
+        (
+          await spouse.rpc("delete_event", {
+            event_id: id,
+            occurrence_date: "2026-10-23",
+            edit_scope: "single",
+          })
+        ).error?.message,
+      ).toBe("event_forbidden");
+    });
+    it.each(["2026-10-16", "2026-10-23"])(
+      "CAL-14 SQL 이후 저장은 %s 예외를 지우고 뒤 예외는 남겨요",
+      async (date) => {
+        const created = await owner.rpc("save_event", {
+          ...saveArgs("shared"),
+          event_recurrence: "weekly",
+        });
+        expect(created.error).toBeNull();
+        const id = z.uuid().parse(created.data);
+        for (const day of [date, "2026-10-30"]) {
+          expect(
+            (
+              await owner.rpc("save_event", {
+                ...saveArgs("shared"),
+                event_id: id,
+                event_recurrence: "weekly",
+                occurrence_date: day,
+                edit_scope: "single",
+                event_title: "제목 A",
+                event_start_date: day,
+                event_end_date: day,
+              })
+            ).error,
+          ).toBeNull();
+        }
+        const following = await owner.rpc("save_event", {
+          ...saveArgs("shared"),
+          event_id: id,
+          event_recurrence: "weekly",
+          occurrence_date: date,
+          edit_scope: "following",
+          event_title: "제목 B",
+          event_start_date: date,
+          event_end_date: date,
+        });
+        expect(following.error).toBeNull();
+        const newId = z.uuid().parse(following.data);
+        const exceptions = await owner
+          .from("event_exceptions")
+          .select("original_date, event_exception_details(title)")
+          .eq("event_id", newId);
+        expect(exceptions.error).toBeNull();
+        expect(exceptions.data).toEqual([
+          {
+            original_date: "2026-10-30",
+            event_exception_details: { title: "제목 A" },
+          },
+        ]);
+        requesterClient.mockResolvedValue(owner);
+        expect((await getEvent(`${newId}~${date}`))?.details?.title).toBe(
+          "제목 B",
+        );
+        const notices = await spouse
+          .from("notifications")
+          .select("payload")
+          .contains("payload", { eventId: id, occurrenceDate: date });
+        expect(notices.error).toBeNull();
+        expect(notices.data?.length).toBeGreaterThan(0);
+        expect(
+          (
+            await owner.rpc("delete_event", {
+              event_id: newId,
+              occurrence_date: "2026-10-30",
+              edit_scope: "single",
+            })
+          ).error,
+        ).toBeNull();
+        expect(await getEvent(`${newId}~2026-10-30`)).toBeNull();
+        expect(
+          (
+            await owner.rpc("delete_event", {
+              event_id: newId,
+              occurrence_date: date,
+              edit_scope: "following",
+            })
+          ).error,
+        ).toBeNull();
+        expect(
+          (await owner.from("events").select("id").eq("id", newId)).data,
+        ).toEqual([]);
+      },
+    );
+    it("CAL-14 SQL 이후 삭제는 앞 회차를 남기고 뒤 예외를 지워요", async () => {
+      const created = await owner.rpc("save_event", {
+        ...saveArgs(),
+        event_recurrence: "weekly",
+      });
+      expect(created.error).toBeNull();
+      const id = z.uuid().parse(created.data);
+      expect(
+        (
+          await owner.rpc("save_event", {
+            ...saveArgs(),
+            event_id: id,
+            event_recurrence: "weekly",
+            occurrence_date: "2026-10-30",
+            edit_scope: "single",
+            event_start_date: "2026-10-30",
+            event_end_date: "2026-10-30",
+          })
+        ).error,
+      ).toBeNull();
+      expect(
+        (
+          await owner.rpc("delete_event", {
+            event_id: id,
+            occurrence_date: "2026-10-23",
+            edit_scope: "following",
+          })
+        ).error,
+      ).toBeNull();
+      expect(
+        (
+          await owner
+            .from("events")
+            .select("recurrence_until")
+            .eq("id", id)
+            .single()
+        ).data?.recurrence_until,
+      ).toBe("2026-10-22");
+      expect(
+        (await owner.from("event_exceptions").select("*").eq("event_id", id))
+          .data,
+      ).toEqual([]);
+    });
+    it.skipIf(!process.env.CRON_SECRET)(
+      "CAL-14 CAL-11 취소·종료·규칙 밖 회차는 예약 알림을 만들지 않아요",
+      async () => {
+        const created = await owner.rpc("save_event", {
+          ...saveArgs(),
+          event_recurrence: "weekly",
+        });
+        expect(created.error).toBeNull();
+        const id = z.uuid().parse(created.data);
+        expect(
+          (
+            await owner.rpc("delete_event", {
+              event_id: id,
+              occurrence_date: "2026-10-23",
+              edit_scope: "single",
+            })
+          ).error,
+        ).toBeNull();
+        expect(
+          (
+            await owner.rpc("delete_event", {
+              event_id: id,
+              occurrence_date: "2026-10-30",
+              edit_scope: "following",
+            })
+          ).error,
+        ).toBeNull();
+        for (const date of [
+          "2026-10-23",
+          "2026-10-30",
+          "2026-10-17",
+          "2026-10-16",
+        ]) {
+          const result = await admin.rpc("notification_worker", {
+            worker_secret: process.env.CRON_SECRET!,
+            operation: "schedule",
+            input: {
+              userId: ownerId,
+              familyId,
+              kind: "event_reminder",
+              key: randomUUID(),
+              payload: { eventId: id, occurrenceDate: date },
+            },
+          });
+          expect(result.error).toBeNull();
+          if (date === "2026-10-16") expect(result.data).not.toBeNull();
+          else expect(result.data).toBeNull();
+        }
+      },
+    );
+    it.skipIf(!process.env.CRON_SECRET)(
+      "CAL-14 워커는 끝난 규칙과 지난 예외를 빼고 오늘로 옮긴 예외는 남겨요",
+      async () => {
+        const worker = () =>
+          admin.rpc("notification_worker", {
+            worker_secret: process.env.CRON_SECRET!,
+            operation: "snapshot",
+          });
+        const before = await worker();
+        expect(before.error).toBeNull();
+        const now = z.object({ now: z.string() }).parse(before.data).now;
+        const today = new Date(Date.parse(now) + 9 * 60 * 60 * 1000)
+          .toISOString()
+          .slice(0, 10);
+        const start = shiftDate(today, -30);
+        const args = {
+          ...saveArgs(),
+          event_recurrence: "daily",
+          event_start_date: start,
+          event_end_date: start,
+        };
+        const ended = await owner.rpc("save_event", args);
+        expect(ended.error).toBeNull();
+        const endedId = z.uuid().parse(ended.data);
+        expect(
+          (
+            await owner.rpc("delete_event", {
+              event_id: endedId,
+              occurrence_date: shiftDate(today, -3),
+              edit_scope: "following",
+            })
+          ).error,
+        ).toBeNull();
+        const active = await owner.rpc("save_event", args);
+        expect(active.error).toBeNull();
+        const activeId = z.uuid().parse(active.data);
+        for (const [original, moved] of [
+          [shiftDate(today, -10), shiftDate(today, -10)],
+          [shiftDate(today, -9), today],
+          [today, today],
+        ]) {
+          expect(
+            (
+              await owner.rpc("save_event", {
+                ...args,
+                event_id: activeId,
+                occurrence_date: original,
+                edit_scope: "single",
+                event_start_date: moved,
+                event_end_date: moved,
+              })
+            ).error,
+          ).toBeNull();
+        }
+        const after = await worker();
+        expect(after.error).toBeNull();
+        const snapshot = z
+          .object({
+            events: z.array(
+              z.object({
+                id: z.string(),
+                exceptions: z.array(z.object({ originalDate: z.string() })),
+              }),
+            ),
+          })
+          .parse(after.data);
+        expect(
+          snapshot.events.find((event) => event.id === endedId),
+        ).toBeUndefined();
+        expect(
+          snapshot.events
+            .find((event) => event.id === activeId)
+            ?.exceptions.map((entry) => entry.originalDate)
+            .sort(),
+        ).toEqual([shiftDate(today, -9), today]);
+      },
+    );
     it("CAL-09 SCN-CAL-5 공유 변경·삭제 알림은 같은 가정의 변경자 외에만 남아요", async () => {
       const id = await createEvent("shared");
       const changed = await owner.rpc("save_event", {

@@ -17,8 +17,8 @@ import {
 import { eventRoutes } from "@/shared/config";
 import { EmptyState, ErrorState, ListSkeleton, TextButton } from "@/shared/ui";
 import { EventEditorSheet } from "./event-editor-sheet";
-import { EventForm } from "./event-form";
-import { EventDetail } from "./event-detail";
+import EventForm from "./event-form";
+import EventDetail from "./event-detail";
 function EventList({
   onOpen,
   onAdd,
@@ -27,7 +27,18 @@ function EventList({
   onAdd: () => void;
 }) {
   const instant = useCalendarClock();
-  const events = useEvents();
+  const params = useSearchParams();
+  const selected = z.iso.date().safeParse(params?.get("date"));
+  const year = Number(
+    (selected.success
+      ? selected.data
+      : eventDateInput(instant.toISOString())
+    ).slice(0, 4),
+  );
+  const events = useEvents({
+    start: `${Math.max(1, year - 1)}-01-01`,
+    end: `${Math.min(9999, year + 1)}-12-31`,
+  });
   const family = useFamily();
   const categories = useEventCategories();
   if (events.isError)
@@ -128,7 +139,10 @@ function CalendarContent() {
   const params = useSearchParams();
   const parsedDate = z.iso.date().safeParse(params?.get("date"));
   const initialDate = parsedDate.success ? parsedDate.data : undefined;
-  const parsedEvent = z.uuid().safeParse(params?.get("event"));
+  const parsedEvent = z
+    .string()
+    .regex(/^[0-9a-f-]{36}(~\d{4}-\d{2}-\d{2})?$/i)
+    .safeParse(params?.get("event"));
   const [selectedId, setSelectedId] = useState<string | null>(
     parsedEvent.success ? parsedEvent.data : null,
   );

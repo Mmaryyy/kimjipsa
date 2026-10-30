@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { notificationMessage } from "./notification.utils";
+import { notificationMessage, notificationEventId } from "./notification.utils";
 import type { Notification } from "../model/notification.schema";
 it("CAL-11 SCN-CAL-5 시작 전 알림은 제목과 시작 시각을 보여 준다", () => {
   const notification: Notification = {
@@ -39,3 +39,10 @@ it.each([
     );
   },
 );
+
+it("CAL-14 CAL-09 알림 이동 주소에 원래 회차 날짜를 담아요", () => {
+  expect(
+    notificationEventId({ eventId: "series", occurrenceDate: "2026-10-16" }),
+  ).toBe("series~2026-10-16");
+  expect(notificationEventId({ eventId: "single" })).toBe("single");
+});

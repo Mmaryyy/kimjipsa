@@ -1,6 +1,6 @@
 "use client";
 import { useMediaQuery } from "@/shared/lib";
-import { useCallback, useEffect, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -8,9 +8,11 @@ import {
   type EventCategory,
   type EventInput,
   reminderOptions,
+  recurrenceOptions,
 } from "@/entities/event";
 import {
   Button,
+  ConfirmDialog,
   CategoryDot,
   FormFieldRow,
   GroupLabel,
@@ -20,10 +22,10 @@ import {
 import {
   eventFormSchema,
   type EventFormInput,
-} from "../model/event-form.schema";
-import { useEventEditor } from "../model/use-event-editor";
+} from "../../model/event-form.schema";
+import { useEventEditor } from "../../model/use-event-editor";
 import { defaultDateRange } from "@/shared/ui/date-time-input";
-import { EventDateFields } from "./event-date-fields";
+import { EventDateFields } from "../event-date-fields";
 function initialValues(
   event: CalendarEvent | undefined,
   categories: EventCategory[],
@@ -31,6 +33,7 @@ function initialValues(
 ): EventFormInput {
   const defaults = defaultDateRange(initialDate);
   return {
+    recurrence: event?.recurrence ?? null,
     remindBefore: event?.remindBefore === undefined ? 30 : event.remindBefore,
     kind: event?.kind ?? "event",
     ddayStyle: event?.details?.ddayStyle ?? "normal",
@@ -50,7 +53,7 @@ function initialValues(
     endTime: event ? (event.endTime ?? "") : defaults.endTime,
   };
 }
-export function EventForm({
+const EventForm = ({
   event,
   categories,
   onSaved,
@@ -64,7 +67,9 @@ export function EventForm({
   formId?: string;
   initialDate?: string;
   onDirtyChange?: (dirty: boolean) => void;
-}) {
+}) => {
+  const [pendingInput, setPendingInput] = useState<EventInput | null>(null);
+  const [savingScope, setSavingScope] = useState(false);
   const coarse = useMediaQuery("(pointer: coarse)");
   const { onSave } = useEventEditor(event?.id, onSaved);
   const {
@@ -107,18 +112,39 @@ export function EventForm({
     },
     [setValue],
   );
-  const onSubmit = useCallback(
+  const persist = useCallback(
     async (input: EventInput) => {
       try {
         await onSave(input);
+        return true;
       } catch (error) {
         setError("root", {
           message:
             error instanceof Error ? error.message : "저장하지 못했어요.",
         });
+        return false;
       }
     },
     [onSave, setError],
+  );
+  const onSubmit = useCallback(
+    async (input: EventInput) => {
+      if (event?.recurrence) setPendingInput(input);
+      else await persist(input);
+    },
+    [event?.recurrence, persist],
+  );
+  const onScopeSave = useCallback(
+    async (scope: "single" | "following") => {
+      if (!pendingInput || savingScope) return;
+      setSavingScope(true);
+      try {
+        if (await persist({ ...pendingInput, scope })) setPendingInput(null);
+      } finally {
+        setSavingScope(false);
+      }
+    },
+    [pendingInput, savingScope, persist],
   );
   const onFormSubmit = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
@@ -236,6 +262,41 @@ export function EventForm({
             />
           )}
         </FormFieldRow>
+        {kind !== "dday" && (
+          <FormFieldRow
+            label="반복"
+            htmlFor="event-recurrence"
+            invalid={!!errors.recurrence}
+            error={errors.recurrence?.message}
+          >
+            {(props) => (
+              <Controller
+                control={control}
+                name="recurrence"
+                render={({ field }) => (
+                  <select
+                    {...props}
+                    data-od-id="f-recurrence"
+                    value={field.value ?? "none"}
+                    onChange={(event) =>
+                      field.onChange(
+                        event.target.value === "none"
+                          ? null
+                          : event.target.value,
+                      )
+                    }
+                  >
+                    {recurrenceOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              />
+            )}
+          </FormFieldRow>
+        )}
         <GroupLabel>분류</GroupLabel>
         <FormFieldRow
           label="카테고리"
@@ -347,6 +408,38 @@ export function EventForm({
           {isSubmitting ? "저장하고 있어요" : "저장하기"}
         </Button>
       )}
+      <ConfirmDialog
+        open={pendingInput !== null}
+        onOpenChange={(open) => {
+          if (!open && !savingScope) setPendingInput(null);
+        }}
+        title="어떤 일정을 수정할까요?"
+        description={
+          errors.root?.message ??
+          (pendingInput?.visibility !== event?.visibility
+            ? "공개 범위 변경은 시리즈 전체에 적용돼요."
+            : "변경할 반복 일정의 범위를 선택해 주세요.")
+        }
+        destructive={false}
+        pending={savingScope}
+        confirmLabel="이후 모든 일정"
+        onConfirm={() => {
+          void onScopeSave("following");
+        }}
+        secondaryAction={
+          pendingInput?.recurrence === event?.recurrence &&
+          pendingInput?.kind === "event"
+            ? {
+                label: "이 일정만",
+                onClick: () => {
+                  void onScopeSave("single");
+                },
+              }
+            : undefined
+        }
+      />
     </form>
   );
-}
+};
+
+export default EventForm;

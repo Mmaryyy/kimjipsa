@@ -11,11 +11,11 @@ import {
   type CalendarEvent,
   type EventCategory,
 } from "@/entities/event";
-import { EventForm } from "./event-form";
+import EventForm from "./";
 const { onSave } = vi.hoisted(() => ({
   onSave: vi.fn().mockResolvedValue("saved"),
 }));
-vi.mock("../model/use-event-editor", () => ({
+vi.mock("../../model/use-event-editor", () => ({
   useEventEditor: () => ({ onSave }),
 }));
 const categories: EventCategory[] = [
@@ -52,6 +52,35 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 describe("CAL-01~03 SCN-CAL-1 일정 입력", () => {
+  it.each(["single", "following"] as const)(
+    "CAL-14 반복 일정은 범위를 선택한 뒤 저장해요 (%s)",
+    async (scope) => {
+      render(
+        <EventForm
+          event={{ ...event, recurrence: "weekly" }}
+          categories={categories}
+          onSaved={() => {}}
+        />,
+      );
+      expect(screen.getByLabelText("반복")).toHaveValue("weekly");
+      fireEvent.change(screen.getByLabelText("제목"), {
+        target: { value: "변경한 일정" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "저장하기" }));
+      await screen.findByRole("alertdialog");
+      expect(onSave).not.toHaveBeenCalled();
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: scope === "single" ? "이 일정만" : "이후 모든 일정",
+        }),
+      );
+      await waitFor(() =>
+        expect(onSave).toHaveBeenCalledWith(
+          expect.objectContaining({ title: "변경한 일정", scope }),
+        ),
+      );
+    },
+  );
   it("배우자의 공유 일정은 수정할 수 있지만 개인 전환 스위치는 없어요", () => {
     render(
       <EventForm event={event} categories={categories} onSaved={() => {}} />,

@@ -20,6 +20,26 @@ export const scheduleSnapshotSchema = z.object({
       startTime: z.string().nullable(),
       isAllDay: z.boolean(),
       remindBefore: z.number().nullable(),
+      recurrence: z
+        .enum(["daily", "weekly", "monthly", "yearly"])
+        .nullable()
+        .optional(),
+      recurrenceUntil: z.string().nullable().optional(),
+      originalDate: z.string().optional(),
+      exceptions: z
+        .array(
+          z.object({
+            originalDate: z.string(),
+            cancelled: z.boolean(),
+            title: z.string().nullable(),
+            startDate: z.string(),
+            endDate: z.string(),
+            startTime: z.string().nullable(),
+            isAllDay: z.boolean(),
+            remindBefore: z.number().nullable(),
+          }),
+        )
+        .optional(),
     }),
   ),
 });
@@ -31,6 +51,8 @@ export type ScheduledNotification = {
   kind: "event_reminder" | "morning_summary";
   payload: {
     eventId?: string;
+    occurrenceDate?: string;
+    occurrences?: { eventId: string; originalDate: string }[];
     date: string;
     eventTitle?: string;
     startTime?: string;
@@ -69,12 +91,13 @@ export function scheduledNotifications(
       const due = start - event.remindBefore * 60000;
       if (inScheduleWindow(due, now.getTime()))
         notifications.push({
-          key: `reminder:${user.id}:${event.id}:${start}`,
+          key: `reminder:${user.id}:${event.id}:${event.originalDate ? `${event.originalDate}:` : ""}${start}`,
           userId: user.id,
           familyId: user.familyId,
           kind: "event_reminder",
           payload: {
             eventId: event.id,
+            ...(event.originalDate && { occurrenceDate: event.originalDate }),
             date: event.startDate,
             eventTitle: event.title,
             startTime: event.isAllDay
@@ -112,6 +135,12 @@ export function scheduledNotifications(
             times,
             count: times.length,
             eventIds: todaysEvents.map((event) => event.id),
+            occurrences: todaysEvents
+              .filter((event) => event.originalDate)
+              .map((event) => ({
+                eventId: event.id,
+                originalDate: event.originalDate!,
+              })),
           },
         });
       }

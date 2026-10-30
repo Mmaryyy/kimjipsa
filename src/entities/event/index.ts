@@ -56,3 +56,5 @@ export {
   reminderOptions,
   type ReminderOptionValue,
 } from "./model/reminder.constants";
+
+export { recurrenceOptions } from "./model/recurrence.constants";

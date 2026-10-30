@@ -13,6 +13,10 @@ export const notificationSchema = z.object({
   ]),
   payload: z.object({
     eventId: z.uuid().optional(),
+    occurrenceDate: z.iso.date().optional(),
+    occurrences: z
+      .array(z.object({ eventId: z.uuid(), originalDate: z.iso.date() }))
+      .optional(),
     actorName: z.string().optional(),
     date: z.iso.date().optional(),
     times: z.array(z.string()).optional(),

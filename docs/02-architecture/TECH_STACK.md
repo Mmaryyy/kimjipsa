@@ -50,7 +50,7 @@ PROPOSED 항목은 `docs/04-planning/DECISIONS_REQUIRED.md`의 결정 번호와 
 | 공휴일 데이터 | 공공데이터포털 특일정보 API(`getRestDeInfo`), 서버 라우트 + 연도별 캐시 | CONFIRMED | 공식 출처라 대체·임시공휴일 반영. 테이블 없음 | 내장 목록, 구글 공휴일 캘린더 | 서비스 키가 시크릿. 실패 시 공휴일 없이 동작 | DEC-015, ADR-0014 |
 | 달력 스와이프 | `embla-carousel-react` 8.6.0 | CONFIRMED | 손가락을 따라 끌리는 월·주·일 넘김. 달력 자체는 직접 구현 유지 | 직접 구현, 캘린더 전체 라이브러리 | 의존성 1개 | ADR-0015 |
 | AI 호출 계층 | 직접 어댑터(Claude/Gemini 공식 SDK 또는 REST를 `AiProvider` 인터페이스로 감쌈) | PROPOSED | 지원이 두 곳뿐이라 얇은 어댑터로 충분(기획서 §09). 도구 호출·OCR 차이는 어댑터 안에서 흡수 | Vercel AI SDK | 제공자별 도구 호출 형식 차이를 직접 맞춰야 함 | DEC-012 |
-| 키 암호화 | 서버에서 AES-GCM 등 인증 암호화, 마스터 키는 환경 변수 / 또는 Supabase Vault | UNDER_REVIEW | 요구는 "서버에서 암호화 저장, 화면엔 끝자리만"(ACC-08) | pgsodium, KMS | 키 교체·유출 대응 절차 필요. 보안 항목이라 승인 필수 | DEC-003 |
+| 키 암호화 | 서버 AES-256-GCM(Node `crypto`), 마스터 키는 환경 변수 `SECRET_ENCRYPTION_KEY` | CONFIRMED | 요구는 "서버에서 암호화 저장, 화면엔 끝자리만"(ACC-08) | pgsodium, KMS | 구글 캘린더 토큰(CAL-15)과 AI 키(ACC-08)에 쓴다. 키 교체 절차는 필요할 때 정한다 | DEC-003, ADR-0016 |
 | 오류 모니터링 | 미정 | PENDING | 기획서 §11이 "에러 모니터링"을 요구하지만 도구 언급 없음 | Sentry 등 | 외부 서비스 비용·개인정보 | DEC-013 |
 | 파일 저장소 | 미정 | PENDING | 영수증 이미지(M3, INV-17)를 저장할지 처리 후 폐기할지 미정 | Supabase Storage | 개인정보 | DEC-011 |
 

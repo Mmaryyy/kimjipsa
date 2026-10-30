@@ -7,6 +7,11 @@ const time = z
   .nullable();
 export const eventSchema = z
   .object({
+    recurrence: z
+      .enum(["daily", "weekly", "monthly", "yearly"])
+      .nullable()
+      .optional(),
+    scope: z.enum(["single", "following"]).optional(),
     remindBefore: z
       .union([
         z.literal(10),
@@ -36,6 +41,13 @@ export const eventSchema = z
     isAllDay: z.boolean({ error: "종일 여부를 확인해 주세요." }),
   })
   .superRefine((event, context) => {
+    if (event.kind === "dday" && event.recurrence) {
+      context.addIssue({
+        code: "custom",
+        path: ["recurrence"],
+        message: "D-day는 매년 자동으로 반복해요.",
+      });
+    }
     if (
       event.kind === "dday" &&
       (event.startDate !== event.endDate || !event.isAllDay)

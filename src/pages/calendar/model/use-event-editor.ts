@@ -17,10 +17,16 @@ export function useEventEditor(id: string | undefined, onSaved: () => void) {
     mutationFn: (input: EventInput) => saveEvent(input, id),
     onSuccess,
   });
-  const remove = useMutation({ mutationFn: () => deleteEvent(id!), onSuccess });
-  const onDelete = useCallback(() => {
-    if (id) remove.mutate();
-  }, [id, remove]);
+  const remove = useMutation({
+    mutationFn: (scope?: "single" | "following") => deleteEvent(id!, scope),
+    onSuccess,
+  });
+  const onDelete = useCallback(
+    (scope?: "single" | "following") => {
+      if (id) remove.mutate(scope);
+    },
+    [id, remove],
+  );
   return {
     onSave: save.mutateAsync,
     onDelete,

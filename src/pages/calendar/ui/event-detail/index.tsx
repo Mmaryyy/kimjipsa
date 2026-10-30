@@ -5,6 +5,7 @@ import {
   useEventCategories,
   eventTimeLabel,
   reminderOptions,
+  recurrenceOptions,
   type ReminderOptionValue,
 } from "@/entities/event";
 import { getOptionLabel } from "@/shared/lib";
@@ -18,9 +19,9 @@ import {
   Text,
   CategoryDot,
 } from "@/shared/ui";
-import { useEventEditor } from "../model/use-event-editor";
-import { EventForm } from "./event-form";
-export function EventDetail({
+import { useEventEditor } from "../../model/use-event-editor";
+import EventForm from "../event-form";
+const EventDetail = ({
   id,
   onClose,
   editing,
@@ -32,11 +33,14 @@ export function EventDetail({
   editing: boolean;
   onEditingChange: (editing: boolean) => void;
   onDirtyChange: (dirty: boolean) => void;
-}) {
+}) => {
   const event = useEvent(id);
   const categories = useEventCategories();
   const [confirming, setConfirming] = useState(false);
-  const { onDelete, deleting, deleteError } = useEventEditor(id, onClose);
+  const { onDelete, deleting, deleteError } = useEventEditor(
+    event.data?.id ?? id,
+    onClose,
+  );
   if (event.isError)
     return (
       <ErrorState
@@ -105,6 +109,16 @@ export function EventDetail({
         </div>
       )}
       <dl className="grid gap-2">
+        <dt className="text-muted-foreground">반복</dt>
+        <dd>
+          {event.data.kind === "dday"
+            ? "매년"
+            : getOptionLabel(
+                event.data.recurrence ?? "none",
+                recurrenceOptions,
+                "안 함",
+              )}
+        </dd>
         <dt className="text-muted-foreground">알림</dt>
         <dd>
           {getOptionLabel<ReminderOptionValue | null>(
@@ -151,9 +165,19 @@ export function EventDetail({
         targetName={details.title}
         title="일정을 삭제할까요?"
         description={deleteError?.message ?? deleteDescription}
-        onConfirm={onDelete}
+        confirmLabel={event.data.recurrence ? "이후 모든 일정" : "삭제하기"}
+        secondaryAction={
+          event.data.recurrence
+            ? { label: "이 일정만", onClick: () => onDelete("single") }
+            : undefined
+        }
+        onConfirm={() =>
+          onDelete(event.data?.recurrence ? "following" : undefined)
+        }
         pending={deleting}
       />
     </article>
   );
-}
+};
+
+export default EventDetail;

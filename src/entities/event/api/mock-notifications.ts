@@ -4,13 +4,18 @@ export async function notifyMockEventChange(
   event: { id: string; visibility: string },
   kind: "event_created" | "event_updated" | "event_deleted",
   title: string,
+  occurrenceDate?: string,
 ) {
   const context = await mockContext();
   if (!context) return;
   const notifications = await mockJson("notifications");
   if (kind === "event_deleted") {
     for (const entry of notifications)
-      if (entry.payload.eventId === event.id) entry.payload.eventDeleted = true;
+      if (
+        entry.payload.eventId === event.id &&
+        (!occurrenceDate || entry.payload.occurrenceDate === occurrenceDate)
+      )
+        entry.payload.eventDeleted = true;
   }
   if (event.visibility !== "shared") {
     for (const entry of notifications)
@@ -30,6 +35,7 @@ export async function notifyMockEventChange(
       kind,
       payload: {
         eventId: event.id,
+        ...(occurrenceDate ? { occurrenceDate } : {}),
         eventDeleted: kind === "event_deleted",
         eventTitle: title,
         actorName: actor.display_name,

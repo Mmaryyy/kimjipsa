@@ -23,7 +23,7 @@ vi.mock("@/entities/event", async (original) => ({
   useEvents,
   useEventCategories,
 }));
-vi.mock("./event-detail", () => ({ EventDetail: () => <p>상세 내용</p> }));
+vi.mock("./event-detail", () => ({ default: () => <p>상세 내용</p> }));
 vi.mock("@/features/family", () => ({
   useFamily: () => ({
     data: { name: "우리 집", members: [] },

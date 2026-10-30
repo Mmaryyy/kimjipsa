@@ -1,5 +1,9 @@
 import "server-only";
-import { nextDday } from "@/entities/event/index.server";
+import {
+  nextDday,
+  expandRecurrence,
+  shiftDate,
+} from "@/entities/event/index.server";
 import { runScheduledNotifications } from "@/entities/notification/index.server";
 import { validCronSecret } from "./cron-secret.utils";
 export async function cronNotificationsPOST(request: Request) {
@@ -23,10 +27,34 @@ export async function cronNotificationsPOST(request: Request) {
         ok: true,
         data: await runScheduledNotifications((snapshot) => ({
           ...snapshot,
-          events: snapshot.events.map((event) => {
-            if (event.kind !== "dday") return event;
+          events: snapshot.events.flatMap((event) => {
+            if (event.kind === "event" && event.recurrence) {
+              const today = new Intl.DateTimeFormat("en-CA", {
+                timeZone: "Asia/Seoul",
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+              }).format(new Date(snapshot.now));
+              const exceptions = (event.exceptions ?? []).map((exception) => ({
+                originalDate: exception.originalDate,
+                replacement: exception.cancelled
+                  ? null
+                  : {
+                      ...event,
+                      ...exception,
+                      title: exception.title ?? event.title,
+                    },
+              }));
+              return expandRecurrence(
+                event,
+                shiftDate(today, -1),
+                shiftDate(today, 1),
+                exceptions,
+              );
+            }
+            if (event.kind !== "dday") return [event];
             const { date } = nextDday(event.startDate, new Date(snapshot.now));
-            return { ...event, startDate: date, endDate: date };
+            return [{ ...event, startDate: date, endDate: date }];
           }),
         })),
       },

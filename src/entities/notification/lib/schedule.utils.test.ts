@@ -15,6 +15,19 @@ const event = {
   remindBefore: 30,
 };
 describe("CAL-10/11 예약 대상 · SCN-CAL-5~6", () => {
+  it("CAL-14 같은 시각으로 옮긴 두 회차도 각각 알림을 예약한다", () => {
+    const result = scheduledNotifications({
+      now: "2026-10-22T04:30:00Z",
+      users: [user],
+      events: ["2026-10-15", "2026-10-22"].map((originalDate) => ({
+        ...event,
+        originalDate,
+        recurrence: "weekly" as const,
+      })),
+    });
+    expect(result).toHaveLength(2);
+    expect(new Set(result.map((entry) => entry.key)).size).toBe(2);
+  });
   it("14시 일정은 KST 13시 30분부터 5분 미만까지 같은 키로 보충한다", () => {
     const snapshot = {
       now: "2026-10-22T04:30:00Z",

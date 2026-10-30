@@ -22,3 +22,9 @@ export function notificationMessage(notification: Notification) {
   }
   return `${title}이 ${actions[notification.kind]}`;
 }
+
+export function notificationEventId(payload: Notification["payload"]) {
+  return payload.occurrenceDate
+    ? `${payload.eventId}~${payload.occurrenceDate}`
+    : payload.eventId;
+}

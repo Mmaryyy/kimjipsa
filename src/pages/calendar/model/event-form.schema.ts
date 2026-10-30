@@ -23,6 +23,7 @@ export const eventFormSchema = z
   })
   .transform((event): z.input<typeof eventSchema> => ({
     ...event,
+    recurrence: event.kind === "dday" ? null : event.recurrence,
     endDate: event.kind === "dday" ? event.startDate : event.endDate,
     isAllDay: event.kind === "dday" || event.isAllDay,
     startTime:

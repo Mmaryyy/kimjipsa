@@ -1,3 +1,4 @@
+import type { Recurrence } from "../lib/recurrence.utils";
 import type { z } from "zod";
 import type { eventSchema, eventCategorySchema } from "../model/event.schema";
 import type {
@@ -16,6 +17,10 @@ export type EventDetails = {
   categoryId: string;
 };
 export type CalendarEvent = {
+  recurrence?: Recurrence | null;
+  recurrenceUntil?: string | null;
+  originalDate?: string;
+  seriesId?: string;
   remindBefore?: EventInput["remindBefore"];
   kind: "event" | "dday";
   id: string;

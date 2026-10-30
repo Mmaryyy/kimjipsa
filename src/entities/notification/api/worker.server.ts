@@ -16,7 +16,10 @@ import {
   scheduledNotifications,
   scheduleLookbackMs,
 } from "../lib/schedule.utils";
-import { notificationMessage } from "../lib/notification.utils";
+import {
+  notificationMessage,
+  notificationEventId,
+} from "../lib/notification.utils";
 import { sendWebPush, vapidConfigured } from "./web-push.server";
 
 function workerClient() {
@@ -55,7 +58,7 @@ export async function dispatchPendingPush() {
           : eventId &&
               entry.kind !== "event_deleted" &&
               !entry.payload.eventDeleted
-            ? `${eventRoutes.calendar}?event=${eventId}`
+            ? `${eventRoutes.calendar}?event=${encodeURIComponent(notificationEventId(entry.payload)!)}`
             : notificationsPath;
       const body = notificationMessage(entry);
       await Promise.all(
@@ -93,7 +96,7 @@ export async function runScheduledNotifications(
   // Keep both annual occurrences when the recovery window crosses KST midnight.
   const events = new Map(
     [...previous.events, ...current.events].map((event) => [
-      `${event.id}:${event.startDate}`,
+      `${event.id}:${event.originalDate ?? event.startDate}`,
       event,
     ]),
   );

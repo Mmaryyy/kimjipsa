@@ -52,6 +52,11 @@ const familySchema = z.object({
 });
 
 const eventSchema = z.object({
+  recurrence: z
+    .enum(["daily", "weekly", "monthly", "yearly"])
+    .nullable()
+    .optional(),
+  recurrence_until: z.string().nullable().optional(),
   id: z.uuid(),
   owner_id: z.uuid().nullable(),
   visibility: z.enum(["shared", "private"]),
@@ -212,6 +217,7 @@ export const mockDataSchemas = {
         kind: z.enum(["event_created", "event_updated", "event_deleted"]),
         payload: z.object({
           eventId: z.uuid(),
+          occurrenceDate: z.iso.date().optional(),
           actorName: z.string(),
           eventTitle: z.string().optional(),
           eventDeleted: z.boolean().optional(),
@@ -230,6 +236,15 @@ export const mockDataSchemas = {
     ),
   family: familySchema,
   events: eventsSchema,
+  "event-exceptions": z.array(
+    eventSchema
+      .omit({ id: true, owner_id: true, visibility: true, kind: true })
+      .extend({
+        event_id: z.uuid(),
+        original_date: z.iso.date(),
+        cancelled: z.boolean(),
+      }),
+  ),
   "event-categories": eventCategoriesSchema,
   "notification-settings": z.object({
     pushEnabled: z.boolean(),

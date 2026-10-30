@@ -1,5 +1,7 @@
 import type { CalendarEvent, EventDetails } from "../api/type";
 export type EventRecord = {
+  recurrence?: CalendarEvent["recurrence"];
+  recurrence_until?: string | null;
   id: string;
   owner_id: string | null;
   visibility: "shared" | "private";
@@ -44,6 +46,8 @@ export function filterEventForRequester(
           ? 30
           : event.event_details.remind_before,
     }),
+    recurrence: event.recurrence ?? null,
+    recurrenceUntil: event.recurrence_until ?? null,
     kind: event.kind ?? "event",
     id: event.id,
     ownerId: event.owner_id,

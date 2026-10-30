@@ -2,6 +2,7 @@
 import { isMockDataEnabled } from "@/shared/config";
 import { useEffect } from "react";
 import {
+  keepPreviousData,
   queryOptions,
   useMutation,
   useQuery,
@@ -20,7 +21,7 @@ export const eventQueryKey = ["events"] as const;
 export const categoryQueryKey = ["event-categories"] as const;
 export const eventsQueryOptions = queryOptions({
   queryKey: eventQueryKey,
-  queryFn: fetchEvents,
+  queryFn: () => fetchEvents(),
   staleTime: 30_000,
   retryOnMount: false,
 });
@@ -36,7 +37,7 @@ export const dismissalsQueryOptions = queryOptions({
   staleTime: 30_000,
   retryOnMount: false,
 });
-export function useEvents() {
+export function useEvents(range?: { start: string; end: string }) {
   const queryClient = useQueryClient();
   useEffect(() => {
     if (isMockDataEnabled()) return;
@@ -64,7 +65,13 @@ export function useEvents() {
   }, [queryClient]);
   // Poll as a recovery path for disconnects and category-only edits.
   return useQuery({
-    ...eventsQueryOptions,
+    queryKey: range
+      ? [...eventQueryKey, "range", range.start, range.end]
+      : eventQueryKey,
+    queryFn: () => fetchEvents(range),
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
+    retryOnMount: false,
     refetchInterval: eventPollingIntervalMs,
   });
 }

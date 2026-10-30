@@ -10,7 +10,7 @@ import {
   within,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { EventDetail } from "./event-detail";
+import EventDetail from "./";
 const { useEvent, useEventCategories, deleteEvent } = vi.hoisted(() => ({
   useEvent: vi.fn(),
   useEventCategories: vi.fn(),
@@ -136,7 +136,9 @@ describe("CAL-12 SCN-CAL-7 상세와 삭제 확인", () => {
     fireEvent.click(screen.getByRole("button", { name: "일정 삭제" }));
     const dialog = screen.getByRole("alertdialog");
     fireEvent.click(within(dialog).getByRole("button", { name: "삭제하기" }));
-    await waitFor(() => expect(deleteEvent).toHaveBeenCalledWith("event"));
+    await waitFor(() =>
+      expect(deleteEvent).toHaveBeenCalledWith("event", undefined),
+    );
   });
   it("상세 로딩을 표시해요", () => {
     useEvent.mockReturnValue({ isPending: true, isError: false });

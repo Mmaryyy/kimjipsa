@@ -8,6 +8,7 @@ import {
   useNotifications,
   useMarkNotificationsRead,
   notificationMessage,
+  notificationEventId,
   type Notification,
 } from "@/entities/notification";
 import { eventRoutes } from "@/shared/config";
@@ -128,7 +129,7 @@ function NotificationsList({
         !notification.payload.eventDeleted
       )
         onNavigate(
-          `${eventRoutes.calendar}?event=${encodeURIComponent(notification.payload.eventId)}`,
+          `${eventRoutes.calendar}?event=${encodeURIComponent(notificationEventId(notification.payload)!)}`,
         );
       else if (notification) onNavigate();
     } catch (error) {

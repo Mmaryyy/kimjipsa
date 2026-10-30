@@ -44,7 +44,19 @@ async function authorized<T>(
   return action(auth);
 }
 export function eventsGET(request: Request) {
-  return handleRoute(request, () => authorized(listEvents));
+  return handleRoute(request, () => {
+    const params = new URL(request.url).searchParams;
+    const start = params.get("start");
+    const end = params.get("end");
+    return authorized((auth) =>
+      listEvents(
+        auth,
+        start !== null || end !== null
+          ? { start: start ?? "", end: end ?? "" }
+          : undefined,
+      ),
+    );
+  });
 }
 export function eventsPOST(request: Request) {
   return handleRoute(request, () =>
@@ -70,7 +82,9 @@ export function eventPOST(request: Request, context: Context) {
 export function eventDeletePOST(request: Request, context: Context) {
   return handleRoute(request, () =>
     authorized(async (auth) =>
-      withPush(async () => deleteEvent((await context.params).id, auth)),
+      withPush(async () =>
+        deleteEvent((await context.params).id, auth, await readJson(request)),
+      ),
     ),
   );
 }
