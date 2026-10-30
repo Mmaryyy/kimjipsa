@@ -71,7 +71,7 @@ DEC-009 ① 처리(2026-10-16 제안안 승인, 2026-10-21 P5a 구현): `push_su
 | `kind` | `event` / `dday` | |
 | `recurrence` | `daily` / `weekly` / `monthly` / `yearly` | null은 반복 없음. 일반 일정만 허용 |
 | `recurrence_until` | 마지막 회차의 원래 날짜(포함) | null은 종료 없음. 반복 일정이면 시작일 이후 |
-| `external_id` | 구글 캘린더 연동용 | M3에서 추가 |
+| `external_id` | 구글 캘린더 연동용 | 쓰지 않음(CAL-15 범위 제외, 2026-10-30) |
 
 ### event_details (내용, ADR-0012)
 `events`와 1:1. 읽기는 "공유 일정이거나 작성자 본인"만 허용한다.
