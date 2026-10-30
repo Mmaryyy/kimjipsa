@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { currentTermsVersion } from "@/shared/config";
 import type * as SharedServer from "@/shared/server";
 import { eventCategoryColors } from "@/entities/event";
 import { randomUUID } from "node:crypto";
@@ -59,7 +60,7 @@ async function createActor(url: string, anonKey: string) {
     display_name: "검증",
     terms_accepted_at: new Date().toISOString(),
     privacy_accepted_at: new Date().toISOString(),
-    terms_version: "test",
+    terms_version: currentTermsVersion,
   });
   if (profile.error) throw profile.error;
   const client = createClient<Database>(url, anonKey, sessionOptions);

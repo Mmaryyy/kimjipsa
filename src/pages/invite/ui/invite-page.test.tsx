@@ -26,7 +26,7 @@ vi.mock("@/features/family/api/api", async (importOriginal) => ({
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
 const account: Account = {
   userId: "test-user",
-  profile: { displayName: "살림이" },
+  profile: { displayName: "살림이", termsVersion: "beta-2026-10-30" },
   membership: null,
 };
 

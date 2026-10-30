@@ -38,6 +38,7 @@
 |                    | `prototype/`              | 화면 프로토타입·컴포넌트 카탈로그(참고용 HTML)                                                  |
 | `04-planning/`     | `ROADMAP.md`              | 단계, 선후 관계, 선행 결정, 완료 조건                                                           |
 |                    | `DECISIONS_REQUIRED.md`   | 사용자 결정이 필요한 사항(DEC-001~)                                                             |
+|                    | `BACKUP_PLAN.md`          | DB 백업 선택지와 복구 절차(미구현, DEC-013)                                                     |
 
 AI 스킬은 저장소 루트 `.agents/skills/`에 있습니다(`.claude/skills`는 심볼릭 링크).
 

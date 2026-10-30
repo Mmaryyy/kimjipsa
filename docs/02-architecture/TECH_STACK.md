@@ -51,7 +51,10 @@ PROPOSED 항목은 `docs/04-planning/DECISIONS_REQUIRED.md`의 결정 번호와 
 | 달력 스와이프 | `embla-carousel-react` 8.6.0 | CONFIRMED | 손가락을 따라 끌리는 월·주·일 넘김. 달력 자체는 직접 구현 유지 | 직접 구현, 캘린더 전체 라이브러리 | 의존성 1개 | ADR-0015 |
 | AI 호출 계층 | 직접 어댑터(Claude/Gemini 공식 SDK 또는 REST를 `AiProvider` 인터페이스로 감쌈) | PROPOSED | 지원이 두 곳뿐이라 얇은 어댑터로 충분(기획서 §09). 도구 호출·OCR 차이는 어댑터 안에서 흡수 | Vercel AI SDK | 제공자별 도구 호출 형식 차이를 직접 맞춰야 함 | DEC-012 |
 | 키 암호화 | 서버 AES-256-GCM(Node `crypto`), 마스터 키는 환경 변수 `SECRET_ENCRYPTION_KEY` | CONFIRMED | 요구는 "서버에서 암호화 저장, 화면엔 끝자리만"(ACC-08) | pgsodium, KMS | AI 키(ACC-08)에 쓴다. 키 교체 절차는 필요할 때 정한다 | DEC-003, ADR-0016 |
-| 오류 모니터링 | 미정 | PENDING | 기획서 §11이 "에러 모니터링"을 요구하지만 도구 언급 없음 | Sentry 등 | 외부 서비스 비용·개인정보 | DEC-013 |
+| 오류 모니터링 | Vercel 기본 로그(Functions/Runtime Logs). 서버 오류를 개인정보 없이 한 형식으로 남긴다 | CONFIRMED | 사용자 결정 2026-10-30. 새 의존성·외부 전송 없음 | Sentry | 알림이 없고 무료 플랜은 보관 기간이 짧다 | DEC-013 |
+| 오류 모니터링 확장 | Sentry(`@sentry/nextjs`) 무료 플랜 | PROPOSED | 나중에 오류 알림·스택 묶기가 필요할 때. 붙일 때 결정할 것: DSN·인증 토큰(시크릿), `beforeSend`로 이메일·일정 내용 같은 개인정보 제거, 소스맵 업로드, 개인정보처리방침의 처리 위탁에 Sentry 추가 | Vercel 로그 유지 | 오류 정보가 외부 서비스로 전송됨 | DEC-013 |
+| DB 백업 | 미구현 (`docs/04-planning/BACKUP_PLAN.md`) | PENDING | 사용자 결정 2026-10-30: 지금은 문서로만 남긴다 | GitHub Actions pg_dump, Supabase Pro, 수동 덤프 | 백업이 없는 동안 데이터 손실 시 복구 불가 | DEC-013 |
+| CI | GitHub Actions(PR·push): typecheck·lint·lint:canary·test·format:check | CONFIRMED | 사용자 결정 2026-10-30. 배포는 Vercel이 맡는다 | 없음 | Actions 무료 사용량 | DEC-013 |
 | 파일 저장소 | 미정 | PENDING | 영수증 이미지(M3, INV-17)를 저장할지 처리 후 폐기할지 미정 | Supabase Storage | 개인정보 | DEC-011 |
 
 ## 채택하지 않기로 한 것

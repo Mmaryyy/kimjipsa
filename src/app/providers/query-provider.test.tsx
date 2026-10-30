@@ -110,7 +110,7 @@ function confirmSignedIn() {
   act(() => {
     client.setQueryData(["account"], {
       userId: "signed-in-user",
-      profile: { displayName: "지수" },
+      profile: { displayName: "지수", termsVersion: "beta-2026-10-30" },
       membership: null,
     });
   });
@@ -178,7 +178,7 @@ describe("ACC-01 ACC-05 SCN-ACC-2 로그인 만료 안내", () => {
     vi.stubGlobal("matchMedia", () => ({ matches: false }));
     accountRequest.mockResolvedValue({
       userId: "signed-in-user",
-      profile: { displayName: "지수" },
+      profile: { displayName: "지수", termsVersion: "beta-2026-10-30" },
       membership: { familyId: "family", role: "admin" },
     });
     render(gatedApp());

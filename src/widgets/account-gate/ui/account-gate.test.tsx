@@ -7,12 +7,24 @@ const { prepare, route, account } = vi.hoisted(() => ({
   prepare: vi.fn(),
   route: { pathname: "/" },
   account: {
-    data: { userId: "user", profile: {}, membership: {} },
+    data: {
+      userId: "user",
+      profile: {
+        displayName: "테스트",
+        termsVersion: "beta-2026-10-30" as string | null,
+      },
+      membership: {},
+    },
     isPending: false,
   },
 }));
 vi.mock("../model/prefetch-home", () => ({ prefetchHome: prepare }));
-vi.mock("@/features/account", () => ({ useAccount: () => account }));
+vi.mock("@/features/account", () => ({
+  useAccount: () => account,
+  useSignOut: () => ({ onSignOut: vi.fn(), pending: false, error: null }),
+  withdrawAccount: vi.fn(),
+  ProfileForm: () => <p>동의 폼</p>,
+}));
 vi.mock("next/navigation", () => ({
   usePathname: () => route.pathname,
   useRouter: () => ({ replace: vi.fn() }),
@@ -42,6 +54,7 @@ describe("ACC-12 CAL-07 P4.12 첫 화면 미리 불러오기", () => {
     vi.useFakeTimers();
     route.pathname = "/";
     prepare.mockReset();
+    account.data.profile.termsVersion = "beta-2026-10-30";
     vi.stubGlobal(
       "matchMedia",
       vi.fn(() => ({ matches: false })),
@@ -83,6 +96,20 @@ describe("ACC-12 CAL-07 P4.12 첫 화면 미리 불러오기", () => {
     await elapse(200);
     expect(screen.getByText("오늘 화면")).toBeVisible();
   });
+  it.each(["draft-2026-10-16", null])(
+    "ACC-02 SCN-ACC-1 동의 버전 %s는 앱과 사전 조회 대신 재동의 폼을 보여 줘요",
+    async (termsVersion) => {
+      account.data.profile.termsVersion = termsVersion;
+      mount();
+      await elapse(900);
+      await elapse(200);
+      expect(screen.getByText("동의 폼")).toBeVisible();
+      expect(screen.getByRole("button", { name: "로그아웃" })).toBeVisible();
+      expect(screen.getByRole("button", { name: "탈퇴하기" })).toBeVisible();
+      expect(screen.queryByText("오늘 화면")).not.toBeInTheDocument();
+      expect(prepare).not.toHaveBeenCalled();
+    },
+  );
   it("홈이 아닌 경로는 미리 불러오기를 기다리지 않아요", async () => {
     route.pathname = "/calendar";
     mount();

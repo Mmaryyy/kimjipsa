@@ -74,7 +74,7 @@ export async function withdrawAccount() {
     }
     return null;
   }
-  const { client } = await authenticatedClient();
+  const { client } = await authenticatedClient({ allowUnconsented: true });
   const { error } = await client.rpc("withdraw_account");
   throwDatabaseError(error, errors);
   return null;

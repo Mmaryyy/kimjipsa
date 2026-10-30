@@ -67,6 +67,20 @@ describe("CAL-09 알림 목록", () => {
     render(<NotificationsPage />);
     expect(screen.getByRole("dialog", { name: "알림" })).toBeVisible();
   });
+  it.each([null, "2026-10-21T02:00:00Z"])(
+    "SCN-CAL-5 읽은 시각이 %s이면 안 읽음 안내를 구분해요",
+    (readAt) => {
+      useNotifications.mockReturnValue({
+        data: [{ ...notification, read_at: readAt }],
+      });
+      render(<NotificationsPage />);
+      const row = screen.getByRole("button", {
+        name: /‘치과 정기검진’ 일정이 변경되었어요\./,
+      });
+      if (readAt === null) expect(row).toHaveAccessibleName(/^안 읽음:/);
+      else expect(row).not.toHaveAccessibleName(/안 읽음:/);
+    },
+  );
   it.each(["닫기", "Escape"])(
     "SCN-CAL-5 %s로 닫으면 다른 쿼리는 유지해요",
     async (action) => {

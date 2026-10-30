@@ -52,11 +52,70 @@ describe("CART-05 SCN-CART-6 자주 사는 품목", () => {
   });
 });
 
-describe("CART-01 빠른 추가", () => {
+describe("CART-01 CART-12 빠른 추가", () => {
   const units = [
     { id: "piece", name: "개" },
     { id: "tofu", name: "모" },
   ];
+  it.each([
+    ["두부 1모", "두부", 1, "모"],
+    ["우유 1.5리터", "우유", 1.5, "리터"],
+    ["쌀 2kg", "쌀", 2, "kg"],
+  ])(
+    "미등록 단위는 확인을 위해 따로 돌려줘요: %s",
+    (value, name, quantity, unknownUnit) => {
+      expect(parseCartQuickInput(value, [{ id: "piece", name: "개" }])).toEqual(
+        {
+          name,
+          quantity,
+          unit_id: "piece",
+          unknownUnit,
+        },
+      );
+    },
+  );
+  it.each([
+    "비타민C1000",
+    "비타민C1000mg",
+    "P7 공동 품목",
+    "아이폰 15 프로",
+    "쿠키 2 종",
+  ])("붙어 있는 숫자를 이름으로 유지해요: %s", (name) => {
+    expect(parseCartQuickInput(name, units)).toEqual({
+      name,
+      quantity: 1,
+      unit_id: "piece",
+    });
+  });
+  it("등록된 단위는 숫자와 떨어져 있거나 대소문자가 달라도 읽어요", () => {
+    expect(parseCartQuickInput("쌀 2 KG", [{ id: "kg", name: "kg" }])).toEqual({
+      name: "쌀",
+      quantity: 2,
+      unit_id: "kg",
+    });
+    expect(parseCartQuickInput("두부 1 모", units)).toEqual({
+      name: "두부",
+      quantity: 1,
+      unit_id: "tofu",
+    });
+  });
+  it("기존에 등록된 공백 포함 단위도 유지해요", () => {
+    expect(
+      parseCartQuickInput("설탕 2큰 술", [{ id: "spoon", name: "큰 술" }]),
+    ).toEqual({ name: "설탕", quantity: 2, unit_id: "spoon" });
+  });
+  it("수량만 입력하거나 등록된 단위를 붙여 써도 읽어요", () => {
+    expect(parseCartQuickInput("두부2모", units)).toEqual({
+      name: "두부",
+      quantity: 2,
+      unit_id: "tofu",
+    });
+    expect(parseCartQuickInput("두부 0", units)).toEqual({
+      name: "두부",
+      quantity: 0,
+      unit_id: "piece",
+    });
+  });
   it("수량과 등록된 단위를 나누고 숫자가 들어간 품목 이름은 유지해요", () => {
     expect(parseCartQuickInput("두부 2모", units)).toEqual({
       name: "두부",

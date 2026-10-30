@@ -4,23 +4,29 @@ export const recentPurchaseWindowMs = 90 * 86400000;
 export function parseCartQuickInput(
   value: string,
   units: readonly { id: string; name: string }[],
-) {
+): {
+  name: string;
+  quantity: number;
+  unit_id: string | null;
+  unknownUnit?: string;
+} {
   const text = value.trim();
   const match = text.match(/^(.+?)\s*(\d+(?:\.\d+)?)\s*([^\d]*)$/u);
-  const parsedUnit = units.find((unit) => unit.name === match?.[3]?.trim());
   const defaultUnit = units.find((unit) => unit.name === "개");
-  // Unrecognized suffixes belong to the product name; do not cut names such as P7 공동 품목.
-  if (
-    match &&
-    (parsedUnit || (!match[3]?.trim() && /\s\d+(?:\.\d+)?$/u.test(text)))
-  ) {
-    return {
-      name: match[1]!.trim(),
-      quantity: Number(match[2]),
-      unit_id: (parsedUnit ?? defaultUnit)?.id ?? null,
-    };
-  }
-  return { name: text, quantity: 1, unit_id: defaultUnit?.id ?? null };
+  if (!match)
+    return { name: text, quantity: 1, unit_id: defaultUnit?.id ?? null };
+  const unitName = match[3]?.trim() || undefined;
+  const parsedUnit = units.find(
+    (unit) => unit.name.toLowerCase() === unitName?.toLowerCase(),
+  );
+  if (!parsedUnit && !/\s\d+(?:\.\d+)?[\p{L}]*$/u.test(text))
+    return { name: text, quantity: 1, unit_id: defaultUnit?.id ?? null };
+  const item = {
+    name: match[1]!.trim(),
+    quantity: Number(match[2]),
+    unit_id: (parsedUnit ?? defaultUnit)?.id ?? null,
+  };
+  return unitName && !parsedUnit ? { ...item, unknownUnit: unitName } : item;
 }
 export function frequentCartItems(items: CartItem[], now = Date.now()) {
   const groups = new Map<

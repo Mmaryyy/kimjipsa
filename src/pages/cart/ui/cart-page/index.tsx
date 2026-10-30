@@ -3,6 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import {
+  cartInputSchema,
   useCart,
   useCartActions,
   parseCartQuickInput,
@@ -10,7 +11,10 @@ import {
   type CartItem,
   type CartCommand,
 } from "@/entities/cart-item";
-import { useInventoryMeta } from "@/entities/inventory-item";
+import {
+  useInventoryMeta,
+  useInventoryActions,
+} from "@/entities/inventory-item";
 import { useCartAdd, CartDuplicateDialog } from "@/features/cart-add";
 import { cn } from "@/shared/lib";
 import { cartRoutes } from "@/shared/config";
@@ -23,7 +27,8 @@ import {
   GroupLabel,
   Input,
   List,
-  ListSkeleton,
+  Skeleton,
+  SkeletonSection,
   PageHeader,
   Text,
   TextButton,
@@ -32,10 +37,55 @@ import {
 import CartItemRow from "./Row";
 import CornerOrderSheet from "../corner-order-sheet";
 import CartItemEditor from "../cart-item-editor";
+const CartSkeleton = ({ frequent }: { frequent: boolean }) => (
+  <SkeletonSection label="장바구니를 불러오고 있어요">
+    <div aria-hidden="true">
+      <div className="mt-2 flex gap-2">
+        <Skeleton className="h-[var(--ctl-h)] min-w-0 flex-1" />
+        <Button size="sm" disabled>
+          추가
+        </Button>
+      </div>
+      {frequent && (
+        <section className="mt-4">
+          <GroupLabel className="pt-0">자주 사는 품목</GroupLabel>
+          <div className="flex gap-4 pt-1 pb-2.5">
+            <Skeleton className="h-[var(--ctl-h-sm)] w-20" />
+            <Skeleton className="h-[var(--ctl-h-sm)] w-20" />
+          </div>
+        </section>
+      )}
+      <GroupLabel className="flex h-[calc(var(--sp-5)+var(--sp-half)+var(--type-caption-lh))] items-center">
+        <Skeleton className="h-3 w-16" />
+      </GroupLabel>
+      <List>
+        {Array.from({ length: 3 }, (_, index) => (
+          <li key={index} className="flex min-h-11 items-start gap-3 py-2">
+            <Skeleton className="mt-1 size-5 flex-none rounded-full" />
+            <div className="flex h-[var(--type-label-lh)] items-center">
+              <Skeleton className="h-4 w-32" />
+            </div>
+          </li>
+        ))}
+      </List>
+      <div className="sticky bottom-[calc(var(--bottom-navigation-offset)+env(safe-area-inset-bottom))] z-10 mt-4 flex items-center gap-3 bg-background py-2.5 lg:bottom-0">
+        <Skeleton className="h-[var(--type-body-sm-lh)] w-24" />
+        <Button disabled>구매 완료</Button>
+      </div>
+    </div>
+  </SkeletonSection>
+);
 const CartPage = () => {
   const cart = useCart();
   const meta = useInventoryMeta();
   const action = useCartActions();
+  const inventoryActions = useInventoryActions();
+  const [unknownUnit, setUnknownUnit] = useState<{
+    item: CartInput;
+    name: string;
+  } | null>(null);
+  const [unitError, setUnitError] = useState("");
+  const [resolvingUnit, setResolvingUnit] = useState(false);
   const [name, setName] = useState("");
   const [editing, setEditing] = useState(false);
   const [order, setOrder] = useState(false);
@@ -104,9 +154,13 @@ const CartPage = () => {
           },
         }
       : undefined;
-  const createInput = (value: string): CartInput => {
-    return {
-      ...parseCartQuickInput(value, meta.data?.units ?? []),
+  const quickAdd = () => {
+    const { unknownUnit: unitName, ...parsed } = parseCartQuickInput(
+      name,
+      meta.data?.units ?? [],
+    );
+    const item: CartInput = {
+      ...parsed,
       category_id:
         meta.data?.categories.find((entry) => entry.name === "기타")?.id ??
         null,
@@ -114,6 +168,74 @@ const CartPage = () => {
       link_url: "",
       inventory_item_id: null,
     };
+    const validation = cartInputSchema.safeParse(item);
+    if (!validation.success) {
+      setMessage(
+        validation.error.issues[0]?.message ?? "입력 내용을 확인해 주세요.",
+      );
+      return;
+    }
+    const disabledUnit = meta.data?.units.find(
+      (unit) => unit.id === item.unit_id && !unit.enabled,
+    );
+    if (unitName || disabledUnit) {
+      setUnitError("");
+      setUnknownUnit({ item, name: unitName ?? disabledUnit!.name });
+    } else void add.onAdd(item);
+  };
+  const resolveUnit = async (create: boolean) => {
+    if (!unknownUnit || pending || resolvingUnit) return;
+    setResolvingUnit(true);
+    setUnitError("");
+    try {
+      let unitId = unknownUnit.item.unit_id;
+      if (create) {
+        const current = await meta.refetch();
+        if (!current.data || current.isError)
+          throw new Error("단위를 불러오지 못했어요. 다시 시도해 주세요.");
+        let unit = current.data.units.find(
+          (entry) =>
+            entry.name.toLowerCase() === unknownUnit.name.toLowerCase(),
+        );
+        if (!unit) {
+          await inventoryActions.meta.mutateAsync({
+            action: "save",
+            kind: "units",
+            entry: {
+              name: unknownUnit.name,
+              enabled: true,
+              sort_order: current.data.units.length,
+              icon_kind: null,
+              icon_value: "",
+            },
+          });
+          const refreshed = await meta.refetch();
+          unit = refreshed.data?.units.find(
+            (entry) =>
+              entry.name.toLowerCase() === unknownUnit.name.toLowerCase(),
+          );
+          if (refreshed.isError || !unit)
+            throw new Error("단위를 확인하지 못했어요. 다시 시도해 주세요.");
+        }
+        if (!unit.enabled) {
+          await inventoryActions.meta.mutateAsync({
+            action: "save",
+            kind: "units",
+            id: unit.id,
+            entry: { ...unit, enabled: true },
+          });
+        }
+        unitId = unit.id;
+      }
+      setUnknownUnit(null);
+      await add.onAdd({ ...unknownUnit.item, unit_id: unitId });
+    } catch (error) {
+      setUnitError(
+        error instanceof Error ? error.message : "단위를 추가하지 못했어요.",
+      );
+    } finally {
+      setResolvingUnit(false);
+    }
   };
   const renderRow = (item: CartItem) => (
     <CartItemRow
@@ -153,7 +275,7 @@ const CartPage = () => {
       />
     );
   else if (!cart.data || !meta.data)
-    content = <ListSkeleton label="장바구니를 불러오고 있어요" />;
+    content = <CartSkeleton frequent={Boolean(cart.data?.frequent.length)} />;
   else {
     const frequent = cart.data.frequent;
     const categories = [...meta.data.categories].sort(
@@ -190,8 +312,7 @@ const CartPage = () => {
           className="mt-2 flex gap-2"
           onSubmit={(event) => {
             event.preventDefault();
-            if (name.trim() && !pending && !add.pending)
-              void add.onAdd(createInput(name));
+            if (name.trim() && !pending && !add.pending) quickAdd();
           }}
         >
           <Input
@@ -216,13 +337,13 @@ const CartPage = () => {
             {add.error}
           </p>
         )}
-        <section data-od-id="cart-frequent" className="mt-4">
-          <GroupLabel as="h2" className="pt-0">
-            자주 사는 품목
-          </GroupLabel>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1 pb-2.5">
-            {frequent.length ? (
-              frequent.map((item, index) => (
+        {frequent.length > 0 && (
+          <section data-od-id="cart-frequent" className="mt-4">
+            <GroupLabel as="h2" className="pt-0">
+              자주 사는 품목
+            </GroupLabel>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1 pb-2.5">
+              {frequent.map((item, index) => (
                 <TextButton
                   key={item.id}
                   size="sm"
@@ -233,14 +354,10 @@ const CartPage = () => {
                   <Plus size={14} aria-hidden />
                   {item.name}
                 </TextButton>
-              ))
-            ) : (
-              <p className="text-caption text-muted-foreground">
-                두 번 이상 구매한 품목이 여기에 보여요.
-              </p>
-            )}
-          </div>
-        </section>
+              ))}
+            </div>
+          </section>
+        )}
         <div data-od-id="cart-list">
           {items.some((item) => !item.is_checked) ? (
             groups
@@ -304,33 +421,21 @@ const CartPage = () => {
       <PageHeader
         title="장바구니"
         odId="cart"
-        navigation={
-          <div className="flex items-center justify-between">
-            <TextButton
-              size="sm"
-              data-od-id="cart-reorder"
-              disabled={pending}
-              onClick={() => setOrder(true)}
-            >
-              코너 순서
-            </TextButton>
-            <TextButton
-              data-od-id="cart-edit"
-              disabled={pending}
-              onClick={() => setEditing(!editing)}
-            >
-              {editing ? "완료" : "편집"}
-            </TextButton>
-          </div>
+        subtitle={
+          cart.activity ||
+          (companions ? `${companions}과 함께 보는 중` : "함께 쓰는 장바구니")
         }
-      >
-        <p className="mt-1 text-body-sm text-muted-foreground">
-          {cart.activity ||
-            (companions
-              ? `${companions}과 함께 보는 중`
-              : "함께 쓰는 장바구니")}
-        </p>
-      </PageHeader>
+        actions={
+          <TextButton
+            size="sm"
+            data-od-id="cart-edit"
+            disabled={pending}
+            onClick={() => setEditing(!editing)}
+          >
+            {editing ? "완료" : "편집"}
+          </TextButton>
+        }
+      />
       {cart.offline && (
         <Banner
           variant="warning"
@@ -348,6 +453,15 @@ const CartPage = () => {
         />
       )}
       {content}
+      <Button
+        variant="gray"
+        data-od-id="cart-manage"
+        className="mt-4 min-h-11 w-full"
+        disabled={pending}
+        onClick={() => setOrder(true)}
+      >
+        카테고리 관리하기
+      </Button>
       {order && meta.data && (
         <CornerOrderSheet
           categories={meta.data.categories}
@@ -363,6 +477,29 @@ const CartPage = () => {
           onClose={() => setEditor(null)}
         />
       )}
+      <ConfirmDialog
+        open={unknownUnit !== null}
+        onOpenChange={(open) => {
+          if (!open && !resolvingUnit) setUnknownUnit(null);
+        }}
+        title={`'${unknownUnit?.name ?? ""}' 단위를 추가할까요?`}
+        description="추가하지 않으면 기본 단위 ‘개’로 담아요."
+        confirmLabel="단위 추가"
+        cancelLabel="취소"
+        secondaryAction={{
+          label: "개로 담기",
+          onClick: () => void resolveUnit(false),
+        }}
+        destructive={false}
+        pending={resolvingUnit || pending}
+        onConfirm={() => void resolveUnit(true)}
+      >
+        {unitError && (
+          <p role="alert" className="text-caption text-error-text">
+            {unitError}
+          </p>
+        )}
+      </ConfirmDialog>
       <CartDuplicateDialog
         duplicate={add.duplicate}
         pending={add.pending}

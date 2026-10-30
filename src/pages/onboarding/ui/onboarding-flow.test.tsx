@@ -8,7 +8,11 @@ import { OnboardingFlow } from "./onboarding-flow";
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn() }) }));
 vi.mock("@/features/account", () => ({
   useAccount: () => ({
-    data: { userId: "me", profile: { displayName: "민지" }, membership: null },
+    data: {
+      userId: "me",
+      profile: { displayName: "민지", termsVersion: "beta-2026-10-30" },
+      membership: null,
+    },
     isPending: false,
     isError: false,
   }),

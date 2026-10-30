@@ -8,6 +8,7 @@ import {
   mockEnabledCookie,
   mockPerspectiveCookie,
   mockStageCookie,
+  mockConsentResetCookie,
   accountRoutes,
 } from "@/shared/config";
 import { Banner, Button, Switch } from "@/shared/ui";
@@ -18,6 +19,8 @@ function navigateMock(
   stage: string,
   path: string,
 ) {
+  if (stage === "reconsent")
+    document.cookie = `${mockConsentResetCookie}=${crypto.randomUUID()}; Path=/; SameSite=Lax`;
   document.cookie = `${mockPerspectiveCookie}=${perspective}; Path=/; SameSite=Lax`;
   document.cookie = `${mockStageCookie}=${stage}; Path=/; SameSite=Lax`;
   window.location.assign(path);
@@ -40,6 +43,10 @@ function MockDataBanner() {
   );
   const onProfile = useCallback(
     () => navigateMock("self", "profile", accountRoutes.onboarding),
+    [],
+  );
+  const onReconsent = useCallback(
+    () => navigateMock("self", "reconsent", accountRoutes.home),
     [],
   );
   const onFamily = useCallback(
@@ -65,6 +72,9 @@ function MockDataBanner() {
           </Button>
           <Button size="sm" onClick={onProfile}>
             가입 · 약관
+          </Button>
+          <Button size="sm" onClick={onReconsent}>
+            약관 재동의
           </Button>
           <Button size="sm" onClick={onFamily}>
             가입 · 가정

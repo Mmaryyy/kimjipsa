@@ -8,7 +8,11 @@ import {
   ProfileForm,
 } from "@/features/account";
 import { CreateFamilyForm, InviteShare, useFamily } from "@/features/family";
-import { accountRoutes, invitePath } from "@/shared/config";
+import {
+  accountRoutes,
+  currentTermsVersion,
+  invitePath,
+} from "@/shared/config";
 import {
   onboardingStyles,
   ErrorState,
@@ -39,16 +43,20 @@ export function OnboardingFlow({ inviteToken }: { inviteToken?: string }) {
   const router = useRouter();
   const [inviting, setInviting] = useState(false);
   const [requestedStep, setRequestedStep] = useState<number | null>(null);
+  const needsConsent =
+    !!account.data?.profile &&
+    account.data.profile.termsVersion !== currentTermsVersion;
   const destination = inviteToken
     ? invitePath(inviteToken)
     : accountRoutes.home;
   useEffect(() => {
     if (
       !inviting &&
+      !needsConsent &&
       (account.data?.membership || (inviteToken && account.data?.profile))
     )
       router.replace(destination);
-  }, [account.data, destination, inviteToken, inviting, router]);
+  }, [account.data, destination, inviteToken, inviting, needsConsent, router]);
   const onProfileSaved = useCallback(() => {
     setRequestedStep(null);
     if (inviteToken) router.replace(invitePath(inviteToken));
@@ -68,13 +76,13 @@ export function OnboardingFlow({ inviteToken }: { inviteToken?: string }) {
     );
   if (account.isPending)
     return <ListSkeleton label="우리 집 정보를 확인하고 있어요" />;
-  if (account.data.membership && !inviting)
+  if (account.data.membership && !inviting && !needsConsent)
     return <ListSkeleton label="오늘 화면으로 이동하고 있어요" />;
   const actualStep = inviting
     ? 4
     : !account.data.userId
       ? 1
-      : !account.data.profile
+      : !account.data.profile || needsConsent
         ? 2
         : 3;
   const step = Math.min(requestedStep ?? actualStep, actualStep);
@@ -117,6 +125,7 @@ export function OnboardingFlow({ inviteToken }: { inviteToken?: string }) {
           </Text>
           <ProfileForm
             onboarding
+            reconsent={needsConsent}
             onSaved={onProfileSaved}
             displayName={account.data.profile?.displayName}
           />

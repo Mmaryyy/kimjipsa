@@ -57,9 +57,9 @@ type UserRow<Provider extends string> = {
   provider: Provider;
   provider_user_id: string;
   display_name: string;
-  terms_accepted_at: string;
-  privacy_accepted_at: string;
-  terms_version: string;
+  terms_accepted_at: string | null;
+  privacy_accepted_at: string | null;
+  terms_version: string | null;
   push_enabled: boolean;
   morning_summary_time: string;
   home_view: string;

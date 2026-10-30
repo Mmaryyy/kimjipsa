@@ -3,7 +3,7 @@ import { CartAddButton } from "@/features/cart-add";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
-import { Plus, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { normalizeItemName } from "@/shared/lib";
 import { inventoryRoutes, inventoryListPath } from "@/shared/config";
 import {
@@ -23,7 +23,9 @@ import {
   SegmentedControl,
   FilterTabs,
   List,
-  ListSkeleton,
+  GroupLabel,
+  Skeleton,
+  SkeletonSection,
   EmptyState,
   ErrorState,
   Sheet,
@@ -36,6 +38,58 @@ const groups = [
   { value: "locations", label: "보관 장소별", odId: "by-location" },
   { value: "categories", label: "카테고리별", odId: "by-category" },
 ] as const;
+const InventorySkeleton = ({
+  groupBy,
+}: {
+  groupBy: "locations" | "categories";
+}) => (
+  <SkeletonSection label="재고를 불러오고 있어요">
+    <div aria-hidden="true">
+      <div className="mt-2 grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3">
+        <Skeleton className="h-8 w-full" />
+        <SegmentedControl
+          label="묶어 보기"
+          options={groups}
+          value={groupBy}
+          onValueChange={() => {}}
+          disabled
+          className="w-full min-w-0"
+        />
+        <div className="flex min-h-[calc(var(--ctl-h)+var(--sp-2)+var(--sp-1))] items-center gap-5 pt-2 pb-1">
+          <Skeleton className="h-4 w-7" />
+          <Skeleton className="h-4 w-12" />
+          <Skeleton className="h-4 w-12" />
+        </div>
+      </div>
+      <div className="flex h-[calc(var(--type-caption-lh)+var(--sp-4))] items-center gap-4 pt-3 pb-1">
+        <Skeleton className="h-3 w-12" />
+        <Skeleton className="h-3 w-12" />
+        <Skeleton className="h-3 w-12" />
+      </div>
+      <GroupLabel className="flex h-[calc(var(--sp-5)+var(--sp-half)+var(--type-caption-lh))] items-center">
+        <Skeleton className="h-3 w-16" />
+      </GroupLabel>
+      <List>
+        {Array.from({ length: 3 }, (_, index) => (
+          <li
+            key={index}
+            className="flex min-h-[var(--row-min)] items-center gap-2 py-2"
+          >
+            <div className="min-w-0 flex-1">
+              <div className="flex h-[var(--type-body-lh)] items-center">
+                <Skeleton className="h-4 w-24" />
+              </div>
+              <div className="hidden h-[var(--type-caption-lh)] items-center min-[381px]:flex">
+                <Skeleton className="h-3 w-16" />
+              </div>
+            </div>
+            <Skeleton className="h-[var(--ctl-h-xs)] w-28" />
+          </li>
+        ))}
+      </List>
+    </div>
+  </SkeletonSection>
+);
 const InventoryPage = () => {
   const items = useInventory();
   const meta = useInventoryMeta();
@@ -109,7 +163,7 @@ const InventoryPage = () => {
       />
     );
   else if (items.isPending || meta.isPending)
-    content = <ListSkeleton label="재고를 불러오고 있어요" />;
+    content = <InventorySkeleton groupBy={groupBy} />;
   else {
     const entries = meta.data[groupBy].filter(
       (entry) => groupBy !== "locations" || entry.enabled,
@@ -230,13 +284,6 @@ const InventoryPage = () => {
               onValueChange={(value) => updateSearch({ filter: value })}
               className="flex-1 overflow-x-auto pb-1"
             />
-            <Link
-              className="shrink-0 py-2 text-body-sm text-primary"
-              href={inventoryListPath(groupBy, "inventory")}
-              data-od-id="inv-filter-edit"
-            >
-              편집
-            </Link>
           </div>
         </div>
         <div
@@ -308,24 +355,25 @@ const InventoryPage = () => {
         odId="inventory"
         title="재고"
         actions={
-          <>
-            <TextButton data-od-id="inv-manage" onClick={() => setManage(true)}>
-              관리
-            </TextButton>
-            <Button
-              data-od-id="inv-add"
-              aria-label="품목 추가"
-              size="sm"
-              variant="gray"
-              disabled={!meta.data || !items.data}
-              onClick={() => setEditor("new")}
-            >
-              <Plus aria-hidden size={18} />
-            </Button>
-          </>
+          <TextButton
+            data-od-id="inv-add"
+            size="sm"
+            disabled={!meta.data || !items.data}
+            onClick={() => setEditor("new")}
+          >
+            재고 추가
+          </TextButton>
         }
       />
       {content}
+      <Button
+        variant="gray"
+        data-od-id="inv-manage"
+        className="mt-4 min-h-11 w-full"
+        onClick={() => setManage(true)}
+      >
+        목록 관리하기
+      </Button>
       <Sheet
         open={manage}
         onOpenChange={setManage}

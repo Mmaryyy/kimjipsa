@@ -70,7 +70,8 @@ export async function authCallbackGET(request: Request) {
     try {
       const { error } = await client.auth.exchangeCodeForSession(code);
       if (!error) {
-        if (!(await isServerMockDataEnabled())) await authenticatedClient();
+        if (!(await isServerMockDataEnabled()))
+          await authenticatedClient({ allowUnconsented: true });
         destination = token ? invitePath(token) : onboardingPath();
       }
     } catch (error) {

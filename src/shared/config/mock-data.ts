@@ -1,6 +1,7 @@
 export const mockEnabledCookie = "kimjipsa-mock-enabled";
 export const mockSessionCookie = "kimjipsa-mock-session";
 export const mockPerspectiveCookie = "kimjipsa-mock-perspective";
+export const mockConsentResetCookie = "kimjipsa-mock-consent-reset";
 export const mockStageCookie = "kimjipsa-mock-stage";
 
 // Servers pass the request cookie explicitly; browsers read their own cookie.

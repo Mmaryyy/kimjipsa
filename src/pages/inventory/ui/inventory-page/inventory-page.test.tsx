@@ -200,3 +200,71 @@ describe("INV-03 INV-05 INV-08 SCN-INV-2 탭별 재고 요약", () => {
     },
   );
 });
+
+describe("INV-01 INV-06 INV-08 SCN-INV-1 재고 추가와 목록 관리", () => {
+  it.each([
+    { label: "품목 목록", items: [milk], query: "" },
+    { label: "빈 목록", items: [], query: "" },
+    { label: "검색 결과 없음", items: [milk], query: "없는 품목" },
+  ])("$label 아래에서 관리 시트를 열어요", ({ items, query }) => {
+    navigation.search = new URLSearchParams({ q: query });
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    client.setQueryData(["inventory"], items);
+    client.setQueryData(["inventory-meta"], inventoryMeta);
+    const { container, unmount } = render(
+      <QueryClientProvider client={client}>
+        <InventoryPage />
+      </QueryClientProvider>,
+    );
+    const header = container.querySelector<HTMLElement>(
+      '[data-od-id="inventory-header"]',
+    )!;
+    expect(
+      within(header).getByRole("button", { name: "재고 추가" }),
+    ).toBeEnabled();
+    expect(within(header).queryByText("관리")).not.toBeInTheDocument();
+    expect(
+      container.querySelector('[data-od-id="inv-filter-edit"]'),
+    ).toBeNull();
+    const manage = screen.getByRole("button", { name: "목록 관리하기" });
+    const list = container.querySelector('[data-od-id="inv-list"]')!;
+    expect(
+      list.compareDocumentPosition(manage) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    fireEvent.click(manage);
+    const sheet = screen.getByRole("dialog", { name: "재고 관리" });
+    for (const name of ["카테고리 관리", "보관 장소 관리", "단위 관리"]) {
+      expect(within(sheet).getByRole("link", { name })).toBeInTheDocument();
+    }
+    unmount();
+    client.clear();
+  });
+
+  it.each(["inventory", "inventory-meta"])(
+    "%s 로딩 중에는 재고 추가를 막아요",
+    (loadingKey) => {
+      navigation.search = new URLSearchParams();
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(() => new Promise(() => {})),
+      );
+      const client = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+      });
+      if (loadingKey !== "inventory")
+        client.setQueryData(["inventory"], [milk]);
+      if (loadingKey !== "inventory-meta")
+        client.setQueryData(["inventory-meta"], inventoryMeta);
+      const { unmount } = render(
+        <QueryClientProvider client={client}>
+          <InventoryPage />
+        </QueryClientProvider>,
+      );
+      expect(screen.getByRole("button", { name: "재고 추가" })).toBeDisabled();
+      unmount();
+      client.clear();
+    },
+  );
+});

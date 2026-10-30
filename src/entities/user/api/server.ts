@@ -1,6 +1,7 @@
 import { notificationSettingsSchema } from "../model/notification-settings.schema";
 import { homeSettingsSchema } from "../model/home-settings.schema";
 import "server-only";
+import { currentTermsVersion } from "@/shared/config";
 import { profileSchema } from "../model/profile.schema";
 import type { User } from "@supabase/supabase-js";
 import { z } from "zod";
@@ -47,6 +48,15 @@ async function mockAccount(): Promise<Account | null> {
   if (!context) return null;
   const family = await mockJson("family");
   const member = family.members[context.perspective]!;
+  if (
+    context.stage === "reconsent" &&
+    context.consentReset &&
+    context.values.get(`consent-reset:${member.user_id}`) !==
+      context.consentReset
+  ) {
+    context.values.delete(`terms-version:${member.user_id}`);
+    context.values.set(`consent-reset:${member.user_id}`, context.consentReset);
+  }
   const stage = context.values.get("account-stage") ?? context.stage;
   if (
     context.stage === "profile" &&
@@ -66,6 +76,11 @@ async function mockAccount(): Promise<Account | null> {
       stage === "profile"
         ? null
         : {
+            termsVersion:
+              context.values.get(`terms-version:${member.user_id}`) ===
+                currentTermsVersion || context.stage !== "reconsent"
+                ? currentTermsVersion
+                : null,
             displayName:
               typeof displayName === "string"
                 ? displayName
@@ -77,7 +92,7 @@ async function mockAccount(): Promise<Account | null> {
         : { familyId: family.id, role: member.role },
   };
 }
-export async function authenticatedClient() {
+export async function authenticatedClient({ allowUnconsented = false } = {}) {
   const client = await createServerSupabaseClient<FamilyRole, LoginProvider>();
   const {
     data: { user },
@@ -86,6 +101,20 @@ export async function authenticatedClient() {
   if (error || !user)
     throw new ApiError("unauthorized", "로그인이 필요해요.", 401);
   assertIdentityPolicy(user);
+  if (!allowUnconsented) {
+    const { data, error } = await client
+      .from("users")
+      .select("terms_version")
+      .eq("id", user.id)
+      .maybeSingle();
+    throwDatabaseError(error);
+    if (data?.terms_version !== currentTermsVersion)
+      throw new ApiError(
+        "consent_required",
+        "변경된 약관에 동의해 주세요.",
+        403,
+      );
+  }
   return { client, user };
 }
 export async function getAccount(): Promise<Account> {
@@ -118,7 +147,11 @@ export async function getAccount(): Promise<Account> {
     throw error;
   }
   const [profile, membership] = await Promise.all([
-    client.from("users").select("display_name").eq("id", user.id).maybeSingle(),
+    client
+      .from("users")
+      .select("display_name, terms_version")
+      .eq("id", user.id)
+      .maybeSingle(),
     client
       .from("memberships")
       .select("family_id, role")
@@ -130,7 +163,12 @@ export async function getAccount(): Promise<Account> {
   return {
     loginProvider: z.enum(providers).parse(user.identities?.[0]?.provider),
     userId: user.id,
-    profile: profile.data ? { displayName: profile.data.display_name } : null,
+    profile: profile.data
+      ? {
+          displayName: profile.data.display_name,
+          termsVersion: profile.data.terms_version,
+        }
+      : null,
     membership: membership.data
       ? {
           familyId: membership.data.family_id,
@@ -140,7 +178,9 @@ export async function getAccount(): Promise<Account> {
   };
 }
 export async function saveProfile(input: unknown) {
-  const parsed = profileSchema.safeParse(input);
+  const parsed = profileSchema
+    .partial({ termsAccepted: true, privacyAccepted: true })
+    .safeParse(input);
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
     const field = issue?.path[0];
@@ -151,23 +191,47 @@ export async function saveProfile(input: unknown) {
     throw new ApiError(code, issue?.message ?? "입력 내용을 확인해 주세요.");
   }
   const profile = parsed.data;
+  const hasConsent =
+    profile.termsAccepted === true && profile.privacyAccepted === true;
+  if (
+    (profile.termsAccepted !== undefined ||
+      profile.privacyAccepted !== undefined) &&
+    !hasConsent
+  )
+    throw new ApiError(
+      "consent_required",
+      "이용약관과 개인정보 처리방침에 모두 동의해 주세요.",
+    );
   const context = await mockContext();
   if (context) {
     const account = await mockAccount();
     if (!account?.userId)
       throw new ApiError("unauthorized", "로그인이 필요해요.", 401);
+    if (!hasConsent && account.profile?.termsVersion !== currentTermsVersion)
+      throw new ApiError(
+        "consent_required",
+        "변경된 약관에 동의해 주세요.",
+        403,
+      );
     context.values.set(`display-name:${account.userId}`, profile.displayName);
+    if (hasConsent)
+      context.values.set(
+        `terms-version:${account.userId}`,
+        currentTermsVersion,
+      );
     const family = await mockJson("family");
     family.members[context.perspective]!.display_name = profile.displayName;
     if ((context.values.get("account-stage") ?? context.stage) === "profile")
       context.values.set("account-stage", "family");
     return null;
   }
-  const { client } = await authenticatedClient();
+  const { client } = await authenticatedClient({
+    allowUnconsented: hasConsent,
+  });
   const { error } = await client.rpc("complete_profile", {
     display_name: profile.displayName,
-    terms_accepted: profile.termsAccepted,
-    privacy_accepted: profile.privacyAccepted,
+    terms_accepted: hasConsent,
+    privacy_accepted: hasConsent,
   });
   throwDatabaseError(error);
   return null;

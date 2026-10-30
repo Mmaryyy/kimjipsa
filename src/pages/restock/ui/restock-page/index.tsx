@@ -114,13 +114,12 @@ const RestockPage = () => {
             ‹ 장바구니
           </Link>
         }
-      >
-        <p className="mt-1 text-body-sm text-muted-foreground">
-          {results
+        subtitle={
+          results
             ? `구매한 ${results.length}개 품목이 장바구니에서 빠지고 구매 기록에 남았어요.`
-            : "구매한 품목을 재고에 반영하기 전에 확인해 주세요."}
-        </p>
-      </PageHeader>
+            : "구매한 품목을 재고에 반영하기 전에 확인해 주세요."
+        }
+      />
       {cart.offline && !results && (
         <Banner title="연결이 끊겼어요." variant="warning">
           연결이 돌아온 뒤 재고에 반영할 수 있어요.

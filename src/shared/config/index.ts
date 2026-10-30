@@ -27,6 +27,7 @@ export {
   mockSessionCookie,
   mockPerspectiveCookie,
   mockStageCookie,
+  mockConsentResetCookie,
 } from "./mock-data";
 export { holidaysApiPath } from "./holiday-routes.constants";
 
@@ -42,3 +43,5 @@ export {
   inventoryListPath,
 } from "./inventory-routes.constants";
 export { cartRoutes } from "./cart-routes.constants";
+
+export { currentTermsVersion } from "./legal.constants";

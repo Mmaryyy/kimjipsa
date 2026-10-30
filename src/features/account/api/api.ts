@@ -12,7 +12,9 @@ import type { Account, ProfileInput } from "@/entities/user";
 export function fetchAccount() {
   return request<Account>(accountApiRoutes.account);
 }
-export function updateProfile(input: ProfileInput) {
+export function updateProfile(
+  input: ProfileInput | Pick<ProfileInput, "displayName">,
+) {
   return request<null>(accountApiRoutes.profile, input);
 }
 async function clearOfflineCart() {

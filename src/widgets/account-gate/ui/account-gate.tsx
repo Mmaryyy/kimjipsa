@@ -1,13 +1,70 @@
 "use client";
 import { useEffect, useState, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { prefetchHome } from "../model/prefetch-home";
 import Link from "next/link";
 import { ApiError } from "@/shared/api";
-import { useAccount } from "@/features/account";
-import { accountRoutes } from "@/shared/config";
-import { ErrorState } from "@/shared/ui";
+import {
+  useAccount,
+  ProfileForm,
+  useSignOut,
+  withdrawAccount,
+} from "@/features/account";
+import { accountRoutes, currentTermsVersion } from "@/shared/config";
+import {
+  Button,
+  ConfirmDialog,
+  ErrorState,
+  Text,
+  onboardingStyles,
+} from "@/shared/ui";
+
+function ConsentExitActions() {
+  const signOut = useSignOut();
+  const [confirmWithdrawal, setConfirmWithdrawal] = useState(false);
+  const withdrawal = useMutation({ mutationFn: withdrawAccount });
+  const pending = signOut.pending || withdrawal.isPending;
+  return (
+    <div className="mt-4 grid gap-3">
+      <Text as="p" variant="caption" className="text-muted-foreground">
+        동의하지 않으면 서비스를 이용할 수 없어요. 로그아웃하거나 탈퇴할 수
+        있어요.
+      </Text>
+      <Button variant="gray" disabled={pending} onClick={signOut.onSignOut}>
+        로그아웃
+      </Button>
+      <Button
+        variant="danger"
+        disabled={pending}
+        onClick={() => {
+          withdrawal.reset();
+          setConfirmWithdrawal(true);
+        }}
+      >
+        탈퇴하기
+      </Button>
+      {signOut.error && <p role="alert">{signOut.error}</p>}
+      <ConfirmDialog
+        open={confirmWithdrawal}
+        onOpenChange={(open) => {
+          if (!withdrawal.isPending) setConfirmWithdrawal(open);
+        }}
+        title="김집사에서 탈퇴할까요?"
+        description="내 계정·개인 일정·알림과 안 쓴 초대 링크가 삭제돼요. 공유 항목은 가정에 남고, 마지막 구성원이면 가정 데이터도 삭제돼요. 삭제한 내용은 되돌릴 수 없어요."
+        confirmLabel="탈퇴하기"
+        pending={withdrawal.isPending}
+        onConfirm={() => withdrawal.mutate()}
+      >
+        {withdrawal.error && (
+          <p role="alert" className="text-error-text">
+            {withdrawal.error.message}
+          </p>
+        )}
+      </ConfirmDialog>
+    </div>
+  );
+}
 
 export function AccountGate({
   children,
@@ -27,7 +84,11 @@ export function AccountGate({
   if (account.data && !account.data.userId) destination = accountRoutes.login;
   else if (account.data && (!account.data.profile || !account.data.membership))
     destination = accountRoutes.onboarding;
+  const needsConsent =
+    !!account.data?.profile &&
+    account.data.profile.termsVersion !== currentTermsVersion;
   const shouldPrefetch =
+    !needsConsent &&
     pathname === accountRoutes.home &&
     !!account.data?.userId &&
     !!account.data.profile &&
@@ -101,6 +162,27 @@ export function AccountGate({
         }}
         retrying={account.isFetching}
       />
+    );
+  if (needsConsent && account.data?.profile)
+    return (
+      <main className="min-h-dvh px-4">
+        <div
+          className={onboardingStyles({ part: "page" })}
+          data-od-id="ob-step-terms"
+        >
+          <section className={onboardingStyles({ part: "panel" })}>
+            <Text as="h1" variant="title-lg">
+              변경된 약관에 동의해 주세요
+            </Text>
+            <ProfileForm
+              reconsent
+              onboarding
+              displayName={account.data.profile.displayName}
+            />
+            <ConsentExitActions />
+          </section>
+        </div>
+      </main>
     );
   if (account.data?.userId && account.data.profile && account.data.membership)
     return children;

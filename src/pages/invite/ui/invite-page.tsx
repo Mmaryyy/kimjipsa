@@ -2,7 +2,11 @@
 import Link from "next/link";
 import { useAccount, LoginButtons } from "@/features/account";
 import { useInvite, useAcceptInvite } from "@/features/family";
-import { accountRoutes, onboardingPath } from "@/shared/config";
+import {
+  accountRoutes,
+  currentTermsVersion,
+  onboardingPath,
+} from "@/shared/config";
 import {
   Banner,
   Button,
@@ -63,7 +67,10 @@ export function InvitePage({ token }: { token: string }) {
       />
     );
   else if (!account.data.userId) action = <LoginButtons inviteToken={token} />;
-  else if (!account.data.profile)
+  else if (
+    !account.data.profile ||
+    account.data.profile.termsVersion !== currentTermsVersion
+  )
     action = (
       <Link href={onboardingPath(token)} className="text-primary">
         약관에 동의하고 표시 이름 정하기

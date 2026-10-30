@@ -53,16 +53,6 @@
       .item .status {
         min-width: 0;
       }
-      .filters .edit {
-        flex: none;
-        display: inline-flex;
-        align-items: center;
-        min-height: 34px;
-        margin-left: auto;
-        padding-left: 4px;
-        font-size: var(--text-subhead);
-        color: var(--link);
-      }
       .detail-head {
         padding: 18px 0 6px;
       }
@@ -89,26 +79,18 @@
       <main class="main" data-od-id="inventory-main">
         <header class="page-head" data-od-id="inventory-header">
           <div class="bar">
+            <h1 class="t-title-lg" data-od-id="inventory-title">재고</h1>
             <div class="actions">
               <button
                 type="button"
-                class="text-btn"
-                id="manage"
-                data-od-id="inv-manage"
-              >
-                관리</button
-              ><button
-                type="button"
-                class="icon-btn"
+                class="text-btn sm"
                 id="add"
-                aria-label="품목 추가"
                 data-od-id="inv-add"
               >
-                <i data-icon="plus"></i>
+                재고 추가
               </button>
             </div>
           </div>
-          <h1 class="t-large" data-od-id="inventory-title">재고</h1>
         </header>
 
         <div class="inv-tools">
@@ -150,6 +132,19 @@
 
         <div class="summary-line" id="summary" data-od-id="inv-summary"></div>
         <div id="groups" data-od-id="inv-list"></div>
+        <button
+          type="button"
+          class="text-btn"
+          style="
+            margin-top: 16px;
+            min-height: 0;
+            font-size: var(--text-caption1);
+          "
+          id="manage"
+          data-od-id="inv-manage"
+        >
+          목록 관리하기
+        </button>
       </main>
     </div>
 
@@ -527,25 +522,21 @@
               }),
         );
         if (keys.indexOf(filter) < 0) filter = "전체";
-        document.getElementById("filters").innerHTML =
-          keys
-            .map(function (k, i) {
-              return (
-                '<button type="button" aria-pressed="' +
-                (k === filter) +
-                '" data-f="' +
-                k +
-                '" data-od-id="inv-filter-' +
-                i +
-                '">' +
-                k +
-                "</button>"
-              );
-            })
-            .join("") +
-          '<a class="edit" href="lists.html#' +
-          (by === "loc" ? "loc" : "inv") +
-          '" data-od-id="inv-filter-edit">편집</a>';
+        document.getElementById("filters").innerHTML = keys
+          .map(function (k, i) {
+            return (
+              '<button type="button" aria-pressed="' +
+              (k === filter) +
+              '" data-f="' +
+              k +
+              '" data-od-id="inv-filter-' +
+              i +
+              '">' +
+              k +
+              "</button>"
+            );
+          })
+          .join("");
       }
       function renderSummary() {
         var n = { none: 0, low: 0, exp: 0 };

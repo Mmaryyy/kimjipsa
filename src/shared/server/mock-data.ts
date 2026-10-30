@@ -9,6 +9,7 @@ import {
   mockSessionCookie,
   mockPerspectiveCookie,
   mockStageCookie,
+  mockConsentResetCookie,
 } from "@/shared/config";
 
 type Session = { touched: number; values: Map<string, unknown> };
@@ -39,8 +40,10 @@ export async function mockContext() {
     sessions.set(sessionId, session);
   }
   session.touched = now;
+  const consentReset = jar.get(mockConsentResetCookie)?.value;
   return {
     values: session.values,
+    ...(consentReset ? { consentReset } : {}),
     perspective: jar.get(mockPerspectiveCookie)?.value === "spouse" ? 1 : 0,
     stage: jar.get(mockStageCookie)?.value ?? "ready",
   };

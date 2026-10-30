@@ -15,7 +15,13 @@ import {
   useCalendarClock,
 } from "@/entities/event";
 import { eventRoutes } from "@/shared/config";
-import { EmptyState, ErrorState, ListSkeleton, TextButton } from "@/shared/ui";
+import {
+  Button,
+  EmptyState,
+  ErrorState,
+  ListSkeleton,
+  TextButton,
+} from "@/shared/ui";
 import { EventEditorSheet } from "./event-editor-sheet";
 import EventForm from "./event-form";
 import EventDetail from "./event-detail";
@@ -161,12 +167,9 @@ function CalendarContent() {
   return (
     <div data-od-id="calendar-main">
       <EventList onOpen={setSelectedId} onAdd={() => setCreating(true)} />
-      <Link
-        href={eventRoutes.categories}
-        className="mt-4 inline-block text-caption text-primary"
-      >
-        카테고리 관리하기
-      </Link>
+      <Button variant="gray" className="mt-4 min-h-11 w-full" asChild>
+        <Link href={eventRoutes.categories}>카테고리 관리하기</Link>
+      </Button>
       <EventEditorSheet
         dirty={dirty}
         formId="new-event-form"

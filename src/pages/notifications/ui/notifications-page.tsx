@@ -24,6 +24,7 @@ import {
   Skeleton,
   SkeletonSection,
 } from "@/shared/ui";
+import { cn } from "@/shared/lib";
 const dateOptions = { in: tz("Asia/Seoul") };
 function dateGroup(instant: string, now: Date) {
   const date = format(new Date(instant), "yyyy-MM-dd", dateOptions);
@@ -40,13 +41,18 @@ function NotificationsSkeleton() {
       </GroupLabel>
       <List>
         {Array.from({ length: 3 }, (_, index) => (
-          <ListRow
-            key={index}
-            leading={<Skeleton className="size-1.5 rounded-full" />}
-            trailing={<Skeleton className="h-3 w-9" />}
-          >
-            <Skeleton className="my-1 h-4 w-full" />
-            <Skeleton className="my-1 h-4 w-1/2" />
+          <ListRow key={index}>
+            <div className="flex min-h-[var(--ctl-h)] w-full items-center gap-1">
+              <Skeleton className="mx-1 size-2 shrink-0 rounded-full" />
+              <div className="flex min-w-0 flex-1 items-start justify-between">
+                <div className="flex h-[var(--type-label-lh)] min-w-0 flex-1 items-center">
+                  <Skeleton className="h-4 w-4/5" />
+                </div>
+                <div className="flex h-[var(--type-caption-lh)] flex-none items-center">
+                  <Skeleton className="h-3 w-9" />
+                </div>
+              </div>
+            </div>
           </ListRow>
         ))}
       </List>
@@ -73,30 +79,34 @@ function NotificationRow({
         aria-busy={pending}
         onClick={() => onRead(notification)}
       >
-        <span
-          aria-hidden
-          className={
-            unread
-              ? "size-1.5 flex-none rounded-full bg-primary"
-              : "size-1.5 flex-none"
-          }
-        />
-        <span className="min-w-0 flex-1">
-          {unread && <span className="sr-only">안 읽음: </span>}
-          {notificationMessage(notification)}
-        </span>
-        {pending && (
-          <LoaderCircle
-            aria-label="읽음 처리 중"
-            className="size-4 shrink-0 animate-spin motion-reduce:animate-none"
-          />
-        )}
-        <time
-          dateTime={notification.created_at}
-          className="flex-none text-caption text-muted-foreground"
-        >
-          {format(new Date(notification.created_at), "HH:mm", dateOptions)}
-        </time>
+        <div className="flex flex-row w-full gap-1 items-center">
+          {pending ? (
+            <LoaderCircle
+              aria-label="읽음 처리 중"
+              className="mt-0.5 size-4 shrink-0 self-start animate-spin motion-reduce:animate-none"
+            />
+          ) : (
+            <span
+              aria-hidden
+              className={cn(
+                "mt-1.5 size-2 shrink-0 self-start rounded-full mx-1",
+                unread ? "bg-[var(--error)]" : "bg-[var(--sys-gray4)]",
+              )}
+            />
+          )}
+          <div className="flex min-w-0 flex-row flex-1 items-start justify-between">
+            <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">
+              {unread && <span className="sr-only">안 읽음: </span>}
+              {notificationMessage(notification)}
+            </span>
+            <time
+              dateTime={notification.created_at}
+              className="flex-none text-caption text-muted-foreground"
+            >
+              {format(new Date(notification.created_at), "HH:mm", dateOptions)}
+            </time>
+          </div>
+        </div>
       </TextButton>
     </ListRow>
   );

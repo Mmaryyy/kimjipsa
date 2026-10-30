@@ -22,11 +22,15 @@ export function PageHeader({
 }) {
   return (
     <header className="kj-page-header" data-od-id={odId && `${odId}-header`}>
-      {navigation}
-      {subtitle && (
-        <Text as="p" variant="body-sm" className="text-muted-foreground">
-          {subtitle}
-        </Text>
+      {navigation && (
+        <div
+          className={cn([
+            "mb-0.5 flex min-h-10 items-center justify-between gap-2 [&>div]:w-full",
+            "[&_a]:min-h-11 [&_a]:min-w-11 [&_a>svg]:-translate-x-1/4",
+          ])}
+        >
+          {navigation}
+        </div>
       )}
       <div className="relative flex items-center gap-2 [&_h1]:min-w-0 [&_h1]:flex-1">
         <div className="flex min-w-0 flex-1 items-center">
@@ -50,6 +54,11 @@ export function PageHeader({
           </div>
         )}
       </div>
+      {subtitle && (
+        <Text as="p" variant="body-sm" className="mt-1 text-muted-foreground">
+          {subtitle}
+        </Text>
+      )}
       {children}
     </header>
   );

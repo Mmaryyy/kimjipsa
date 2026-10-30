@@ -35,7 +35,7 @@ function LegalDocumentSheet({ kind }: { kind: LegalDocumentKind }) {
       open={open}
       onOpenChange={setOpen}
       title={legalDocumentTitles[kind]}
-      description="개발용 초안의 내용을 확인해 주세요."
+      description="내용을 확인하고 동의해 주세요."
       trigger={
         <TextButton
           data-od-id={kind === "terms" ? "ob-terms-view" : "ob-privacy-view"}
@@ -82,7 +82,7 @@ function ConsentFields({
         모두 동의
       </label>
       <Text as="p" variant="caption" className="text-muted-foreground">
-        아래 문서는 개발용 초안이에요. 정식 문서는 베타 전에 안내해요.
+        이용약관과 개인정보 처리방침을 확인해 주세요.
       </Text>
       <div className="flex items-center gap-2">
         <Controller
@@ -146,11 +146,13 @@ export function ProfileForm({
   onSaved,
   onboarding = false,
   autoFocus = false,
+  reconsent = false,
 }: {
   displayName?: string;
   onSaved?: () => void;
   onboarding?: boolean;
   autoFocus?: boolean;
+  reconsent?: boolean;
 }) {
   const hasProfile = displayName !== undefined;
   const { onSubmit, saved } = useProfileForm(onSaved);
@@ -165,14 +167,18 @@ export function ProfileForm({
     resolver: zodResolver(profileSchema),
     defaultValues: {
       displayName: displayName ?? "",
-      termsAccepted: hasProfile,
-      privacyAccepted: hasProfile,
+      termsAccepted: hasProfile && !reconsent,
+      privacyAccepted: hasProfile && !reconsent,
     },
   });
   const onSave = useCallback(
     async (input: ProfileInput) => {
       try {
-        await onSubmit(input);
+        await onSubmit(
+          hasProfile && !reconsent && !onboarding
+            ? { displayName: input.displayName }
+            : input,
+        );
       } catch (error) {
         const code = error instanceof ApiError ? error.code : "server";
         const message =
@@ -182,16 +188,18 @@ export function ProfileForm({
         let field: "displayName" | "termsAccepted" | "root.server" =
           "root.server";
         if (code.startsWith("display_name_")) field = "displayName";
-        if (code === "consent_required" && !hasProfile) field = "termsAccepted";
+        if (code === "consent_required" && (!hasProfile || reconsent))
+          field = "termsAccepted";
         setError(field, { type: code, message });
       }
     },
-    [onSubmit, setError, hasProfile],
+    [onSubmit, setError, hasProfile, reconsent, onboarding],
   );
   const termsAccepted = useWatch({ control, name: "termsAccepted" });
   const privacyAccepted = useWatch({ control, name: "privacyAccepted" });
   const consentMissing =
-    (!hasProfile || onboarding) && (!termsAccepted || !privacyAccepted);
+    (!hasProfile || onboarding || reconsent) &&
+    (!termsAccepted || !privacyAccepted);
   const nameError = errors.displayName?.message;
   const consentError =
     errors.termsAccepted?.message ?? errors.privacyAccepted?.message;
@@ -235,7 +243,7 @@ export function ProfileForm({
       >
         표시 이름은 6자 이하로 입력해 주세요.
       </Text>
-      {(!hasProfile || onboarding) && (
+      {(!hasProfile || onboarding || reconsent) && (
         <ConsentFields
           control={control}
           error={consentError}
@@ -265,7 +273,7 @@ export function ProfileForm({
       >
         {isSubmitting
           ? "저장하고 있어요"
-          : hasProfile && !onboarding
+          : hasProfile && !onboarding && !reconsent
             ? "표시 이름 저장"
             : "동의하고 계속"}
       </Button>

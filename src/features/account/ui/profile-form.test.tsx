@@ -13,13 +13,13 @@ import { ProfileForm } from "./profile-form";
 const { updateProfile } = vi.hoisted(() => ({ updateProfile: vi.fn() }));
 vi.mock("../api/api", () => ({ updateProfile }));
 
-function renderProfile(displayName?: string) {
+function renderProfile(displayName?: string, reconsent = false) {
   const client = new QueryClient({
     defaultOptions: { mutations: { retry: false } },
   });
   return render(
     <QueryClientProvider client={client}>
-      <ProfileForm displayName={displayName} />
+      <ProfileForm displayName={displayName} reconsent={reconsent} />
     </QueryClientProvider>,
   );
 }
@@ -45,13 +45,13 @@ describe("ACC-02 SCN-ACC-1 약관 동의 팝업", () => {
   it.each([
     {
       name: "이용약관",
-      heading: "서비스 이용",
+      heading: "제1조(목적)",
       checkedLabel: "이용약관 동의 (필수)",
       uncheckedLabel: "개인정보 처리방침 동의 (필수)",
     },
     {
       name: "개인정보 처리방침",
-      heading: "수집 항목과 목적",
+      heading: "1. 수집하는 개인정보 항목 및 이용 목적",
       checkedLabel: "개인정보 처리방침 동의 (필수)",
       uncheckedLabel: "이용약관 동의 (필수)",
     },
@@ -70,11 +70,11 @@ describe("ACC-02 SCN-ACC-1 약관 동의 팝업", () => {
       trigger.focus();
       fireEvent.click(trigger);
 
-      const sheet = screen.getByRole("dialog", { name: `${name} 초안` });
+      const sheet = screen.getByRole("dialog", { name });
       expect(
         within(sheet).getByRole("heading", { name: heading }),
       ).toBeVisible();
-      expect(within(sheet).getByText("개발용 초안이에요")).toBeVisible();
+      expect(within(sheet).queryByText(/초안/)).not.toBeInTheDocument();
       fireEvent.click(within(sheet).getByRole("button", { name: "닫기" }));
 
       await waitFor(() => {
@@ -186,7 +186,7 @@ describe("ACC-02 SCN-ACC-1 클라이언트 검증과 제출 상태", () => {
     fireEvent.click(screen.getByRole("button", { name: "표시 이름 저장" }));
     await waitFor(() =>
       expect(updateProfile).toHaveBeenCalledWith(
-        { displayName: "살림이", termsAccepted: true, privacyAccepted: true },
+        { displayName: "살림이" },
         expect.anything(),
       ),
     );
@@ -241,4 +241,20 @@ describe("ACC-02 SCN-ACC-1 모두 동의", () => {
     expect(all).not.toBeChecked();
     expect(submit).toBeDisabled();
   });
+});
+
+it("ACC-02 SCN-ACC-1 재동의는 기존 이름을 유지하고 두 항목을 새로 동의해야 저장해요", async () => {
+  renderProfile("살림이", true);
+  expect(screen.getByRole("textbox", { name: "표시 이름" })).toHaveValue(
+    "살림이",
+  );
+  expect(screen.getByRole("button", { name: "동의하고 계속" })).toBeDisabled();
+  fireEvent.click(screen.getByRole("checkbox", { name: "모두 동의" }));
+  fireEvent.click(screen.getByRole("button", { name: "동의하고 계속" }));
+  await waitFor(() =>
+    expect(updateProfile).toHaveBeenCalledWith(
+      { displayName: "살림이", termsAccepted: true, privacyAccepted: true },
+      expect.anything(),
+    ),
+  );
 });
