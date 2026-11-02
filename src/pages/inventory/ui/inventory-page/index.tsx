@@ -97,6 +97,7 @@ const InventoryPage = () => {
   const router = useRouter();
   const search = useSearchParams();
   const [afterUsed, setAfterUsed] = useState<InventoryItem | null>(null);
+  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [manage, setManage] = useState(false);
   const [editor, setEditor] = useState<InventoryItem | "new" | null>(null);
   const [message, setMessage] = useState("");
@@ -325,6 +326,8 @@ const InventoryPage = () => {
                   meta={meta.data}
                   groupBy={groupBy}
                   pendingIds={actions.pendingIds}
+                  expandedItemId={expandedItemId}
+                  onExpandItem={setExpandedItemId}
                   onOpen={setEditor}
                   onAdjust={(item, delta) => void adjust(item, delta)}
                   onStatus={(item, status) => void changeStatus(item, status)}
@@ -361,27 +364,26 @@ const InventoryPage = () => {
         odId="inventory"
         title="재고"
         actions={
-          <TextButton
-            data-od-id="inv-add"
-            size="sm"
-            disabled={!meta.data || !items.data}
-            onClick={() => setEditor("new")}
-          >
-            재고 입력
-          </TextButton>
+          <>
+            <Button
+              variant="glass"
+              data-od-id="inv-add"
+              disabled={!meta.data || !items.data}
+              onClick={() => setEditor("new")}
+            >
+              등록
+            </Button>
+            <Button
+              variant="glass"
+              aria-label="재고 목록 설정"
+              onClick={() => setManage(true)}
+            >
+              설정
+            </Button>
+          </>
         }
       />
       {content}
-      <div className="mt-auto pt-4">
-        <Button
-          variant="gray"
-          data-od-id="inv-manage"
-          className="min-h-11 w-full"
-          onClick={() => setManage(true)}
-        >
-          목록 관리하기
-        </Button>
-      </div>
       <Sheet
         open={manage}
         onOpenChange={setManage}

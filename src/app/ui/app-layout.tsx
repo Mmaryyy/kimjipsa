@@ -13,7 +13,7 @@ import {
   viewportSpacingPath,
 } from "@/shared/config";
 import { SidebarNavigation } from "./sidebar-navigation";
-import { BottomNavigation } from "./bottom-navigation";
+import BottomNavigation from "./bottom-navigation";
 import { SplashScreen } from "./splash-screen";
 const MockDataToolbar =
   process.env.NODE_ENV === "development"

@@ -1,8 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { NotificationBell } from "./notification-bell";
+import NotificationBell from ".";
 const { unread } = vi.hoisted(() => ({ unread: { count: 0 } }));
-vi.mock("../model/use-notifications", () => ({
+vi.mock("../../model/use-notifications", () => ({
   useNotifications: () => ({
     data: Array.from({ length: unread.count }, () => ({ read_at: null })),
   }),

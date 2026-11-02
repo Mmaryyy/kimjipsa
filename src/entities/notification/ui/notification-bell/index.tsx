@@ -1,13 +1,15 @@
 "use client";
-import { TextButton } from "@/shared/ui";
+import { Button } from "@/shared/ui";
 import { Bell } from "lucide-react";
-import { useNotifications } from "../model/use-notifications";
-export function NotificationBell() {
+import { useNotifications } from "../../model/use-notifications";
+const NotificationBell = () => {
   const notifications = useNotifications();
   const count =
     notifications.data?.filter((entry) => entry.read_at === null).length ?? 0;
   return (
-    <TextButton
+    <Button
+      variant="glass"
+      size="icon"
       onClick={() => {
         const params = new URLSearchParams(window.location.search);
         params.set("notifications", "open");
@@ -20,9 +22,9 @@ export function NotificationBell() {
       aria-label="알림"
       aria-describedby={count > 0 ? "unread-notifications" : undefined}
       data-od-id="home-notifications"
-      className="kj-hit relative inline-flex size-11 items-center justify-center"
+      className="relative"
     >
-      <Bell aria-hidden className="size-5 text-foreground" />
+      <Bell aria-hidden className="size-5 text-muted-foreground" />
       {count > 0 && (
         <>
           <span
@@ -34,6 +36,7 @@ export function NotificationBell() {
           </span>
         </>
       )}
-    </TextButton>
+    </Button>
   );
-}
+};
+export default NotificationBell;

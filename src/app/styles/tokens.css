@@ -529,15 +529,11 @@
   --toast-padding-inline: 14px;
   --toast-offset: 96px;
   --bottom-navigation-icon-size: calc(var(--sp-6) + var(--sp-half));
-  --bottom-navigation-height: calc(
-    max(
-        var(--hit),
-        var(--bottom-navigation-icon-size) + var(--sp-1) + var(--type-body-lh)
-      ) +
-      var(--sp-2) + var(--sp-1)
-  );
+  --bottom-navigation-height: 64px;
+  --bottom-navigation-bottom: 10px;
   --bottom-navigation-offset: calc(
-    var(--bottom-navigation-height) + var(--sp-8)
+    var(--bottom-navigation-measured-height, var(--bottom-navigation-height)) +
+      var(--bottom-navigation-bottom) + var(--sp-6)
   );
 }
 
@@ -548,4 +544,199 @@
   --sheet-mobile-max-height: 92dvh;
   --sheet-desktop-max-height: 80dvh;
   --skeleton-duration: 1.5s;
+}
+
+/* P10.6: liquid-glass reference material only. */
+:root,
+[data-theme] {
+  --glass-bg: rgb(255 255 255 / 78%);
+  --glass-button-bg: rgb(255 255 255 / 96%);
+  --glass-bg-hover: rgb(255 255 255 / 98%);
+  --glass-bg-pressed: rgb(245 245 247 / 96%);
+  --glass-bg-opaque: #ffffff;
+  --glass-text: #14141b;
+  --glass-selected-bg: rgb(0 0 0 / 7%);
+  --glass-selected-opaque: #ededed;
+  --glass-selected-shadow: none;
+  --glass-selected-text: #000000;
+  --tab-lens-bg: rgb(0 0 0 / 7%);
+  --tab-lens-shadow:
+    0 5px 14px rgb(29 29 31 / 16%), inset 0 1px 0 rgb(255 255 255 / 85%),
+    inset 0 -1px 0 rgb(29 29 31 / 12%);
+  --tab-lens-edge: linear-gradient(
+    155deg,
+    rgb(255 255 255 / 95%),
+    rgb(134 182 229 / 32%) 36%,
+    rgb(220 178 131 / 28%) 68%,
+    rgb(255 255 255 / 80%)
+  );
+  --glass-border: rgb(199 199 204 / 60%);
+  --glass-filter: blur(16px) saturate(1.5);
+  --glass-sheen: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 18%),
+    rgb(255 255 255 / 0%) 45%,
+    rgb(255 255 255 / 4%)
+  );
+  --glass-edge: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 95%),
+    rgb(255 255 255 / 24%) 38%,
+    rgb(199 199 204 / 12%) 67%,
+    rgb(255 255 255 / 80%)
+  );
+  --glass-optics-opacity: 1;
+  --glass-highlight: inset 0 1px 0 rgb(255 255 255 / 90%);
+  --shadow-glass:
+    0 8px 24px rgb(29 29 31 / 8%), 0 2px 5px rgb(29 29 31 / 3%),
+    var(--glass-highlight);
+}
+[data-theme="dark"] {
+  --glass-bg: rgb(28 28 30 / 82%);
+  --glass-button-bg: rgb(28 28 30 / 96%);
+  --glass-bg-hover: rgb(38 38 40 / 96%);
+  --glass-bg-pressed: rgb(22 22 24 / 98%);
+  --glass-bg-opaque: #1c1c1e;
+  --glass-text: #f5f5f7;
+  --glass-selected-bg: rgb(0 0 0 / 72%);
+  --glass-selected-opaque: #080809;
+  --glass-selected-text: #ffffff;
+  --glass-selected-shadow: none;
+  --glass-border: rgb(100 100 106 / 24%);
+  --glass-edge: linear-gradient(
+    135deg,
+    rgb(180 180 188 / 32%),
+    rgb(28 28 30 / 8%)
+  );
+  --glass-sheen: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 7%),
+    transparent 45%,
+    rgb(0 0 0 / 12%)
+  );
+  --glass-highlight: inset 0 1px 0 rgb(255 255 255 / 10%);
+  --tab-lens-bg: rgb(0 0 0 / 66%);
+  --tab-lens-shadow:
+    0 5px 14px rgb(0 0 0 / 48%), inset 0 1px 0 rgb(255 255 255 / 24%);
+  --tab-lens-edge: linear-gradient(
+    155deg,
+    rgb(160 160 176 / 68%),
+    rgb(12 12 16 / 72%)
+  );
+  --shadow-glass:
+    0 7px 22px rgb(0 0 0 / 32%), 0 1px 3px rgb(0 0 0 / 22%),
+    var(--glass-highlight);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --glass-bg: rgb(28 28 30 / 82%);
+    --glass-button-bg: rgb(28 28 30 / 96%);
+    --glass-bg-hover: rgb(38 38 40 / 96%);
+    --glass-bg-pressed: rgb(22 22 24 / 98%);
+    --glass-bg-opaque: #1c1c1e;
+    --glass-text: #f5f5f7;
+    --glass-selected-bg: rgb(0 0 0 / 72%);
+    --glass-selected-opaque: #080809;
+    --glass-selected-text: #ffffff;
+    --glass-selected-shadow: none;
+    --glass-border: rgb(100 100 106 / 24%);
+    --glass-edge: linear-gradient(
+      135deg,
+      rgb(180 180 188 / 32%),
+      rgb(28 28 30 / 8%)
+    );
+    --glass-sheen: linear-gradient(
+      135deg,
+      rgb(255 255 255 / 7%),
+      transparent 45%,
+      rgb(0 0 0 / 12%)
+    );
+    --glass-highlight: inset 0 1px 0 rgb(255 255 255 / 10%);
+    --tab-lens-bg: rgb(0 0 0 / 66%);
+    --tab-lens-shadow:
+      0 5px 14px rgb(0 0 0 / 48%), inset 0 1px 0 rgb(255 255 255 / 24%);
+    --tab-lens-edge: linear-gradient(
+      155deg,
+      rgb(160 160 176 / 68%),
+      rgb(12 12 16 / 72%)
+    );
+    --shadow-glass:
+      0 7px 22px rgb(0 0 0 / 32%), 0 1px 3px rgb(0 0 0 / 22%),
+      var(--glass-highlight);
+  }
+}
+@supports not (
+  (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
+) {
+  :root,
+  [data-theme] {
+    --glass-bg: var(--glass-bg-opaque);
+    --glass-button-bg: var(--glass-bg-opaque);
+    --glass-bg-hover: var(--bg-secondary);
+    --glass-bg-pressed: var(--bg-tertiary);
+    --glass-border: var(--separator-opaque);
+    --glass-filter: none;
+    --glass-highlight: none;
+    --glass-sheen: none;
+    --glass-edge: none;
+    --glass-optics-opacity: 0;
+    --glass-selected-bg: var(--glass-selected-opaque);
+    --glass-selected-shadow: inset 0 0 0 1px var(--icon-secondary);
+    --tab-lens-bg: var(--glass-selected-opaque);
+    --tab-lens-edge: none;
+  }
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  :root,
+  [data-theme] {
+    --glass-bg: var(--glass-bg-opaque);
+    --glass-button-bg: var(--glass-bg-opaque);
+    --glass-bg-hover: var(--bg-secondary);
+    --glass-bg-pressed: var(--bg-tertiary);
+    --glass-border: var(--separator-opaque);
+    --glass-filter: none;
+    --glass-highlight: none;
+    --glass-sheen: none;
+    --glass-edge: none;
+    --glass-optics-opacity: 0;
+    --glass-selected-bg: var(--glass-selected-opaque);
+    --glass-selected-shadow: inset 0 0 0 1px var(--icon-secondary);
+    --tab-lens-bg: var(--glass-selected-opaque);
+    --tab-lens-edge: none;
+  }
+}
+:root[data-reduce-transparency="true"],
+[data-reduce-transparency="true"] [data-theme] {
+  --glass-bg: var(--glass-bg-opaque);
+  --glass-button-bg: var(--glass-bg-opaque);
+  --glass-bg-hover: var(--bg-secondary);
+  --glass-bg-pressed: var(--bg-tertiary);
+  --glass-border: var(--separator-opaque);
+  --glass-filter: none;
+  --glass-highlight: none;
+  --glass-sheen: none;
+  --glass-edge: none;
+  --glass-optics-opacity: 0;
+  --glass-selected-bg: var(--glass-selected-opaque);
+  --glass-selected-shadow: inset 0 0 0 1px var(--icon-secondary);
+  --tab-lens-bg: var(--glass-selected-opaque);
+  --tab-lens-edge: none;
+}
+@media (forced-colors: active) {
+  :root,
+  [data-theme] {
+    --glass-bg: Canvas;
+    --glass-button-bg: Canvas;
+    --glass-bg-hover: Canvas;
+    --glass-bg-pressed: Canvas;
+    --glass-text: ButtonText;
+    --glass-border: ButtonText;
+    --glass-filter: none;
+    --glass-sheen: none;
+    --glass-edge: none;
+    --glass-selected-bg: Highlight;
+    --glass-selected-text: HighlightText;
+    --glass-selected-shadow: inset 0 0 0 1px ButtonText;
+    --shadow-glass: none;
+  }
 }

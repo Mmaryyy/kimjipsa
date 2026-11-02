@@ -1,8 +1,10 @@
-import { useRef, useState } from "react";
-import { cn } from "@/shared/lib";
-import { Check, Link as LinkIcon, Trash2 } from "lucide-react";
-import type { CartItem } from "@/entities/cart-item";
 import { Button, Checkbox, QuantityStepper, TextButton } from "@/shared/ui";
+import { Check, Link as LinkIcon, Trash2 } from "lucide-react";
+import { useRef, useState } from "react";
+
+import type { CartItem } from "@/entities/cart-item";
+import { cn } from "@/shared/lib";
+
 const swipeActionWidth = 96;
 
 interface Props {
@@ -112,7 +114,7 @@ const CartItemRow = ({
     >
       <div
         className={cn([
-          "absolute inset-y-0 right-0 z-10 flex items-center gap-1 px-0.5",
+          "absolute inset-y-0 right-0 z-10 flex items-center gap-4 px-2",
           "transition-transform motion-reduce:transition-none",
         ])}
         style={{
@@ -124,27 +126,21 @@ const CartItemRow = ({
         aria-hidden={!open || editing}
       >
         <Button
-          size="icon"
-          className="size-11 rounded-full bg-transparent"
+          size="icon-sm"
           aria-label={`${item.name} 구매 완료`}
           disabled={disabled}
           onClick={onPurchase}
         >
-          <span className="flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-            <Check size={16} aria-hidden />
-          </span>
+          <Check size={16} aria-hidden />
         </Button>
         <Button
           variant="danger"
-          size="icon"
-          className="size-11 rounded-full bg-transparent"
+          size="icon-sm"
           aria-label={`${item.name} 삭제`}
           disabled={disabled}
           onClick={onDelete}
         >
-          <span className="flex size-8 items-center justify-center rounded-full bg-muted">
-            <Trash2 size={16} aria-hidden />
-          </span>
+          <Trash2 size={16} aria-hidden />
         </Button>
       </div>
       <div
@@ -243,7 +239,7 @@ const CartItemRow = ({
           </span>
         )}
         {editing && (
-          <div className="flex shrink-0 flex-col items-end">
+          <div className="flex shrink-0 flex-row items-center gap-2">
             <TextButton
               size="sm"
               disabled={disabled}

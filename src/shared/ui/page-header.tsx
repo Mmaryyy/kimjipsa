@@ -48,7 +48,7 @@ export function PageHeader({
             className={cn([
               "flex min-w-0 max-w-3/5 flex-wrap items-center justify-end gap-2 [&>*]:max-w-full",
               "[&>*]:[overflow-wrap:anywhere]",
-              "[&_button]:h-[var(--ctl-h)] [&_button]:min-h-[var(--ctl-h)]",
+              "[&_button:not(.glass-surface)]:h-[var(--ctl-h)] [&_button:not(.glass-surface)]:min-h-[var(--ctl-h)]",
             ])}
           >
             {actions}

@@ -1,5 +1,6 @@
 "use client";
 
+import { Check, Plus, Trash2 } from "lucide-react";
 import { useId, useState, type ReactNode } from "react";
 import {
   Text,
@@ -76,6 +77,38 @@ function AppearanceSamples({ onAction }: { onAction: () => void }) {
           삭제하기
         </TextButton>
         <TextButton disabled>수정하기</TextButton>
+      </div>
+      <p className="text-caption text-muted-foreground">
+        icon-sm · 원형 32px · 아이콘 16px · 누름 영역 44px
+      </p>
+      <div className="flex items-center gap-4 py-4">
+        <Button
+          size="icon-sm"
+          variant="gray"
+          aria-label="담기"
+          onClick={onAction}
+        >
+          <Plus aria-hidden />
+        </Button>
+        <Button
+          size="icon-sm"
+          variant="primary"
+          aria-label="구매 완료"
+          onClick={onAction}
+        >
+          <Check aria-hidden />
+        </Button>
+        <Button
+          size="icon-sm"
+          variant="danger"
+          aria-label="삭제"
+          onClick={onAction}
+        >
+          <Trash2 aria-hidden />
+        </Button>
+        <Button size="icon-sm" disabled aria-label="비활성 구매 완료">
+          <Check aria-hidden />
+        </Button>
       </div>
       <Button size="block" onClick={onAction}>
         저장하기

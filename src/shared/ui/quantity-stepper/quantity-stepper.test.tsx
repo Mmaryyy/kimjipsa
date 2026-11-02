@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import type { ComponentProps } from "react";
+import { useState, type ComponentProps } from "react";
 import { describe, expect, it, vi } from "vitest";
 import QuantityStepper from ".";
 
@@ -109,5 +109,95 @@ describe("INV-15 SCN-INV-2 수량 직접 입력", () => {
     setup({ disabled: true });
     for (const button of screen.getAllByRole("button"))
       expect(button).toBeDisabled();
+  });
+});
+
+const CollapsibleExample = () => {
+  const [open, setOpen] = useState<string | null>(null);
+  const [value, setValue] = useState(2);
+  return (
+    <>
+      {["우유", "달걀"].map((label) => (
+        <QuantityStepper
+          key={label}
+          label={label}
+          value={value}
+          unit="팩"
+          allowDirectInput
+          collapsible={{
+            open: open === label,
+            onOpenChange: (next) => setOpen(next ? label : null),
+          }}
+          onValueChange={setValue}
+        />
+      ))}
+      <button type="button">바깥</button>
+    </>
+  );
+};
+
+describe("INV-15 SCN-INV-2 접히는 재고 수량", () => {
+  it("접힘에서 펼쳐 증감·직접 입력 후 Escape로 접고 포커스를 돌려요", () => {
+    render(<CollapsibleExample />);
+    const collapsed = screen.getByRole("button", {
+      name: "우유 수량 2팩, 눌러서 바꾸기",
+    });
+    expect(collapsed).toHaveAttribute("aria-expanded", "false");
+    expect(collapsed).toHaveTextContent("2팩");
+    expect(
+      screen.queryByRole("button", { name: "우유 늘리기" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(collapsed);
+    const increase = screen.getByRole("button", { name: "우유 늘리기" });
+    expect(increase).toHaveFocus();
+    fireEvent.click(increase);
+    expect(
+      screen.getByRole("button", { name: "우유 수량 직접 입력" }),
+    ).toHaveTextContent("3팩");
+    fireEvent.click(screen.getByRole("button", { name: "우유 줄이기" }));
+    expect(
+      screen.getByRole("button", { name: "우유 수량 직접 입력" }),
+    ).toHaveTextContent("2팩");
+    const input = enterQuantity("4.5");
+    fireEvent.keyDown(input, { key: "Enter" });
+    fireEvent.keyDown(screen.getByRole("group", { name: "우유" }), {
+      key: "Escape",
+    });
+    expect(
+      screen.getByRole("button", { name: "우유 수량 4.5팩, 눌러서 바꾸기" }),
+    ).toHaveFocus();
+  });
+
+  it("다른 행을 열면 앞 행은 접고 새 행의 + 버튼에 포커스를 줘요", () => {
+    render(<CollapsibleExample />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "우유 수량 2팩, 눌러서 바꾸기" }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "달걀 수량 2팩, 눌러서 바꾸기" }),
+    );
+    expect(
+      screen.queryByRole("button", { name: "우유 늘리기" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "우유 수량 2팩, 눌러서 바꾸기" }),
+    ).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: "달걀 늘리기" })).toHaveFocus();
+  });
+
+  it("바깥을 누르거나 직접 입력 중 Escape를 누르면 접고 알약에 포커스를 줘요", () => {
+    render(<CollapsibleExample />);
+    const collapsed = screen.getByRole("button", {
+      name: "우유 수량 2팩, 눌러서 바꾸기",
+    });
+    fireEvent.click(collapsed);
+    fireEvent.click(screen.getByRole("button", { name: "바깥" }));
+    expect(collapsed).toHaveFocus();
+    fireEvent.click(collapsed);
+    fireEvent.keyDown(enterQuantity("8"), { key: "Escape" });
+    expect(collapsed).toHaveTextContent("2팩");
+    expect(collapsed).toHaveFocus();
+    fireEvent.click(collapsed);
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   });
 });

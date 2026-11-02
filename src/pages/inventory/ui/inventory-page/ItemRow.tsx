@@ -16,6 +16,8 @@ interface Props {
   item: InventoryItem;
   meta: InventoryMeta;
   pending: boolean;
+  quantityOpen: boolean;
+  onQuantityOpenChange: (open: boolean) => void;
   groupBy: "locations" | "categories";
   onOpen: () => void;
   onAdjust: (delta: number) => void;
@@ -25,6 +27,8 @@ const InventoryItemRow = ({
   item,
   meta,
   pending,
+  quantityOpen,
+  onQuantityOpenChange,
   groupBy,
   onOpen,
   onAdjust,
@@ -73,6 +77,10 @@ const InventoryItemRow = ({
           <InventoryBadges item={item} expiryDays={meta.expiry_days} />
           <div className="flex shrink-0 items-center gap-1">
             <QuantityStepper
+              collapsible={{
+                open: quantityOpen,
+                onOpenChange: onQuantityOpenChange,
+              }}
               allowDirectInput
               label={item.name}
               unit={unit}

@@ -6,3 +6,11 @@ export { useMediaQuery } from "./use-media-query";
 export { getOptionLabel } from "./option.utils";
 
 export { normalizeItemName, compareItemNames } from "./item-name.utils";
+
+export { liquidTabMotionTokens } from "./liquid-tab-motion.constants";
+export {
+  nearestTab,
+  cancelTabGesture,
+  advanceTabSpring,
+  tabLensShape,
+} from "./liquid-tab-motion.utils";

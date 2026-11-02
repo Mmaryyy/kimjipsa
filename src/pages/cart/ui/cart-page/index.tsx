@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Check, Plus, Trash2 } from "lucide-react";
 import {
   cartInputSchema,
   useCart,
@@ -570,18 +570,28 @@ const CartPage = () => {
           (companions ? `${companions}과 함께 보는 중` : "함께 쓰는 장바구니")
         }
         actions={
-          <TextButton
-            size="sm"
-            data-od-id="cart-edit"
-            disabled={busy}
-            onClick={() => {
-              setOpenedRow(null);
-              if (editing) finishEditing();
-              else setEditing(true);
-            }}
-          >
-            {editing ? "완료" : "편집"}
-          </TextButton>
+          <>
+            <Button
+              variant="glass"
+              data-od-id="cart-edit"
+              disabled={busy}
+              onClick={() => {
+                setOpenedRow(null);
+                if (editing) finishEditing();
+                else setEditing(true);
+              }}
+            >
+              {editing ? "완료" : "편집"}
+            </Button>
+            <Button variant="glass" asChild>
+              <Link
+                href={inventoryListPath("categories", "cart")}
+                aria-label="장바구니 카테고리 설정"
+              >
+                설정
+              </Link>
+            </Button>
+          </>
         }
       />
       {cart.offline && (
@@ -603,62 +613,59 @@ const CartPage = () => {
       {editing && (
         <section
           aria-label="선택 항목 처리"
-          className="my-3 flex flex-wrap items-center gap-2"
+          className="my-3 flex flex-row justify-between items-center gap-2"
         >
-          <TextButton
-            disabled={busy || !items.length}
-            onClick={() =>
-              setSelection(
-                selected.length === items.length
-                  ? []
-                  : items.map((item) => item.id),
-              )
-            }
-          >
-            {selected.length === items.length && items.length > 0
-              ? "전체 해제"
-              : "전체 선택"}
-          </TextButton>
-          <span className="text-caption text-muted-foreground">
-            {selected.length}개 선택
-          </span>
-          <Button
-            size="sm"
-            variant="gray"
-            disabled={busy || !selected.length}
-            onClick={() => void processItems(selected, "check")}
-          >
-            담기
-          </Button>
-          <Button
-            size="sm"
-            disabled={busy || !selected.length}
-            onClick={() => void processItems(selected, "purchase")}
-          >
-            구매 완료
-          </Button>
-          <TextButton
-            tone="danger"
-            disabled={busy || !selected.length}
-            onClick={() => deleteItems(selected)}
-          >
-            삭제
-          </TextButton>
+          <div className="flex flex-row gap-2 items-center">
+            <TextButton
+              disabled={busy || !items.length}
+              onClick={() =>
+                setSelection(
+                  selected.length === items.length
+                    ? []
+                    : items.map((item) => item.id),
+                )
+              }
+            >
+              {selected.length === items.length && items.length > 0
+                ? "전체 해제"
+                : "전체 선택"}
+            </TextButton>
+            <span className="text-caption text-muted-foreground">
+              {selected.length}개
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              size="icon-sm"
+              variant="gray"
+              aria-label="선택 항목 담기"
+              disabled={busy || !selected.length}
+              onClick={() => void processItems(selected, "check")}
+            >
+              <Plus aria-hidden className="text-primary!" />
+            </Button>
+            <Button
+              size="icon-sm"
+              variant="primary"
+              aria-label="선택 항목 구매 완료"
+              disabled={busy || !selected.length}
+              onClick={() => void processItems(selected, "purchase")}
+            >
+              <Check aria-hidden />
+            </Button>
+            <Button
+              size="icon-sm"
+              variant="danger"
+              aria-label="선택 항목 삭제"
+              disabled={busy || !selected.length}
+              onClick={() => deleteItems(selected)}
+            >
+              <Trash2 aria-hidden />
+            </Button>
+          </div>
         </section>
       )}
       {content}
-      <div className="mt-auto pt-4">
-        <Button
-          variant="gray"
-          data-od-id="cart-manage"
-          className="min-h-11 w-full"
-          asChild
-        >
-          <Link href={inventoryListPath("categories", "cart")}>
-            카테고리 관리하기
-          </Link>
-        </Button>
-      </div>
       {checkout && (
         <RestockSheet
           items={checkout}

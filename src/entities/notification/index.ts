@@ -3,7 +3,7 @@ export {
   useMarkNotificationsRead,
   notificationsQueryKey,
 } from "./model/use-notifications";
-export { NotificationBell } from "./ui/notification-bell";
+export { default as NotificationBell } from "./ui/notification-bell";
 export {
   notificationMessage,
   notificationEventId,

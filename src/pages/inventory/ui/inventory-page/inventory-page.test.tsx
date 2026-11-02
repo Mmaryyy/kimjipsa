@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { readFileSync } from "node:fs";
 import {
   act,
@@ -35,6 +36,7 @@ vi.mock("next/navigation", () => ({
 
 const milk = (inventoryItems as InventoryItem[])[0]!;
 const InventoryRowExample = () => {
+  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const { data = [] } = useInventory();
   const actions = useInventoryActions();
   return (
@@ -44,6 +46,10 @@ const InventoryRowExample = () => {
           key={item.id}
           item={item}
           meta={inventoryMeta as InventoryMeta}
+          quantityOpen={expandedItemId === item.id}
+          onQuantityOpenChange={(open) =>
+            setExpandedItemId(open ? item.id : null)
+          }
           pending={actions.pendingIds.includes(item.id)}
           groupBy="locations"
           onOpen={vi.fn()}
@@ -84,6 +90,9 @@ describe("INV-15 SCN-INV-2 재고 행 직접 입력", () => {
     );
     const quantity = () =>
       screen.getByRole("button", { name: "우유 수량 직접 입력" });
+    fireEvent.click(
+      screen.getByRole("button", { name: /우유 수량 .*눌러서 바꾸기/ }),
+    );
     fireEvent.click(quantity());
     const input = screen.getByRole("textbox", { name: "우유 수량" });
     fireEvent.change(input, { target: { value: "3.5" } });
@@ -221,18 +230,13 @@ describe("INV-01 INV-06 INV-08 SCN-INV-1 재고 추가와 목록 관리", () => 
     const header = container.querySelector<HTMLElement>(
       '[data-od-id="inventory-header"]',
     )!;
-    expect(
-      within(header).getByRole("button", { name: "재고 입력" }),
-    ).toBeEnabled();
+    expect(within(header).getByRole("button", { name: "등록" })).toBeEnabled();
     expect(within(header).queryByText("관리")).not.toBeInTheDocument();
     expect(
       container.querySelector('[data-od-id="inv-filter-edit"]'),
     ).toBeNull();
-    const manage = screen.getByRole("button", { name: "목록 관리하기" });
-    const list = container.querySelector('[data-od-id="inv-list"]')!;
-    expect(
-      list.compareDocumentPosition(manage) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+    const manage = screen.getByRole("button", { name: "재고 목록 설정" });
+    expect(header).toContainElement(manage);
     fireEvent.click(manage);
     const sheet = screen.getByRole("dialog", { name: "재고 관리" });
     for (const name of ["카테고리 관리", "보관 장소 관리", "단위 관리"]) {
@@ -262,7 +266,7 @@ describe("INV-01 INV-06 INV-08 SCN-INV-1 재고 추가와 목록 관리", () => 
           <InventoryPage />
         </QueryClientProvider>,
       );
-      expect(screen.getByRole("button", { name: "재고 입력" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "등록" })).toBeDisabled();
       unmount();
       client.clear();
     },

@@ -11,6 +11,8 @@ interface Props {
   meta: InventoryMeta;
   groupBy: "locations" | "categories";
   pendingIds: string[];
+  expandedItemId: string | null;
+  onExpandItem: (id: string | null) => void;
   onOpen: (item: InventoryItem) => void;
   onAdjust: (item: InventoryItem, delta: number) => void;
   onStatus: (item: InventoryItem, status: InventoryItem["status"]) => void;
@@ -20,6 +22,8 @@ const InventoryGroup = ({
   meta,
   groupBy,
   pendingIds,
+  expandedItemId,
+  onExpandItem,
   onOpen,
   onAdjust,
   onStatus,
@@ -30,6 +34,8 @@ const InventoryGroup = ({
       item={item}
       meta={meta}
       groupBy={groupBy}
+      quantityOpen={expandedItemId === item.id}
+      onQuantityOpenChange={(open) => onExpandItem(open ? item.id : null)}
       pending={pendingIds.includes(item.id)}
       onOpen={() => onOpen(item)}
       onAdjust={(delta) => onAdjust(item, delta)}

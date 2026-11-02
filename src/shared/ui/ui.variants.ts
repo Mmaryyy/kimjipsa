@@ -74,6 +74,8 @@ export const buttonStyles = cva(
     variants: {
       variant: {
         primary: "bg-primary text-primary-foreground",
+        glass:
+          "glass-surface relative rounded-[var(--r-round)] px-4 text-primary active:opacity-100",
         gray: "bg-muted text-foreground",
         toast:
           "bg-transparent px-0 font-semibold text-inherit tracking-normal underline",
@@ -85,11 +87,27 @@ export const buttonStyles = cva(
       },
       size: {
         icon: "size-11 p-0",
+        "icon-sm": "size-8 rounded-full p-0 [&_svg]:size-4",
         sm: "min-h-[var(--ctl-h-sm)] text-caption",
         md: "min-h-[var(--ctl-h)]",
         block: "min-h-[var(--ctl-h-lg)] w-full",
       },
     },
+    compoundVariants: [
+      {
+        variant: "glass",
+        size: "icon",
+        className: "h-[var(--hit)] min-h-[var(--hit)]",
+      },
+      {
+        variant: "glass",
+        size: ["sm", "md", "block"],
+        className: [
+          "h-[var(--hit)] min-h-[var(--hit)] px-4",
+          "text-[length:var(--type-label-size)] font-semibold text-muted-foreground",
+        ],
+      },
+    ],
     defaultVariants: { variant: "primary", size: "md" },
   },
 );

@@ -98,7 +98,7 @@ describe("CART-03 CART-07 CART-13 CART-14 모바일 처리", () => {
     editAndSelectAll();
     expect(state.write).not.toHaveBeenCalled();
     expect(state.items.every((item) => !item.is_checked)).toBe(true);
-    fireEvent.click(screen.getByRole("button", { name: "담기" }));
+    fireEvent.click(screen.getByRole("button", { name: "선택 항목 담기" }));
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "편집" })).toBeInTheDocument(),
     );
@@ -107,14 +107,17 @@ describe("CART-03 CART-07 CART-13 CART-14 모바일 처리", () => {
       screen.getByRole("button", { name: "장바구니 구매 완료, 2개" }),
     ).toBeInTheDocument();
   });
-  it("SCN-CART-4 구매 완료 줄은 담은 항목 바로 뒤와 카테고리 관리 앞에 있어요", async () => {
+  it("SCN-CART-4 구매 완료 줄은 담은 항목 바로 뒤에 있고 설정은 머리에 있어요", async () => {
     state.items[0]!.is_checked = true;
     const { container } = showCart();
     const checked = container.querySelector('[data-od-id="cart-checked"]');
     const purchase = container.querySelector('[data-od-id="cart-buy-bar"]');
-    const manage = screen.getByRole("link", { name: "카테고리 관리하기" });
+    const manage = screen.getByRole("link", { name: "장바구니 카테고리 설정" });
     expect(checked?.nextElementSibling).toBe(purchase);
-    expect(purchase?.nextElementSibling).toBe(manage.parentElement);
+    expect(
+      container.querySelector('[data-od-id="cart-header"]'),
+    ).toContainElement(manage);
+    expect(screen.queryByText("카테고리 관리하기")).not.toBeInTheDocument();
     expect(purchase).not.toHaveClass("fixed", "sticky");
     expect(
       screen.getByRole("button", { name: "장바구니 구매 완료, 1개" }),
@@ -142,7 +145,7 @@ describe("CART-03 CART-07 CART-13 CART-14 모바일 처리", () => {
     showCart();
     editAndSelectAll();
     state.write.mockRejectedValueOnce(new Error("연결이 끊겼어요"));
-    fireEvent.click(screen.getByRole("button", { name: "담기" }));
+    fireEvent.click(screen.getByRole("button", { name: "선택 항목 담기" }));
     expect(
       await screen.findByText(
         "일부 항목만 처리됐을 수 있어요. 연결이 끊겼어요",
@@ -155,7 +158,7 @@ describe("CART-03 CART-07 CART-13 CART-14 모바일 처리", () => {
   it("여러 항목 삭제는 확인하기 전에는 실행하지 않아요", async () => {
     showCart();
     editAndSelectAll();
-    fireEvent.click(screen.getByRole("button", { name: "삭제" }));
+    fireEvent.click(screen.getByRole("button", { name: "선택 항목 삭제" }));
     expect(state.write).not.toHaveBeenCalled();
     const dialog = screen.getByRole("alertdialog");
     fireEvent.click(within(dialog).getByRole("button", { name: "삭제하기" }));
@@ -181,7 +184,7 @@ describe("CART-03 CART-07 CART-13 CART-14 모바일 처리", () => {
     fireEvent.click(
       within(screen.getByRole("region", { name: "선택 항목 처리" })).getByRole(
         "button",
-        { name: "구매 완료" },
+        { name: "선택 항목 구매 완료" },
       ),
     );
     expect(
@@ -227,7 +230,7 @@ describe("CART-03 CART-07 CART-13 CART-14 모바일 처리", () => {
     showCart();
     fireEvent.click(screen.getByRole("button", { name: "편집" }));
     fireEvent.click(screen.getByRole("checkbox", { name: "달걀 선택" }));
-    fireEvent.click(screen.getByRole("button", { name: "삭제" }));
+    fireEvent.click(screen.getByRole("button", { name: "선택 항목 삭제" }));
     expect(
       await screen.findByRole("button", { name: "되돌리기" }),
     ).toBeInTheDocument();

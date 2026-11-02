@@ -54,3 +54,47 @@
     translate: 0 0;
   }
 }
+
+/* Shared by floating navigation and header actions; one backdrop per island. */
+.glass-surface {
+  color: var(--glass-text);
+  background: var(--glass-sheen), var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-round);
+  box-shadow: var(--shadow-glass);
+  -webkit-backdrop-filter: var(--glass-filter);
+  backdrop-filter: var(--glass-filter);
+}
+.glass-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--glass-edge);
+  mask:
+    linear-gradient(var(--glass-text) 0 0) content-box,
+    linear-gradient(var(--glass-text) 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: var(--glass-optics-opacity);
+}
+button.glass-surface,
+a.glass-surface {
+  background-color: var(--glass-button-bg);
+}
+button.glass-surface:hover,
+a.glass-surface:hover {
+  background-color: var(--glass-bg-hover);
+}
+button.glass-surface:active,
+a.glass-surface:active {
+  background-color: var(--glass-bg-pressed);
+}
+@media (max-width: 1023px) {
+  html {
+    scroll-padding-bottom: calc(
+      var(--bottom-navigation-offset) + env(safe-area-inset-bottom, 0px)
+    );
+  }
+}

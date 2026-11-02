@@ -31,6 +31,7 @@ import { useHolidays, type Holiday, type SpecialDay } from "@/entities/holiday";
 import { eventRoutes } from "@/shared/config";
 import { cn } from "@/shared/lib";
 import {
+  Button,
   categoryColors,
   EmptyState,
   List,
@@ -1000,9 +1001,19 @@ function CalendarContent({
           title={title}
           titleAriaLabel={view === "week" ? title : undefined}
           actions={
-            <TextButton data-od-id="cal-add" onClick={onAdd} size={"sm"}>
-              일정 등록
-            </TextButton>
+            <>
+              <Button variant="glass" data-od-id="cal-add" onClick={onAdd}>
+                등록
+              </Button>
+              <Button variant="glass" asChild>
+                <Link
+                  href={eventRoutes.categories}
+                  aria-label="일정 카테고리 설정"
+                >
+                  설정
+                </Link>
+              </Button>
+            </>
           }
         >
           <span role="status" className="sr-only" aria-atomic="true">

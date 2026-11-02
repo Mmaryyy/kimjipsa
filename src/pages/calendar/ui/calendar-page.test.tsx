@@ -63,7 +63,7 @@ describe("CAL-01~05 SCN-CAL-1~3 일정 목록", () => {
     render(<CalendarPage />);
     expect(screen.getByText("08:00")).toBeVisible();
     expect(screen.queryByText(/은 시간만 보여요/)).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "일정 등록" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "등록" })).toBeVisible();
   });
   it("조회 실패를 빈 목록으로 표시하지 않고 재시도해요", () => {
     useEvents.mockReturnValue({

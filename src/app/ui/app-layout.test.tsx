@@ -28,7 +28,7 @@ vi.mock("./sidebar-navigation", () => ({
   SidebarNavigation: () => <nav aria-label="사이드바" />,
 }));
 vi.mock("./bottom-navigation", () => ({
-  BottomNavigation: () => <nav aria-label="하단 탭" />,
+  default: () => <nav aria-label="하단 탭" />,
 }));
 
 const readyAccount: Account = {

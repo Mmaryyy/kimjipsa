@@ -2,7 +2,6 @@
 import { Suspense, useState } from "react";
 import { z } from "zod";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { useFamily } from "@/features/family";
 import { CalendarView } from "@/widgets/calendar-view";
 import {
@@ -14,14 +13,7 @@ import {
   eventDateInput,
   useCalendarClock,
 } from "@/entities/event";
-import { eventRoutes } from "@/shared/config";
-import {
-  Button,
-  EmptyState,
-  ErrorState,
-  ListSkeleton,
-  TextButton,
-} from "@/shared/ui";
+import { EmptyState, ErrorState, ListSkeleton, TextButton } from "@/shared/ui";
 import { EventEditorSheet } from "./event-editor-sheet";
 import EventForm from "./event-form";
 import EventDetail from "./event-detail";
@@ -167,9 +159,6 @@ function CalendarContent() {
   return (
     <div data-od-id="calendar-main">
       <EventList onOpen={setSelectedId} onAdd={() => setCreating(true)} />
-      <Button variant="gray" className="mt-4 min-h-11 w-full" asChild>
-        <Link href={eventRoutes.categories}>카테고리 관리하기</Link>
-      </Button>
       <EventEditorSheet
         dirty={dirty}
         formId="new-event-form"
