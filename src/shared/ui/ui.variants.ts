@@ -84,6 +84,7 @@ export const buttonStyles = cva(
         error: "bg-error-button-bg text-error-button-fg",
       },
       size: {
+        icon: "size-11 p-0",
         sm: "min-h-[var(--ctl-h-sm)] text-caption",
         md: "min-h-[var(--ctl-h)]",
         block: "min-h-[var(--ctl-h-lg)] w-full",

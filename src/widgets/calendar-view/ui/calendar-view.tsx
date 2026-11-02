@@ -401,7 +401,7 @@ function DayEvents({
     : format(kstDate(date), "M월 d일 EEEE", { locale: ko });
   const add = onAdd ? (
     <TextButton onClick={onAdd} data-od-id="list-add">
-      일정 추가
+      일정 등록
     </TextButton>
   ) : (
     <Link
@@ -409,7 +409,7 @@ function DayEvents({
       data-od-id="day-add"
       href={`${eventRoutes.calendar}?date=${date}&create=1`}
     >
-      일정 추가
+      일정 등록
     </Link>
   );
   return (
@@ -1001,7 +1001,7 @@ function CalendarContent({
           titleAriaLabel={view === "week" ? title : undefined}
           actions={
             <TextButton data-od-id="cal-add" onClick={onAdd} size={"sm"}>
-              일정 추가
+              일정 등록
             </TextButton>
           }
         >

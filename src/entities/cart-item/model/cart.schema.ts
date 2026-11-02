@@ -40,6 +40,7 @@ export const restockEntrySchema = z.object({
   expires_on: z.iso.date().nullable(),
 });
 export const cartCommandSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("undo-restock"), token: z.uuid() }),
   z.object({
     action: z.literal("add"),
     item: cartInputSchema,
@@ -50,6 +51,10 @@ export const cartCommandSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("delete"), id: z.uuid() }),
   z.object({
     action: z.literal("clear-checked"),
+    ids: z.array(z.uuid()).min(1).max(500),
+  }),
+  z.object({
+    action: z.literal("delete-selected"),
     ids: z.array(z.uuid()).min(1).max(500),
   }),
   z.object({

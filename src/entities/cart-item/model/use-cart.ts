@@ -164,7 +164,12 @@ export function useCartActions() {
     retry: false,
     onMutate: async (command) => {
       await client.cancelQueries({ queryKey: cartKey });
-      if (command.action !== "check" && command.action !== "delete") return;
+      if (
+        command.action !== "check" &&
+        command.action !== "delete" &&
+        command.action !== "save"
+      )
+        return;
       const data = client.getQueryData<CartData>(cartKey);
       const item = data?.items.find((item) => item.id === command.id);
       if (!data || !item) return;
@@ -173,6 +178,8 @@ export function useCartActions() {
         items: data.items.flatMap((row) => {
           if (row.id !== command.id) return [row];
           if (command.action === "delete") return [];
+          if (command.action === "save")
+            return [{ ...row, quantity: command.item.quantity }];
           return [
             {
               ...row,
@@ -191,7 +198,9 @@ export function useCartActions() {
         );
       if (
         !context ||
-        (command.action !== "check" && command.action !== "delete")
+        (command.action !== "check" &&
+          command.action !== "delete" &&
+          command.action !== "save")
       )
         return;
       client.setQueryData<CartData>(cartKey, (data) => {
@@ -202,14 +211,18 @@ export function useCartActions() {
       });
     },
     onSuccess: (_result, command) => {
-      if (command.action === "restock" || command.action === "order") {
+      if (
+        command.action === "restock" ||
+        command.action === "undo-restock" ||
+        command.action === "order"
+      ) {
         void client.invalidateQueries({ queryKey: ["inventory"] });
         void client.invalidateQueries({ queryKey: ["inventory-meta"] });
       }
     },
-    onSettled: () => {
+    onSettled: async () => {
       if (client.isMutating({ mutationKey }) === 1)
-        void client.invalidateQueries({ queryKey: cartKey });
+        await client.invalidateQueries({ queryKey: cartKey });
     },
   });
   const pendingIds = useMutationState({

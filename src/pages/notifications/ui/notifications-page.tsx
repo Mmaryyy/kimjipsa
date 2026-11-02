@@ -90,7 +90,7 @@ function NotificationRow({
               aria-hidden
               className={cn(
                 "mt-1.5 size-2 shrink-0 self-start rounded-full mx-1",
-                unread ? "bg-[var(--error)]" : "bg-[var(--sys-gray4)]",
+                unread ? "bg-primary" : "bg-[var(--sys-gray4)]",
               )}
             />
           )}

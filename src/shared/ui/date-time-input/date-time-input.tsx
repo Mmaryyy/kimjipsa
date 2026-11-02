@@ -62,7 +62,7 @@ export function DateTimeInput({
     return (
       <div
         className={cn(
-          "flex min-w-0 items-center justify-end gap-2 [&_input[type=date]]:min-w-0",
+          "flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2 [&_input[type=date]]:min-w-0",
           "[&_input[type=date]]:w-32 [&_input[type=time]]:min-w-0 [&_input[type=time]]:w-35",
         )}
       >
@@ -91,7 +91,10 @@ export function DateTimeInput({
         aria-label={accessibleLabel}
         aria-haspopup="dialog"
         aria-expanded={session !== null}
-        className="min-h-[var(--ctl-h)] text-right text-primary [@media(pointer:coarse)]:focus-visible:outline-none"
+        className={cn([
+          "min-h-[var(--ctl-h)] min-w-0 max-w-full text-right text-primary",
+          "[@media(pointer:coarse)]:focus-visible:outline-none",
+        ])}
         onClick={() =>
           setSession({
             ...range,

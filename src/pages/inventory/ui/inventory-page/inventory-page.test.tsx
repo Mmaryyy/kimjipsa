@@ -222,7 +222,7 @@ describe("INV-01 INV-06 INV-08 SCN-INV-1 재고 추가와 목록 관리", () => 
       '[data-od-id="inventory-header"]',
     )!;
     expect(
-      within(header).getByRole("button", { name: "재고 추가" }),
+      within(header).getByRole("button", { name: "재고 입력" }),
     ).toBeEnabled();
     expect(within(header).queryByText("관리")).not.toBeInTheDocument();
     expect(
@@ -262,7 +262,7 @@ describe("INV-01 INV-06 INV-08 SCN-INV-1 재고 추가와 목록 관리", () => 
           <InventoryPage />
         </QueryClientProvider>,
       );
-      expect(screen.getByRole("button", { name: "재고 추가" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "재고 입력" })).toBeDisabled();
       unmount();
       client.clear();
     },

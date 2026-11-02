@@ -125,7 +125,8 @@ export async function listInventoryMeta() {
 }
 export async function writeInventory(raw: unknown) {
   const command = itemCommand.parse(raw);
-  if (!(await mockContext())) {
+  const mock = await mockContext();
+  if (!mock) {
     const { client } = await inventoryContext();
     const result = await client.rpc("write_inventory", {
       payload: command as Json,
@@ -163,11 +164,13 @@ export async function writeInventory(raw: unknown) {
       )
         throw new ApiError("invalid_inventory", "목록을 다시 선택해 주세요.");
     }
+    mock.values.delete("cart-restock-undo");
     const saved = { ...command.item, id: command.id ?? crypto.randomUUID() };
     if (index < 0) items.push(saved);
     else items[index] = saved;
     return saved.id;
   }
+  mock.values.delete("cart-restock-undo");
   const item = items[index]!;
   if (command.action === "delete") {
     items.splice(index, 1);
@@ -196,7 +199,8 @@ export async function writeInventory(raw: unknown) {
 }
 export async function writeInventoryMeta(raw: unknown) {
   const command = metaCommand.parse(raw);
-  if (!(await mockContext())) {
+  const mock = await mockContext();
+  if (!mock) {
     const { client } = await inventoryContext();
     const result = await client.rpc("write_inventory_meta", {
       payload: command as Json,
@@ -207,6 +211,7 @@ export async function writeInventoryMeta(raw: unknown) {
   const cart = await mockJson("cart-items");
   const meta = await mockJson("inventory-meta");
   if (command.action === "expiry") {
+    mock.values.delete("cart-restock-undo");
     meta.expiry_days = command.days;
     return null;
   }
@@ -236,6 +241,7 @@ export async function writeInventoryMeta(raw: unknown) {
         "같은 이름의 목록이 있어요.",
         409,
       );
+    mock.values.delete("cart-restock-undo");
     const saved = { ...command.entry, id: target ?? crypto.randomUUID() };
     if (index < 0) entries.push(saved);
     else entries[index] = saved;
@@ -254,12 +260,15 @@ export async function writeInventoryMeta(raw: unknown) {
           ...defaults.categories.find((entry) => entry.name === "기타")!,
           id: crypto.randomUUID(),
         };
+        mock.values.delete("cart-restock-undo");
         entries.push(other);
       }
+      mock.values.delete("cart-restock-undo");
       for (const item of [...items, ...cart]) {
         if (item.category_id === target) item.category_id = other.id;
       }
     }
+    mock.values.delete("cart-restock-undo");
     if (command.kind === "locations")
       for (const item of items) {
         if (item.location_id === target) item.location_id = null;
@@ -275,6 +284,7 @@ export async function writeInventoryMeta(raw: unknown) {
     }));
     if (command.kind === "categories") {
       const other = restored.find((entry) => entry.name === "기타")!;
+      mock.values.delete("cart-restock-undo");
       for (const item of [...items, ...cart]) {
         if (
           item.category_id &&
@@ -293,6 +303,7 @@ export async function writeInventoryMeta(raw: unknown) {
                 cart.some((item) => item.unit_id === entry.id)))),
       )
       .map((entry) => ({ ...entry, enabled: true }));
+    mock.values.delete("cart-restock-undo");
     meta[command.kind] = [...restored, ...retained];
   }
   return null;

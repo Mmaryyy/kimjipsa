@@ -14,6 +14,7 @@ export type CartData = {
   members: { user_id: string; display_name: string }[];
 };
 export type CartWriteResult = {
+  undoToken?: string;
   duplicate?: CartItem;
   item?: CartItem;
   results?: {

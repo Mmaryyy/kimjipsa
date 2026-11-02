@@ -2,14 +2,21 @@
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import {
+  ArrowUp,
+  ArrowDown,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+} from "lucide-react";
 import {
   useInventoryMeta,
   useInventoryActions,
   InventoryCategoryIcon,
   type InventoryMetaEntry,
 } from "@/entities/inventory-item";
-import { settingsPath, inventoryRoutes } from "@/shared/config";
+import { useCart, useCartActions } from "@/entities/cart-item";
+import { settingsPath, inventoryRoutes, cartRoutes } from "@/shared/config";
 import {
   PageHeader,
   List,
@@ -30,12 +37,37 @@ const listLabels = {
 } as const;
 const InventoryListsPage = () => {
   const search = useSearchParams();
-  const fromInventory = search?.get("from") === "inventory";
+  const origin = search?.get("from");
+  const back =
+    origin === "cart"
+      ? { href: cartRoutes.cart, label: "장바구니" }
+      : origin === "inventory"
+        ? { href: inventoryRoutes.inventory, label: "재고" }
+        : { href: settingsPath, label: "설정" };
   const query = search?.get("kind");
   const kind =
     query === "locations" || query === "units" ? query : "categories";
   const meta = useInventoryMeta();
   const actions = useInventoryActions();
+  const cart = useCart();
+  const orderAction = useCartActions();
+  const categories = [...(meta.data?.categories ?? [])].sort(
+    (a, b) => a.sort_order - b.sort_order,
+  );
+  const moveCategory = async (index: number, direction: number) => {
+    if (cart.offline || orderAction.isPending) return;
+    const ids = categories.map((entry) => entry.id);
+    const target = index + direction;
+    if (target < 0 || target >= ids.length) return;
+    [ids[index], ids[target]] = [ids[target]!, ids[index]!];
+    try {
+      await orderAction.mutateAsync({ action: "order", ids });
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "순서를 바꾸지 못했어요.",
+      );
+    }
+  };
   const [editor, setEditor] = useState<InventoryMetaEntry | "new" | null>(null);
   const [resetting, setResetting] = useState(false);
   const [message, setMessage] = useState("");
@@ -70,38 +102,71 @@ const InventoryListsPage = () => {
           <EmptyState message="아직 등록한 목록이 없어요." />
         )}
         <List data-od-id="lists-items">
-          {meta.data[kind].map((entry) => (
-            <ListRow
-              key={entry.id}
-              className="py-0"
-              leading={
-                kind === "categories" ? (
-                  <InventoryCategoryIcon category={entry} />
-                ) : undefined
-              }
-              trailing={
-                <ChevronRight
-                  aria-hidden
-                  className="size-4 text-[var(--icon-tertiary)]"
-                />
-              }
-            >
-              <TextButton
-                className="min-h-[var(--row-min)] w-full justify-start text-left font-normal text-foreground"
-                onClick={() => setEditor(entry)}
+          {(kind === "categories" ? categories : meta.data[kind]).map(
+            (entry, index) => (
+              <ListRow
+                key={entry.id}
+                className="py-0"
+                leading={
+                  kind === "categories" ? (
+                    <InventoryCategoryIcon category={entry} />
+                  ) : undefined
+                }
+                trailing={
+                  kind === "categories" ? (
+                    <div className="flex shrink-0">
+                      <TextButton
+                        className="size-11"
+                        aria-label={`${entry.name} 위로 이동`}
+                        disabled={
+                          cart.offline ||
+                          !cart.data ||
+                          orderAction.isPending ||
+                          index === 0
+                        }
+                        onClick={() => void moveCategory(index, -1)}
+                      >
+                        <ArrowUp size={16} aria-hidden />
+                      </TextButton>
+                      <TextButton
+                        className="size-11"
+                        aria-label={`${entry.name} 아래로 이동`}
+                        disabled={
+                          cart.offline ||
+                          !cart.data ||
+                          orderAction.isPending ||
+                          index === categories.length - 1
+                        }
+                        onClick={() => void moveCategory(index, 1)}
+                      >
+                        <ArrowDown size={16} aria-hidden />
+                      </TextButton>
+                    </div>
+                  ) : (
+                    <ChevronRight
+                      aria-hidden
+                      className="size-4 text-[var(--icon-tertiary)]"
+                    />
+                  )
+                }
               >
-                {entry.name}
-                {kind === "locations" && !entry.enabled && (
-                  <Text
-                    variant="caption"
-                    className="ml-2 text-muted-foreground"
-                  >
-                    사용 안 함
-                  </Text>
-                )}
-              </TextButton>
-            </ListRow>
-          ))}
+                <TextButton
+                  className="min-h-[var(--row-min)] w-full justify-start text-left font-normal text-foreground"
+                  onClick={() => setEditor(entry)}
+                >
+                  {entry.name}
+                  {kind === "locations" && !entry.enabled && (
+                    <Text
+                      variant="caption"
+                      className="ml-2 text-muted-foreground"
+                    >
+                      사용 안 함
+                    </Text>
+                  )}
+                </TextButton>
+              </ListRow>
+            ),
+          )}
         </List>
         <div className="mt-3 grid justify-items-start gap-1">
           <TextButton data-od-id="lists-add" onClick={() => setEditor("new")}>
@@ -140,12 +205,12 @@ const InventoryListsPage = () => {
         odId="lists"
         navigation={
           <Link
-            href={fromInventory ? inventoryRoutes.inventory : settingsPath}
+            href={back.href}
             data-od-id="lists-back"
             className="flex w-fit items-center gap-1 text-primary"
           >
             <ChevronLeft aria-hidden size={16} />
-            {fromInventory ? "재고" : "설정"}
+            {back.label}
           </Link>
         }
       />

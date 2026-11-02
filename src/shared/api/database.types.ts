@@ -286,6 +286,7 @@ export type Database<
         Returns: undefined;
       };
       frequent_cart_items: { Args: Record<string, never>; Returns: CartRow[] };
+      undo_cart_restock: { Args: { token: string }; Returns: Json };
       write_cart: { Args: { payload: Json }; Returns: Json };
       write_inventory: { Args: { payload: Json }; Returns: string };
       write_inventory_meta: { Args: { payload: Json }; Returns: undefined };

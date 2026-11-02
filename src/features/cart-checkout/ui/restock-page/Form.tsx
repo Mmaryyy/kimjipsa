@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import {
@@ -21,9 +21,19 @@ interface Props {
   inventory: InventoryItem[];
   meta: InventoryMeta;
   disabled: boolean;
-  onDone: (results: RestockResults) => void;
+  onDone: (results: RestockResults, undoToken?: string) => void;
+  onClose?: () => void;
+  onPendingChange?: (pending: boolean) => void;
 }
-const RestockForm = ({ items, inventory, meta, disabled, onDone }: Props) => {
+const RestockForm = ({
+  items,
+  inventory,
+  meta,
+  disabled,
+  onDone,
+  onClose,
+  onPendingChange,
+}: Props) => {
   // Freeze the reviewed selection. Concurrent unchecks/purchases are rejected by the RPC.
   const [snapshot] = useState(() =>
     items.map((item) => ({
@@ -61,6 +71,9 @@ const RestockForm = ({ items, inventory, meta, disabled, onDone }: Props) => {
   });
   const action = useCartActions();
   const router = useRouter();
+  useEffect(() => {
+    onPendingChange?.(action.isPending);
+  }, [action.isPending, onPendingChange]);
   const [error, setError] = useState("");
   const [skip, setSkip] = useState(false);
   const submit = form.handleSubmit(async (values) => {
@@ -109,6 +122,7 @@ const RestockForm = ({ items, inventory, meta, disabled, onDone }: Props) => {
               (location) => location.id === entries[index]?.location_id,
             )?.name ?? "보관 장소 없음",
         })),
+        result.undoToken,
       );
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "반영하지 못했어요.");
@@ -159,7 +173,7 @@ const RestockForm = ({ items, inventory, meta, disabled, onDone }: Props) => {
         description="재고는 바뀌지 않고, 담은 항목은 장바구니에 그대로 남아요."
         destructive={false}
         confirmLabel="닫기"
-        onConfirm={() => router.push(cartRoutes.cart)}
+        onConfirm={() => (onClose ? onClose() : router.push(cartRoutes.cart))}
       />
     </>
   );

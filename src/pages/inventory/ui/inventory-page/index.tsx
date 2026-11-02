@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { Search } from "lucide-react";
-import { normalizeItemName } from "@/shared/lib";
+import { cn, normalizeItemName } from "@/shared/lib";
 import { inventoryRoutes, inventoryListPath } from "@/shared/config";
 import {
   useInventory,
@@ -350,7 +350,13 @@ const InventoryPage = () => {
     );
   }
   return (
-    <div data-od-id="inventory-main" className="mx-auto lg:max-w-130">
+    <div
+      data-od-id="inventory-main"
+      className={cn([
+        "mx-auto flex min-h-[calc(100dvh-var(--bottom-navigation-offset)-env(safe-area-inset-bottom))] flex-col pb-4",
+        "lg:min-h-[calc(100dvh-var(--sp-10))] lg:max-w-130 lg:pb-0",
+      ])}
+    >
       <PageHeader
         odId="inventory"
         title="재고"
@@ -361,19 +367,21 @@ const InventoryPage = () => {
             disabled={!meta.data || !items.data}
             onClick={() => setEditor("new")}
           >
-            재고 추가
+            재고 입력
           </TextButton>
         }
       />
       {content}
-      <Button
-        variant="gray"
-        data-od-id="inv-manage"
-        className="mt-4 min-h-11 w-full"
-        onClick={() => setManage(true)}
-      >
-        목록 관리하기
-      </Button>
+      <div className="mt-auto pt-4">
+        <Button
+          variant="gray"
+          data-od-id="inv-manage"
+          className="min-h-11 w-full"
+          onClick={() => setManage(true)}
+        >
+          목록 관리하기
+        </Button>
+      </div>
       <Sheet
         open={manage}
         onOpenChange={setManage}

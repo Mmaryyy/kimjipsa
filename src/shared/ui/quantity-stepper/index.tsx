@@ -57,22 +57,12 @@ const QuantityStepper = ({
       onValueChange(next);
     }
   };
-  const quantity = (
-    <>
-      {value}
-      {unit && (
-        <span className="ml-1 text-caption font-normal text-muted-foreground">
-          {unit}
-        </span>
-      )}
-    </>
-  );
-  let quantityControl = <output aria-live="polite">{quantity}</output>;
+  let quantityControl = <output aria-live="polite">{value}</output>;
   if (allowDirectInput) {
     quantityControl =
       draft === null ? (
         <TextButton
-          className="min-w-[var(--ctl-h)] text-body font-semibold text-foreground tabular-nums"
+          className="min-h-[var(--ctl-h-xs)] min-w-11 w-full px-1 text-body font-semibold text-foreground tabular-nums"
           aria-label={`${label} 수량 직접 입력`}
           disabled={disabled || invalid}
           onClick={() => {
@@ -80,7 +70,7 @@ const QuantityStepper = ({
             setDraft(String(value));
           }}
         >
-          {quantity}
+          {value}
         </TextButton>
       ) : (
         <>
@@ -91,7 +81,10 @@ const QuantityStepper = ({
             id={inputId}
             type="text"
             inputMode="decimal"
-            className="min-h-[var(--ctl-h-xs)] w-16 px-1 py-0 text-center font-semibold tabular-nums"
+            className={cn([
+              "h-[var(--ctl-h-xs)] min-h-[var(--ctl-h-xs)] w-16 rounded-full",
+              "bg-transparent px-1 py-0 text-center font-semibold tabular-nums",
+            ])}
             value={draft}
             disabled={disabled}
             autoFocus
@@ -110,35 +103,54 @@ const QuantityStepper = ({
   }
   return (
     <div
-      className={cn([
-        "inline-flex items-center gap-0.5 [&_button]:min-h-[var(--ctl-h-xs)]",
-        "[&_output]:min-w-[var(--ctl-h)] [&_output]:text-center",
-        "[&_output]:font-semibold [&_output]:tabular-nums",
-      ])}
+      className="inline-flex shrink-0 items-center gap-1"
       role="group"
       aria-label={label}
     >
-      <Button
-        variant="gray"
-        size="sm"
-        className="w-[var(--ctl-h-xs)] p-0"
-        aria-label={`${label} 줄이기`}
-        disabled={disabled || invalid || value <= min}
-        onClick={() => change(-1)}
-      >
-        <Minus size={14} aria-hidden="true" />
-      </Button>
-      {quantityControl}
-      <Button
-        variant="gray"
-        size="sm"
-        className="w-[var(--ctl-h-xs)] p-0"
-        aria-label={`${label} 늘리기`}
-        disabled={disabled || invalid || value >= max}
-        onClick={() => change(1)}
-      >
-        <Plus size={14} aria-hidden="true" />
-      </Button>
+      <div className="inline-flex items-center rounded-full bg-sys-gray5 py-[calc((var(--hit)-var(--ctl-h-xs))/2)]">
+        <Button
+          variant="gray"
+          size="sm"
+          className={cn([
+            "min-h-[var(--ctl-h-xs)] w-11 rounded-full",
+            "bg-transparent p-0 text-[var(--icon-secondary)]",
+          ])}
+          aria-label={`${label} 줄이기`}
+          disabled={disabled || invalid || value <= min}
+          onClick={() => change(-1)}
+        >
+          <Minus size={14} strokeWidth={1.5} aria-hidden="true" />
+        </Button>
+        <span
+          className={cn([
+            "inline-flex h-[var(--ctl-h-xs)] min-w-11",
+            "items-center justify-center rounded-full",
+            "bg-[var(--control-selected-bg)] text-body font-semibold",
+            "text-foreground shadow-control tabular-nums",
+          ])}
+          aria-live={allowDirectInput ? "polite" : undefined}
+        >
+          {quantityControl}
+        </span>
+        <Button
+          variant="gray"
+          size="sm"
+          className={cn([
+            "min-h-[var(--ctl-h-xs)] w-11 rounded-full",
+            "bg-transparent p-0 text-[var(--icon-secondary)]",
+          ])}
+          aria-label={`${label} 늘리기`}
+          disabled={disabled || invalid || value >= max}
+          onClick={() => change(1)}
+        >
+          <Plus size={14} strokeWidth={1.5} aria-hidden="true" />
+        </Button>
+      </div>
+      {unit && (
+        <span className="w-[2em] shrink-0 whitespace-nowrap text-left text-caption text-muted-foreground">
+          {unit}
+        </span>
+      )}
     </div>
   );
 };

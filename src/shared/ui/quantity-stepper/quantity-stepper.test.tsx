@@ -25,6 +25,32 @@ function enterQuantity(value: string) {
 }
 
 describe("INV-15 SCN-INV-2 수량 직접 입력", () => {
+  it("단위는 숫자 버튼과 알약 트랙 밖에 보여요", () => {
+    setup();
+    const quantity = screen.getByRole("button", {
+      name: "우유 수량 직접 입력",
+    });
+    const unit = screen.getByText("팩");
+    const track = screen.getByRole("button", {
+      name: "우유 늘리기",
+    }).parentElement;
+    expect(quantity).not.toHaveTextContent("팩");
+    expect(track).not.toContainElement(unit);
+    expect(screen.getByRole("group", { name: "우유" })).toContainElement(unit);
+  });
+  it("최소·최대 수량에서 해당 증감 버튼을 막아요", () => {
+    const { rerender, onValueChange } = setup({ value: 0, max: 5 });
+    expect(screen.getByRole("button", { name: "우유 줄이기" })).toBeDisabled();
+    rerender(
+      <QuantityStepper
+        label="우유"
+        value={5}
+        max={5}
+        onValueChange={onValueChange}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "우유 늘리기" })).toBeDisabled();
+  });
   it("숫자를 누르면 라벨과 소수 키패드가 있는 입력란에 포커스를 줘요", () => {
     setup();
     const input = enterQuantity("2.5");
@@ -46,7 +72,7 @@ describe("INV-15 SCN-INV-2 수량 직접 입력", () => {
     expect(onValueChange).not.toHaveBeenCalled();
     expect(
       screen.getByRole("button", { name: "우유 수량 직접 입력" }),
-    ).toHaveTextContent("2팩");
+    ).toHaveTextContent("2");
   });
   it.each(["", " ", "-1", "1..2", "abc", "Infinity", "1e3", "0x10", "2"])(
     "빈 값·잘못된 형식·변경 없는 값(%s)은 저장하지 않아요",
@@ -56,7 +82,7 @@ describe("INV-15 SCN-INV-2 수량 직접 입력", () => {
       expect(onValueChange).not.toHaveBeenCalled();
       expect(
         screen.getByRole("button", { name: "우유 수량 직접 입력" }),
-      ).toHaveTextContent("2팩");
+      ).toHaveTextContent("2");
     },
   );
   it("0도 유효한 수량으로 저장해요", () => {
@@ -74,7 +100,7 @@ describe("INV-15 SCN-INV-2 수량 직접 입력", () => {
     expect(
       screen.queryByRole("button", { name: "우유 수량 직접 입력" }),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent("2팩");
+    expect(screen.getByRole("status")).toHaveTextContent("2");
     fireEvent.click(screen.getByRole("button", { name: "우유 늘리기" }));
     fireEvent.click(screen.getByRole("button", { name: "우유 줄이기" }));
     expect(onValueChange.mock.calls).toEqual([[3], [1]]);

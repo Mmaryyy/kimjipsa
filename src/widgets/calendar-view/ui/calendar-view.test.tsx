@@ -107,7 +107,7 @@ describe("CAL-07 SCN-CAL-8 월·주·일 URL 상태", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "2026년 12월 5주차" }),
     ).toHaveTextContent("2026년 12월 5주차");
-    fireEvent.click(screen.getByRole("button", { name: "일정 추가" }));
+    fireEvent.click(screen.getByRole("button", { name: "일정 등록" }));
     expect(onAdd).toHaveBeenCalledOnce();
     fireEvent.click(screen.getByRole("button", { name: "오늘" }));
     expect(replace).toHaveBeenLastCalledWith(

@@ -218,3 +218,35 @@ describe("CART-03 CART-13 SCN-CART-1 즉시 반영과 실패 복구", () => {
     client.clear();
   });
 });
+
+describe("CART-03 수량 낙관적 갱신", () => {
+  it("저장 응답 전에도 다음 수량이 보이고 실패하면 원래 수량으로 돌아와요", async () => {
+    const { client, wrapper, data } = setup();
+    let reject!: (error: Error) => void;
+    state.write.mockImplementationOnce(
+      () =>
+        new Promise((_resolve, fail) => {
+          reject = fail;
+        }),
+    );
+    const { result, unmount } = renderHook(() => useCartActions(), { wrapper });
+    let pending!: Promise<unknown>;
+    act(() => {
+      pending = result.current
+        .mutateAsync({
+          action: "save",
+          id: "first",
+          item: { ...data().items[0]!, quantity: 2 },
+        })
+        .catch(() => {});
+    });
+    await waitFor(() => expect(data().items[0]?.quantity).toBe(2));
+    await act(async () => {
+      reject(new Error("failed"));
+      await pending;
+    });
+    expect(data().items[0]?.quantity).toBe(1);
+    unmount();
+    client.clear();
+  });
+});

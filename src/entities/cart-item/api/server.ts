@@ -19,6 +19,10 @@ const errors = {
     409,
     "담은 항목이 바뀌었어요. 장바구니에서 다시 확인해 주세요.",
   ],
+  restock_undo_unavailable: [
+    409,
+    "다른 변경이 있거나 되돌릴 수 있는 시간이 지났어요. 현재 상태는 그대로 유지해요.",
+  ],
   invalid_cart: [400, "품목과 목록을 다시 확인해 주세요."],
   cart_unit_mismatch: [
     409,
@@ -90,7 +94,10 @@ export async function writeCart(raw: unknown): Promise<CartWriteResult> {
   const mock = await mockContext();
   if (!mock) {
     const { client } = await cartContext();
-    const result = await client.rpc("write_cart", { payload: command as Json });
+    const result =
+      command.action === "undo-restock"
+        ? await client.rpc("undo_cart_restock", { token: command.token })
+        : await client.rpc("write_cart", { payload: command as Json });
     throwDatabaseError(result.error, errors);
     return result.data as CartWriteResult;
   }
@@ -102,6 +109,34 @@ export async function writeCart(raw: unknown): Promise<CartWriteResult> {
     mockJson("family"),
   ]);
   const actor = family.members[mock.perspective]!.user_id;
+  const undoKey = "cart-restock-undo";
+  if (command.action === "undo-restock") {
+    const undo = mock.values.get(undoKey) as
+      | {
+          token: string;
+          actor: string;
+          expires: number;
+          before: { items: typeof items; inventory: typeof inventory };
+          after: string;
+        }
+      | undefined;
+    if (
+      !undo ||
+      undo.token !== command.token ||
+      undo.actor !== actor ||
+      undo.expires < Date.now() ||
+      undo.after !== JSON.stringify({ items, inventory, meta })
+    )
+      throw new ApiError(
+        "restock_undo_unavailable",
+        errors.restock_undo_unavailable[1],
+        409,
+      );
+    mock.values.delete(undoKey);
+    items.splice(0, items.length, ...undo.before.items);
+    inventory.splice(0, inventory.length, ...undo.before.inventory);
+    return {};
+  }
   const active = items.filter((item) => !item.purchased_at);
   const current =
     "id" in command ? active.find((item) => item.id === command.id) : undefined;
@@ -139,9 +174,11 @@ export async function writeCart(raw: unknown): Promise<CartWriteResult> {
             errors.cart_unit_mismatch[1],
             409,
           );
+        mock.values.delete(undoKey);
         duplicate.quantity += input.quantity;
         return {};
       }
+      mock.values.delete(undoKey);
       items.push({
         ...input,
         id: crypto.randomUUID(),
@@ -152,20 +189,30 @@ export async function writeCart(raw: unknown): Promise<CartWriteResult> {
         purchased_at: null,
       });
       return { item: items[items.length - 1] };
-    } else Object.assign(current!, input);
+    } else {
+      mock.values.delete(undoKey);
+      Object.assign(current!, input);
+    }
   } else if (command.action === "check") {
+    mock.values.delete(undoKey);
     current!.is_checked = command.checked;
     current!.checked_by = command.checked ? actor : null;
   } else if (
     command.action === "delete" ||
-    command.action === "clear-checked"
+    command.action === "clear-checked" ||
+    command.action === "delete-selected"
   ) {
     const remove =
       command.action === "delete"
         ? [command.id]
         : active
-            .filter((item) => item.is_checked && command.ids.includes(item.id))
+            .filter(
+              (item) =>
+                (command.action === "delete-selected" || item.is_checked) &&
+                command.ids.includes(item.id),
+            )
             .map((item) => item.id);
+    if (remove.length) mock.values.delete(undoKey);
     for (let i = items.length - 1; i >= 0; i--)
       if (remove.includes(items[i]!.id)) items.splice(i, 1);
   } else if (command.action === "order") {
@@ -177,6 +224,7 @@ export async function writeCart(raw: unknown): Promise<CartWriteResult> {
       )
     )
       invalid();
+    mock.values.delete(undoKey);
     meta.categories.forEach((entry) => {
       entry.sort_order = command.ids.indexOf(entry.id);
     });
@@ -248,9 +296,21 @@ export async function writeCart(raw: unknown): Promise<CartWriteResult> {
         unit_id: stock.unit_id,
       });
     }
+    const undoToken = crypto.randomUUID();
+    mock.values.set(undoKey, {
+      token: undoToken,
+      actor,
+      expires: Date.now() + 30_000,
+      before: structuredClone({ items, inventory }),
+      after: JSON.stringify({
+        items: nextItems,
+        inventory: nextInventory,
+        meta,
+      }),
+    });
     inventory.splice(0, inventory.length, ...nextInventory);
     items.splice(0, items.length, ...nextItems);
-    return { results };
+    return { results, undoToken };
   }
   return {};
 }

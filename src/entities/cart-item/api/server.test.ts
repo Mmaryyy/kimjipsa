@@ -13,7 +13,10 @@ const state = vi.hoisted(() => ({
   perspective: 0,
 }));
 vi.mock("@/shared/server", () => ({
-  mockContext: async () => ({ perspective: state.perspective }),
+  mockContext: async () => ({
+    perspective: state.perspective,
+    values: state.values,
+  }),
   mockJson: async (name: string) => state.values.get(name),
   createServerSupabaseClient: vi.fn(),
   throwDatabaseError: vi.fn(),
@@ -303,5 +306,121 @@ describe("DEC-010 CART-12 이름 정규화 계약", () => {
       expect(normalizeItemName(name)).toBe(
         name.replace(sqlWhitespace, "").toLowerCase(),
       );
+  });
+});
+
+describe("CART-07 INV-12 SCN-CART-4 구매 반영 되돌리기", () => {
+  it("기존 수량·기한·상태와 담음·구매 기록을 복원하고 새 품목을 제거해요", async () => {
+    const stock = inventory.find((item) => item.mode === "quantity")!;
+    const status = inventory.find((item) => item.mode === "status")!;
+    const first = await checked({ inventory_item_id: stock.id });
+    const second = await checked();
+    const third = await checked({ name: "새두부" });
+    const fourth = await checked({ inventory_item_id: status.id });
+    const before = structuredClone({ items, inventory });
+    const result = await writeCart({
+      action: "restock",
+      entries: [
+        entry(first.id, { unit_id: stock.unit_id!, expires_on: "2027-01-01" }),
+        entry(second.id),
+        entry(third.id),
+        entry(fourth.id),
+      ],
+    });
+    expect(result.undoToken).toBeTruthy();
+    await writeCart({ action: "undo-restock", token: result.undoToken });
+    expect({ items, inventory }).toEqual(before);
+    await expect(
+      writeCart({ action: "undo-restock", token: result.undoToken }),
+    ).rejects.toMatchObject({ code: "restock_undo_unavailable" });
+  });
+  it("실패한 반영 요청은 기존 복원 토큰을 없애지 않아요", async () => {
+    const item = await checked();
+    const { undoToken } = await writeCart({
+      action: "restock",
+      entries: [entry(item.id)],
+    });
+    await expect(
+      writeCart({ action: "restock", entries: [entry(item.id)] }),
+    ).rejects.toMatchObject({ code: "cart_changed" });
+    await writeCart({ action: "undo-restock", token: undoToken });
+    expect(items[0]?.purchased_at).toBeNull();
+  });
+  it("다른 사람의 토큰 사용을 거부하고 본인은 한 번 복원할 수 있어요", async () => {
+    const item = await checked();
+    const { undoToken } = await writeCart({
+      action: "restock",
+      entries: [entry(item.id)],
+    });
+    state.perspective = 1;
+    await expect(
+      writeCart({ action: "undo-restock", token: undoToken }),
+    ).rejects.toMatchObject({ code: "restock_undo_unavailable" });
+    state.perspective = 0;
+    await writeCart({ action: "undo-restock", token: undoToken });
+    expect(items[0]?.purchased_at).toBeNull();
+  });
+  it("중간 변경을 원래 값으로 바꿔도 복원하지 않아요", async () => {
+    const purchased = await checked();
+    const other = await add({ name: "다른 항목" });
+    const { undoToken } = await writeCart({
+      action: "restock",
+      entries: [entry(purchased.id)],
+    });
+    await writeCart({ action: "check", id: other.id, checked: true });
+    await writeCart({ action: "check", id: other.id, checked: false });
+    const after = structuredClone({ items, inventory });
+    await expect(
+      writeCart({ action: "undo-restock", token: undoToken }),
+    ).rejects.toMatchObject({ code: "restock_undo_unavailable" });
+    expect({ items, inventory }).toEqual(after);
+  });
+  it.each(["inventory-items", "inventory-meta"])(
+    "%s 변경 뒤 덮어쓰지 않아요",
+    async (name) => {
+      const item = await checked();
+      const { undoToken } = await writeCart({
+        action: "restock",
+        entries: [entry(item.id)],
+      });
+      if (name === "inventory-items") inventory[0]!.quantity += 1;
+      else meta.expiry_days += 1;
+      const after = structuredClone({ items, inventory, meta });
+      await expect(
+        writeCart({ action: "undo-restock", token: undoToken }),
+      ).rejects.toMatchObject({ code: "restock_undo_unavailable" });
+      expect({ items, inventory, meta }).toEqual(after);
+    },
+  );
+  it("반영 직후 시간이 지나면 복원하지 않아요", async () => {
+    const item = await checked();
+    const { undoToken } = await writeCart({
+      action: "restock",
+      entries: [entry(item.id)],
+    });
+    const now = Date.now();
+    const clock = vi.spyOn(Date, "now").mockReturnValue(now + 31_000);
+    try {
+      await expect(
+        writeCart({ action: "undo-restock", token: undoToken }),
+      ).rejects.toMatchObject({ code: "restock_undo_unavailable" });
+    } finally {
+      clock.mockRestore();
+    }
+  });
+});
+
+describe("CART-13 선택 삭제", () => {
+  it("담음 상태와 관계없이 지정한 활성 항목만 한 번에 지워요", async () => {
+    const first = await checked();
+    const second = await add({ name: "선택한 항목" });
+    const remaining = await add({ name: "남길 항목" });
+    await writeCart({
+      action: "delete-selected",
+      ids: [first.id, second.id, crypto.randomUUID()],
+    });
+    expect((await listCart()).items.map((item) => item.id)).toEqual([
+      remaining.id,
+    ]);
   });
 });

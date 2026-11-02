@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import {
@@ -17,7 +17,7 @@ import {
 } from "@/entities/inventory-item";
 import { useCartAdd, CartDuplicateDialog } from "@/features/cart-add";
 import { cn } from "@/shared/lib";
-import { cartRoutes } from "@/shared/config";
+import { inventoryListPath } from "@/shared/config";
 import {
   Banner,
   Button,
@@ -35,7 +35,7 @@ import {
   Toast,
 } from "@/shared/ui";
 import CartItemRow from "./Row";
-import CornerOrderSheet from "../corner-order-sheet";
+import { RestockSheet } from "@/features/cart-checkout";
 import CartItemEditor from "../cart-item-editor";
 const CartSkeleton = ({ frequent }: { frequent: boolean }) => (
   <SkeletonSection label="장바구니를 불러오고 있어요">
@@ -68,7 +68,7 @@ const CartSkeleton = ({ frequent }: { frequent: boolean }) => (
           </li>
         ))}
       </List>
-      <div className="sticky bottom-[calc(var(--bottom-navigation-offset)+env(safe-area-inset-bottom))] z-10 mt-4 flex items-center gap-3 bg-background py-2.5 lg:bottom-0">
+      <div className="mt-4 py-2.5">
         <Skeleton className="h-[var(--type-body-sm-lh)] w-24" />
         <Button disabled>구매 완료</Button>
       </div>
@@ -88,10 +88,21 @@ const CartPage = () => {
   const [resolvingUnit, setResolvingUnit] = useState(false);
   const [name, setName] = useState("");
   const [editing, setEditing] = useState(false);
-  const [order, setOrder] = useState(false);
+  const [openedRow, setOpenedRow] = useState<string | null>(null);
+  const [selection, setSelection] = useState<string[]>([]);
+  const [checkout, setCheckout] = useState<CartItem[] | null>(null);
+  const [batchPending, setBatchPending] = useState(false);
   const [editor, setEditor] = useState<CartItem | null>(null);
-  const [clear, setClear] = useState<string[] | null>(null);
+  const [clear, setClear] = useState<{
+    action: "clear-checked" | "delete-selected";
+    ids: string[];
+  } | null>(null);
+  const [checkoutChecks, setCheckoutChecks] = useState<string[]>([]);
   const [message, setMessage] = useState("");
+  const [restockUndo, setRestockUndo] = useState<{
+    token: string;
+    message: string;
+  } | null>(null);
   const [removed, setRemoved] = useState<CartItem | null>(null);
   const [dismissedSync, setDismissedSync] = useState(0);
   const toastMessage =
@@ -102,7 +113,69 @@ const CartPage = () => {
   });
   const items = cart.data?.items.filter((item) => !item.purchased_at) ?? [];
   const checked = items.filter((item) => item.is_checked);
-  const pending = cart.offline || !cart.data || !meta.data;
+  const pending = cart.offline || !cart.data || !meta.data || batchPending;
+  const selected = items.filter((item) => selection.includes(item.id));
+  const busy = pending || action.isPending || action.pendingIds.length > 0;
+  useEffect(() => {
+    if (!openedRow) return;
+    const close = () => setOpenedRow(null);
+    const outside = (event: PointerEvent) => {
+      if (
+        !(event.target instanceof Element) ||
+        event.target
+          .closest("[data-cart-row]")
+          ?.getAttribute("data-cart-row") !== openedRow
+      )
+        close();
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") close();
+    };
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("scroll", close, true);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("scroll", close, true);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [openedRow]);
+  const finishEditing = () => {
+    setEditing(false);
+    setSelection([]);
+  };
+  const processItems = async (
+    targets: CartItem[],
+    operation: "check" | "purchase",
+  ) => {
+    if (busy || !targets.length) return;
+    setOpenedRow(null);
+    setBatchPending(true);
+    try {
+      for (const item of targets) {
+        if (!item.is_checked)
+          await action.mutateAsync({
+            action: "check",
+            id: item.id,
+            checked: true,
+          });
+      }
+      if (operation === "purchase") {
+        setCheckoutChecks(
+          targets.filter((item) => !item.is_checked).map((item) => item.id),
+        );
+        setCheckout(targets.map((item) => ({ ...item, is_checked: true })));
+      }
+      setClear(null);
+      finishEditing();
+    } catch (error) {
+      const reason =
+        error instanceof Error ? error.message : "다시 시도해 주세요.";
+      setMessage(`일부 항목만 처리됐을 수 있어요. ${reason}`);
+    } finally {
+      setBatchPending(false);
+    }
+  };
   const write = async (command: CartCommand) => {
     if (pending) return;
     try {
@@ -116,10 +189,38 @@ const CartPage = () => {
         setMessage(`${deleted.name} 지웠어요`);
       }
       setClear(null);
+      if (command.action === "delete-selected") finishEditing();
     } catch (reason) {
       setMessage(
         reason instanceof Error ? reason.message : "변경하지 못했어요.",
       );
+    }
+  };
+  const deleteItems = (targets: CartItem[]) => {
+    if (targets.length > 1)
+      setClear({
+        action: "delete-selected",
+        ids: targets.map((item) => item.id),
+      });
+    else if (targets[0]) void write({ action: "delete", id: targets[0].id });
+  };
+  const closeCheckout = async () => {
+    if (busy) return;
+    setBatchPending(true);
+    try {
+      for (const id of checkoutChecks) {
+        await action.mutateAsync({ action: "check", id, checked: false });
+        setCheckoutChecks((ids) => ids.filter((entry) => entry !== id));
+      }
+      setCheckout(null);
+    } catch (reason) {
+      setMessage(
+        reason instanceof Error
+          ? reason.message
+          : "담음 상태를 되돌리지 못했어요.",
+      );
+    } finally {
+      setBatchPending(false);
     }
   };
   const undoDeletion = async () => {
@@ -145,7 +246,20 @@ const CartPage = () => {
       );
     }
   };
-  const toastAction =
+  const undoRestock = async () => {
+    if (!restockUndo || busy) return;
+    const token = restockUndo.token;
+    setRestockUndo(null);
+    try {
+      await action.mutateAsync({ action: "undo-restock", token });
+      setMessage("재고 반영을 되돌렸어요");
+    } catch (reason) {
+      setMessage(
+        reason instanceof Error ? reason.message : "되돌리지 못했어요.",
+      );
+    }
+  };
+  const deletionAction =
     removed && message === `${removed.name} 지웠어요` && !cart.offline
       ? {
           label: "되돌리기",
@@ -154,6 +268,10 @@ const CartPage = () => {
           },
         }
       : undefined;
+  const toastAction =
+    restockUndo && message === restockUndo.message && !cart.offline
+      ? { label: "되돌리기", onClick: () => void undoRestock() }
+      : deletionAction;
   const quickAdd = () => {
     const { unknownUnit: unitName, ...parsed } = parseCartQuickInput(
       name,
@@ -250,7 +368,26 @@ const CartPage = () => {
           ?.display_name ?? "탈퇴한 사용자"
       }
       editing={editing}
-      disabled={pending || action.pendingIds.includes(item.id)}
+      selected={selection.includes(item.id)}
+      open={openedRow === item.id && !pending}
+      onOpenChange={(open) => setOpenedRow(open ? item.id : null)}
+      onSelect={() =>
+        setSelection((ids) =>
+          ids.includes(item.id)
+            ? ids.filter((id) => id !== item.id)
+            : [...ids, item.id],
+        )
+      }
+      onPurchase={() => void processItems([item], "purchase")}
+      onQuantityChange={(quantity) => {
+        if (quantity !== item.quantity)
+          void write({
+            action: "save",
+            id: item.id,
+            item: { ...item, quantity },
+          });
+      }}
+      disabled={busy}
       pending={action.pendingIds.includes(item.id)}
       onCheck={() =>
         void write({ action: "check", id: item.id, checked: !item.is_checked })
@@ -376,7 +513,12 @@ const CartPage = () => {
                   tone="danger"
                   data-od-id="cart-clear-checked"
                   disabled={pending}
-                  onClick={() => setClear(checked.map((item) => item.id))}
+                  onClick={() =>
+                    setClear({
+                      action: "clear-checked",
+                      ids: checked.map((item) => item.id),
+                    })
+                  }
                 >
                   일괄 삭제
                 </TextButton>
@@ -385,39 +527,41 @@ const CartPage = () => {
             <List>{checked.map(renderRow)}</List>
           </section>
         )}
-        <div
-          data-od-id="cart-buy-bar"
-          className={cn(
-            "sticky bottom-[calc(var(--bottom-navigation-offset)+env(safe-area-inset-bottom))]",
-            "z-10 mt-4 flex items-center gap-3 bg-background py-2.5 lg:bottom-0",
-          )}
-        >
-          <span className="text-body-sm text-muted-foreground">
-            {items.length}개 중 {checked.length}개 담음
-          </span>
-          <Button
-            data-od-id="cart-purchase-complete"
-            disabled={
-              pending || action.pendingIds.some(Boolean) || !checked.length
-            }
-            asChild={
-              !pending && !action.pendingIds.some(Boolean) && checked.length > 0
-            }
-          >
-            {!pending &&
-            !action.pendingIds.some(Boolean) &&
-            checked.length > 0 ? (
-              <Link href={cartRoutes.restock}>구매 완료</Link>
-            ) : (
-              "구매 완료"
-            )}
-          </Button>
-        </div>
+        {checked.length > 0 && !editing && (
+          <div className="mt-4 py-2.5" data-od-id="cart-buy-bar">
+            <Button
+              size="block"
+              aria-label={`장바구니 구매 완료, ${checked.length}개`}
+              data-od-id="cart-purchase-complete"
+              disabled={busy}
+              onClick={() => void processItems(checked, "purchase")}
+            >
+              장바구니 구매 완료
+              <span
+                aria-hidden="true"
+                className={cn([
+                  "ml-1 inline-flex h-6 min-w-6 items-center justify-center",
+                  "rounded-full bg-primary-foreground px-1",
+                  "text-caption font-semibold text-primary tabular-nums",
+                ])}
+              >
+                {checked.length}
+              </span>
+            </Button>
+          </div>
+        )}
       </>
     );
   }
   return (
-    <div data-od-id="cart-main" className="mx-auto lg:max-w-130">
+    <div
+      data-od-id="cart-main"
+      className={cn([
+        "mx-auto flex min-h-[calc(100dvh-var(--bottom-navigation-offset)-env(safe-area-inset-bottom))] flex-col",
+        "lg:min-h-[calc(100dvh-var(--sp-10))] lg:max-w-130",
+        "pb-4 lg:pb-0",
+      ])}
+    >
       <PageHeader
         title="장바구니"
         odId="cart"
@@ -429,8 +573,12 @@ const CartPage = () => {
           <TextButton
             size="sm"
             data-od-id="cart-edit"
-            disabled={pending}
-            onClick={() => setEditing(!editing)}
+            disabled={busy}
+            onClick={() => {
+              setOpenedRow(null);
+              if (editing) finishEditing();
+              else setEditing(true);
+            }}
           >
             {editing ? "완료" : "편집"}
           </TextButton>
@@ -452,21 +600,77 @@ const CartPage = () => {
           onRetry={() => void cart.refetch()}
         />
       )}
+      {editing && (
+        <section
+          aria-label="선택 항목 처리"
+          className="my-3 flex flex-wrap items-center gap-2"
+        >
+          <TextButton
+            disabled={busy || !items.length}
+            onClick={() =>
+              setSelection(
+                selected.length === items.length
+                  ? []
+                  : items.map((item) => item.id),
+              )
+            }
+          >
+            {selected.length === items.length && items.length > 0
+              ? "전체 해제"
+              : "전체 선택"}
+          </TextButton>
+          <span className="text-caption text-muted-foreground">
+            {selected.length}개 선택
+          </span>
+          <Button
+            size="sm"
+            variant="gray"
+            disabled={busy || !selected.length}
+            onClick={() => void processItems(selected, "check")}
+          >
+            담기
+          </Button>
+          <Button
+            size="sm"
+            disabled={busy || !selected.length}
+            onClick={() => void processItems(selected, "purchase")}
+          >
+            구매 완료
+          </Button>
+          <TextButton
+            tone="danger"
+            disabled={busy || !selected.length}
+            onClick={() => deleteItems(selected)}
+          >
+            삭제
+          </TextButton>
+        </section>
+      )}
       {content}
-      <Button
-        variant="gray"
-        data-od-id="cart-manage"
-        className="mt-4 min-h-11 w-full"
-        disabled={pending}
-        onClick={() => setOrder(true)}
-      >
-        카테고리 관리하기
-      </Button>
-      {order && meta.data && (
-        <CornerOrderSheet
-          categories={meta.data.categories}
-          disabled={cart.offline}
-          onClose={() => setOrder(false)}
+      <div className="mt-auto pt-4">
+        <Button
+          variant="gray"
+          data-od-id="cart-manage"
+          className="min-h-11 w-full"
+          asChild
+        >
+          <Link href={inventoryListPath("categories", "cart")}>
+            카테고리 관리하기
+          </Link>
+        </Button>
+      </div>
+      {checkout && (
+        <RestockSheet
+          items={checkout}
+          disabled={cart.offline || batchPending}
+          onClose={() => void closeCheckout()}
+          onDone={(results, undoToken) => {
+            const message = `${results.length}개 품목을 재고에 반영했어요`;
+            setCheckout(null);
+            setCheckoutChecks([]);
+            setRestockUndo(undoToken ? { token: undoToken, message } : null);
+            setMessage(message);
+          }}
         />
       )}
       {editor && meta.data && (
@@ -513,11 +717,11 @@ const CartPage = () => {
         onOpenChange={(open) => {
           if (!open) setClear(null);
         }}
-        title={`담은 항목 ${clear?.length ?? 0}개를 삭제할까요?`}
+        title={`선택한 항목 ${clear?.ids.length ?? 0}개를 삭제할까요?`}
         description="재고에는 반영되지 않아요."
-        pending={action.isPending || cart.offline}
+        pending={busy}
         onConfirm={() => {
-          if (clear) void write({ action: "clear-checked", ids: clear });
+          if (clear) void write(clear);
         }}
       />
       <Toast
@@ -526,6 +730,7 @@ const CartPage = () => {
           if (!open) {
             setMessage("");
             setRemoved(null);
+            setRestockUndo(null);
             setDismissedSync(cart.syncedAt);
           }
         }}

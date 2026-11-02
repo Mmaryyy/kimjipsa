@@ -13,7 +13,7 @@ import {
 vi.mock("server-only", () => ({}));
 const state = vi.hoisted(() => ({ values: new Map<string, unknown>() }));
 vi.mock("@/shared/server", () => ({
-  mockContext: async () => ({}),
+  mockContext: async () => ({ values: state.values }),
   mockJson: async (name: string) => state.values.get(name),
   createServerSupabaseClient: vi.fn(),
   throwDatabaseError: vi.fn(),
@@ -150,5 +150,26 @@ describe("CART-04 CART-06 재고와 장바구니 연결", () => {
     await writeInventory({ action: "delete", id: item.id });
     expect(cart).toHaveLength(1);
     expect(cart[0]?.inventory_item_id).toBeNull();
+  });
+});
+
+describe("CART-07 INV-12 SCN-CART-4 반영 뒤 다른 변경", () => {
+  it("재고를 바꿨다가 되돌려도 구매 복원 토큰은 무효화해요", async () => {
+    const item = items.find((item) => item.mode === "quantity")!;
+    state.values.set("cart-restock-undo", { token: "old" });
+    await writeInventory({ action: "adjust", id: item.id, delta: 1 });
+    await writeInventory({ action: "adjust", id: item.id, delta: -1 });
+    expect(state.values.has("cart-restock-undo")).toBe(false);
+  });
+  it("카테고리 순서 변경도 구매 복원 토큰을 무효화해요", async () => {
+    const category = meta.categories[0]!;
+    state.values.set("cart-restock-undo", { token: "old" });
+    await writeInventoryMeta({
+      action: "save",
+      kind: "categories",
+      id: category.id,
+      entry: { ...category, sort_order: category.sort_order + 1 },
+    });
+    expect(state.values.has("cart-restock-undo")).toBe(false);
   });
 });
