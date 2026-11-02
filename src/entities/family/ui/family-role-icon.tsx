@@ -10,7 +10,7 @@ export function FamilyRoleIcon({ role }: { role: FamilyRole }) {
       role="img"
       aria-label={roles[role]}
       aria-hidden={false}
-      className="inline-block size-[1em] shrink-0 align-[-0.125em] text-[var(--icon-secondary)]"
+      className="inline-block size-[1em] shrink-0 align-[-0.125em] text-[var(--icon-secondary)] scale-x-[-1]"
     />
   );
 }
