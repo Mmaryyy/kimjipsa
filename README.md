@@ -1,6 +1,6 @@
 # 김집사 (kimjipsa)
 
-신혼부부가 일정, 재고, 장바구니를 같이 관리하고 AI 집사 챗봇이 조회·실행·제안까지 해 주는 가정 관리 서비스. 모바일 우선 PWA(Next.js, Supabase, Vercel).
+가족 구성원이 일정, 재고, 장바구니를 같이 관리하고 AI 집사 챗봇이 조회·실행·제안까지 해 주는 가정 관리 서비스. 모바일 우선 PWA(Next.js, Supabase, Vercel).
 
 P2 로그인·약관·가정·초대 화면과 로컬 마이그레이션을 작성했다. 원격 DB 적용과 실제 OAuth·RLS 검증은 아직 하지 않았다.
 
@@ -89,3 +89,15 @@ P2 실행에는 `.env.example`의 Supabase URL과 공개 anon 키를 `.env.local
 - 문서 목록: [`docs/README.md`](./docs/README.md)
 - 요구사항: [`docs/01-project/REQUIREMENTS.md`](./docs/01-project/REQUIREMENTS.md)
 - 미결 결정: [`docs/04-planning/DECISIONS_REQUIRED.md`](./docs/04-planning/DECISIONS_REQUIRED.md)
+
+## 저작권
+
+Copyright © 2026 hazzul ([@Mmaryyy](https://github.com/Mmaryyy)). All rights reserved.
+
+이 저장소는 오픈 소스가 아니며 별도의 라이선스를 부여하지 않는다. 코드, 문서, 디자인, 이미지 등 모든 내용의 저작권은 저작권자에게 있다.
+
+- 공개 저장소이므로 GitHub 이용약관이 허용하는 범위(웹에서 열람, GitHub 안에서 포크)를 넘는 사용은 허락하지 않는다.
+- 저작권자의 사전 서면 허락 없이 전부 또는 일부를 복제, 수정, 배포, 재게시하거나 상업적·비상업적 서비스에 사용할 수 없다.
+- 사용 허락이 필요하면 GitHub 이슈로 문의한다.
+
+This repository is publicly viewable but is not open source. No license is granted to copy, modify, distribute, or use any part of it without prior written permission from the copyright holder.
