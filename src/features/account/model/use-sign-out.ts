@@ -1,19 +1,21 @@
 "use client";
 
 import { useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { accountRoutes } from "@/shared/config";
 import { signOut } from "../api/api";
 
 export function useSignOut() {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const mutation = useMutation({
+    mutationKey: ["sign-out"],
     mutationFn: signOut,
+    onMutate: async () => {
+      await queryClient.cancelQueries();
+    },
     onSuccess: () => {
       queryClient.clear();
-      router.replace(accountRoutes.login);
+      window.location.assign(accountRoutes.login);
     },
   });
   const onSignOut = useCallback(() => mutation.mutate(), [mutation]);

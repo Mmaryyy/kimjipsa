@@ -14,6 +14,7 @@ import {
   ErrorState,
   ListSkeleton,
   PageHeader,
+  PageLayout,
   Text,
 } from "@/shared/ui";
 const unavailableMessages = {
@@ -25,24 +26,34 @@ export function InvitePage({ token }: { token: string }) {
   const invite = useInvite(token);
   const account = useAccount();
   const { onAccept, pending, error } = useAcceptInvite(token);
-  if (pending) return <ListSkeleton label="합류하고 있어요" />;
+  if (pending)
+    return (
+      <PageLayout width="narrow">
+        <ListSkeleton label="합류하고 있어요" />
+      </PageLayout>
+    );
   if (invite.isError || account.isError)
     return (
-      <ErrorState
-        message={(invite.error ?? account.error)?.message}
-        onRetry={() => {
-          void invite.refetch();
-          void account.refetch();
-        }}
-        retrying={invite.isFetching || account.isFetching}
-      />
+      <PageLayout width="narrow">
+        <ErrorState
+          message={(invite.error ?? account.error)?.message}
+          onRetry={() => {
+            void invite.refetch();
+            void account.refetch();
+          }}
+          retrying={invite.isFetching || account.isFetching}
+        />
+      </PageLayout>
     );
   if (invite.isPending || account.isPending)
-    return <ListSkeleton label="초대를 확인하고 있어요" />;
+    return (
+      <PageLayout width="narrow">
+        <ListSkeleton label="초대를 확인하고 있어요" />
+      </PageLayout>
+    );
   if (invite.data.status !== "valid")
     return (
-      <>
-        <PageHeader title="초대 링크 안내" />
+      <PageLayout width="narrow" header={<PageHeader title="초대 링크 안내" />}>
         <EmptyState
           message={unavailableMessages[invite.data.status]}
           action={
@@ -51,7 +62,7 @@ export function InvitePage({ token }: { token: string }) {
             </Link>
           }
         />
-      </>
+      </PageLayout>
     );
   const familyName = invite.data.familyName;
   let action;
@@ -83,8 +94,11 @@ export function InvitePage({ token }: { token: string }) {
       </Button>
     );
   return (
-    <div className="grid gap-5">
-      <PageHeader title="우리 집 초대" />
+    <PageLayout
+      width="narrow"
+      className="grid gap-5"
+      header={<PageHeader title="우리 집 초대" />}
+    >
       <Text as="h2" variant="title-sm">
         {familyName}
       </Text>
@@ -97,6 +111,6 @@ export function InvitePage({ token }: { token: string }) {
         </Banner>
       )}
       {action}
-    </div>
+    </PageLayout>
   );
 }

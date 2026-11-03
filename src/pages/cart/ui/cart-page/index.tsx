@@ -30,6 +30,7 @@ import {
   Skeleton,
   SkeletonSection,
   PageHeader,
+  PageLayout,
   Text,
   TextButton,
   Toast,
@@ -554,46 +555,49 @@ const CartPage = () => {
     );
   }
   return (
-    <div
-      data-od-id="cart-main"
+    <PageLayout
+      width="narrow"
+      odId="cart-main"
       className={cn([
-        "mx-auto flex min-h-[calc(100dvh-var(--bottom-navigation-offset)-env(safe-area-inset-bottom))] flex-col",
-        "lg:min-h-[calc(100dvh-var(--sp-10))] lg:max-w-130",
+        "flex min-h-[calc(100dvh-var(--bottom-navigation-offset)-env(safe-area-inset-bottom))] flex-col",
+        "lg:min-h-[calc(100dvh-var(--sp-10))]",
         "pb-4 lg:pb-0",
       ])}
-    >
-      <PageHeader
-        title="장바구니"
-        odId="cart"
-        subtitle={
-          cart.activity ||
-          (companions ? `${companions}과 함께 보는 중` : "함께 쓰는 장바구니")
-        }
-        actions={
-          <>
-            <Button
-              variant="glass"
-              data-od-id="cart-edit"
-              disabled={busy}
-              onClick={() => {
-                setOpenedRow(null);
-                if (editing) finishEditing();
-                else setEditing(true);
-              }}
-            >
-              {editing ? "완료" : "편집"}
-            </Button>
-            <Button variant="glass" asChild>
-              <Link
-                href={inventoryListPath("categories", "cart")}
-                aria-label="장바구니 카테고리 설정"
+      header={
+        <PageHeader
+          title="장바구니"
+          odId="cart"
+          subtitle={
+            cart.activity ||
+            (companions ? `${companions}과 함께 보는 중` : "함께 쓰는 장바구니")
+          }
+          actions={
+            <>
+              <Button
+                variant="glass"
+                data-od-id="cart-edit"
+                disabled={busy}
+                onClick={() => {
+                  setOpenedRow(null);
+                  if (editing) finishEditing();
+                  else setEditing(true);
+                }}
               >
-                설정
-              </Link>
-            </Button>
-          </>
-        }
-      />
+                {editing ? "완료" : "편집"}
+              </Button>
+              <Button variant="glass" asChild>
+                <Link
+                  href={inventoryListPath("categories", "cart")}
+                  aria-label="장바구니 카테고리 설정"
+                >
+                  설정
+                </Link>
+              </Button>
+            </>
+          }
+        />
+      }
+    >
       {cart.offline && (
         <Banner
           variant="warning"
@@ -744,7 +748,7 @@ const CartPage = () => {
         message={toastMessage}
         action={toastAction}
       />
-    </div>
+    </PageLayout>
   );
 };
 export default CartPage;

@@ -35,25 +35,47 @@ export function Drawer({
     const viewport = window.visualViewport;
     const updateViewport = () => {
       const height = viewport?.height ?? window.innerHeight;
-      const bottom = Math.max(
-        0,
-        window.innerHeight - height - (viewport?.offsetTop ?? 0),
-      );
-      contentRef.current?.style.setProperty(
-        "--drawer-viewport-height",
-        `${height}px`,
-      );
+      const bottom =
+        height >= window.innerHeight
+          ? 0
+          : Math.max(
+              0,
+              window.innerHeight - height - (viewport?.offsetTop ?? 0),
+            );
+      if (height >= window.innerHeight) {
+        contentRef.current?.style.removeProperty("--drawer-viewport-height");
+      } else {
+        contentRef.current?.style.setProperty(
+          "--drawer-viewport-height",
+          `${height}px`,
+        );
+      }
       contentRef.current?.style.setProperty("bottom", `${bottom}px`);
     };
-    const frame = requestAnimationFrame(updateViewport);
-    viewport?.addEventListener("resize", updateViewport);
-    viewport?.addEventListener("scroll", updateViewport);
-    window.addEventListener("resize", updateViewport);
+    let frame = 0;
+    let settling: ReturnType<typeof setTimeout>[] = [];
+    const settleViewport = () => {
+      updateViewport();
+      cancelAnimationFrame(frame);
+      settling.forEach(clearTimeout);
+      frame = requestAnimationFrame(updateViewport);
+      // iOS는 키보드 전환이 끝나기 전에 마지막 viewport 이벤트를 보낼 수 있어요.
+      settling = [100, 300, 600].map((delay) =>
+        setTimeout(updateViewport, delay),
+      );
+    };
+    settleViewport();
+    viewport?.addEventListener("resize", settleViewport);
+    viewport?.addEventListener("scroll", settleViewport);
+    window.addEventListener("resize", settleViewport);
+    document.addEventListener("focusout", settleViewport);
     return () => {
       cancelAnimationFrame(frame);
-      viewport?.removeEventListener("resize", updateViewport);
-      viewport?.removeEventListener("scroll", updateViewport);
-      window.removeEventListener("resize", updateViewport);
+      settling.forEach(clearTimeout);
+      viewport?.removeEventListener("resize", settleViewport);
+      viewport?.removeEventListener("scroll", settleViewport);
+      window.removeEventListener("resize", settleViewport);
+      document.removeEventListener("focusout", settleViewport);
     };
   }, [open]);
   function onChange(next: boolean) {
@@ -133,7 +155,7 @@ export function Drawer({
             </DrawerPrimitive.Description>
             <div
               className={cn([
-                "min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain",
+                "-mx-4 min-h-0 flex-1 px-4 overflow-x-hidden overflow-y-auto overscroll-contain",
                 "pb-[calc(var(--sp-6)+env(safe-area-inset-bottom))]",
               ])}
             >

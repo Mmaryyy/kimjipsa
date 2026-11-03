@@ -1,155 +1,205 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   advanceTabSpring,
   cancelTabGesture,
   nearestTab,
-  tabLensShape,
+  targetLiquidTab,
   liquidTabMotionTokens as tokens,
 } from "@/shared/lib";
 
 export function useTabLens(hrefs: readonly string[]) {
   const nav = useRef<HTMLElement>(null);
   const router = useRouter();
-  const suppressClick = useRef(false);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const element = nav.current;
     if (!element) return;
-    const rail = element.querySelector<HTMLElement>("[data-rail]")!;
-    const lens = element.querySelector<HTMLElement>("[data-lens]")!;
     const original = element.querySelector<HTMLElement>("[data-original]")!;
-    const copy = element.querySelector<HTMLElement>("[data-copy]")!;
-    let selected = element.querySelector<HTMLAnchorElement>(
-      "[aria-current=page]",
-    );
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
     const forced = window.matchMedia("(forced-colors: active)");
-    let width = 0;
-    let cell = 0;
+    const state = {
+      x: 0,
+      target: 0,
+      velocity: 0,
+      selectionScale: 1,
+      lift: 0,
+      liftVelocity: 0,
+      sx: 1,
+      sy: 1,
+    };
+    let bounds = {
+      height: 0,
+      step: 0,
+      max: 0,
+      left: 0,
+      center: 0,
+      viewportWidth: 0,
+    };
     let selectedX = 0;
-    let x = 0,
-      vx = 0,
-      lift = 0,
-      vlift = 0,
-      stretch = 0;
-    let target = 0,
-      frame = 0,
-      previous = 0;
+    let selected = false;
+    let frame = 0;
+    let previous = 0;
+    let suppressClick = false;
+    let clickReset: ReturnType<typeof setTimeout> | undefined;
+    let pendingIndex: number | null = null;
+    let routeReset: ReturnType<typeof setTimeout> | undefined;
+    const suppressPointerClick = () => {
+      suppressClick = true;
+      clearTimeout(clickReset);
+      clickReset = setTimeout(() => {
+        suppressClick = false;
+      }, 500);
+    };
     let pointer: {
       id: number;
       x: number;
       y: number;
       dragging: boolean;
+      tapIndex: number;
     } | null = null;
-    let selection = selected?.querySelector<HTMLElement>("[data-selection]");
-    const faces = copy.querySelectorAll<HTMLElement>("[data-face]");
-    const measure = (reset = true) => {
-      selected = element.querySelector<HTMLAnchorElement>(
-        "[aria-current=page]",
+    const syncRoute = () => {
+      const links = Array.from(original.querySelectorAll("a"));
+      const index = links.findIndex(
+        (link) => link.getAttribute("aria-current") === "page",
       );
-      selection = selected?.querySelector<HTMLElement>("[data-selection]");
-      width = original.getBoundingClientRect().width;
-      cell = width / hrefs.length;
-      const index = selected
-        ? Array.from(original.querySelectorAll("a")).indexOf(selected)
-        : -1;
-      selectedX = (Math.max(0, index) + 0.5) * cell;
-      if (reset) x = target = selectedX;
-      element.style.setProperty("--tab-cell", `${cell}px`);
+      if (pendingIndex !== null && index !== pendingIndex) return;
+      pendingIndex = null;
+      clearTimeout(routeReset);
+      selected = index >= 0;
+      selectedX = Math.max(0, index) * bounds.step;
+    };
+    const paint = () => {
+      const reveal = forced.matches || reduced.matches ? 0 : state.lift;
+      const style = element.style;
+      style.setProperty("--indicator-x", `${state.x}px`);
+      style.setProperty("--indicator-sx", `${state.sx}`);
+      style.setProperty("--indicator-sy", `${state.sy}`);
+      style.setProperty("--lens-lift", `${reveal}`);
+      element.toggleAttribute("data-lens-visible", reveal > 0);
+      style.setProperty(
+        "--rail-scale",
+        `${1 + state.lift * tokens.railExpansion}`,
+      );
+      style.setProperty(
+        "--selection-visible",
+        selected || pointer || state.lift > 0 ? "1" : "0",
+      );
+      if (reveal === 0) return;
+      style.setProperty(
+        "--lens-left",
+        `${state.x + (bounds.step * (1 - state.sx)) / 2}px`,
+      );
+      style.setProperty(
+        "--lens-top",
+        `${(bounds.height * (1 - state.sy)) / 2}px`,
+      );
+      style.setProperty("--lens-width", `${bounds.step * state.sx}px`);
+      style.setProperty("--lens-height", `${bounds.height * state.sy}px`);
+      style.setProperty(
+        "--lens-radius",
+        `${(Math.min(bounds.step, bounds.height) * state.sx) / 2}px`,
+      );
+      const magnification = 1 + state.lift * tokens.contentMagnification;
+      style.setProperty("--copy-sx", `${magnification / state.sx}`);
+      style.setProperty("--copy-sy", `${magnification / state.sy}`);
+    };
+    const tick = (time: number) => {
+      frame = 0;
+      const moving = advanceTabSpring(
+        state,
+        bounds,
+        Boolean(pointer),
+        reduced.matches || forced.matches,
+        (time - (previous || time - 16)) / 1000,
+        Boolean(pointer?.dragging),
+      );
+      previous = time;
+      paint();
+      if (moving) frame = requestAnimationFrame(tick);
+      else {
+        previous = 0;
+        delete element.dataset.animating;
+      }
+    };
+    const animate = () => {
+      element.dataset.animating = "true";
+      if (!frame) frame = requestAnimationFrame(tick);
+    };
+    const endGesture = () => {
+      const current = pointer;
+      pointer = null;
+      if (current && element.hasPointerCapture(current.id))
+        element.releasePointerCapture(current.id);
+    };
+    const cancel = () => {
+      if (!pointer) return;
+      suppressPointerClick();
+      endGesture();
+      targetLiquidTab(state, selectedX, bounds.step);
+      animate();
+    };
+    const lostCapture = (event: PointerEvent) => {
+      if (event.target === element && pointer) cancel();
+    };
+    const measure = () => {
+      cancel();
+      const box = element.getBoundingClientRect();
+      const step = original.clientWidth / hrefs.length;
+      bounds = {
+        height: original.clientHeight,
+        step,
+        max: step * (hrefs.length - 1),
+        left: box.left + original.offsetLeft,
+        center: box.left + box.width / 2,
+        viewportWidth: window.innerWidth,
+      };
+      syncRoute();
+      state.x = state.target = selectedX;
+      state.velocity = state.lift = state.liftVelocity = 0;
+      state.sx = state.sy = state.selectionScale = 1;
+      element.style.setProperty("--tab-cell", `${step}px`);
       document.documentElement.style.setProperty(
         "--bottom-navigation-measured-height",
         `${element.offsetHeight}px`,
       );
-    };
-    const paint = () => {
-      const shape = tabLensShape(lift, stretch, reduced.matches);
-      const show = !forced.matches && !reduced.matches && lift > 0.001;
-      rail.style.transform = `scale(${shape.rail})`;
-      lens.style.transform = `translateX(${x - cell / 2}px) scale(${shape.width}, ${shape.height})`;
-      lens.style.opacity = show ? `${lift}` : "0";
-      const left = x - (cell * shape.width) / 2;
-      const right = x + (cell * shape.width) / 2;
-      const mask = `linear-gradient(to right, transparent ${left}px, var(--glass-text) ${left}px, var(--glass-text) ${right}px, transparent ${right}px)`;
-      copy.style.maskImage = show ? mask : "none";
-      copy.style.opacity = show ? `${lift}` : "0";
-      original.style.maskImage = show
-        ? `linear-gradient(to right, var(--glass-text) ${left}px, transparent ${left}px, transparent ${right}px, var(--glass-text) ${right}px)`
-        : "none";
-      faces.forEach((face) => {
-        face.style.transform = `scale(${shape.content})`;
-      });
-      if (selection) selection.style.opacity = show ? `${1 - lift}` : "1";
-    };
-    const tick = (time: number) => {
-      const dt = Math.min((time - (previous || time - 16)) / 1000, 0.032);
-      previous = time;
-      const position = advanceTabSpring(
-        x,
-        vx,
-        target,
-        dt,
-        pointer ? tokens.follow : tokens.settle,
-        reduced.matches,
-      );
-      x = position.value;
-      vx = position.velocity;
-      const elevation = advanceTabSpring(
-        lift,
-        vlift,
-        pointer ? 1 : 0,
-        dt,
-        tokens.lift,
-        reduced.matches,
-      );
-      lift = elevation.value;
-      vlift = elevation.velocity;
-      const desiredStretch =
-        Math.min(
-          Math.abs(vx) / tokens.velocityStretchScale,
-          tokens.maxVelocityStretch,
-        ) * lift;
-      stretch +=
-        (desiredStretch - stretch) * (1 - Math.exp(-tokens.shapeResponse * dt));
       paint();
-      if (
-        Math.abs(x - target) > 0.05 ||
-        Math.abs(vx) > 0.05 ||
-        Math.abs(lift - (pointer ? 1 : 0)) > 0.001 ||
-        Math.abs(vlift) > 0.001 ||
-        stretch > 0.001
-      )
-        frame = requestAnimationFrame(tick);
-      else {
-        frame = 0;
-        previous = 0;
-      }
     };
-    const animate = () => {
-      if (!frame) frame = requestAnimationFrame(tick);
-    };
-    const cancel = () => {
-      pointer = null;
-      target = selectedX;
-      animate();
+    const position = (clientX: number) => {
+      const x =
+        bounds.center +
+        (clientX - bounds.center) / (1 + state.lift * tokens.railExpansion);
+      return Math.max(
+        0,
+        Math.min(bounds.max, x - bounds.left - bounds.step / 2),
+      );
     };
     const down = (event: PointerEvent) => {
-      if (!event.isPrimary || event.button !== 0 || pointer) return;
-      measure();
-      suppressClick.current = false;
+      if (
+        !event.isPrimary ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey ||
+        pointer ||
+        !bounds.step
+      )
+        return;
+      const link = (event.target as Element).closest("a");
+      const tapIndex = Array.from(original.querySelectorAll("a")).findIndex(
+        (item) => item === link,
+      );
+      if (tapIndex < 0) return;
+      suppressClick = false;
       pointer = {
         id: event.pointerId,
         x: event.clientX,
         y: event.clientY,
         dragging: false,
+        tapIndex,
       };
-      target = Math.max(
-        cell / 2,
-        Math.min(
-          width - cell / 2,
-          event.clientX - original.getBoundingClientRect().left,
-        ),
-      );
+      targetLiquidTab(state, tapIndex * bounds.step, bounds.step);
       animate();
     };
     const move = (event: PointerEvent) => {
@@ -157,82 +207,100 @@ export function useTabLens(hrefs: readonly string[]) {
       const dx = event.clientX - pointer.x,
         dy = event.clientY - pointer.y;
       if (cancelTabGesture(dx, dy, pointer.dragging)) {
-        suppressClick.current = true;
         cancel();
         return;
       }
-      if (Math.abs(dx) >= tokens.gesture.dragThresholdPx) {
+      if (!pointer.dragging) {
+        if (Math.abs(dx) < tokens.gesture.dragThresholdPx) return;
         pointer.dragging = true;
+        state.selectionScale = 1;
         element.setPointerCapture(event.pointerId);
       }
-      target = Math.max(
-        cell / 2,
-        Math.min(
-          width - cell / 2,
-          event.clientX - original.getBoundingClientRect().left,
-        ),
-      );
+      state.target = position(event.clientX);
       animate();
     };
     const up = (event: PointerEvent) => {
       if (!pointer || pointer.id !== event.pointerId) return;
-      const bounds = original.getBoundingClientRect();
+      const box = original.getBoundingClientRect();
       const outset = tokens.gesture.releaseOutsetPx;
       const outside =
-        event.clientX < bounds.left - outset ||
-        event.clientX > bounds.right + outset ||
-        event.clientY < bounds.top - outset ||
-        event.clientY > bounds.bottom + outset;
+        event.clientX < box.left - outset ||
+        event.clientX > box.right + outset ||
+        event.clientY < box.top - outset ||
+        event.clientY > box.bottom + outset;
       const moved = Math.hypot(
         event.clientX - pointer.x,
         event.clientY - pointer.y,
       );
-      const accepted =
-        !outside &&
-        (pointer.dragging || moved <= tokens.gesture.tapTolerancePx);
-      suppressClick.current = true;
-      pointer = null;
-      if (accepted) {
-        const index = nearestTab(
-          event.clientX - bounds.left,
-          width,
-          hrefs.length,
-        );
-        target = (index + 0.5) * cell;
-        router.push(hrefs[index]!);
-      } else target = selectedX;
+      if (
+        outside ||
+        (!pointer.dragging && moved > tokens.gesture.tapTolerancePx)
+      ) {
+        cancel();
+        return;
+      }
+      const index = pointer.dragging
+        ? nearestTab(
+            position(event.clientX) + bounds.step / 2,
+            bounds.step * hrefs.length,
+            hrefs.length,
+          )
+        : pointer.tapIndex;
+      suppressPointerClick();
+      endGesture();
+      targetLiquidTab(state, index * bounds.step, bounds.step);
       animate();
+      const current = original.querySelector('a[aria-current="page"]');
+      pendingIndex =
+        current === original.querySelectorAll("a")[index] ? null : index;
+      clearTimeout(routeReset);
+      if (pendingIndex !== null) {
+        // 느린 이동을 기다린 뒤 실패·리디렉트된 이동의 선택을 복구해요.
+        routeReset = setTimeout(() => {
+          pendingIndex = null;
+          syncRoute();
+          if (!pointer) targetLiquidTab(state, selectedX, bounds.step);
+          animate();
+        }, 5000);
+      }
+      selectedX = index * bounds.step;
+      router.push(hrefs[index]!);
     };
     const click = (event: MouseEvent) => {
-      if (suppressClick.current && event.detail !== 0) {
+      if (
+        suppressClick &&
+        event.detail !== 0 &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.shiftKey &&
+        !event.altKey
+      ) {
         event.preventDefault();
         event.stopPropagation();
+        suppressClick = false;
       }
     };
     const key = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        suppressClick.current = true;
+      if (event.key === "Enter" || event.key === " ") suppressClick = false;
+      if (event.key === "Escape" && pointer) {
+        event.preventDefault();
         cancel();
       }
     };
-    const resize = () => {
-      cancel();
-      measure();
-      paint();
+    const leave = () => {
+      if (pointer && !pointer.dragging) cancel();
     };
-    const onCancel = () => {
-      suppressClick.current = true;
-      cancel();
+    const visibility = () => {
+      if (document.hidden) cancel();
     };
     const preference = () => {
       cancel();
-      paint();
+      animate();
     };
     measure();
-    paint();
     const routeObserver = new MutationObserver(() => {
-      measure(false);
-      if (!pointer) target = selectedX;
+      syncRoute();
+      if (!pointer) targetLiquidTab(state, selectedX, bounds.step);
       animate();
     });
     routeObserver.observe(original, {
@@ -240,30 +308,40 @@ export function useTabLens(hrefs: readonly string[]) {
       attributes: true,
       attributeFilter: ["aria-current"],
     });
-    const observer = new ResizeObserver(resize);
+    const observer = new ResizeObserver(measure);
     observer.observe(element);
     element.addEventListener("pointerdown", down);
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
-    element.addEventListener("pointercancel", onCancel);
-    element.addEventListener("lostpointercapture", onCancel);
+    element.addEventListener("pointermove", move);
+    element.addEventListener("pointerup", up);
+    element.addEventListener("pointercancel", cancel);
+    element.addEventListener("lostpointercapture", lostCapture);
+    element.addEventListener("pointerleave", leave);
     element.addEventListener("click", click, true);
     window.addEventListener("keydown", key);
-    window.addEventListener("resize", resize);
+    window.addEventListener("resize", measure);
+    window.addEventListener("blur", cancel);
+    document.addEventListener("visibilitychange", visibility);
     reduced.addEventListener("change", preference);
     forced.addEventListener("change", preference);
     return () => {
+      endGesture();
       cancelAnimationFrame(frame);
+      clearTimeout(clickReset);
+      clearTimeout(routeReset);
+      delete element.dataset.animating;
       observer.disconnect();
       routeObserver.disconnect();
       element.removeEventListener("pointerdown", down);
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-      element.removeEventListener("pointercancel", onCancel);
-      element.removeEventListener("lostpointercapture", onCancel);
+      element.removeEventListener("pointermove", move);
+      element.removeEventListener("pointerup", up);
+      element.removeEventListener("pointercancel", cancel);
+      element.removeEventListener("lostpointercapture", lostCapture);
+      element.removeEventListener("pointerleave", leave);
       element.removeEventListener("click", click, true);
       window.removeEventListener("keydown", key);
-      window.removeEventListener("resize", resize);
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("blur", cancel);
+      document.removeEventListener("visibilitychange", visibility);
       reduced.removeEventListener("change", preference);
       forced.removeEventListener("change", preference);
       document.documentElement.style.removeProperty(

@@ -10,8 +10,9 @@ import {
   type DateTimeRange,
 } from "./date-time.utils";
 
-const DateTimeSheet = dynamic(() =>
-  import("./date-time-sheet").then((module) => module.DateTimeSheet),
+const DateTimeSheet = dynamic(
+  () => import("./date-time-sheet").then((module) => module.DateTimeSheet),
+  { loading: () => null },
 );
 
 type NativeInputProps = ComponentProps<"input"> & { "data-od-id"?: string };

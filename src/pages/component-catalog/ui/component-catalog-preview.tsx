@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Plus, Trash2 } from "lucide-react";
+import { Bell, Check, Plus, Trash2 } from "lucide-react";
 import { useId, useState, type ReactNode } from "react";
 import {
   Text,
@@ -37,6 +37,8 @@ import {
   viewOptions,
 } from "./component-catalog.constants";
 
+import PageTemplateSamples from "./page-template-samples";
+
 function AppearanceSamples({ onAction }: { onAction: () => void }) {
   return (
     <>
@@ -71,7 +73,27 @@ function AppearanceSamples({ onAction }: { onAction: () => void }) {
         <Button size="sm" onClick={onAction}>
           추가하기
         </Button>
+        <Button variant="glass" onClick={onAction}>
+          등록
+        </Button>
+        <Button
+          variant="glass"
+          size="icon"
+          aria-label="알림"
+          onClick={onAction}
+        >
+          <Bell aria-hidden className="size-5 text-muted-foreground" />
+        </Button>
+        <Button variant="glass" disabled>
+          비활성 등록
+        </Button>
+        <Button variant="glass" size="icon" disabled aria-label="비활성 알림">
+          <Bell aria-hidden className="size-5 text-muted-foreground" />
+        </Button>
         <Button disabled>저장하기</Button>
+        <TextButton size="sm" onClick={onAction}>
+          전체 보기
+        </TextButton>
         <TextButton onClick={onAction}>모두 보기</TextButton>
         <TextButton size="sm" tone="danger" onClick={onAction}>
           삭제하기
@@ -126,6 +148,7 @@ function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
   const [enabled, setEnabled] = useState(true);
   const [checked, setChecked] = useState(false);
   const [quantity, setQuantity] = useState(2);
+  const [stepperOpen, setStepperOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [removed, setRemoved] = useState(false);
@@ -147,6 +170,7 @@ function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
         {theme === "light" ? "라이트" : "다크"}
       </Text>
       <AppearanceSamples onAction={showToast} />
+      <PageTemplateSamples onAction={showToast} />
 
       <SectionHeader title="선택과 필터" />
       <div className="grid gap-4 py-4">
@@ -186,13 +210,6 @@ function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
       <div className="flex flex-wrap items-center gap-4 py-4">
         <Switch aria-label="비활성 스위치" disabled />
         <Checkbox aria-label="비활성 체크" disabled />
-        <QuantityStepper
-          label="견본 수량"
-          value={quantity}
-          min={0}
-          max={10}
-          onValueChange={setQuantity}
-        />
       </div>
       <FormFieldRow label="이름" htmlFor={`${fieldId}-name`}>
         {(controlProps) => (
@@ -207,6 +224,31 @@ function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
       >
         {(controlProps) => <input {...controlProps} defaultValue="" />}
       </FormFieldRow>
+
+      <SectionHeader title="수량 스테퍼" />
+      <div className="flex flex-wrap items-center gap-4 py-4">
+        <Text variant="caption">기본</Text>
+        <QuantityStepper
+          label="견본 수량"
+          value={quantity}
+          min={0}
+          max={10}
+          onValueChange={setQuantity}
+        />
+      </div>
+      <div className="flex flex-wrap items-center gap-4 pb-4">
+        <Text variant="caption">접힘 · 눌러서 펼치기</Text>
+        <QuantityStepper
+          label="접힘 견본"
+          value={quantity}
+          unit="팩"
+          allowDirectInput
+          onValueChange={setQuantity}
+          min={0}
+          max={10}
+          collapsible={{ open: stepperOpen, onOpenChange: setStepperOpen }}
+        />
+      </div>
 
       <SectionHeader
         title="목록과 카테고리"
@@ -268,6 +310,9 @@ function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
           title="견본 시트"
           description="공용 입력 행을 담은 견본이에요"
           trigger={<Button>시트 열기</Button>}
+          leadingAction={(onOpenChange) => (
+            <TextButton onClick={() => onOpenChange(false)}>취소</TextButton>
+          )}
           action={
             <TextButton onClick={() => setSheetOpen(false)}>
               완료하기

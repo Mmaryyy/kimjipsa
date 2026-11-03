@@ -8,6 +8,7 @@ import {
   ErrorState,
   ListSkeleton,
   PageHeader,
+  PageLayout,
   Sheet,
   TextButton,
 } from "@/shared/ui";
@@ -43,21 +44,26 @@ export function EventCategoriesPage() {
     undefined,
   );
   return (
-    <div data-od-id="lists-main">
-      <PageHeader
-        odId="lists"
-        title="일정 카테고리"
-        navigation={
-          <Link
-            href={settingsPath}
-            data-od-id="lists-back"
-            className="inline-flex min-h-11 items-center gap-1 text-primary"
-          >
-            <ChevronLeft size={20} />
-            설정
-          </Link>
-        }
-      />
+    <PageLayout
+      width="narrow"
+      odId="lists-main"
+      header={
+        <PageHeader
+          odId="lists"
+          title="일정 카테고리"
+          navigation={
+            <Link
+              href={settingsPath}
+              data-od-id="lists-back"
+              className="inline-flex min-h-11 items-center gap-1 text-primary"
+            >
+              <ChevronLeft size={20} />
+              설정
+            </Link>
+          }
+        />
+      }
+    >
       <section
         className="mt-4"
         aria-label="일정 카테고리 목록"
@@ -102,6 +108,6 @@ export function EventCategoriesPage() {
           />
         )}
       </Sheet>
-    </div>
+    </PageLayout>
   );
 }

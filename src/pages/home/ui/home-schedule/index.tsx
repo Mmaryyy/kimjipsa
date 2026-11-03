@@ -11,7 +11,13 @@ import {
   useEventCategories,
   useEvents,
 } from "@/entities/event";
-import { ErrorState, PageHeader, SectionHeader, Text } from "@/shared/ui";
+import {
+  ErrorState,
+  PageHeader,
+  PageLayout,
+  SectionHeader,
+  Text,
+} from "@/shared/ui";
 
 import { CalendarView } from "@/widgets/calendar-view";
 import CelebrationCardList from "../celebration-card-list";
@@ -34,12 +40,14 @@ const HomeSchedule = () => {
 
   if (failed?.error)
     return (
-      <ErrorState
-        message={failed.error.message}
-        onRetry={() => {
-          void failed.refetch();
-        }}
-      />
+      <PageLayout width="wide" odId="home-main">
+        <ErrorState
+          message={failed.error.message}
+          onRetry={() => {
+            void failed.refetch();
+          }}
+        />
+      </PageLayout>
     );
 
   const loading = events.isPending || categories.isPending || family.isPending;
@@ -61,13 +69,18 @@ const HomeSchedule = () => {
   );
 
   return (
-    <>
-      <PageHeader
-        odId="home"
-        title="오늘"
-        subtitle={subtitle}
-        actions={<NotificationBell />}
-      />
+    <PageLayout
+      width="wide"
+      odId="home-main"
+      header={
+        <PageHeader
+          odId="home"
+          title="오늘"
+          subtitle={subtitle}
+          actions={<NotificationBell />}
+        />
+      }
+    >
       {events.data && (
         <CelebrationCardList events={events.data} instant={instant} />
       )}
@@ -121,7 +134,7 @@ const HomeSchedule = () => {
           </section>
         </div>
       </div>
-    </>
+    </PageLayout>
   );
 };
 

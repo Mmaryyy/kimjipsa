@@ -70,10 +70,12 @@ HTML 요소는 콘텐츠의 의미와 상호작용 목적에 맞게 고른다.
 
 레이아웃 컴포넌트는 구조적 역할과 책임으로 이름을 짓는다.
 
-- 권장: `PageHeader`, `PageFooter`, `AppLayout`, `BottomNavigation`, `SidebarNavigation`
+- 권장: `PageLayout`, `PageHeader`, `PageFooter`, `AppLayout`, `BottomNavigation`, `SidebarNavigation`
 - 지양: `TopBox`, `LeftArea`, `RightContainer`, `BottomWrapper`, `BlueSection`
 - 금지하는 것은 지금의 임의 배치나 외관을 이름에 박는 것이다(디자인이 바뀌면 이름이 거짓말이 된다). `BottomNavigation`, `Sidebar`, `Header`, `Footer`처럼 역할을 설명하는 관용 용어는 위치 단어가 들어 있어도 허용한다.
 - HTML 요소 하나를 감싸려고 컴포넌트를 만들지 않는다. 재사용, 상태 캡슐화, 의미 있는 합성, 디자인 일관성 중 하나가 있을 때만 분리한다.
+
+`PageLayout`(`src/shared/ui/page-layout/index.tsx`)은 페이지 폭(`wide`·`narrow`), `PageHeader` 머리, 본문을 조합한다. 새 페이지는 `DESIGN_SYSTEM.md` §2-1의 틀과 §2-2의 버튼 약속을 따른다.
 
 ## 5. 도메인 컴포넌트
 

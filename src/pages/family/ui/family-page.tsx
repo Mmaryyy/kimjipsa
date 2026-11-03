@@ -11,6 +11,7 @@ import {
   ListRow,
   ListSkeleton,
   PageHeader,
+  PageLayout,
   SectionHeader,
 } from "@/shared/ui";
 export function FamilyPage() {
@@ -18,23 +19,31 @@ export function FamilyPage() {
   const account = useAccount();
   if (family.isError || account.isError)
     return (
-      <ErrorState
-        message={(family.error ?? account.error)?.message}
-        onRetry={() => {
-          void family.refetch();
-          void account.refetch();
-        }}
-        retrying={family.isFetching || account.isFetching}
-      />
+      <PageLayout width="narrow">
+        <ErrorState
+          message={(family.error ?? account.error)?.message}
+          onRetry={() => {
+            void family.refetch();
+            void account.refetch();
+          }}
+          retrying={family.isFetching || account.isFetching}
+        />
+      </PageLayout>
     );
   if (family.isPending || account.isPending)
-    return <ListSkeleton label="가정과 구성원을 불러오고 있어요" />;
+    return (
+      <PageLayout width="narrow">
+        <ListSkeleton label="가정과 구성원을 불러오고 있어요" />
+      </PageLayout>
+    );
   if (!family.data)
     return (
-      <EmptyState
-        message="아직 소속된 가정이 없어요."
-        action={<Link href={accountRoutes.onboarding}>우리 집 만들기</Link>}
-      />
+      <PageLayout width="narrow">
+        <EmptyState
+          message="아직 소속된 가정이 없어요."
+          action={<Link href={accountRoutes.onboarding}>우리 집 만들기</Link>}
+        />
+      </PageLayout>
     );
   const members = family.data.members.map((member) => (
     <ListRow key={member.user_id}>
@@ -50,8 +59,11 @@ export function FamilyPage() {
     </ListRow>
   ));
   return (
-    <div className="grid gap-6">
-      <PageHeader title={family.data.name} />
+    <PageLayout
+      width="narrow"
+      className="grid gap-6"
+      header={<PageHeader title={family.data.name} />}
+    >
       <section aria-labelledby="family-members-title">
         <SectionHeader title="함께 쓰는 사람" id="family-members-title" />
         {members.length === 0 ? (
@@ -68,6 +80,6 @@ export function FamilyPage() {
       <Link href={accountRoutes.home} className="text-primary">
         오늘 화면으로 가기
       </Link>
-    </div>
+    </PageLayout>
   );
 }

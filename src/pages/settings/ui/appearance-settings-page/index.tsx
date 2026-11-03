@@ -3,6 +3,7 @@
 import {
   GroupLabel,
   PageHeader,
+  PageLayout,
   Text,
   TextButton,
   ThemeModeSelector,
@@ -24,16 +25,17 @@ const AppearanceSettingsPage = () => {
   const { onSignOut, pending, error } = useSignOut();
 
   return (
-    <div
+    <PageLayout
+      width="wide"
       className={cn([
         "[&>section]:mt-10 [&>section>[data-slot=group-label]]:pt-0",
         "[&_[data-slot=segmented-control]]:w-42 [&_[data-slot=field-row]>label]:w-auto",
         "[&_[data-slot=field-row]>label]:flex-1 [&_[data-slot=input]]:w-35",
         "[&_[data-slot=input]]:text-right",
       ])}
-      data-od-id="settings-main"
+      odId="settings-main"
+      header={<PageHeader odId="settings" title="설정" />}
     >
-      <PageHeader odId="settings" title="설정" />
       <AccountSettings />
       <NotificationSettings />
       <HomeSettings />
@@ -75,7 +77,7 @@ const AppearanceSettingsPage = () => {
           </Link>
         </div>
       )}
-    </div>
+    </PageLayout>
   );
 };
 

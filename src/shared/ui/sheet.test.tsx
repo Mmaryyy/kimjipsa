@@ -1,4 +1,5 @@
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -127,4 +128,43 @@ describe.each([true, false])("r127-f1 Sheet 터치 여부 %s", (coarse) => {
     fireEvent.click(screen.getByRole("button", { name: "취소" }));
     expect(onOpenChange).toHaveBeenCalledExactlyOnceWith(false);
   });
+});
+
+it("r184 키보드가 닫힌 뒤 늦게 복구된 viewport와 시트 여백을 반영해요", async () => {
+  pointer(true);
+  const viewport = new EventTarget();
+  let height = 400;
+  let offsetTop = 0;
+  Object.defineProperties(viewport, {
+    height: { get: () => height },
+    offsetTop: { get: () => offsetTop },
+  });
+  vi.stubGlobal("visualViewport", viewport);
+  const { unmount } = render(
+    <Sheet open title="키보드 시트" description="설명" onOpenChange={vi.fn()}>
+      <input aria-label="제목" />
+    </Sheet>,
+  );
+  const dialog = screen.getByRole("dialog", { name: "키보드 시트" });
+  await waitFor(() =>
+    expect(dialog.style.bottom).toBe(`${window.innerHeight - height}px`),
+  );
+  expect(screen.getByRole("textbox").parentElement).toHaveClass(
+    "-mx-4",
+    "px-4",
+  );
+  vi.useFakeTimers();
+  try {
+    fireEvent.focusOut(screen.getByRole("textbox"));
+    height = window.innerHeight;
+    offsetTop = -60;
+    await act(async () => {
+      vi.advanceTimersByTime(600);
+    });
+    expect(dialog.style.bottom).toBe("0px");
+    expect(dialog.style.getPropertyValue("--drawer-viewport-height")).toBe("");
+    unmount();
+  } finally {
+    vi.useRealTimers();
+  }
 });

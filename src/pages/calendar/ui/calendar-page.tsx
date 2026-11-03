@@ -13,7 +13,13 @@ import {
   eventDateInput,
   useCalendarClock,
 } from "@/entities/event";
-import { EmptyState, ErrorState, ListSkeleton, TextButton } from "@/shared/ui";
+import {
+  EmptyState,
+  ErrorState,
+  ListSkeleton,
+  TextButton,
+  PageLayout,
+} from "@/shared/ui";
 import { EventEditorSheet } from "./event-editor-sheet";
 import EventForm from "./event-form";
 import EventDetail from "./event-detail";
@@ -68,7 +74,7 @@ function EventList({
     );
   const loading = events.isPending || categories.isPending || family.isPending;
   return (
-    <div className="grid min-w-0 gap-10">
+    <PageLayout width="wide" className="grid gap-10">
       <CalendarView
         loading={loading}
         ownerNames={Object.fromEntries(
@@ -94,7 +100,7 @@ function EventList({
           limit={calendarDdayLimit}
         />
       )}
-    </div>
+    </PageLayout>
   );
 }
 

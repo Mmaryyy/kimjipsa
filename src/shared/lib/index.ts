@@ -12,5 +12,5 @@ export {
   nearestTab,
   cancelTabGesture,
   advanceTabSpring,
-  tabLensShape,
+  targetLiquidTab,
 } from "./liquid-tab-motion.utils";

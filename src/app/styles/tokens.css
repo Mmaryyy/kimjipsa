@@ -547,6 +547,16 @@
 }
 
 /* P10.6: liquid-glass reference material only. */
+/* 셀의 마스크와 선택 색이 렌즈 공개율을 함께 따라요. */
+[data-original] a {
+  --tab-active-color: color-mix(
+    in srgb,
+    var(--accent),
+    var(--label-secondary) calc(var(--lens-reveal, 0) * 100%)
+  );
+  --tab-face-cutout: rgb(255 255 255 / var(--lens-reveal, 0));
+}
+
 :root,
 [data-theme] {
   --glass-bg: rgb(255 255 255 / 78%);
@@ -559,15 +569,15 @@
   --glass-selected-opaque: #ededed;
   --glass-selected-shadow: none;
   --glass-selected-text: #000000;
-  --tab-lens-bg: rgb(0 0 0 / 7%);
+  --tab-lens-bg: rgb(255 255 255 / 6%);
   --tab-lens-shadow:
-    0 5px 14px rgb(29 29 31 / 16%), inset 0 1px 0 rgb(255 255 255 / 85%),
+    0 5px 14px rgb(29 29 31 / 6%), inset 0 1px 0 rgb(255 255 255 / 85%),
     inset 0 -1px 0 rgb(29 29 31 / 12%);
   --tab-lens-edge: linear-gradient(
     155deg,
     rgb(255 255 255 / 95%),
-    rgb(134 182 229 / 32%) 36%,
-    rgb(220 178 131 / 28%) 68%,
+    rgb(255 255 255 / 45%) 36%,
+    rgb(255 255 255 / 35%) 68%,
     rgb(255 255 255 / 80%)
   );
   --glass-border: rgb(199 199 204 / 60%);
@@ -615,13 +625,13 @@
     rgb(0 0 0 / 12%)
   );
   --glass-highlight: inset 0 1px 0 rgb(255 255 255 / 10%);
-  --tab-lens-bg: rgb(0 0 0 / 66%);
+  --tab-lens-bg: rgb(255 255 255 / 6%);
   --tab-lens-shadow:
-    0 5px 14px rgb(0 0 0 / 48%), inset 0 1px 0 rgb(255 255 255 / 24%);
+    0 5px 14px rgb(0 0 0 / 16%), inset 0 1px 0 rgb(255 255 255 / 65%);
   --tab-lens-edge: linear-gradient(
     155deg,
-    rgb(160 160 176 / 68%),
-    rgb(12 12 16 / 72%)
+    rgb(255 255 255 / 85%),
+    rgb(255 255 255 / 35%)
   );
   --shadow-glass:
     0 7px 22px rgb(0 0 0 / 32%), 0 1px 3px rgb(0 0 0 / 22%),
@@ -652,13 +662,13 @@
       rgb(0 0 0 / 12%)
     );
     --glass-highlight: inset 0 1px 0 rgb(255 255 255 / 10%);
-    --tab-lens-bg: rgb(0 0 0 / 66%);
+    --tab-lens-bg: rgb(255 255 255 / 6%);
     --tab-lens-shadow:
-      0 5px 14px rgb(0 0 0 / 48%), inset 0 1px 0 rgb(255 255 255 / 24%);
+      0 5px 14px rgb(0 0 0 / 16%), inset 0 1px 0 rgb(255 255 255 / 65%);
     --tab-lens-edge: linear-gradient(
       155deg,
-      rgb(160 160 176 / 68%),
-      rgb(12 12 16 / 72%)
+      rgb(255 255 255 / 85%),
+      rgb(255 255 255 / 35%)
     );
     --shadow-glass:
       0 7px 22px rgb(0 0 0 / 32%), 0 1px 3px rgb(0 0 0 / 22%),

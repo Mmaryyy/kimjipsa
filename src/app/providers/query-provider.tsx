@@ -67,6 +67,7 @@ function createQueryClient(onSessionExpired: (destination: string) => void) {
       error.status !== 401
     )
       return;
+    if (client.isMutating({ mutationKey: ["sign-out"] })) return;
     const { pathname } = window.location;
     if (isAccountEntry(pathname)) return;
     // 계정 조회로 로그인된 적이 확인된 경우에만 만료 안내를 보여 줘요.

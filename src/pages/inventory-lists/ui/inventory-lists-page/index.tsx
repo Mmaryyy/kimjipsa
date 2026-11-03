@@ -19,6 +19,7 @@ import { useCart, useCartActions } from "@/entities/cart-item";
 import { settingsPath, inventoryRoutes, cartRoutes } from "@/shared/config";
 import {
   PageHeader,
+  PageLayout,
   List,
   ListRow,
   TextButton,
@@ -199,21 +200,26 @@ const InventoryListsPage = () => {
       </section>
     );
   return (
-    <div data-od-id="lists-main" className="mx-auto lg:max-w-130">
-      <PageHeader
-        title={listLabels[kind]}
-        odId="lists"
-        navigation={
-          <Link
-            href={back.href}
-            data-od-id="lists-back"
-            className="flex w-fit items-center gap-1 text-primary"
-          >
-            <ChevronLeft aria-hidden size={16} />
-            {back.label}
-          </Link>
-        }
-      />
+    <PageLayout
+      width="narrow"
+      odId="lists-main"
+      header={
+        <PageHeader
+          title={listLabels[kind]}
+          odId="lists"
+          navigation={
+            <Link
+              href={back.href}
+              data-od-id="lists-back"
+              className="flex w-fit items-center gap-1 text-primary"
+            >
+              <ChevronLeft aria-hidden size={16} />
+              {back.label}
+            </Link>
+          }
+        />
+      }
+    >
       {content}
       <ConfirmDialog
         open={resetting}
@@ -239,7 +245,7 @@ const InventoryListsPage = () => {
         }}
         message={message}
       />
-    </div>
+    </PageLayout>
   );
 };
 export default InventoryListsPage;

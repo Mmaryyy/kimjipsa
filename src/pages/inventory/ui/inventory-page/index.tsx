@@ -17,6 +17,7 @@ import {
 } from "@/entities/inventory-item";
 import {
   PageHeader,
+  PageLayout,
   TextButton,
   Button,
   Input,
@@ -353,36 +354,39 @@ const InventoryPage = () => {
     );
   }
   return (
-    <div
-      data-od-id="inventory-main"
+    <PageLayout
+      width="narrow"
+      odId="inventory-main"
       className={cn([
-        "mx-auto flex min-h-[calc(100dvh-var(--bottom-navigation-offset)-env(safe-area-inset-bottom))] flex-col pb-4",
-        "lg:min-h-[calc(100dvh-var(--sp-10))] lg:max-w-130 lg:pb-0",
+        "flex min-h-[calc(100dvh-var(--bottom-navigation-offset)-env(safe-area-inset-bottom))] flex-col pb-4",
+        "lg:min-h-[calc(100dvh-var(--sp-10))] lg:pb-0",
       ])}
+      header={
+        <PageHeader
+          odId="inventory"
+          title="재고"
+          actions={
+            <>
+              <Button
+                variant="glass"
+                data-od-id="inv-add"
+                disabled={!meta.data || !items.data}
+                onClick={() => setEditor("new")}
+              >
+                등록
+              </Button>
+              <Button
+                variant="glass"
+                aria-label="재고 목록 설정"
+                onClick={() => setManage(true)}
+              >
+                설정
+              </Button>
+            </>
+          }
+        />
+      }
     >
-      <PageHeader
-        odId="inventory"
-        title="재고"
-        actions={
-          <>
-            <Button
-              variant="glass"
-              data-od-id="inv-add"
-              disabled={!meta.data || !items.data}
-              onClick={() => setEditor("new")}
-            >
-              등록
-            </Button>
-            <Button
-              variant="glass"
-              aria-label="재고 목록 설정"
-              onClick={() => setManage(true)}
-            >
-              설정
-            </Button>
-          </>
-        }
-      />
       {content}
       <Sheet
         open={manage}
@@ -462,7 +466,7 @@ const InventoryPage = () => {
         }}
         message={message}
       />
-    </div>
+    </PageLayout>
   );
 };
 export default InventoryPage;

@@ -7,7 +7,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setThemeMode } from "@/shared/lib";
 import type * as SharedApi from "@/shared/api";
 import AppearanceSettingsPage from ".";
@@ -17,13 +17,13 @@ vi.mock("../home-settings", () => ({ default: () => <div /> }));
 vi.mock("../account-settings", () => ({ default: () => <div /> }));
 vi.mock("../household-settings", () => ({ default: () => <div /> }));
 
-const { signOut, replace } = vi.hoisted(() => ({
+const { signOut, assign } = vi.hoisted(() => ({
   signOut: vi.fn(),
-  replace: vi.fn(),
+  assign: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ replace }),
+  useRouter: () => ({ replace: vi.fn() }),
 }));
 
 vi.mock("@/shared/api", async (importOriginal) => ({
@@ -53,12 +53,24 @@ function renderSettings() {
 describe("ACC-15 설정에서 로그아웃", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    const location = window.location;
+    vi.stubGlobal(
+      "window",
+      new Proxy(window, {
+        get(target, key) {
+          if (key === "location") return { ...location, assign };
+          return Reflect.get(target, key, target);
+        },
+      }),
+    );
     signOut.mockResolvedValue({ error: null });
   });
 
+  afterEach(() => vi.unstubAllGlobals());
+
   it("계정 구역에서 확인 없이 로그아웃하고 모든 캐시를 비운 뒤 로그인으로 이동해요", async () => {
     const queryClient = renderSettings();
-    replace.mockImplementation(() => {
+    assign.mockImplementation(() => {
       expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
       expect(queryClient.getMutationCache().getAll()).toHaveLength(0);
     });
@@ -66,7 +78,7 @@ describe("ACC-15 설정에서 로그아웃", () => {
     expect(screen.getByRole("region", { name: "계정" })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "로그아웃" }));
 
-    await waitFor(() => expect(replace).toHaveBeenCalledWith("/login"));
+    await waitFor(() => expect(assign).toHaveBeenCalledWith("/login"));
     expect(signOut).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
@@ -86,16 +98,18 @@ describe("ACC-15 설정에서 로그아웃", () => {
     await waitFor(() => expect(button).toBeDisabled());
     expect(button).toHaveAttribute("aria-busy", "true");
     fireEvent.click(button);
-    expect(signOut).toHaveBeenCalledTimes(1);
-    expect(replace).not.toHaveBeenCalled();
-    expect(queryClient.getQueryData(["account"])).toBeDefined();
+    await waitFor(() => expect(signOut).toHaveBeenCalledTimes(1));
+    expect(assign).not.toHaveBeenCalled();
+    expect(queryClient.getQueryData(["account"])).toEqual({
+      userId: "test-user",
+    });
 
     await act(async () => finishSignOut({ error: null }));
-    await waitFor(() => expect(replace).toHaveBeenCalledWith("/login"));
+    await waitFor(() => expect(assign).toHaveBeenCalledWith("/login"));
   });
 
   it.each(["응답 오류", "네트워크 오류"])(
-    "%s가 나면 한국어 알림을 보여 주고 캐시와 화면을 유지하며 재시도할 수 있어요",
+    "%s가 나면 한국어 알림을 보여 주고 화면을 유지하며 재시도할 수 있어요",
     async (failure) => {
       const error = new Error("internal error");
       if (failure === "응답 오류") signOut.mockResolvedValueOnce({ error });
@@ -109,12 +123,16 @@ describe("ACC-15 설정에서 로그아웃", () => {
       );
       expect(button).toBeEnabled();
       expect(button).toHaveAttribute("aria-busy", "false");
-      expect(replace).not.toHaveBeenCalled();
-      expect(queryClient.getQueryData(["account"])).toBeDefined();
-      expect(queryClient.getQueryData(["family"])).toBeDefined();
+      expect(assign).not.toHaveBeenCalled();
+      expect(queryClient.getQueryData(["account"])).toEqual({
+        userId: "test-user",
+      });
+      expect(queryClient.getQueryData(["family"])).toEqual({
+        name: "테스트 가정",
+      });
 
       fireEvent.click(button);
-      await waitFor(() => expect(replace).toHaveBeenCalledWith("/login"));
+      await waitFor(() => expect(assign).toHaveBeenCalledWith("/login"));
       expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     },
   );
@@ -125,7 +143,7 @@ describe("ACC-15 설정에서 로그아웃", () => {
     queryClient.setQueryData(["account"], { userId: null });
     fireEvent.click(screen.getByRole("button", { name: "로그아웃" }));
 
-    await waitFor(() => expect(replace).toHaveBeenCalledWith("/login"));
+    await waitFor(() => expect(assign).toHaveBeenCalledWith("/login"));
     expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });

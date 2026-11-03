@@ -1,11 +1,7 @@
 import HomeSchedule from "./home-schedule";
 
 const HomePage = () => {
-  return (
-    <div data-od-id="home-main">
-      <HomeSchedule />
-    </div>
-  );
+  return <HomeSchedule />;
 };
 
 export default HomePage;

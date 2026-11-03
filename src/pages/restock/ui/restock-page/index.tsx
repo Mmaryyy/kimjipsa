@@ -12,6 +12,7 @@ import {
   List,
   ListSkeleton,
   PageHeader,
+  PageLayout,
 } from "@/shared/ui";
 import { RestockForm, type RestockResults } from "@/features/cart-checkout";
 const RestockPage = () => {
@@ -101,32 +102,37 @@ const RestockPage = () => {
       />
     );
   return (
-    <div data-od-id="restock-main" className="mx-auto lg:max-w-130">
-      <PageHeader
-        title={results ? "반영했어요" : "재고 반영"}
-        odId="restock"
-        navigation={
-          <Link
-            data-od-id="restock-back"
-            href={cartRoutes.cart}
-            className="inline-flex min-h-11 items-center text-primary"
-          >
-            ‹ 장바구니
-          </Link>
-        }
-        subtitle={
-          results
-            ? `구매한 ${results.length}개 품목이 장바구니에서 빠지고 구매 기록에 남았어요.`
-            : "구매한 품목을 재고에 반영하기 전에 확인해 주세요."
-        }
-      />
+    <PageLayout
+      width="narrow"
+      odId="restock-main"
+      header={
+        <PageHeader
+          title={results ? "반영했어요" : "재고 반영"}
+          odId="restock"
+          navigation={
+            <Link
+              data-od-id="restock-back"
+              href={cartRoutes.cart}
+              className="inline-flex min-h-11 items-center text-primary"
+            >
+              ‹ 장바구니
+            </Link>
+          }
+          subtitle={
+            results
+              ? `구매한 ${results.length}개 품목이 장바구니에서 빠지고 구매 기록에 남았어요.`
+              : "구매한 품목을 재고에 반영하기 전에 확인해 주세요."
+          }
+        />
+      }
+    >
       {cart.offline && !results && (
         <Banner title="연결이 끊겼어요." variant="warning">
           연결이 돌아온 뒤 재고에 반영할 수 있어요.
         </Banner>
       )}
       {content}
-    </div>
+    </PageLayout>
   );
 };
 export default RestockPage;

@@ -11,13 +11,14 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/shared/api";
 import type * as SharedApi from "@/shared/api";
 import type * as SharedUi from "@/shared/ui";
 import { ToastProvider } from "@/shared/ui";
-import { useAccount } from "@/features/account";
+import { useAccount, useSignOut } from "@/features/account";
 import { AccountGate } from "@/widgets/account-gate";
 import { QueryProvider } from "./query-provider";
 
@@ -27,9 +28,11 @@ const toast = vi.hoisted(() => ({
 }));
 const accountRequest = vi.hoisted(() => vi.fn());
 const replace = vi.hoisted(() => vi.fn());
+const signOut = vi.hoisted(() => vi.fn());
 vi.mock("@/shared/api", async (importOriginal) => ({
   ...(await importOriginal<typeof SharedApi>()),
   request: (...args: unknown[]) => accountRequest(...args),
+  createBrowserSupabaseClient: () => ({ auth: { signOut } }),
 }));
 vi.mock("next/navigation", () => ({
   usePathname: () => window.location.pathname,
@@ -86,6 +89,17 @@ function AccountScreen() {
     <p>계정 조회 오류</p>
   ) : (
     <p>{account.data?.profile?.displayName}님의 일정</p>
+  );
+}
+function SignOutScreen() {
+  const { onSignOut, pending, error } = useSignOut();
+  return (
+    <>
+      <button onClick={onSignOut} disabled={pending}>
+        로그아웃
+      </button>
+      {error && <p role="alert">{error}</p>}
+    </>
   );
 }
 function gatedApp() {
@@ -156,6 +170,94 @@ describe("ACC-01 ACC-05 SCN-ACC-2 로그인 만료 안내", () => {
     vi.unstubAllGlobals();
     vi.clearAllMocks();
     toast.real = false;
+  });
+
+  it("ACC-14 로그아웃 중 쿼리 401은 만료 안내 없이 로그인 문서를 열어요", async () => {
+    window.history.replaceState(null, "", "/settings");
+    let finishSignOut!: (result: { error: null }) => void;
+    signOut.mockImplementationOnce(
+      () => new Promise((resolve) => (finishSignOut = resolve)),
+    );
+    render(
+      <QueryProvider>
+        <Requests />
+        <SignOutScreen />
+      </QueryProvider>,
+    );
+    confirmSignedIn();
+    const cancelQueries = vi.spyOn(client, "cancelQueries");
+    fireEvent.click(screen.getByRole("button", { name: "로그아웃" }));
+    await waitFor(() => expect(signOut).toHaveBeenCalledOnce());
+    expect(cancelQueries).toHaveBeenCalledOnce();
+    expect(client.getQueryData(["account"])).toMatchObject({
+      userId: "signed-in-user",
+    });
+    await expireSession("query", "events-during-sign-out");
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    const assign = vi.fn();
+    const originalWindow = window;
+    vi.stubGlobal("window", { location: { assign } });
+    try {
+      await act(async () => finishSignOut({ error: null }));
+    } finally {
+      vi.stubGlobal("window", originalWindow);
+    }
+    await waitFor(() => expect(assign).toHaveBeenCalledWith("/login"));
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it("ACC-14 로그아웃 실패는 오류 문구를 보여 주고 다시 시도할 수 있어요", async () => {
+    window.history.replaceState(null, "", "/settings");
+    signOut.mockResolvedValue({ error: new Error("인증 오류") });
+    render(
+      <QueryProvider>
+        <Requests />
+        <SignOutScreen />
+      </QueryProvider>,
+    );
+    confirmSignedIn();
+    fireEvent.click(screen.getByRole("button", { name: "로그아웃" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "로그아웃하지 못했어요. 다시 시도해 주세요.",
+    );
+    expect(screen.getByRole("button", { name: "로그아웃" })).toBeEnabled();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "로그아웃" }));
+    await waitFor(() => expect(signOut).toHaveBeenCalledTimes(2));
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it("ACC-14 로그아웃 실패와 재시도 중에도 게이트의 화면 내용을 유지해요", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("matchMedia", () => ({ matches: false }));
+    window.history.replaceState(null, "", "/settings");
+    accountRequest.mockResolvedValue({
+      userId: "signed-in-user",
+      profile: { displayName: "지수", termsVersion: "beta-2026-10-30" },
+      membership: { familyId: "family", role: "admin" },
+    });
+    signOut.mockResolvedValue({ error: new Error("인증 오류") });
+    render(
+      <QueryProvider>
+        <Requests />
+        <AccountGate splash={() => <p>스플래시</p>}>
+          <AccountScreen />
+          <SignOutScreen />
+        </AccountGate>
+      </QueryProvider>,
+    );
+    await settleAccountGate();
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      fireEvent.click(screen.getByRole("button", { name: "로그아웃" }));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(10);
+      });
+      expect(screen.getByText("지수님의 일정")).toBeVisible();
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "로그아웃하지 못했어요",
+      );
+      expect(screen.queryByText("스플래시")).not.toBeInTheDocument();
+    }
   });
 
   it("처음부터 로그아웃이면 스플래시 뒤 로그인 시작 화면으로 이동해요", async () => {

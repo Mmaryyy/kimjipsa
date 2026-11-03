@@ -1,7 +1,19 @@
 import { cn } from "@/shared/lib";
 import type { ReactNode } from "react";
 import { Text } from "./text";
-export function PageHeader({
+interface Props {
+  title: string;
+  titleAriaLabel?: string;
+  titleId?: string;
+  headingLevel?: 1 | 2 | 3;
+  actions?: ReactNode;
+  navigation?: ReactNode;
+  children?: ReactNode;
+  titleOdId?: string;
+  subtitle?: string;
+  odId?: string;
+}
+const PageHeader = ({
   title,
   actions,
   subtitle,
@@ -10,16 +22,9 @@ export function PageHeader({
   children,
   titleOdId,
   titleAriaLabel,
-}: {
-  title: string;
-  titleAriaLabel?: string;
-  actions?: ReactNode;
-  navigation?: ReactNode;
-  children?: ReactNode;
-  titleOdId?: string;
-  subtitle?: string;
-  odId?: string;
-}) {
+  titleId,
+  headingLevel = 1,
+}: Props) => {
   return (
     <header className="kj-page-header" data-od-id={odId && `${odId}-header`}>
       {navigation && (
@@ -32,10 +37,12 @@ export function PageHeader({
           {navigation}
         </div>
       )}
-      <div className="relative flex items-center gap-2 [&_h1]:min-w-0 [&_h1]:flex-1">
+      <div className="relative flex items-center gap-2">
         <div className="flex min-w-0 flex-1 items-center">
           <Text
-            as="h1"
+            as={`h${headingLevel}`}
+            className="min-w-0 flex-1"
+            id={titleId}
             aria-label={titleAriaLabel}
             variant="title-lg"
             data-od-id={titleOdId ?? (odId && `${odId}-title`)}
@@ -63,4 +70,5 @@ export function PageHeader({
       {children}
     </header>
   );
-}
+};
+export default PageHeader;
