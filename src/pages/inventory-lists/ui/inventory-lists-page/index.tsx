@@ -1,14 +1,10 @@
 "use client";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useState } from "react";
-import {
-  ArrowUp,
-  ArrowDown,
-  ChevronLeft,
-  ChevronRight,
-  Plus,
-} from "lucide-react";
+import { useRef, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { arrayMove } from "@dnd-kit/sortable";
+import SortableList from "@/shared/ui/sortable-list";
 import {
   useInventoryMeta,
   useInventoryActions,
@@ -18,6 +14,7 @@ import {
 import { useCart, useCartActions } from "@/entities/cart-item";
 import { settingsPath, inventoryRoutes, cartRoutes } from "@/shared/config";
 import {
+  Button,
   PageHeader,
   PageLayout,
   List,
@@ -55,18 +52,41 @@ const InventoryListsPage = () => {
   const categories = [...(meta.data?.categories ?? [])].sort(
     (a, b) => a.sort_order - b.sort_order,
   );
-  const moveCategory = async (index: number, direction: number) => {
-    if (cart.offline || orderAction.isPending) return;
-    const ids = categories.map((entry) => entry.id);
-    const target = index + direction;
-    if (target < 0 || target >= ids.length) return;
-    [ids[index], ids[target]] = [ids[target]!, ids[index]!];
+  const [localCategories, setLocalCategories] = useState<
+    InventoryMetaEntry[] | null
+  >(null);
+  const [ordering, setOrdering] = useState(false);
+  const orderSnapshot = useRef<InventoryMetaEntry[] | null>(null);
+  const moveCategory = async (activeId: string, overId: string) => {
+    if (cart.offline || ordering || orderAction.isPending) return;
+    const source = orderSnapshot.current ?? categories;
+    const from = source.findIndex((entry) => entry.id === activeId);
+    const to = source.findIndex((entry) => entry.id === overId);
+    if (from < 0 || to < 0 || from === to) {
+      setLocalCategories(null);
+      orderSnapshot.current = null;
+      return;
+    }
+    const next = arrayMove(source, from, to);
+    setLocalCategories(next);
+    setOrdering(true);
     try {
-      await orderAction.mutateAsync({ action: "order", ids });
+      await orderAction.mutateAsync({
+        action: "order",
+        ids: next.map((entry) => entry.id),
+      });
+      await meta.refetch();
+      setMessage("순서를 저장했어요");
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "다시 시도해 주세요.";
       setMessage(
-        error instanceof Error ? error.message : "순서를 바꾸지 못했어요.",
+        `순서를 저장하지 못해 원래 순서로 되돌렸어요. ${errorMessage}`,
       );
+    } finally {
+      setLocalCategories(null);
+      orderSnapshot.current = null;
+      setOrdering(false);
     }
   };
   const [editor, setEditor] = useState<InventoryMetaEntry | "new" | null>(null);
@@ -102,53 +122,46 @@ const InventoryListsPage = () => {
         {meta.data[kind].length === 0 && (
           <EmptyState message="아직 등록한 목록이 없어요." />
         )}
-        <List data-od-id="lists-items">
-          {(kind === "categories" ? categories : meta.data[kind]).map(
-            (entry, index) => (
+        {kind === "categories" ? (
+          <SortableList
+            items={localCategories ?? categories}
+            onEdit={setEditor}
+            disabled={cart.offline || !cart.data}
+            busy={ordering || orderAction.isPending}
+            onDragStart={(items) => {
+              setMessage("");
+              orderSnapshot.current = items;
+              setLocalCategories(items);
+            }}
+            onDragCancel={() => {
+              orderSnapshot.current = null;
+              setLocalCategories(null);
+            }}
+            onMove={(activeId, overId) => void moveCategory(activeId, overId)}
+            renderItem={(entry) => (
+              <>
+                <InventoryCategoryIcon category={entry} />
+                <span className="min-w-0 flex-1 truncate text-left">
+                  {entry.name}
+                </span>
+                <ChevronRight
+                  aria-hidden
+                  className="size-4 text-[var(--icon-tertiary)]"
+                />
+              </>
+            )}
+          />
+        ) : (
+          <List data-od-id="lists-items">
+            {meta.data[kind].map((entry) => (
               <ListRow
                 key={entry.id}
                 className="py-0"
-                leading={
-                  kind === "categories" ? (
-                    <InventoryCategoryIcon category={entry} />
-                  ) : undefined
-                }
                 trailing={
-                  kind === "categories" ? (
-                    <div className="flex shrink-0">
-                      <TextButton
-                        className="size-11"
-                        aria-label={`${entry.name} 위로 이동`}
-                        disabled={
-                          cart.offline ||
-                          !cart.data ||
-                          orderAction.isPending ||
-                          index === 0
-                        }
-                        onClick={() => void moveCategory(index, -1)}
-                      >
-                        <ArrowUp size={16} aria-hidden />
-                      </TextButton>
-                      <TextButton
-                        className="size-11"
-                        aria-label={`${entry.name} 아래로 이동`}
-                        disabled={
-                          cart.offline ||
-                          !cart.data ||
-                          orderAction.isPending ||
-                          index === categories.length - 1
-                        }
-                        onClick={() => void moveCategory(index, 1)}
-                      >
-                        <ArrowDown size={16} aria-hidden />
-                      </TextButton>
-                    </div>
-                  ) : (
-                    <ChevronRight
-                      aria-hidden
-                      className="size-4 text-[var(--icon-tertiary)]"
-                    />
-                  )
+                  <ChevronRight
+                    aria-hidden
+                    className="size-4 text-[var(--icon-tertiary)]"
+                  />
                 }
               >
                 <TextButton
@@ -166,13 +179,10 @@ const InventoryListsPage = () => {
                   )}
                 </TextButton>
               </ListRow>
-            ),
-          )}
-        </List>
+            ))}
+          </List>
+        )}
         <div className="mt-3 grid justify-items-start gap-1">
-          <TextButton data-od-id="lists-add" onClick={() => setEditor("new")}>
-            <Plus aria-hidden size={16} /> {listLabels[kind]} 추가
-          </TextButton>
           <TextButton
             size="sm"
             className="text-muted-foreground"
@@ -207,6 +217,17 @@ const InventoryListsPage = () => {
         <PageHeader
           title={listLabels[kind]}
           odId="lists"
+          actions={
+            <Button
+              variant="glass"
+              data-od-id="lists-add"
+              aria-label={`${listLabels[kind]} 추가`}
+              disabled={!meta.data || meta.isError || ordering}
+              onClick={() => setEditor("new")}
+            >
+              추가
+            </Button>
+          }
           navigation={
             <Link
               href={back.href}

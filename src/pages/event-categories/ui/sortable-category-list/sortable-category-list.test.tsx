@@ -11,7 +11,7 @@ import {
   type EventCategory,
 } from "@/entities/event";
 import { ToastProvider } from "@/shared/ui";
-import { SortableCategoryList } from "./sortable-category-list";
+import SortableCategoryList from ".";
 
 // 드래그 센서만 대체하고 저장 훅과 공용 토스트는 그대로 확인해요.
 vi.mock("@dnd-kit/core", async (original) => ({

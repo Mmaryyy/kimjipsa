@@ -42,7 +42,37 @@ import {
   viewOptions,
 } from "./component-catalog.constants";
 
+import SortableList from "@/shared/ui/sortable-list";
+
 import PageTemplateSamples from "./page-template-samples";
+
+const SortableListSample = () => {
+  const [items, setItems] = useState([
+    { id: "food", name: "식품" },
+    { id: "house", name: "생활용품" },
+  ]);
+  return (
+    <>
+      <Text as="p" variant="caption">
+        손잡이를 끌거나 스페이스로 집고 방향키로 이동한 뒤 스페이스로 놓으세요.
+        ESC로 취소해요.
+      </Text>
+      <SortableList
+        items={items}
+        onEdit={() => {}}
+        renderItem={(item) => <span>{item.name}</span>}
+        onMove={(active, over) => {
+          const next = [...items];
+          const from = next.findIndex((item) => item.id === active);
+          const to = next.findIndex((item) => item.id === over);
+          const [item] = next.splice(from, 1);
+          if (item) next.splice(to, 0, item);
+          setItems(next);
+        }}
+      />
+    </>
+  );
+};
 
 const InventoryCapsuleSample = ({
   initialValue,
@@ -304,6 +334,7 @@ function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
           </TextButton>
         }
       />
+      <SortableListSample />
       <ListGroupLabel>그룹 이름</ListGroupLabel>
       <List>
         <ListRow

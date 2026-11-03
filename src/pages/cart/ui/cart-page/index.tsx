@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Check, Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import {
   cartInputSchema,
   useCart,
@@ -31,7 +31,6 @@ import {
   SkeletonSection,
   PageHeader,
   PageLayout,
-  Text,
   TextButton,
   Toast,
 } from "@/shared/ui";
@@ -47,15 +46,7 @@ const CartSkeleton = ({ frequent }: { frequent: boolean }) => (
           추가
         </Button>
       </div>
-      {frequent && (
-        <section className="mt-4">
-          <GroupLabel className="pt-0">자주 사는 품목</GroupLabel>
-          <div className="flex gap-4 pt-1 pb-2.5">
-            <Skeleton className="h-[var(--ctl-h-sm)] w-20" />
-            <Skeleton className="h-[var(--ctl-h-sm)] w-20" />
-          </div>
-        </section>
-      )}
+      <div className="h-14" />
       <GroupLabel className="flex h-[calc(var(--sp-5)+var(--sp-half)+var(--type-caption-lh))] items-center">
         <Skeleton className="h-3 w-16" />
       </GroupLabel>
@@ -69,10 +60,15 @@ const CartSkeleton = ({ frequent }: { frequent: boolean }) => (
           </li>
         ))}
       </List>
-      <div className="mt-4 py-2.5">
-        <Skeleton className="h-[var(--type-body-sm-lh)] w-24" />
-        <Button disabled>구매 완료</Button>
-      </div>
+      {frequent && (
+        <section className="mt-4">
+          <GroupLabel className="pt-0">자주 사는 품목</GroupLabel>
+          <div className="flex gap-4 pt-1 pb-2.5">
+            <Skeleton className="h-[var(--ctl-h-sm)] w-20" />
+            <Skeleton className="h-[var(--ctl-h-sm)] w-20" />
+          </div>
+        </section>
+      )}
     </div>
   </SkeletonSection>
 );
@@ -88,14 +84,12 @@ const CartPage = () => {
   const [unitError, setUnitError] = useState("");
   const [resolvingUnit, setResolvingUnit] = useState(false);
   const [name, setName] = useState("");
-  const [editing, setEditing] = useState(false);
   const [openedRow, setOpenedRow] = useState<string | null>(null);
-  const [selection, setSelection] = useState<string[]>([]);
   const [checkout, setCheckout] = useState<CartItem[] | null>(null);
   const [batchPending, setBatchPending] = useState(false);
   const [editor, setEditor] = useState<CartItem | null>(null);
   const [clear, setClear] = useState<{
-    action: "clear-checked" | "delete-selected";
+    action: "clear-checked";
     ids: string[];
   } | null>(null);
   const [checkoutChecks, setCheckoutChecks] = useState<string[]>([]);
@@ -115,7 +109,6 @@ const CartPage = () => {
   const items = cart.data?.items.filter((item) => !item.purchased_at) ?? [];
   const checked = items.filter((item) => item.is_checked);
   const pending = cart.offline || !cart.data || !meta.data || batchPending;
-  const selected = items.filter((item) => selection.includes(item.id));
   const busy = pending || action.isPending || action.pendingIds.length > 0;
   useEffect(() => {
     if (!openedRow) return;
@@ -141,14 +134,7 @@ const CartPage = () => {
       document.removeEventListener("keydown", escape);
     };
   }, [openedRow]);
-  const finishEditing = () => {
-    setEditing(false);
-    setSelection([]);
-  };
-  const processItems = async (
-    targets: CartItem[],
-    operation: "check" | "purchase",
-  ) => {
+  const processItems = async (targets: CartItem[]) => {
     if (busy || !targets.length) return;
     setOpenedRow(null);
     setBatchPending(true);
@@ -161,14 +147,11 @@ const CartPage = () => {
             checked: true,
           });
       }
-      if (operation === "purchase") {
-        setCheckoutChecks(
-          targets.filter((item) => !item.is_checked).map((item) => item.id),
-        );
-        setCheckout(targets.map((item) => ({ ...item, is_checked: true })));
-      }
+      setCheckoutChecks(
+        targets.filter((item) => !item.is_checked).map((item) => item.id),
+      );
+      setCheckout(targets.map((item) => ({ ...item, is_checked: true })));
       setClear(null);
-      finishEditing();
     } catch (error) {
       const reason =
         error instanceof Error ? error.message : "다시 시도해 주세요.";
@@ -190,20 +173,11 @@ const CartPage = () => {
         setMessage(`${deleted.name} 지웠어요`);
       }
       setClear(null);
-      if (command.action === "delete-selected") finishEditing();
     } catch (reason) {
       setMessage(
         reason instanceof Error ? reason.message : "변경하지 못했어요.",
       );
     }
-  };
-  const deleteItems = (targets: CartItem[]) => {
-    if (targets.length > 1)
-      setClear({
-        action: "delete-selected",
-        ids: targets.map((item) => item.id),
-      });
-    else if (targets[0]) void write({ action: "delete", id: targets[0].id });
   };
   const closeCheckout = async () => {
     if (busy) return;
@@ -368,18 +342,9 @@ const CartPage = () => {
         cart.data?.members.find((member) => member.user_id === item.checked_by)
           ?.display_name ?? "탈퇴한 사용자"
       }
-      editing={editing}
-      selected={selection.includes(item.id)}
       open={openedRow === item.id && !pending}
       onOpenChange={(open) => setOpenedRow(open ? item.id : null)}
-      onSelect={() =>
-        setSelection((ids) =>
-          ids.includes(item.id)
-            ? ids.filter((id) => id !== item.id)
-            : [...ids, item.id],
-        )
-      }
-      onPurchase={() => void processItems([item], "purchase")}
+      onPurchase={() => void processItems([item])}
       onQuantityChange={(quantity) => {
         if (quantity !== item.quantity)
           void write({
@@ -428,7 +393,6 @@ const CartPage = () => {
     ].map((category, index) => {
       const rows = items.filter(
         (item) =>
-          !item.is_checked &&
           (categories.some((entry) => entry.id === item.category_id)
             ? item.category_id
             : otherId) === category.id,
@@ -475,6 +439,41 @@ const CartPage = () => {
             {add.error}
           </p>
         )}
+        <div
+          data-od-id="cart-actions"
+          className={cn([
+            "sticky top-[env(safe-area-inset-top)] z-20 flex h-14 shrink-0",
+            "items-center justify-end gap-2 bg-background",
+          ])}
+        >
+          {checked.length > 0 && (
+            <>
+              <Button
+                size="sm"
+                disabled={busy}
+                onClick={() => void processItems(checked)}
+              >
+                구매 완료({checked.length})
+              </Button>
+              <Button
+                size="sm"
+                variant="danger"
+                disabled={busy}
+                onClick={() =>
+                  setClear({
+                    action: "clear-checked",
+                    ids: checked.map((item) => item.id),
+                  })
+                }
+              >
+                삭제
+              </Button>
+            </>
+          )}
+        </div>
+        <div data-od-id="cart-list">
+          {items.length ? groups : <EmptyState message="장바구니가 비었어요" />}
+        </div>
         {frequent.length > 0 && (
           <section data-od-id="cart-frequent" className="mt-4">
             <GroupLabel as="h2" className="pt-0">
@@ -495,61 +494,6 @@ const CartPage = () => {
               ))}
             </div>
           </section>
-        )}
-        <div data-od-id="cart-list">
-          {items.some((item) => !item.is_checked) ? (
-            groups
-          ) : (
-            <EmptyState message="살 것을 모두 담았어요" />
-          )}
-        </div>
-        {checked.length > 0 && (
-          <section data-od-id="cart-checked" className="mt-6">
-            <div className="flex items-center justify-between">
-              <Text as="h2" variant="headline" data-od-id="cart-checked-title">
-                담은 항목
-              </Text>
-              {!cart.offline && (
-                <TextButton
-                  tone="danger"
-                  data-od-id="cart-clear-checked"
-                  disabled={pending}
-                  onClick={() =>
-                    setClear({
-                      action: "clear-checked",
-                      ids: checked.map((item) => item.id),
-                    })
-                  }
-                >
-                  일괄 삭제
-                </TextButton>
-              )}
-            </div>
-            <List>{checked.map(renderRow)}</List>
-          </section>
-        )}
-        {checked.length > 0 && !editing && (
-          <div className="mt-4 py-2.5" data-od-id="cart-buy-bar">
-            <Button
-              size="block"
-              aria-label={`장바구니 구매 완료, ${checked.length}개`}
-              data-od-id="cart-purchase-complete"
-              disabled={busy}
-              onClick={() => void processItems(checked, "purchase")}
-            >
-              장바구니 구매 완료
-              <span
-                aria-hidden="true"
-                className={cn([
-                  "ml-1 inline-flex h-6 min-w-6 items-center justify-center",
-                  "rounded-full bg-primary-foreground px-1",
-                  "text-caption font-semibold text-primary tabular-nums",
-                ])}
-              >
-                {checked.length}
-              </span>
-            </Button>
-          </div>
         )}
       </>
     );
@@ -573,18 +517,6 @@ const CartPage = () => {
           }
           actions={
             <>
-              <Button
-                variant="glass"
-                data-od-id="cart-edit"
-                disabled={busy}
-                onClick={() => {
-                  setOpenedRow(null);
-                  if (editing) finishEditing();
-                  else setEditing(true);
-                }}
-              >
-                {editing ? "완료" : "편집"}
-              </Button>
               <Button variant="glass" asChild>
                 <Link
                   href={inventoryListPath("categories", "cart")}
@@ -613,61 +545,6 @@ const CartPage = () => {
           message={cart.error.message}
           onRetry={() => void cart.refetch()}
         />
-      )}
-      {editing && (
-        <section
-          aria-label="선택 항목 처리"
-          className="my-3 flex flex-row justify-between items-center gap-2"
-        >
-          <div className="flex flex-row gap-2 items-center">
-            <TextButton
-              disabled={busy || !items.length}
-              onClick={() =>
-                setSelection(
-                  selected.length === items.length
-                    ? []
-                    : items.map((item) => item.id),
-                )
-              }
-            >
-              {selected.length === items.length && items.length > 0
-                ? "전체 해제"
-                : "전체 선택"}
-            </TextButton>
-            <span className="text-caption text-muted-foreground">
-              {selected.length}개
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Button
-              size="icon-sm"
-              variant="gray"
-              aria-label="선택 항목 담기"
-              disabled={busy || !selected.length}
-              onClick={() => void processItems(selected, "check")}
-            >
-              <Plus aria-hidden className="text-primary!" />
-            </Button>
-            <Button
-              size="icon-sm"
-              variant="primary"
-              aria-label="선택 항목 구매 완료"
-              disabled={busy || !selected.length}
-              onClick={() => void processItems(selected, "purchase")}
-            >
-              <Check aria-hidden />
-            </Button>
-            <Button
-              size="icon-sm"
-              variant="danger"
-              aria-label="선택 항목 삭제"
-              disabled={busy || !selected.length}
-              onClick={() => deleteItems(selected)}
-            >
-              <Trash2 aria-hidden />
-            </Button>
-          </div>
-        </section>
       )}
       {content}
       {checkout && (
@@ -728,7 +605,7 @@ const CartPage = () => {
         onOpenChange={(open) => {
           if (!open) setClear(null);
         }}
-        title={`선택한 항목 ${clear?.ids.length ?? 0}개를 삭제할까요?`}
+        title={`체크한 항목 ${clear?.ids.length ?? 0}개를 삭제할까요?`}
         description="재고에는 반영되지 않아요."
         pending={busy}
         onConfirm={() => {

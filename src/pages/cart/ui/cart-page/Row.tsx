@@ -12,13 +12,10 @@ interface Props {
   index: number;
   unit: string;
   checkedBy: string;
-  editing: boolean;
   disabled: boolean;
   pending: boolean;
-  selected: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSelect: () => void;
   onPurchase: () => void;
   onQuantityChange: (quantity: number) => void;
   onCheck: () => void;
@@ -30,13 +27,10 @@ const CartItemRow = ({
   index,
   unit,
   checkedBy,
-  editing,
   disabled,
   pending,
-  selected,
   open,
   onOpenChange,
-  onSelect,
   onPurchase,
   onQuantityChange,
   onCheck,
@@ -52,10 +46,8 @@ const CartItemRow = ({
     horizontal: boolean;
   } | null>(null);
   const dragged = useRef(false);
-  const actionsOpen = open && !editing;
-  const revealedWidth = editing
-    ? 0
-    : -(offset ?? (actionsOpen ? -swipeActionWidth : 0));
+  const actionsOpen = open;
+  const revealedWidth = -(offset ?? (actionsOpen ? -swipeActionWidth : 0));
   const contentDisabled = disabled || actionsOpen;
   const finishSwipe = (cancelled: boolean) => {
     if (!gesture.current) return;
@@ -71,8 +63,7 @@ const CartItemRow = ({
       data-cart-row={item.id}
       className="relative overflow-hidden"
       onPointerDown={(event) => {
-        if (disabled || editing || !event.isPrimary || event.button !== 0)
-          return;
+        if (disabled || !event.isPrimary || event.button !== 0) return;
         dragged.current = false;
         gesture.current = {
           x: event.clientX,
@@ -122,8 +113,8 @@ const CartItemRow = ({
           transform: `translateX(${swipeActionWidth - revealedWidth}px)`,
           transitionDuration: offset === null ? undefined : "0ms",
         }}
-        inert={!open || editing || disabled}
-        aria-hidden={!open || editing}
+        inert={!open || disabled}
+        aria-hidden={!open}
       >
         <Button
           size="icon-sm"
@@ -154,10 +145,10 @@ const CartItemRow = ({
         }}
       >
         <Checkbox
-          checked={editing ? selected : item.is_checked}
+          checked={item.is_checked}
           disabled={contentDisabled}
-          aria-label={`${item.name} ${editing ? "선택" : "담음"}`}
-          onCheckedChange={editing ? onSelect : onCheck}
+          aria-label={`${item.name} 담음`}
+          onCheckedChange={onCheck}
           className="mt-1"
         />
         <div className="min-w-0 flex-1">
@@ -235,28 +226,8 @@ const CartItemRow = ({
         )}
         {item.is_checked && (
           <span className="mt-1 shrink-0 text-caption text-muted-foreground">
-            {checkedBy} 담음
+            {checkedBy} 님 담음
           </span>
-        )}
-        {editing && (
-          <div className="flex shrink-0 flex-row items-center gap-2">
-            <TextButton
-              size="sm"
-              disabled={disabled}
-              aria-label={`${item.name} 구매 완료`}
-              onClick={onPurchase}
-            >
-              구매 완료
-            </TextButton>
-            <TextButton
-              tone="danger"
-              disabled={disabled}
-              aria-label={`${item.name} 삭제`}
-              onClick={onDelete}
-            >
-              <Trash2 size={16} aria-hidden />
-            </TextButton>
-          </div>
         )}
       </div>
     </li>

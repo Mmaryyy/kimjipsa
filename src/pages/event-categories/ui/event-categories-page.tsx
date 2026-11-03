@@ -13,7 +13,7 @@ import {
   TextButton,
 } from "@/shared/ui";
 import { settingsPath } from "@/shared/config";
-import { SortableCategoryList } from "./sortable-category-list";
+import SortableCategoryList from "./sortable-category-list";
 import { EventCategoryForm } from "./event-category-form";
 
 function CategoryList({
