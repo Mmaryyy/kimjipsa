@@ -34,8 +34,8 @@ const InventoryGroup = ({
       item={item}
       meta={meta}
       groupBy={groupBy}
-      quantityOpen={expandedItemId === item.id}
-      onQuantityOpenChange={(open) => onExpandItem(open ? item.id : null)}
+      controlOpen={expandedItemId === item.id}
+      onControlOpenChange={(open) => onExpandItem(open ? item.id : null)}
       pending={pendingIds.includes(item.id)}
       onOpen={() => onOpen(item)}
       onAdjust={(delta) => onAdjust(item, delta)}

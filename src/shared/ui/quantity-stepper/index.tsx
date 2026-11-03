@@ -1,11 +1,13 @@
 "use client";
-import { useEffect, useId, useRef, useState } from "react";
+
 import { flushSync } from "react-dom";
 import { Minus, Plus } from "lucide-react";
-import { cn } from "@/shared/lib";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+
 import { Button } from "../button";
 import { Input } from "../input";
 import { TextButton } from "../text-button";
+import { cn, useDismissOnOutside } from "@/shared/lib";
 
 interface Props {
   label: string;
@@ -46,33 +48,18 @@ const QuantityStepper = ({
   useEffect(() => {
     if (expanded) increaseRef.current?.focus();
   }, [expanded]);
-  useEffect(() => {
-    if (!expanded || !onOpenChange) return;
-    const close = () => {
-      flushSync(() => onOpenChange(false));
+  const close = useCallback(
+    (event: MouseEvent | KeyboardEvent) => {
+      if (event.type === "keydown") editing.current = false;
+      flushSync(() => {
+        onOpenChange?.(false);
+        setDraft(null);
+      });
       collapsedRef.current?.focus();
-    };
-    const onClick = (event: MouseEvent) => {
-      if (
-        event.target instanceof Node &&
-        !rootRef.current?.contains(event.target)
-      )
-        close();
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      event.preventDefault();
-      event.stopPropagation();
-      editing.current = false;
-      close();
-    };
-    document.addEventListener("click", onClick, true);
-    document.addEventListener("keydown", onKeyDown, true);
-    return () => {
-      document.removeEventListener("click", onClick, true);
-      document.removeEventListener("keydown", onKeyDown, true);
-    };
-  }, [expanded, onOpenChange]);
+    },
+    [onOpenChange],
+  );
+  useDismissOnOutside(rootRef, expanded && !!onOpenChange, close);
   const invalid =
     !Number.isFinite(value) || !Number.isFinite(step) || step <= 0 || min > max;
   const change = (direction: number) => {
@@ -99,7 +86,7 @@ const QuantityStepper = ({
     }
   };
   const unitLabel = unit && (
-    <span className="text-caption font-normal text-muted-foreground">
+    <span className="text-caption font-normal text-muted-foreground pl-1">
       {unit}
     </span>
   );
@@ -110,19 +97,36 @@ const QuantityStepper = ({
     </>
   );
   let quantityControl = <output aria-live="polite">{quantityLabel}</output>;
-  if (allowDirectInput) {
+  if (allowDirectInput || collapsible) {
     quantityControl =
       draft === null ? (
         <TextButton
+          ref={collapsedRef}
+          aria-expanded={collapsible ? expanded : undefined}
           className={cn(
             "min-h-[var(--ctl-h-xs)] min-w-11 w-full px-1 text-body font-semibold text-foreground tabular-nums",
-            collapsible && "h-11 gap-0 text-body-sm",
+            collapsible && [
+              "focus-visible:outline-offset-[calc(-1*var(--sp-2))] h-11 gap-0 text-body-sm",
+              "transition-[padding] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
+              "motion-reduce:transition-none",
+            ],
+            collapsible && !expanded && "px-3",
           )}
-          aria-label={`${label} 수량 직접 입력`}
+          aria-label={
+            collapsible && !expanded
+              ? `${label} 수량 ${value}${unit ?? ""}, 눌러서 바꾸기`
+              : `${label} 수량 직접 입력`
+          }
           disabled={disabled || invalid}
           onClick={() => {
-            editing.current = true;
-            setDraft(String(value));
+            if (collapsible && !expanded) {
+              editing.current = false;
+              setDraft(null);
+              collapsible.onOpenChange(true);
+            } else if (allowDirectInput) {
+              editing.current = true;
+              setDraft(String(value));
+            }
           }}
         >
           {quantityLabel}
@@ -164,55 +168,48 @@ const QuantityStepper = ({
       role="group"
       aria-label={label}
     >
-      {collapsible && (
-        <TextButton
-          ref={collapsedRef}
-          hidden={expanded}
-          aria-expanded={expanded}
-          aria-label={`${label} 수량 ${value}${unit ?? ""}, 눌러서 바꾸기`}
-          disabled={disabled || invalid}
-          className={cn(
-            "relative min-h-11 min-w-11 gap-0 px-3 text-body-sm font-semibold text-foreground tabular-nums",
-            "before:absolute before:inset-x-0 before:top-1/2 before:-z-10 before:h-[calc(var(--ctl-h-sm)+var(--sp-half))]",
-            "isolate before:-translate-y-1/2 before:rounded-full before:bg-[var(--fill-secondary)]",
-            expanded && "hidden",
-          )}
-          onClick={() => {
-            editing.current = false;
-            setDraft(null);
-            collapsible.onOpenChange(true);
-          }}
-        >
-          {quantityLabel}
-        </TextButton>
-      )}
       <div
-        hidden={!!collapsible && !expanded}
         className={cn(
           "inline-flex items-center rounded-full bg-sys-gray5 py-[calc((var(--hit)-var(--ctl-h-xs))/2)]",
           collapsible && [
-            "relative isolate bg-transparent py-0",
+            "relative isolate bg-transparent py-0 [-webkit-touch-callout:none]",
             "before:absolute before:inset-x-0 before:top-1/2 before:-z-10",
             "before:h-[calc(var(--ctl-h-sm)+var(--sp-half))] before:-translate-y-1/2",
             "before:rounded-full before:bg-[var(--fill-secondary)]",
           ],
-          collapsible && !expanded && "hidden",
         )}
       >
-        <Button
-          variant="gray"
-          size="sm"
-          className={cn([
-            "min-h-[var(--ctl-h-xs)] w-11 rounded-full",
-            "bg-transparent p-0 text-[var(--icon-secondary)]",
-            collapsible && "h-11 min-h-11 text-primary",
-          ])}
-          aria-label={`${label} 줄이기`}
-          disabled={disabled || invalid || value <= min}
-          onClick={() => change(-1)}
+        <span
+          inert={!!collapsible && !expanded}
+          aria-hidden={collapsible && !expanded ? true : undefined}
+          className={cn(
+            "inline-flex",
+            collapsible && [
+              "grid overflow-hidden grid-cols-[minmax(0,0fr)] opacity-0",
+              "transition-[grid-template-columns,opacity] duration-500",
+              "ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none",
+            ],
+            collapsible && expanded && "grid-cols-[minmax(0,1fr)] opacity-100",
+          )}
         >
-          <Minus size={14} strokeWidth={1.5} aria-hidden="true" />
-        </Button>
+          <Button
+            variant="gray"
+            size="sm"
+            className={cn([
+              "min-h-[var(--ctl-h-xs)] w-11 rounded-full",
+              "bg-transparent p-0 text-[var(--icon-secondary)]",
+              collapsible && [
+                "focus-visible:outline-offset-[calc(-1*var(--sp-2))] h-11 min-h-11 min-w-0",
+                "w-11 overflow-hidden text-primary",
+              ],
+            ])}
+            aria-label={`${label} 줄이기`}
+            disabled={disabled || invalid || value <= min}
+            onClick={() => change(-1)}
+          >
+            <Minus size={14} strokeWidth={1.5} aria-hidden="true" />
+          </Button>
+        </span>
         <span
           className={cn([
             "inline-flex h-[var(--ctl-h-xs)] min-w-11",
@@ -225,21 +222,38 @@ const QuantityStepper = ({
         >
           {quantityControl}
         </span>
-        <Button
-          variant="gray"
-          size="sm"
-          className={cn([
-            "min-h-[var(--ctl-h-xs)] w-11 rounded-full",
-            "bg-transparent p-0 text-[var(--icon-secondary)]",
-            collapsible && "h-11 min-h-11 text-primary",
-          ])}
-          ref={increaseRef}
-          aria-label={`${label} 늘리기`}
-          disabled={disabled || invalid || value >= max}
-          onClick={() => change(1)}
+        <span
+          inert={!!collapsible && !expanded}
+          aria-hidden={collapsible && !expanded ? true : undefined}
+          className={cn(
+            "inline-flex",
+            collapsible && [
+              "grid overflow-hidden grid-cols-[minmax(0,0fr)] opacity-0",
+              "transition-[grid-template-columns,opacity] duration-500",
+              "ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none",
+            ],
+            collapsible && expanded && "grid-cols-[minmax(0,1fr)] opacity-100",
+          )}
         >
-          <Plus size={14} strokeWidth={1.5} aria-hidden="true" />
-        </Button>
+          <Button
+            variant="gray"
+            size="sm"
+            className={cn([
+              "min-h-[var(--ctl-h-xs)] w-11 rounded-full",
+              "bg-transparent p-0 text-[var(--icon-secondary)]",
+              collapsible && [
+                "focus-visible:outline-offset-[calc(-1*var(--sp-2))] h-11 min-h-11 min-w-0",
+                "w-11 overflow-hidden text-primary",
+              ],
+            ])}
+            ref={increaseRef}
+            aria-label={`${label} 늘리기`}
+            disabled={disabled || invalid || value >= max}
+            onClick={() => change(1)}
+          >
+            <Plus size={14} strokeWidth={1.5} aria-hidden="true" />
+          </Button>
+        </span>
       </div>
       {unit && !collapsible && (
         <span className="w-[2em] shrink-0 whitespace-nowrap text-left text-caption text-muted-foreground">

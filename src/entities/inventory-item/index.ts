@@ -20,3 +20,5 @@ export {
 
 export { default as InventoryCategoryIcon } from "./ui/category-icon";
 export { default as InventoryBadges } from "./ui/inventory-badges";
+
+export { default as InventoryStatusCapsule } from "./ui/status-capsule";

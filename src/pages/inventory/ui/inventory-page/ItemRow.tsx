@@ -1,23 +1,17 @@
 import { cn } from "@/shared/lib";
-import { inventoryStatusControlStyles } from "./inventory-item-row.variants";
 import {
-  inventoryStatusOptions,
+  InventoryStatusCapsule,
   InventoryBadges,
   type InventoryItem,
   type InventoryMeta,
 } from "@/entities/inventory-item";
-import {
-  Text,
-  TextButton,
-  QuantityStepper,
-  SegmentedControl,
-} from "@/shared/ui";
+import { Text, TextButton, QuantityStepper } from "@/shared/ui";
 interface Props {
   item: InventoryItem;
   meta: InventoryMeta;
   pending: boolean;
-  quantityOpen: boolean;
-  onQuantityOpenChange: (open: boolean) => void;
+  controlOpen: boolean;
+  onControlOpenChange: (open: boolean) => void;
   groupBy: "locations" | "categories";
   onOpen: () => void;
   onAdjust: (delta: number) => void;
@@ -27,8 +21,8 @@ const InventoryItemRow = ({
   item,
   meta,
   pending,
-  quantityOpen,
-  onQuantityOpenChange,
+  controlOpen,
+  onControlOpenChange,
   groupBy,
   onOpen,
   onAdjust,
@@ -78,8 +72,8 @@ const InventoryItemRow = ({
           <div className="flex shrink-0 items-center gap-1">
             <QuantityStepper
               collapsible={{
-                open: quantityOpen,
-                onOpenChange: onQuantityOpenChange,
+                open: controlOpen,
+                onOpenChange: onControlOpenChange,
               }}
               allowDirectInput
               label={item.name}
@@ -90,12 +84,12 @@ const InventoryItemRow = ({
           </div>
         </>
       ) : (
-        <SegmentedControl
-          label={`${item.name} 상태`}
-          options={inventoryStatusOptions}
+        <InventoryStatusCapsule
+          label={item.name}
           value={item.status}
+          open={controlOpen}
+          onOpenChange={onControlOpenChange}
           onValueChange={onStatus}
-          className={inventoryStatusControlStyles({ state: item.status })}
         />
       )}
     </li>

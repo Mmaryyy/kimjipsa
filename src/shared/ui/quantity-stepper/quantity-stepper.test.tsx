@@ -195,9 +195,12 @@ describe("INV-15 SCN-INV-2 접히는 재고 수량", () => {
     expect(collapsed).toHaveFocus();
     fireEvent.click(collapsed);
     fireEvent.keyDown(enterQuantity("8"), { key: "Escape" });
-    expect(collapsed).toHaveTextContent("2팩");
-    expect(collapsed).toHaveFocus();
-    fireEvent.click(collapsed);
+    const restored = screen.getByRole("button", {
+      name: "우유 수량 2팩, 눌러서 바꾸기",
+    });
+    expect(restored).toHaveTextContent("2팩");
+    expect(restored).toHaveFocus();
+    fireEvent.click(restored);
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   });
 });

@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  InventoryStatusCapsule,
+  inventoryStatusOptions,
+  type InventoryItem,
+} from "@/entities/inventory-item";
 import { Bell, Check, Plus, Trash2 } from "lucide-react";
 import { useId, useState, type ReactNode } from "react";
 import {
@@ -38,6 +43,26 @@ import {
 } from "./component-catalog.constants";
 
 import PageTemplateSamples from "./page-template-samples";
+
+const InventoryCapsuleSample = ({
+  initialValue,
+  initialOpen = false,
+}: {
+  initialValue: InventoryItem["status"];
+  initialOpen?: boolean;
+}) => {
+  const [value, setValue] = useState(initialValue);
+  const [open, setOpen] = useState(initialOpen);
+  return (
+    <InventoryStatusCapsule
+      label={`견본 ${initialValue}`}
+      value={value}
+      open={open}
+      onOpenChange={setOpen}
+      onValueChange={setValue}
+    />
+  );
+};
 
 function AppearanceSamples({ onAction }: { onAction: () => void }) {
   return (
@@ -225,6 +250,16 @@ function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
         {(controlProps) => <input {...controlProps} defaultValue="" />}
       </FormFieldRow>
 
+      <SectionHeader title="재고 상태 캡슐" />
+      <div className="flex flex-wrap items-center gap-4 py-4">
+        {inventoryStatusOptions.map((option) => (
+          <InventoryCapsuleSample
+            key={option.value}
+            initialValue={option.value}
+          />
+        ))}
+        <InventoryCapsuleSample initialValue="enough" initialOpen />
+      </div>
       <SectionHeader title="수량 스테퍼" />
       <div className="flex flex-wrap items-center gap-4 py-4">
         <Text variant="caption">기본</Text>
@@ -247,6 +282,17 @@ function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
           min={0}
           max={10}
           collapsible={{ open: stepperOpen, onOpenChange: setStepperOpen }}
+        />
+      </div>
+
+      <div className="pb-4">
+        <QuantityStepper
+          label="펼침 견본"
+          value={quantity}
+          unit="팩"
+          allowDirectInput
+          onValueChange={setQuantity}
+          collapsible={{ open: true, onOpenChange: () => {} }}
         />
       </div>
 

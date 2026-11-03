@@ -14,3 +14,4 @@ export {
   advanceTabSpring,
   targetLiquidTab,
 } from "./liquid-tab-motion.utils";
+export { useDismissOnOutside } from "./use-dismiss-on-outside";

@@ -1,0 +1,269 @@
+<title>재고 상태 캡슐</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: 김집사 재고 화면을 375px 폭으로 옮긴 견본 한 장 + 아래 동작 설명. 색·크기는 tokens.css 값 */
+:root {
+  --bg: #f6f6f8;
+  --label: #000000;
+  --label-2: rgba(60, 60, 67, 0.6);
+  --separator: rgba(60, 60, 67, 0.18);
+  --muted: rgba(118, 118, 128, 0.12);
+  --selected-bg: #f6f6f8;
+  --shadow-control: 0 1px 2px rgba(0, 0, 0, 0.12);
+  --accent: #007aff;
+  --ok-text: #248a3d;   --ok-soft: rgba(52, 199, 89, 0.14);
+  --low: #ff9500; --low-text: #c93400;  --low-soft: rgba(255, 149, 0, 0.14);
+  --none: #ff3b30; --none-text: #d70015; --none-soft: rgba(255, 59, 48, 0.14);
+  --font: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", system-ui, sans-serif;
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1a1a1c; --label: #ffffff; --label-2: rgba(235, 235, 245, 0.6); --separator: rgba(84, 84, 88, 0.6);
+    --muted: rgba(118, 118, 128, 0.24); --selected-bg: #636366; --accent: #0a84ff;
+    --ok-text: #30db5b; --ok-soft: rgba(48, 209, 88, 0.2);
+    --low: #ff9f0a; --low-text: #ffb340; --low-soft: rgba(255, 159, 10, 0.2);
+    --none: #ff453a; --none-text: #ff6961; --none-soft: rgba(255, 69, 58, 0.2);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1a1a1c; --label: #ffffff; --label-2: rgba(235, 235, 245, 0.6); --separator: rgba(84, 84, 88, 0.6);
+  --muted: rgba(118, 118, 128, 0.24); --selected-bg: #636366; --accent: #0a84ff;
+  --ok-text: #30db5b; --ok-soft: rgba(48, 209, 88, 0.2);
+  --low: #ff9f0a; --low-text: #ffb340; --low-soft: rgba(255, 159, 10, 0.2);
+  --none: #ff453a; --none-text: #ff6961; --none-soft: rgba(255, 69, 58, 0.2);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--label); font-family: var(--font); font-size: 15px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 48px;
+}
+main { max-width: 400px; margin: 0 auto; display: grid; gap: 28px; }
+h1 { font-size: 30px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+p { margin: 0; }
+.hint { font-size: 13px; color: var(--label-2); }
+
+/* 상태 → 색 (충분도 초록) */
+[data-value="enough"] { --tone-text: var(--ok-text); --tone-soft: var(--ok-soft); }
+[data-value="low"]    { --tone-text: var(--low-text); --tone-soft: var(--low-soft); }
+[data-value="none"]   { --tone-text: var(--none-text); --tone-soft: var(--none-soft); }
+
+/* 위쪽 보기 전환은 지금 그대로(모서리 4px) */
+.view { display: grid; grid-template-columns: 1fr 1fr; background: var(--muted); border-radius: 4px; padding: 2px; }
+.view button { appearance: none; border: 0; background: none; font: 600 15px var(--font); color: var(--label); min-height: 30px; border-radius: 4px; cursor: pointer; }
+.view button[aria-pressed="true"] { background: var(--selected-bg); box-shadow: var(--shadow-control); }
+
+.list { display: grid; }
+.group { font-size: 13px; color: var(--label-2); padding: 14px 0 4px; }
+.row { display: flex; align-items: center; gap: 8px; min-height: 56px; border-bottom: 0.5px solid var(--separator); }
+.row .name { flex: 1; min-width: 0; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.badge { font-size: 13px; color: var(--low-text); display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--low); }
+
+/* 공통 캡슐: 터치 영역 44px, 보이는 면은 30px(--ctl-h-sm 28 + 2) */
+.pill {
+  position: relative; isolation: isolate; display: inline-flex; align-items: center; flex-shrink: 0; height: 44px;
+  -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+}
+.pill::before {
+  content: ""; position: absolute; inset-inline: 0; top: 50%; height: 30px; transform: translateY(-50%);
+  border-radius: 999px; background: var(--muted); z-index: -1; transition: background-color 0.28s var(--ease);
+}
+.opt { display: grid; grid-template-columns: minmax(0, 0fr); opacity: 0; overflow: hidden; transition: grid-template-columns 0.32s var(--ease), opacity 0.2s ease; }
+.pill[data-open] .opt { grid-template-columns: 1fr; opacity: 1; }
+.pill button {
+  position: relative; min-width: 0; overflow: hidden; appearance: none; border: 0; background: none; cursor: pointer;
+  font: 600 13px var(--font); color: var(--label); white-space: nowrap; height: 44px; padding: 0; border-radius: 999px;
+  transition: padding 0.32s var(--ease), color 0.2s;
+}
+.pill button:focus-visible { outline: 2px solid var(--accent); outline-offset: -8px; }
+
+/* 상태 캡슐 */
+.status { padding-inline: 2px; }
+.status::before { background: var(--tone-soft); }
+.status[data-open]::before { background: var(--muted); }
+.status .opt.current { grid-template-columns: 1fr; opacity: 1; }
+.status .opt.current > button { padding: 0 12px; color: var(--tone-text); }
+.status[data-open] .opt > button { padding: 0 12px; }
+.status[data-open] .opt:not(.current) > button { color: var(--label-2); }
+.status .opt > button::before {
+  content: ""; position: absolute; inset-inline: 0; top: 50%; height: 26px; transform: translateY(-50%);
+  border-radius: 999px; background: var(--selected-bg); box-shadow: var(--shadow-control); z-index: -1;
+  opacity: 0; transition: opacity 0.2s;
+}
+.status .opt > button { isolation: isolate; }
+.status[data-open] .opt.current > button::before { opacity: 1; }
+
+/* 수량 캡슐: 접힘 = 1팩, 펼침 = − 1팩 + */
+.qty .val { padding: 0 12px; font-size: 15px; font-variant-numeric: tabular-nums; }
+.qty .val small { font-size: 13px; color: var(--label-2); font-weight: 400; }
+.qty .opt > button { width: 40px; color: var(--accent); font-size: 18px; font-weight: 400; }
+.qty[data-open] .val { padding: 0 4px; }
+.qty .opt { transition: grid-template-columns 0.5s var(--ease), opacity 0.35s ease; }
+.qty .val { transition: padding 0.5s var(--ease); }
+@media (prefers-reduced-motion: reduce) { .pill::before, .opt, .pill button { transition: none; } }
+
+.notes { display: grid; gap: 10px; font-size: 14px; }
+.notes h2 { font-size: 13px; font-weight: 600; color: var(--label-2); margin: 0; }
+.notes ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.notes b { font-weight: 600; }
+.ask { background: var(--muted); border-radius: 14px; padding: 12px 14px; display: grid; gap: 4px; }
+</style>
+
+<main>
+  <header style="display: grid; gap: 14px">
+    <h1>재고</h1>
+    <div class="view" role="group" aria-label="보기">
+      <button type="button" aria-pressed="true">보관 장소별</button>
+      <button type="button" aria-pressed="false">카테고리별</button>
+    </div>
+  </header>
+
+  <section>
+    <p class="hint">상태로 관리하는 품목의 오른쪽 값을 눌러 보세요.</p>
+    <div class="list" id="list"></div>
+  </section>
+
+  <section class="notes">
+    <h2>이해한 내용</h2>
+    <ol>
+      <li>버튼 묶음(충분 · 부족 · 없음)은 지금 것을 그대로 쓰고, <b>재고 상태 버튼만</b> 모서리를 완전한 캡슐로 키워요. 위쪽 보기 전환 등 다른 버튼 묶음은 그대로예요.</li>
+      <li>수량 품목도 같은 효과예요. 평소엔 <b>1팩</b> 캡슐, 누르면 좌우로 늘어나 <b>− 1팩 +</b>가 돼요. 여러 번 누를 수 있게 바로 접지 않고 바깥·Esc로 접혀요.</li>
+      <li>보이는 캡슐 높이는 지금 앱과 같은 30px이고, 누르는 영역만 44px이에요.</li>
+      <li>평소에는 <b>지금 값 하나만</b> 색 캡슐로 보여요. 충분 초록, 부족 주황, 없음 빨강이에요.</li>
+      <li>값을 누르면 캡슐이 <b>좌우로 늘어나며</b> 세 칸 버튼 묶음이 되고, 하나를 고르면 잠깐 뒤 다시 그 값 하나로 접혀요.</li>
+      <li>바깥을 누르거나 Esc를 누르면 그대로 접혀요. 한 번에 한 줄만 펼쳐져요(수량 스테퍼와 같은 규칙).</li>
+    </ol>
+  </section>
+</main>
+
+<script>
+const OPTIONS = [
+  { value: "enough", label: "충분" },
+  { value: "low", label: "부족" },
+  { value: "none", label: "없음" },
+];
+const rows = [
+  { group: "냉장실" },
+  { name: "우유", qty: 1, unit: "팩", badge: "부족" },
+  { name: "고추장", status: "enough" },
+  { name: "김치", status: "enough" },
+  { name: "두부", qty: 1, unit: "모" },
+  { group: "실온 식품장 · 팬트리" },
+  { name: "참기름", status: "low" },
+  { name: "굵은소금", status: "none" },
+  { name: "라면", qty: 4, unit: "개" },
+];
+
+let openStatus = null;
+const close = (el, focus) => {
+  if (!el) return;
+  el.removeAttribute("data-open");
+  el.querySelectorAll("button").forEach((b) => b.setAttribute("aria-expanded", "false"));
+  if (openStatus === el) openStatus = null;
+  el.paint?.();
+  if (focus) el.querySelector(".current button, .val").focus();
+};
+
+function statusControl(name, value) {
+  const el = document.createElement("div");
+  el.className = "pill status";
+  el.dataset.value = value;
+  el.setAttribute("role", "group");
+  el.setAttribute("aria-label", `${name} 상태`);
+  el.innerHTML = OPTIONS.map(
+    (o) => `<span class="opt"><button type="button" data-v="${o.value}">${o.label}</button></span>`,
+  ).join("");
+  const paint = () => {
+    el.querySelectorAll(".opt").forEach((s) => {
+      const b = s.firstElementChild;
+      const on = b.dataset.v === el.dataset.value;
+      s.classList.toggle("current", on);
+      b.setAttribute("aria-pressed", String(on));
+      // 접혀 있을 때는 지금 값만 누를 수 있어요
+      b.tabIndex = on || el.hasAttribute("data-open") ? 0 : -1;
+      b.setAttribute("aria-label", el.hasAttribute("data-open") ? o(b).label : `${name} ${o(b).label}, 눌러서 바꾸기`);
+      if (!el.hasAttribute("data-open")) b.setAttribute("aria-expanded", "false");
+    });
+  };
+  const o = (b) => OPTIONS.find((x) => x.value === b.dataset.v);
+  el.addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    if (!el.hasAttribute("data-open")) {
+      close(openStatus);
+      el.setAttribute("data-open", "");
+      openStatus = el;
+      b.setAttribute("aria-expanded", "true");
+      paint();
+      return;
+    }
+    el.dataset.value = b.dataset.v;
+    paint();
+    // 고른 칸이 바뀐 걸 보여 준 뒤 접어요
+    setTimeout(() => { close(el, true); paint(); }, 260);
+  });
+  paint();
+  el.paint = paint;
+  return el;
+}
+
+// 수량 캡슐: 펼쳐도 바로 접지 않고(여러 번 누를 수 있게) 바깥·Esc로 접어요
+function qtyControl(r) {
+  const el = document.createElement("div");
+  el.className = "pill qty";
+  el.setAttribute("role", "group");
+  el.setAttribute("aria-label", r.name);
+  el.innerHTML = `<span class="opt"><button type="button" data-d="-1" aria-label="${r.name} 줄이기" tabindex="-1">−</button></span>
+    <button type="button" class="val" aria-expanded="false"></button>
+    <span class="opt"><button type="button" data-d="1" aria-label="${r.name} 늘리기" tabindex="-1">+</button></span>`;
+  const val = el.querySelector(".val");
+  const paint = () => {
+    const open = el.hasAttribute("data-open");
+    val.innerHTML = `${r.qty}<small>${r.unit}</small>`;
+    val.setAttribute("aria-expanded", String(open));
+    val.setAttribute("aria-label", `${r.name} 수량 ${r.qty}${r.unit}${open ? "" : ", 눌러서 바꾸기"}`);
+    el.querySelectorAll("[data-d]").forEach((b) => (b.tabIndex = open ? 0 : -1));
+    el.querySelector('[data-d="-1"]').disabled = r.qty <= 0;
+  };
+  el.addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    if (b === val && !el.hasAttribute("data-open")) {
+      if (openStatus) { const prev = openStatus; close(prev); prev.paint(); }
+      el.setAttribute("data-open", "");
+      openStatus = el;
+    } else if (b.dataset.d) r.qty = Math.max(0, r.qty + Number(b.dataset.d));
+    paint();
+  });
+  paint();
+  el.paint = paint;
+  return el;
+}
+
+const list = document.getElementById("list");
+rows.forEach((r) => {
+  if (r.group) {
+    list.insertAdjacentHTML("beforeend", `<div class="group">${r.group}</div>`);
+    return;
+  }
+  const row = document.createElement("div");
+  row.className = "row";
+  row.innerHTML = `<span class="name">${r.name}</span>`;
+  if (r.status) row.appendChild(statusControl(r.name, r.status));
+  else {
+    if (r.badge) row.insertAdjacentHTML("beforeend", `<span class="badge">${r.badge}</span>`);
+    row.appendChild(qtyControl(r));
+  }
+  list.appendChild(row);
+});
+
+document.addEventListener("click", (e) => { if (openStatus && !openStatus.contains(e.target)) { const el = openStatus; close(el); el.paint(); } }, true);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && openStatus) { const el = openStatus; close(el, true); el.paint(); } });
+document.querySelectorAll(".view button").forEach((b) =>
+  b.addEventListener("click", () => document.querySelectorAll(".view button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)))),
+);
+</script>

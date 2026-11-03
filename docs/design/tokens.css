@@ -378,12 +378,15 @@
      expiring·private는 4종 밖의 김집사 전용 상태다. */
   --status-none: var(--error); /* 없음 → error */
   --status-none-text: var(--error-text);
+  --status-none-soft: var(--error-soft);
   --status-low: var(--warning); /* 부족 → warning */
   --status-low-text: var(--warning-text);
+  --status-low-soft: var(--warning-soft);
   --status-expiring: var(--sys-yellow); /* 유통기한 임박 (전용) */
   --status-expiring-text: var(--sys-yellow-ic);
   --status-ok: var(--success); /* 충분 · 완료 · 반영됨 → success */
   --status-ok-text: var(--success-text);
+  --status-ok-soft: var(--success-soft);
   --status-info: var(--info); /* 정보 · 공유 → info */
   --status-info-text: var(--info-text);
   --status-private: var(--sys-gray); /* 배우자 개인 일정 (전용) */

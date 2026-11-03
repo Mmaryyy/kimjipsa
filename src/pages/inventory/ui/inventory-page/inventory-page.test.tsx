@@ -46,8 +46,8 @@ const InventoryRowExample = () => {
           key={item.id}
           item={item}
           meta={inventoryMeta as InventoryMeta}
-          quantityOpen={expandedItemId === item.id}
-          onQuantityOpenChange={(open) =>
+          controlOpen={expandedItemId === item.id}
+          onControlOpenChange={(open) =>
             setExpandedItemId(open ? item.id : null)
           }
           pending={actions.pendingIds.includes(item.id)}
@@ -271,4 +271,90 @@ describe("INV-01 INV-06 INV-08 SCN-INV-1 재고 추가와 목록 관리", () => 
       client.clear();
     },
   );
+});
+
+describe("INV-03 INV-15 SCN-INV-2 상태와 수량 캡슐", () => {
+  it("한 행만 펼치고 상태 선택·바깥·Escape로 접으며 포커스를 돌려요", async () => {
+    const meta = inventoryMeta as InventoryMeta;
+    const statusItem: InventoryItem = {
+      ...milk,
+      id: "capsule-status",
+      name: "샴푸",
+      mode: "status",
+      status: "enough",
+    };
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    client.setQueryData(["inventory"], [milk, statusItem]);
+    client.setQueryData(["inventory-meta"], meta);
+    navigation.search = new URLSearchParams();
+    const fetch = vi.fn((_url: string, options?: RequestInit) => {
+      const data =
+        options?.method === "POST"
+          ? [{ ...statusItem, status: "low" }, milk]
+          : [milk, { ...statusItem, status: "low" }];
+      return Promise.resolve(new Response(JSON.stringify({ ok: true, data })));
+    });
+    vi.stubGlobal("fetch", fetch);
+    const { unmount } = render(
+      <QueryClientProvider client={client}>
+        <InventoryPage />
+      </QueryClientProvider>,
+    );
+    const status = screen.getByRole("group", { name: "샴푸 상태" });
+    const capsule = () =>
+      within(status).getByRole("button", { name: /눌러서 바꾸기/ });
+    expect(capsule()).not.toHaveAttribute("aria-pressed");
+    expect(capsule()).toHaveAttribute("aria-expanded", "false");
+    expect(within(status).getAllByRole("button")).toHaveLength(1);
+    fireEvent.click(capsule());
+    expect(within(status).getAllByRole("button")).toHaveLength(3);
+    for (const button of within(status).getAllByRole("button")) {
+      expect(button).toHaveAttribute(
+        "aria-pressed",
+        String(button.textContent === "충분"),
+      );
+    }
+    expect(
+      within(status).getByRole("button", { name: "충분" }),
+    ).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(
+      screen.getByRole("button", { name: /우유 수량 .*눌러서 바꾸기/ }),
+    );
+    expect(capsule()).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: "우유 늘리기" })).toHaveFocus();
+    fireEvent.click(capsule());
+    expect(
+      screen.queryByRole("button", { name: "우유 늘리기" }),
+    ).not.toBeInTheDocument();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(capsule()).toHaveFocus();
+    fireEvent.click(capsule());
+    fireEvent.click(screen.getByRole("heading", { name: "재고" }));
+    expect(capsule()).toHaveFocus();
+    fireEvent.click(capsule());
+    fireEvent.click(within(status).getByRole("button", { name: "부족" }));
+    await waitFor(() =>
+      expect(
+        within(status).getByRole("button", { name: "부족" }),
+      ).toHaveAttribute("aria-pressed", "true"),
+    );
+    expect(within(status).getAllByRole("button")).toHaveLength(3);
+    await waitFor(() =>
+      expect(capsule()).toHaveAttribute("aria-expanded", "false"),
+    );
+    expect(capsule()).toHaveTextContent("부족");
+    expect(capsule()).toHaveFocus();
+    const write = fetch.mock.calls.find(
+      ([, options]) => options?.method === "POST",
+    );
+    expect(JSON.parse(String(write?.[1]?.body))).toEqual({
+      action: "status",
+      id: statusItem.id,
+      status: "low",
+    });
+    unmount();
+    client.clear();
+  });
 });

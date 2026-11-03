@@ -235,7 +235,15 @@ AppLayout ─ 모바일: 본문 + 하단 탭(유리 캡슐) / lg 이상: 왼쪽 
 
 ## 10. 재고 수량 스테퍼 (CONFIRMED, 사용자 결정 2026-11-02, 시안 E)
 
-- 재고 목록의 수량 모드만 기본으로 접는다. 높이 30px의 회색(`--fill-secondary`) 알약 안에 숫자(15px semibold)와 단위(13px muted)를 공백 없이 `1팩`처럼 표시하며 누름 영역은 44px이다.
+- 재고 목록의 수량 모드만 기본으로 접는다. 높이 30px의 회색(`--fill-secondary`) 알약 안에 숫자(15px semibold)와 단위(13px muted)를 `1팩`처럼 표시하며 누름 영역은 44px이다.
 - 누르면 같은 자리에서 `[− 1팩 +]`로 펼친다. 증감 아이콘은 `text-primary`, 각각의 누름 영역은 44px이며 숫자를 눌러 직접 입력할 수 있다. 펼칠 때 + 버튼에 포커스를 준다.
 - 한 번에 한 행만 펼친다. 다른 행을 열면 앞 행은 접힌다. 바깥 누름과 Escape로 접고 접힌 알약에 포커스를 돌려준다. 접힌 버튼은 `aria-expanded=false`와 “품목 수량 n단위, 눌러서 바꾸기” 이름을 제공한다.
-- 단위는 알약 안에 넣고 별도 단위 칸은 두지 않는다. 상태 전환은 애니메이션 없이 즉시 적용하므로 동작 감소 설정에서도 동일하다. 장바구니·구매 반영 화면은 기존 스테퍼를 유지한다.
+- 단위는 알약 안에 넣고 별도 단위 칸은 두지 않는다. 좌우 버튼은 `grid-template-columns: minmax(0, 0fr)`에서 `minmax(0, 1fr)`로 0.5초 동안 펼쳐진다. easing은 `cubic-bezier(0.32, 0.72, 0, 1)`이며 동작 감소에서는 즉시 바뀐다. 장바구니·구매 반영 화면은 기존 스테퍼를 유지한다.
+
+## 11. 재고 상태 캡슐 (CONFIRMED, 사용자 결정 2026-11-03)
+
+- 재고 목록의 상태 모드는 현재 값 하나만 표시한다. 충분은 `--status-ok-soft`·`--status-ok-text`, 부족은 `--status-low-soft`·`--status-low-text`, 없음은 `--status-none-soft`·`--status-none-text`를 쓴다.
+- 보이는 높이는 `--ctl-h-sm + --sp-half`(30px), 누름 영역은 44px이다. 상태 캡슐만 완전한 캡슐 모서리를 쓰며 공용 SegmentedControl·ToggleGroup과 다른 화면은 유지한다.
+- 누르면 충분·부족·없음 세 칸으로 좌우 펼친다. 비선택 칸은 `grid-template-columns: minmax(0, 0fr)`에서 `minmax(0, 1fr)`로 0.32초 동안 펼쳐지고, 선택 칸은 `--control-selected-bg` 캡슐과 `--shadow-control` 그림자를 쓴다. easing은 `cubic-bezier(0.32, 0.72, 0, 1)`이다.
+- 선택하면 기존 상태 저장을 실행하고 0.26초 뒤 접는다. 상태·수량을 통틀어 한 행만 펼치며 바깥 누름·Escape로 접고 현재 값 버튼으로 포커스를 돌린다.
+- 상태 버튼은 `aria-pressed`·`aria-expanded`를 제공한다. 접힌 비선택 칸은 접근성 트리와 탭 순서에서 제외한다. 상태·수량 모두 `-webkit-touch-callout: none`을 쓰고 동작 감소에서는 애니메이션 없이 전환한다.
