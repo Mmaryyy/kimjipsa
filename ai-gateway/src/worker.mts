@@ -15,6 +15,8 @@ import {
   contextSchema,
   runtimeConfigSchema,
 } from "./hermes.mts";
+import { searchWeb } from "./search.mts";
+import { withSnapshotChecks } from "./actions.mts";
 const jobSchema = z.object({
   id: z.uuid(),
   familyId: z.uuid(),
@@ -111,21 +113,37 @@ async function runConnected(config: GatewayConfig) {
   let rerun = false;
   const rpc = (operation: string, input: Json = {}) =>
     agentRpc(client, operation, input);
-  async function cloudConfig() {
+  async function cloud(path: string, body?: unknown) {
     const {
       data: { session },
     } = await client.auth.getSession();
     if (!session) throw new Error("worker_auth_failed");
-    const response = await fetch(new URL("/api/agent/config", config.appUrl), {
-      headers: { Authorization: `Bearer ${session.access_token}` },
-      signal: AbortSignal.any([shutdown.signal, AbortSignal.timeout(15000)]),
+    const response = await fetch(new URL(path, config.appUrl), {
+      method: body === undefined ? "GET" : "POST",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+        Origin: new URL(config.appUrl).origin,
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: AbortSignal.any([shutdown.signal, AbortSignal.timeout(30000)]),
       redirect: "error",
     });
     const envelope = z
-      .object({ ok: z.boolean(), data: z.unknown() })
+      .object({
+        ok: z.boolean(),
+        data: z.unknown().optional(),
+        error: z.object({ code: z.string() }).optional(),
+      })
       .parse(await response.json());
-    if (!response.ok || !envelope.ok) throw new Error("worker_config_failed");
-    const result = runtimeConfigSchema.safeParse(envelope.data);
+    if (!response.ok || !envelope.ok)
+      throw new Error(envelope.error?.code ?? "worker_config_failed");
+    return envelope.data;
+  }
+  async function cloudConfig() {
+    const result = runtimeConfigSchema.safeParse(
+      await cloud("/api/agent/config"),
+    );
     if (!result.success) throw new Error("gateway_migration_required");
     return result.data;
   }
@@ -168,7 +186,9 @@ async function runConnected(config: GatewayConfig) {
         try {
           if (runtime.version !== job.configVersion)
             throw new Error("configuration_changed");
-          const context = contextSchema.parse(await rpc("context", input));
+          let context = contextSchema.parse(
+            await cloud("/api/agent/context", input),
+          );
           const images: Array<{ mimeType: string; base64: string }> = [];
           for (const attachment of context.attachments) {
             signal.throwIfAborted();
@@ -184,7 +204,7 @@ async function runConnected(config: GatewayConfig) {
               ),
             });
           }
-          const result = await hermes.run(
+          let result = await hermes.run(
             job.id,
             runtime,
             context,
@@ -195,10 +215,62 @@ async function runConnected(config: GatewayConfig) {
               await rpc("heartbeat", { ...input, hermesRunId: id });
             },
           );
+          if (result.kind === "calendar") {
+            if (!result.range || context.kind !== "chat")
+              throw new Error("invalid_response");
+            context = contextSchema.parse(
+              await cloud("/api/agent/context", {
+                ...input,
+                range: result.range,
+              }),
+            );
+            result = await hermes.run(
+              `${job.id}-calendar`,
+              runtime,
+              context,
+              images,
+              signal,
+              async (id) => {
+                await rpc("heartbeat", { ...input, hermesRunId: id });
+              },
+            );
+          }
+          if (result.kind === "search") {
+            if (context.kind !== "chat" || images.length)
+              throw new Error("invalid_response");
+            const sources = await searchWeb(
+              config,
+              result.query,
+              context.message.text,
+              signal,
+            );
+            result = await hermes.run(
+              `${job.id}-search`,
+              runtime,
+              context,
+              [],
+              signal,
+              async (id) => {
+                await rpc("heartbeat", { ...input, hermesRunId: id });
+              },
+              sources,
+            );
+            if (result.kind !== "reply") throw new Error("invalid_response");
+            result = {
+              ...result,
+              actions: [],
+              items: [],
+              memories: [],
+              sources: sources.map(({ title, url }) => ({ title, url })),
+            };
+          } else result.sources = [];
+          if (["calendar", "search"].includes(result.kind))
+            throw new Error("invalid_response");
+          result.actions = withSnapshotChecks(result.actions, context);
           signal.throwIfAborted();
-          if (images.length && result.kind === "add")
+          if (images.length && ["add", "actions"].includes(result.kind))
             throw new Error("confirmation_required");
-          await rpc("complete", { ...input, ...result });
+          await cloud("/api/agent/complete", { ...input, ...result });
           log("job_completed");
         } catch (error) {
           const message =
@@ -212,6 +284,19 @@ async function runConnected(config: GatewayConfig) {
             "invalid_inventory",
             "confirmation_required",
             "configuration_changed",
+            "state_conflict",
+            "event_forbidden",
+            "private_chat_required",
+            "cart_unit_mismatch",
+            "cart_duplicate",
+            "web_search_unavailable",
+            "invalid_inventory",
+            "invalid_cart",
+            "invalid_event",
+            "event_not_found",
+            "validation_failed",
+            "confirmation_required",
+            "forbidden",
           ];
           const code = known.includes(message)
             ? message

@@ -1,10 +1,11 @@
 import { Sparkles } from "lucide-react";
-import type { Chat, Receipt } from "@/entities/chat-message";
+import type { Chat, Receipt, ActionProposal } from "@/entities/chat-message";
 import { Text } from "@/shared/ui";
 import { messageBubbleStyles, messageRowStyles } from "./chat.variants";
 import ChatPhoto from "./Photo";
 import ChatRun from "./Run";
 import ReceiptCard from "./Receipt";
+import ChatActionProposal from "./Proposal";
 
 const timestamp = new Intl.DateTimeFormat("ko-KR", {
   timeZone: "Asia/Seoul",
@@ -18,6 +19,7 @@ interface Props {
   attachments: Map<string, Chat["attachments"][number]>;
   run?: Chat["runs"][number];
   receipt?: Receipt;
+  proposal?: ActionProposal;
   now: number;
   workerOnline: boolean;
   cancelling: boolean;
@@ -28,6 +30,7 @@ const ChatMessage = ({
   attachments,
   run,
   receipt,
+  proposal,
   now,
   workerOnline,
   cancelling,
@@ -54,6 +57,25 @@ const ChatMessage = ({
               {message.text}
             </Text>
           )}
+          {message.sources.length > 0 && (
+            <ol
+              aria-label="웹 검색 출처"
+              className="mt-3 space-y-1 text-caption"
+            >
+              {message.sources.map((source, index) => (
+                <li key={source.url}>
+                  <a
+                    className="text-primary underline break-all"
+                    href={source.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    [{index + 1}] {source.title || new URL(source.url).hostname}
+                  </a>
+                </li>
+              ))}
+            </ol>
+          )}
           {message.attachment_ids.length > 0 && (
             <div className="mt-2 grid grid-cols-2 gap-2">
               {message.attachment_ids.map((id) => {
@@ -79,11 +101,19 @@ const ChatMessage = ({
       <ChatRun
         run={run}
         receipt={receipt}
+        proposal={proposal}
         workerOnline={workerOnline}
         hasPhotos={message.attachment_ids.length > 0}
         cancelling={cancelling}
         now={now}
         onCancel={onCancel}
+      />
+    )}
+    {proposal && (
+      <ChatActionProposal
+        key={`${proposal.id}:${proposal.version}`}
+        proposal={proposal}
+        now={now}
       />
     )}
     {receipt && (

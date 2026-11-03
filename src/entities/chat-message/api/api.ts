@@ -5,13 +5,16 @@ import {
   chatSchema,
   settingsSchema,
   type ReceiptItem,
+  type ChatVisibility,
 } from "../model/chat.schema";
-export async function fetchChat() {
-  let chat = chatSchema.parse(await request(chatRoutes.messages));
+export async function fetchChat(visibility: ChatVisibility = "shared") {
+  let chat = chatSchema.parse(
+    await request(`${chatRoutes.messages}?visibility=${visibility}`),
+  );
   while (chat.messages.length && chat.messages.length % 100 === 0) {
     const next = chatSchema.parse(
       await request(
-        `${chatRoutes.messages}?after=${chat.messages.at(-1)!.sequence}`,
+        `${chatRoutes.messages}?visibility=${visibility}&after=${chat.messages.at(-1)!.sequence}`,
       ),
     );
     chat = { ...next, messages: [...chat.messages, ...next.messages] };
@@ -29,6 +32,7 @@ export function writeMemory(input: unknown) {
   return request(chatRoutes.memories, input);
 }
 export function postChat(input: {
+  visibility: ChatVisibility;
   text: string;
   attachmentIds: string[];
   clientRequestId: string;
@@ -46,10 +50,13 @@ export function applyReceipt(input: {
 }) {
   return request(chatRoutes.receipt(input.id, input.cancel), input);
 }
-export async function uploadPhoto(blob: Blob) {
-  const upload = z
-    .object({ id: z.uuid(), url: z.url() })
-    .parse(await request(chatRoutes.attachments, { mimeType: blob.type }));
+export async function uploadPhoto(blob: Blob, visibility: ChatVisibility) {
+  const upload = z.object({ id: z.uuid(), url: z.url() }).parse(
+    await request(chatRoutes.attachments, {
+      mimeType: blob.type,
+      visibility,
+    }),
+  );
   const response = await fetch(upload.url, {
     method: "PUT",
     headers: { "Content-Type": blob.type },
@@ -64,4 +71,13 @@ export async function photoUrl(id: string) {
   return z
     .object({ url: z.url() })
     .parse(await request(chatRoutes.attachment(id)));
+}
+
+export function applyActions(input: {
+  id: string;
+  version: number;
+  selected: number[];
+  cancel?: boolean;
+}) {
+  return request(chatRoutes.actions(input.id), input);
 }

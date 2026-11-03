@@ -6,7 +6,18 @@
 
 담당별 작업: [앱과 클라우드 구현 계획](./kimjipsa-app-plan.md) · [맥미니 구현 계획](./kimjipsa-mac-mini-plan.md)
 
-## 구현 기준
+## 2026-11-04 확정된 확장 규약
+
+최신 사용자 승인과 [ADR-0017](../../02-architecture/ADR/0017-local-family-agent.md)이 아래 초기 제안보다 우선한다. 앱의 제공자·키 등록은 없으며 맥미니 Hermes 설정을 자동 사용한다.
+
+- `/api/chat?visibility=shared|private`: 조회·전송·첨부의 모드를 일치시킨다. private는 요청자 본인만 조회·실행 취소·확인할 수 있다. 가족 기억에는 shared만 사용한다.
+- 워커 설정의 `capabilitiesVersion=2`를 요구한다. `/api/agent/context`와 `/api/agent/complete`는 워커 Bearer·동일 Origin·jobId·leaseToken을 사용한다. `context`는 범위 내 반복 일정을 전개하고 개인 일정 내용을 공개 범위에 따라 제거한다.
+- 결과 kind는 `reply`, `actions`, `action_proposal`, `receipt`, `add`, `proposal`, `summary`다. `calendar`와 `search`는 워커 내부의 추가 조회 요청이며 완료 RPC로 저장하지 않는다. 일정 추가 범위 조회는 1회·최대 366일이다.
+- actions는 domain(event/inventory/cart), label, payload, expected 리비전으로 구성한다. 기존 entity 입력 검증과 SQL 쓰기 규칙을 공유한다. 리비전은 모델 값 대신 서버 조회값으로 채운다. 직접 요청은 인용문 검사 후 즉시 실행, 자체 판단은 5분간 확인 대기, 묶음 변경은 전체 성공/전체 취소다.
+- 검색어는 현재 사용자 메시지의 부분 문자열로 제한한다. 검색 결과에는 URL 출처를 저장하고 화면에 링크를 표시한다. 검색 답변으로 변경 작업을 실행할 수 없다.
+- 가정 Realtime payload는 `{changed:true}`다. 개인 메시지·실행 ID와 내용은 해당 사용자 권한으로 다시 조회한다.
+
+## 초기 구현 기준
 
 | 항목 | 기준 |
 | --- | --- |

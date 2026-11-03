@@ -1,5 +1,10 @@
 import { Check, Clock3, LoaderCircle } from "lucide-react";
-import { chatErrors, type Chat, type Receipt } from "@/entities/chat-message";
+import {
+  chatErrors,
+  type Chat,
+  type Receipt,
+  type ActionProposal,
+} from "@/entities/chat-message";
 import { cn } from "@/shared/lib";
 import { StatusBadge, Text, TextButton, type StatusVariant } from "@/shared/ui";
 
@@ -16,6 +21,7 @@ const steps = ["요청 접수", "집사 처리", "응답 완료"];
 interface Props {
   run: Run;
   receipt?: Receipt;
+  proposal?: ActionProposal;
   workerOnline: boolean;
   hasPhotos: boolean;
   cancelling: boolean;
@@ -25,6 +31,7 @@ interface Props {
 const ChatRun = ({
   run,
   receipt,
+  proposal,
   workerOnline,
   hasPhotos,
   cancelling,
@@ -34,7 +41,8 @@ const ChatRun = ({
   const active = run.status === "queued" || run.status === "running";
   const state = states[run.status];
   const confirming =
-    receipt?.status === "draft" && Date.parse(receipt.expires_at) > now;
+    (receipt?.status === "draft" && Date.parse(receipt.expires_at) > now) ||
+    (proposal?.status === "draft" && Date.parse(proposal.expires_at) > now);
   const step = run.status === "queued" ? 0 : 1;
   let detail = "";
   if (run.status === "queued")

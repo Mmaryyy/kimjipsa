@@ -17,7 +17,7 @@ const ChatWelcome = () => (
       }
     />
     <Text as="p" className="text-center text-muted-foreground">
-      재고를 물어보거나 영수증 사진을 보내 주세요.
+      일정과 장보기, 재고 정리를 부탁해 보세요. 궁금한 정보는 웹에서 찾아드려요.
     </Text>
     <div className="space-y-3">
       {chatFaqs.map((faq) => (

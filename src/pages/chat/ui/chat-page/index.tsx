@@ -1,9 +1,13 @@
 "use client";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ArrowDown } from "lucide-react";
 import { useAccount } from "@/features/account";
 import { ChatComposer } from "@/features/chat-send";
-import { useChat, useChatActions } from "@/entities/chat-message";
+import {
+  useChat,
+  useChatActions,
+  type ChatVisibility,
+} from "@/entities/chat-message";
 import { Button, ErrorState, PageLayout, Skeleton, Text } from "@/shared/ui";
 import { useChatClock } from "../../model/use-chat-clock";
 import { useChatScroll } from "../../model/use-chat-scroll";
@@ -13,8 +17,13 @@ import ChatMessage from "./Message";
 import ChatWelcome from "./Welcome";
 
 const ChatPage = () => {
+  const [visibility, setVisibility] = useState<ChatVisibility>("shared");
   const account = useAccount();
-  const query = useChat(account.data?.membership?.familyId);
+  const query = useChat(
+    account.data?.membership?.familyId,
+    visibility,
+    account.data?.userId,
+  );
   const { cancel } = useChatActions();
   const now = useChatClock();
   const { viewportRef, contentRef, onScroll, onLatest, awayFromBottom } =
@@ -28,6 +37,11 @@ const ChatPage = () => {
   const receipts = useMemo(
     () => new Map(chat?.receipts.map((receipt) => [receipt.run_id, receipt])),
     [chat?.receipts],
+  );
+  const proposals = useMemo(
+    () =>
+      new Map(chat?.proposals.map((proposal) => [proposal.run_id, proposal])),
+    [chat?.proposals],
   );
   const attachments = useMemo(
     () =>
@@ -47,6 +61,8 @@ const ChatPage = () => {
       className="fixed inset-x-0 top-[var(--chat-viewport-top,0px)] z-30 mx-auto flex h-[var(--chat-viewport-height,100dvh)] max-w-content-max flex-col overflow-hidden bg-background lg:left-62"
       header={
         <ChatHeader
+          visibility={visibility}
+          onVisibilityChange={setVisibility}
           name={chat?.name ?? "집사"}
           online={chat?.workerOnline}
           failed={query.isError}
@@ -89,7 +105,9 @@ const ChatPage = () => {
           )}
           <ol
             role="log"
-            aria-label="가족 대화"
+            aria-label={
+              visibility === "private" ? "나만 보는 대화" : "가족 대화"
+            }
             aria-live="polite"
             aria-relevant="additions text"
             className="space-y-6"
@@ -103,6 +121,7 @@ const ChatPage = () => {
                   attachments={attachments}
                   run={run}
                   receipt={run ? receipts.get(run.id) : undefined}
+                  proposal={run ? proposals.get(run.id) : undefined}
                   now={now}
                   workerOnline={chat.workerOnline}
                   cancelling={cancel.isPending}
@@ -127,7 +146,11 @@ const ChatPage = () => {
         </div>
       )}
       <div className="shrink-0 bg-background px-4 pt-2 pb-[max(var(--sp-3),env(safe-area-inset-bottom))]">
-        <ChatComposer disabled={!chat || query.isError} />
+        <ChatComposer
+          key={visibility}
+          visibility={visibility}
+          disabled={!chat || query.isError}
+        />
       </div>
     </PageLayout>
   );

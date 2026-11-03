@@ -10,13 +10,18 @@ import {
   writeMemory,
   cancelChat,
   applyReceipt,
+  applyActions,
 } from "../api/api";
-export function useChat(familyId: string | undefined, enabled = true) {
+export function useChat(
+  familyId: string | undefined,
+  visibility: "shared" | "private" = "shared",
+  userId?: string | null,
+) {
   const queryClient = useQueryClient();
   const query = useQuery({
-    queryKey: ["chat", familyId],
-    queryFn: fetchChat,
-    enabled: !!familyId && enabled,
+    queryKey: ["chat", familyId, visibility, userId],
+    queryFn: () => fetchChat(visibility),
+    enabled: !!familyId && !!userId,
     refetchInterval: 60000,
   });
   useEffect(() => {
@@ -26,6 +31,8 @@ export function useChat(familyId: string | undefined, enabled = true) {
       void queryClient.invalidateQueries({ queryKey: ["chat", familyId] });
       void queryClient.invalidateQueries({ queryKey: ["ai-settings"] });
       void queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      void queryClient.invalidateQueries({ queryKey: ["events"] });
+      void queryClient.invalidateQueries({ queryKey: ["cart"] });
     };
     const channel = client
       .channel(`family:${familyId}:chat`, { config: { private: true } })
@@ -46,7 +53,7 @@ export function useChat(familyId: string | undefined, enabled = true) {
       subscription.unsubscribe();
       void client.removeChannel(channel);
     };
-  }, [familyId, queryClient]);
+  }, [familyId, queryClient, visibility]);
   return query;
 }
 export function useChatActions() {
@@ -54,9 +61,12 @@ export function useChatActions() {
   const refresh = async () => {
     await client.invalidateQueries({ queryKey: ["chat"] });
     await client.invalidateQueries({ queryKey: ["inventory"] });
+    await client.invalidateQueries({ queryKey: ["events"] });
+    await client.invalidateQueries({ queryKey: ["cart"] });
   };
   return {
     cancel: useMutation({ mutationFn: cancelChat, onSuccess: refresh }),
+    actions: useMutation({ mutationFn: applyActions, onSuccess: refresh }),
     receipt: useMutation({ mutationFn: applyReceipt, onSuccess: refresh }),
   };
 }

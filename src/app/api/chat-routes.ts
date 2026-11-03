@@ -11,12 +11,21 @@ import {
   completeAttachment,
   readAttachment,
   getAgentConfig,
+  confirmActions,
 } from "@/entities/chat-message/index.server";
 import { handleRoute, readJson } from "@/shared/server";
 type IdContext = { params: Promise<{ id: string }> };
 export function chatGET(request: Request) {
   return handleRoute(request, () =>
-    listChat(new URL(request.url).searchParams.get("after")),
+    listChat(
+      new URL(request.url).searchParams.get("after"),
+      new URL(request.url).searchParams.get("visibility"),
+    ),
+  );
+}
+export function actionsPOST(request: Request, context: IdContext) {
+  return handleRoute(request, async () =>
+    confirmActions((await context.params).id, await readJson(request)),
   );
 }
 export function chatPOST(request: Request) {

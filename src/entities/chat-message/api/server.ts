@@ -13,8 +13,20 @@ import {
   sendSchema,
   settingsInputSchema,
   settingsSchema,
+  chatVisibilitySchema,
 } from "../model/chat.schema";
 const errors = {
+  confirmation_required: [400, "제안한 변경은 확인 후 실행할 수 있어요."],
+  event_forbidden: [403, "이 일정을 변경할 권한이 없어요."],
+  private_chat_required: [403, "개인 일정은 ‘나만 보기’에서 요청해 주세요."],
+  cart_unit_mismatch: [409, "구매 품목과 재고의 단위가 달라요."],
+  cart_duplicate: [
+    409,
+    "이미 담긴 품목이에요. 수량을 합칠지 따로 담을지 알려 주세요.",
+  ],
+  invalid_cart: [400, "구매 품목의 수량·단위·보관 장소를 확인해 주세요."],
+  event_not_found: [404, "일정을 찾을 수 없어요."],
+  invalid_event: [400, "일정의 날짜와 내용을 확인해 주세요."],
   unauthorized: [401, "로그인이 필요해요."],
   forbidden: [403, "권한이 없어요."],
   family_required: [403, "가정에 참여해 주세요."],
@@ -36,14 +48,35 @@ async function command(operation: string, input: Json = {}) {
   throwDatabaseError(result.error, errors);
   return result.data;
 }
-export async function listChat(after: string | null) {
+export async function listChat(
+  after: string | null,
+  visibility: string | null = "shared",
+) {
   const cursor = z.coerce
     .number()
     .int()
     .nonnegative()
     .safe()
     .parse(after ?? 0);
-  return chatSchema.parse(await command("list", { after: cursor }));
+  return chatSchema.parse(
+    await command("list", {
+      after: cursor,
+      visibility: chatVisibilitySchema.parse(visibility ?? "shared"),
+    }),
+  );
+}
+export async function confirmActions(id: string, raw: unknown) {
+  const input = z
+    .object({
+      version: z.number().int().positive(),
+      cancel: z.boolean().default(false),
+      selected: z.array(z.number().int().min(0).max(19)).max(20).default([]),
+    })
+    .parse(raw);
+  return command(input.cancel ? "cancel-actions" : "confirm-actions", {
+    ...input,
+    id: z.uuid().parse(id),
+  });
 }
 export async function sendChat(raw: unknown) {
   return command("send", sendSchema.parse(raw));
@@ -93,7 +126,10 @@ export async function changeMemory(raw: unknown) {
 const attachmentSchema = z.object({ id: z.uuid(), path: z.string() });
 export async function createAttachment(raw: unknown) {
   const input = z
-    .object({ mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]) })
+    .object({
+      mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+      visibility: chatVisibilitySchema.default("shared"),
+    })
     .parse(raw);
   const attachment = attachmentSchema.parse(
     await command("attachment-create", input),
@@ -125,7 +161,11 @@ export async function readAttachment(id: string) {
     throw new ApiError("attachment_expired", "사진을 불러오지 못했어요.", 410);
   return { url: result.data.signedUrl };
 }
-export async function getAgentConfig(request: Request) {
+export async function agentRequest(
+  request: Request,
+  operation: string,
+  input: Json = {},
+) {
   const authorization = request.headers.get("authorization");
   if (!authorization?.startsWith("Bearer "))
     throw new ApiError("unauthorized", "인증이 필요해요.", 401);
@@ -134,18 +174,23 @@ export async function getAgentConfig(request: Request) {
     global: { headers: { Authorization: authorization } },
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const result = await client.rpc("agent_command", { operation: "config" });
+  const result = await client.rpc("agent_command", { operation, input });
   throwDatabaseError(result.error, errors);
+  return result.data;
+}
+export async function getAgentConfig(request: Request) {
+  const data = await agentRequest(request, "config");
   const config = z
     .object({
       workerId: z.uuid(),
       familyId: z.uuid(),
       connectionMode: z.literal("local"),
+      capabilitiesVersion: z.number().default(1),
       version: z.number().nullable(),
       memoryVersion: z.number().nullable(),
       name: z.string().nullable(),
       memoryEnabled: z.boolean().nullable(),
     })
-    .parse(result.data);
+    .parse(data);
   return config;
 }

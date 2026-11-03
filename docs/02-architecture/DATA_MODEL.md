@@ -193,3 +193,10 @@ P6 입력 제한(2026-10-24): 품목 이름 100자, 목록 이름 30자, 임박 
 ## 2026-11-04 가족 집사 연동
 
 가족 공용 집사는 [ADR-0017](ADR/0017-local-family-agent.md)과 `supabase/migrations/20261104000000_family_agent.sql`을 따른다. private.ai_settings·private.agent_actions·private.agent_file_deletions, public.agent_workers·chat_messages·agent_runs·chat_attachments·receipt_imports·family_memories를 추가한다. 기존 users → 개인 대화·기억 관계는 families → 공용 대화·기억 관계로 대체한다. 가정 자체가 공용 대화 ID이며 별도 family_agents 테이블은 만들지 않는다.
+
+
+### 일정·장보기 도구와 개인 채팅 확장
+
+`20261104020000_agent_capabilities.sql`은 `chat_messages.visibility(shared/private)`, 개인 열람자 `viewer_id`, 검색 출처 `sources`와 `chat_attachments.visibility`를 추가한다. 기존 대화는 shared로 유지한다. 개인 메시지는 viewer만 읽으며 연결된 실행·영수증·제안·사진도 같은 권한으로 제한한다. 개인 대화는 가족 기억 요약에서 제외하고 계정 삭제 시 함께 삭제한다.
+
+`agent_proposals`는 run별 하나의 변경 목록·상태·버전·5분 만료·적용 결과를 저장한다. 제안은 선택 항목만 원자적으로 실행하고 재확인은 같은 결과를 반환한다. 실제 변경과 `private.agent_actions` 기록, 실행 완료는 같은 트랜잭션이다. 대상의 스냅샷 리비전이 바뀌면 실행하지 않는다. 일정·재고·장바구니 쓰기는 기존 `save_event`·`write_inventory`·`write_cart`를 사용한다. 가정 채널에는 내용과 개인 메시지 ID 없이 변경 신호만 보낸다.

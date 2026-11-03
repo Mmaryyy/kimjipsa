@@ -11,13 +11,13 @@
 - 전용 프로필: `~/.hermes/profiles/kimjipsa`. `gateway.standalone`으로 개인 게이트웨이와 별도로 실행한다.
 - 기본 모델을 Hermes에서 바꾸면 다음 작업 실행에 반영한다. 앱에 설정을 복사하지 않는다.
 - 워커는 Supabase의 전용 계정으로 인증한다. 비밀번호는 macOS Keychain의 `kimjipsa-ai-gateway` 서비스에서 읽는다.
-- `config.local.json`은 Git에서 제외한다. 앱 URL, 공개 Supabase 설정, 워커 이메일, Hermes 실행기·Python·프로필 경로만 담는다. 모델 키·service_role은 넣지 않는다.
+- `config.local.json`은 Git에서 제외한다. 앱 URL, 공개 Supabase 설정, 워커 이메일, Hermes 실행기·Python·프로필 경로만 담는다. 검색용 `hermesSource`는 기본값 `~/.hermes/hermes-agent`이며 다른 설치 위치에서는 지정한다. 모델 키·service_role은 넣지 않는다.
 
 현재 앱 주소는 `http://127.0.0.1:3000`이다. 운영 앱을 사용하려면 `appUrl`을 그 HTTPS origin으로 바꾼다. Hermes는 설치된 공식 실행기로 시작한다. Python 경로는 `ruamel.yaml`이 들어 있는 Hermes 관리 런타임을 가리킨다. Hermes 업데이트가 해당 경로를 바꾸면 이 경로도 맞춰야 한다.
 
 ## 처음 설치할 때
 
-1. 기존 DB 마이그레이션 뒤에 `20261104000000_family_agent.sql`, `20261104010000_local_gateway_model.sql` 순서로 적용한다. 이미 첫 파일을 적용했다면 두 번째만 실행한다. 후속 SQL은 함수 두 개를 교체하며 기존 재고·대화 데이터는 유지한다.
+1. 기존 DB 마이그레이션 뒤에 `20261104000000_family_agent.sql`, `20261104010000_local_gateway_model.sql`, `20261104020000_agent_capabilities.sql` 순서로 적용한다. 이미 앞의 두 파일을 적용했다면 세 번째만 실행한다. 기존 재고·대화는 유지하며 새 워커는 `capabilitiesVersion=2`를 확인한다.
 2. 앱 서버에는 Supabase 설정, 파일 정리용 `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`을 둔다. 모델 키와 `SECRET_ENCRYPTION_KEY`는 사용하지 않는다.
 3. `config.example.json`을 `config.local.json`으로 복사하고 이 컴퓨터의 경로·연결 정보를 넣는다.
 4. 전용 워커를 한 번 등록한다. 기존 워커는 중복 생성하지 않는다.
@@ -40,11 +40,15 @@
 
 ## 실행 권한과 기록
 
-범용 도구와 로컬 기억을 끄고 API의 toolsets가 모두 비활성인지 확인한 후에만 가족 데이터를 보낸다. 작업 문맥과 재고 변경은 가정·작업 임대로 제한된 Supabase RPC를 사용한다. 모델이 반환한 수량 추가도 서버에서 요청 인용·단위·가정 범위를 다시 확인한다. 영수증은 사용자가 확인해야 반영된다.
+범용 도구와 로컬 기억을 끄고 API의 toolsets가 모두 비활성인지 확인한 후에만 가족 데이터를 보낸다. 작업 문맥과 변경 결과는 `/api/agent/context`·`/api/agent/complete`와 가정·작업 임대로 제한된 Supabase RPC를 사용한다. 일정 조회·등록·변경, 장바구니 조회·추가·구매 완료, 재고 조회·추가·차감·수정·삭제를 지원한다. 개인 일정은 ‘나만 보기’에서만 제공한다. 모델이 반환한 수량 추가도 서버에서 요청 인용·단위·가정 범위를 다시 확인한다. 영수증은 사용자가 확인해야 반영된다.
 
 Supabase가 가족 대화·기억의 원본이다. 작업이 끝나면 전용 프로세스를 종료하고 그 프로필의 세션·사진 캐시·응답 DB·실행 로그를 정리한다. 프로필 식별 정보·설정·SOUL은 유지한다. 이 프로필은 앱 전용이므로 별도 CLI 대화를 진행하지 않는다.
 
-임대는 90초, 갱신은 20초다. 취소·설정 변경·만료 이후의 결과 저장은 거부한다. 모든 재고 쓰기와 결과 기록은 한 트랜잭션에 있다. 만료된 작업에 변경 기록이 없으면 실패로 정리하고, 기록이 있는 상태 불명 작업은 자동 재실행하지 않는다. Realtime 재연결·작업 종료·60초 보정 조회로 누락된 신호를 복구한다.
+임대는 90초, 갱신은 20초다. 취소·설정 변경·만료 이후의 결과 저장은 거부한다. 모든 일정·재고·장바구니 쓰기와 결과 기록은 한 트랜잭션에 있다. 만료된 작업에 변경 기록이 없으면 실패로 정리하고, 기록이 있는 상태 불명 작업은 자동 재실행하지 않는다. Realtime 재연결·작업 종료·60초 보정 조회로 누락된 신호를 복구한다.
+
+## 웹 검색
+
+설치된 Hermes의 검색 설정·인증을 자동 사용한다. 검색 도구를 모델에 직접 열지 않고 `scripts/search-web.py`가 검색어 하나만 받아 호출한다. 현재 요청에 없는 가족 정보로 검색어를 만들 수 없으며, 결과 요약·출처 링크만 별도 읽기 답변에 사용한다. 모델 검색 결과로 변경 작업을 실행하지 않는다. 빈 결과는 근거가 없음을 안내하고 검색 장애는 `web_search_unavailable`로 표시한다.
 
 ## 자동 실행과 복구
 
@@ -62,6 +66,8 @@ launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.kimjipsa.ai-gateway.
 
 ## 검증
 
-사용자가 승인한 범위에서 타입 검사·변경 파일 린트를 실행한다. SQL 통합 테스트 `supabase/tests/family_agent.sql`은 두 마이그레이션을 적용한 폐기 가능한 DB에서 별도 승인 후 실행한다. 키 없이 전송·선점, 가정 격리, 중복 확인, 임대 만료, 재고 원자성을 검사한다.
+사용자가 승인한 범위에서 타입 검사·변경 파일 린트를 실행한다. SQL 통합 테스트 `supabase/tests/family_agent.sql`, `agent_capabilities.sql`, `cart_restock_undo.sql`은 모든 마이그레이션을 적용한 폐기 가능한 DB에서 승인 후 실행한다. 개인 채팅·일정 권한, 중복 실행, 임대·확인 만료, 변경 충돌, 원자적 구매·재고 반영을 검사한다. 이번 검사는 임시 PGlite PostgreSQL 환경에서 통과했다. Auth·Storage·Realtime·pgmq·cron 연동은 대체했으며 실제 Supabase 네트워크 E2E와 구분한다.
+
+Vitest는 앱의 일정 필터·입력 검증·확인 UI와 검색 프로세스 격리를 검사한다. 검색 테스트는 Hermes 검색 백엔드만 대체하며 실제 키나 검색 API를 호출하지 않는다. Playwright의 `chat-capabilities.spec.ts`는 API를 대체해 모바일·데스크톱에서 모드 전환과 초안 분리, 전송 모드, 출처 링크를 확인한다.
 
 실제 모델의 텍스트·사진 왕복과 두 사용자의 동시 확인·취소는 별도 인수 항목이다. 모델 키 입력 화면을 다시 추가하지 않는다.

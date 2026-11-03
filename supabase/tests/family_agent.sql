@@ -7,8 +7,8 @@ declare
   unit uuid; job jsonb; result jsonb; receipt uuid; items jsonb; snapshot jsonb;
 begin
   insert into auth.users(id) values(person),(partner),(outsider),(worker);
-  insert into public.users(id,provider,provider_user_id,display_name) values
-    (person,'google',person::text,'등록자'),(partner,'google',partner::text,'배우자'),(outsider,'google',outsider::text,'외부');
+  insert into public.users(id,provider,provider_user_id,display_name,terms_accepted_at,privacy_accepted_at,terms_version) values
+    (person,'google',person::text,'등록자',now(),now(),'test'),(partner,'google',partner::text,'배우자',now(),now(),'test'),(outsider,'google',outsider::text,'외부',now(),now(),'test');
   insert into public.families(id,name) values(family,'연동검증'),(other_family,'다른가정');
   insert into public.memberships(user_id,family_id,role) values(person,family,'admin'),(partner,family,'member'),(outsider,other_family,'admin');
   insert into public.agent_workers(id,family_id) values(worker,family);

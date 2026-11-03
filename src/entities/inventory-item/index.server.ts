@@ -4,3 +4,4 @@ export {
   writeInventory,
   writeInventoryMeta,
 } from "./api/server";
+export { inventoryInputSchema } from "./model/inventory.schema";

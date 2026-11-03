@@ -2,12 +2,15 @@
 import { useRef } from "react";
 import { ArrowUp, ImagePlus, LoaderCircle, Paperclip, X } from "lucide-react";
 import { Button, Text, Textarea } from "@/shared/ui";
+import type { ChatVisibility } from "@/entities/chat-message";
 import { useChatSend } from "../../model/use-chat-send";
 interface Props {
+  visibility: ChatVisibility;
   disabled?: boolean;
 }
-const ChatComposer = ({ disabled = false }: Props) => {
-  const { text, photos, onText, onRemove, send, upload } = useChatSend();
+const ChatComposer = ({ disabled = false, visibility }: Props) => {
+  const { text, photos, onText, onRemove, send, upload } =
+    useChatSend(visibility);
   const fileInput = useRef<HTMLInputElement>(null);
   const pending = send.isPending || upload.isPending;
   const canSend = !disabled && !pending && (!!text.trim() || photos.length > 0);
@@ -53,7 +56,11 @@ const ChatComposer = ({ disabled = false }: Props) => {
         maxLength={10000}
         disabled={disabled || pending}
         className="max-h-40 resize-none [field-sizing:content]"
-        placeholder="우리 집 재고를 물어보세요"
+        placeholder={
+          visibility === "private"
+            ? "나만 보는 집사에게 요청하세요"
+            : "일정·장보기·재고를 부탁해 보세요"
+        }
         enterKeyHint="send"
         onChange={(event) => onText(event.target.value)}
         onKeyDown={(event) => {

@@ -287,6 +287,33 @@ export async function listEvents(
     !range,
   );
 }
+// BOT-10: use the same recurrence expansion and permission filter as the calendar.
+export function mapAgentEvents(
+  raw: unknown,
+  requesterId: string,
+  visibility: "shared" | "private",
+  range: { start: string; end: string },
+) {
+  const records = z
+    .object({
+      records: z.array(recordSchema),
+      exceptions: z.array(exceptionSchema),
+    })
+    .parse(raw);
+  return expandEventRecords(
+    records.records,
+    records.exceptions,
+    visibility === "private"
+      ? requesterId
+      : "00000000-0000-0000-0000-000000000000",
+    range.start,
+    range.end,
+  ).filter(
+    (event) =>
+      event.kind === "dday" ||
+      (event.startDate <= range.end && event.endDate >= range.start),
+  );
+}
 async function nextRecurringDetail(id: string, auth?: AuthContext) {
   const today = format(new Date(), "yyyy-MM-dd", { in: tz("Asia/Seoul") });
   const events = await listEvents(auth);

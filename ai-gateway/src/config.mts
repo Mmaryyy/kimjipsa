@@ -3,6 +3,7 @@ import { promisify } from "node:util";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
+import { homedir } from "node:os";
 const execute = promisify(execFile);
 export const gatewayRoot = fileURLToPath(new URL("../", import.meta.url));
 export const configSchema = z.object({
@@ -20,6 +21,7 @@ export const configSchema = z.object({
   keychainService: z.string().default("kimjipsa-ai-gateway"),
   hermesCommand: z.string().min(1),
   hermesPython: z.string().min(1),
+  hermesSource: z.string().min(1).default(`${homedir()}/.hermes/hermes-agent`),
   hermesProfile: z.string().min(1),
   hermesPort: z.number().int().min(1024).max(65535).default(8643),
 });
