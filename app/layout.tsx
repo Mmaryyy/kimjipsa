@@ -13,9 +13,28 @@ import { ToastProvider } from "@/shared/ui";
 import { themeModeStorageKey } from "@/shared/config";
 import { themeBackground } from "@/app/config/theme.server";
 
+const title = "김집사 | 집사야, 할 일이 있다";
+const description =
+  "같이 사는 우리의 일정과 살림을 챙기는 내 손안의 합법적 따까리. 일단 뭐부터 할까요?";
+const ogImage = { url: "/images/thumbnail.png", width: 1200, height: 630 };
+
 export const metadata: Metadata = {
-  title: "김집사",
-  description: "우리 집 일정과 살림을 함께 관리해요.",
+  title,
+  description,
+  openGraph: {
+    type: "website",
+    siteName: "김집사",
+    locale: "ko_KR",
+    title,
+    description,
+    images: [ogImage],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+    images: [ogImage],
+  },
   appleWebApp: { capable: true, title: "김집사" },
   icons: {
     icon: "/icons/icon-192.png",
