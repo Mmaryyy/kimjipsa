@@ -2,11 +2,10 @@ import { TZDate, tz } from "@date-fns/tz";
 import {
   addDays,
   addMinutes,
-  addYears,
   differenceInCalendarDays,
   differenceInMinutes,
-  eachDayOfInterval,
   format,
+  getDaysInMonth,
   isValid,
   startOfHour,
 } from "date-fns";
@@ -48,19 +47,43 @@ export function timeLabel(time: string) {
   return `${period === "am" ? "오전" : "오후"} ${hour}:${minute}`;
 }
 
-export function dateOptions(date: string, today: string, otherDate = date) {
-  return eachDayOfInterval({
-    start: addYears(wheelDate(date < otherDate ? date : otherDate), -1),
-    end: addYears(wheelDate(date > otherDate ? date : otherDate), 1),
-  }).map((day) => {
-    const value = format(day, "yyyy-MM-dd");
-    return {
-      value,
-      label:
-        value === today ? "오늘" : format(day, "M월 d일 E", { locale: ko }),
-      textValue: format(day, "yyyy년 M월 d일 EEEE", { locale: ko }),
-    };
-  });
+// 월의 일 수는 과거 서울 오프셋의 영향을 피하도록 연·월 숫자로만 계산한다.
+export function dateWheelOptions(date: string) {
+  const [year, month] = date.split("-");
+  const years = Array.from({ length: 201 }, (_, index) => 1900 + index);
+  if (Number(year) < 1900) years.unshift(Number(year));
+  if (Number(year) > 2100) years.push(Number(year));
+  return {
+    years: years.map((value) => ({
+      value: String(value),
+      label: `${value}년`,
+    })),
+    months: Array.from({ length: 12 }, (_, index) => ({
+      value: String(index + 1).padStart(2, "0"),
+      label: `${index + 1}월`,
+    })),
+    days: Array.from(
+      { length: getDaysInMonth(new Date(Number(year), Number(month) - 1, 1)) },
+      (_, index) => ({
+        value: String(index + 1).padStart(2, "0"),
+        label: `${index + 1}일`,
+      }),
+    ),
+  };
+}
+
+export function changeWheelDate(
+  date: string,
+  part: { year?: string; month?: string; day?: string },
+) {
+  const [currentYear, currentMonth, currentDay] = date.split("-");
+  const year = part.year ?? currentYear;
+  const month = part.month ?? currentMonth;
+  const day = Math.min(
+    Number(part.day ?? currentDay),
+    getDaysInMonth(new Date(Number(year), Number(month) - 1, 1)),
+  );
+  return `${year}-${month}-${String(day).padStart(2, "0")}`;
 }
 
 /** 시각이 각각 선택인 기존 일정도 빈 시각을 채우지 않고 날짜 길이를 보존한다. */

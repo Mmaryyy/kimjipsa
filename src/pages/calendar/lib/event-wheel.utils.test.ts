@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  dateOptions,
+  changeWheelDate,
+  dateWheelOptions,
   defaultDateRange,
   hourTo12,
   hourTo24,
@@ -77,14 +78,6 @@ describe("CAL-01 CAL-02 SCN-CAL-1 P5.5 날짜와 시간 변환", () => {
       endTime: "",
     });
   });
-  it("윤일도 포함하고 오늘 표시와 기준일 앞뒤 1년 범위를 제공해요", () => {
-    const options = dateOptions("2028-02-29", "2028-02-29");
-    expect(options[0].value).toBe("2027-02-28");
-    expect(options.at(-1)?.value).toBe("2029-02-28");
-    expect(options.find((option) => option.value === "2028-02-29")?.label).toBe(
-      "오늘",
-    );
-  });
 });
 
 it("CAL-01 SCN-CAL-1 한쪽 시각만 있는 일정은 확인할 초기 값에서도 빈 시각을 유지해요", () => {
@@ -97,16 +90,53 @@ it("CAL-01 SCN-CAL-1 한쪽 시각만 있는 일정은 확인할 초기 값에�
     startTime: "",
   });
 });
-it("CAL-02 SCN-CAL-1 날짜 범위는 양쪽 기준일 앞뒤 일 년을 모두 포함해요", () => {
-  const options = dateOptions("2026-10-21", "2026-10-21", "2027-10-21");
-  expect(options[0].value).toBe("2025-10-21");
-  expect(options.at(-1)?.value).toBe("2028-10-21");
-  const next = moveRangeStart(
-    { ...range, endDate: "2027-10-21" },
-    "2027-10-21",
-    range.startTime,
+describe("CAL-01 CAL-02 SCN-CAL-1 P10.6.3 연·월·일 휠", () => {
+  it("1900~2100년과 2021년 2월 8일을 선택할 옵션을 제공해요", () => {
+    const options = dateWheelOptions("2021-02-08");
+    expect(options.years).toHaveLength(201);
+    expect(options.years[0].value).toBe("1900");
+    expect(options.years.at(-1)?.value).toBe("2100");
+    expect(options.years).toContainEqual({ value: "2021", label: "2021년" });
+    expect(options.months).toContainEqual({ value: "02", label: "2월" });
+    expect(options.days).toContainEqual({ value: "08", label: "8일" });
+    expect(
+      changeWheelDate("2026-11-03", { year: "2021", month: "02", day: "08" }),
+    ).toBe("2021-02-08");
+  });
+  it("윤년에서 평년으로 바꾸면 2월 29일을 28일로 맞춰요", () => {
+    expect(changeWheelDate("2024-02-29", { year: "2025" })).toBe("2025-02-28");
+    expect(dateWheelOptions("2024-02-29").days).toHaveLength(29);
+    expect(dateWheelOptions("2025-02-28").days).toHaveLength(28);
+  });
+  it("월을 바꾸면 일 수를 바꾸고 없는 날은 마지막 날로 맞춰요", () => {
+    expect(changeWheelDate("2026-01-31", { month: "04" })).toBe("2026-04-30");
+    expect(dateWheelOptions("2026-01-31").days).toHaveLength(31);
+    expect(dateWheelOptions("2026-04-30").days).toHaveLength(30);
+    expect(dateWheelOptions("1900-02-01").days).toHaveLength(28);
+    expect(dateWheelOptions("2000-02-01").days).toHaveLength(29);
+  });
+  it.each(["1899", "2101"])(
+    "범위 밖 초기 연도 %s도 목록에 포함해요",
+    (year) => {
+      expect(dateWheelOptions(`${year}-01-01`).years).toContainEqual({
+        value: year,
+        label: `${year}년`,
+      });
+    },
   );
-  expect(options.some(({ value }) => value === next.endDate)).toBe(true);
+  it("과거로 시작을 옮겨도 종료가 같은 기간만큼 따라가요", () => {
+    expect(
+      moveRangeStart(
+        { ...range, endDate: "2026-10-23" },
+        "2021-02-08",
+        range.startTime,
+      ),
+    ).toEqual({
+      ...range,
+      startDate: "2021-02-08",
+      endDate: "2021-02-10",
+    });
+  });
 });
 it("CAL-01 SCN-CAL-1 선택일의 다음 정시가 밤 열한 시면 종료는 다음 날이에요", () => {
   expect(

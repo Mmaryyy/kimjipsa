@@ -1,7 +1,8 @@
 export { DateTimeInput } from "./date-time-input";
 export { DateTimeSheet } from "./date-time-sheet";
 export {
-  dateOptions,
+  changeWheelDate,
+  dateWheelOptions,
   defaultDateRange,
   hourTo12,
   hourTo24,

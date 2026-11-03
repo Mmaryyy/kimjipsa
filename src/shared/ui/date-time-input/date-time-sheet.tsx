@@ -5,14 +5,14 @@ import { cn } from "@/shared/lib";
 import { Sheet, TextButton } from "@/shared/ui";
 import { WheelPicker, WheelPickerWrapper } from "@/shared/ui/wheel-picker";
 import {
+  changeWheelDate,
   dateLabel,
-  dateOptions,
+  dateWheelOptions,
   hourTo12,
   hourTo24,
   initialWheelRange,
   moveRangeStart,
   timeLabel,
-  todayInSeoul,
   type DateTimeRange,
 } from "./date-time.utils";
 import {
@@ -49,12 +49,8 @@ export function DateTimeSheet({
   const date = tab === "start" ? draft.startDate : draft.endDate;
   const time = tab === "start" ? draft.startTime : draft.endTime;
   const parts = hourTo12(time || "09:00");
-  const today = todayInSeoul();
-  // 두 기준일 앞뒤 일 년의 합집합을 고정해 탭 전환이나 회전 중 범위가 줄지 않게 한다.
-  const options = useMemo(
-    () => dateOptions(range.startDate, today, range.endDate),
-    [range.startDate, range.endDate, today],
-  );
+  const [year, month, day] = date.split("-");
+  const options = useMemo(() => dateWheelOptions(date), [date]);
   const invalidRange =
     !singleDate &&
     (draft.endDate < draft.startDate ||
@@ -139,13 +135,33 @@ export function DateTimeSheet({
         />
         <WheelPickerWrapper key={tab}>
           {!timeOnly && (
-            <WheelPicker
-              label="날짜"
-              className={dateOnly ? undefined : "flex-[2.5]"}
-              options={options}
-              value={date}
-              onValueChange={(date) => onChange(date, time)}
-            />
+            <>
+              <WheelPicker
+                label="연도"
+                className="flex-[1.6]"
+                options={options.years}
+                value={year}
+                onValueChange={(year) =>
+                  onChange(changeWheelDate(date, { year }), time)
+                }
+              />
+              <WheelPicker
+                label="월"
+                options={options.months}
+                value={month}
+                onValueChange={(month) =>
+                  onChange(changeWheelDate(date, { month }), time)
+                }
+              />
+              <WheelPicker
+                label="일"
+                options={options.days}
+                value={day}
+                onValueChange={(day) =>
+                  onChange(changeWheelDate(date, { day }), time)
+                }
+              />
+            </>
           )}
           {!dateOnly && (
             <>

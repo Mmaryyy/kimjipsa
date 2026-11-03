@@ -14,9 +14,13 @@ const range = {
 function Editor({
   initial = range,
   dateOnly = false,
+  singleDate = false,
+  timeOnly = false,
 }: {
   initial?: DateTimeRange;
   dateOnly?: boolean;
+  singleDate?: boolean;
+  timeOnly?: boolean;
 }) {
   const [value, setValue] = useState(initial);
   const [tab, setTab] = useState<"start" | "end" | null>(null);
@@ -33,7 +37,8 @@ function Editor({
           range={value}
           initialTab={tab}
           dateOnly={dateOnly}
-          singleDate={false}
+          singleDate={singleDate}
+          timeOnly={timeOnly}
           onOpenChange={(open) => {
             if (!open) setTab(null);
           }}
@@ -109,10 +114,10 @@ describe("CAL-01 CAL-02 SCN-CAL-1 P5.5 휠 시트", () => {
         <Editor dateOnly initial={{ ...range, startTime: "", endTime: "" }} />,
       );
       fireEvent.click(screen.getByRole("button", { name: "시작 열기" }));
-      expect(screen.getAllByRole("spinbutton")).toHaveLength(1);
-      expect(screen.getByRole("spinbutton", { name: "날짜" })).toBeVisible();
+      expect(screen.getAllByRole("spinbutton")).toHaveLength(3);
+      expect(screen.getByRole("spinbutton", { name: "연도" })).toBeVisible();
       expect(screen.getByRole("button", { name: "확인" })).toBeEnabled();
-      move("날짜");
+      move("일");
       fireEvent.click(screen.getByRole("button", { name: "확인" }));
       expect(formValue()).toEqual({
         ...range,
@@ -132,7 +137,7 @@ describe("CAL-01 CAL-02 SCN-CAL-1 P5.5 휠 시트", () => {
     fireEvent.click(screen.getByRole("button", { name: "확인" }));
     expect(formValue()).toEqual(initial);
     fireEvent.click(screen.getByRole("button", { name: "시작 열기" }));
-    move("날짜");
+    move("일");
     fireEvent.click(screen.getByRole("button", { name: "확인" }));
     expect(formValue()).toEqual({
       ...initial,
@@ -155,4 +160,87 @@ it("CAL-01 SCN-CAL-1 시작 시각만 고쳐도 빈 종료 시각을 채우지 �
   move("시");
   fireEvent.click(screen.getByRole("button", { name: "확인" }));
   expect(formValue()).toEqual({ ...range, startTime: "10:00", endTime: "" });
+});
+
+describe("CAL-01 CAL-02 SCN-CAL-1 P10.6.3 날짜 휠", () => {
+  it("2021년 2월 8일을 골라 확인하면 종료도 같은 길이로 따라와요", () => {
+    render(<Editor />);
+    fireEvent.click(screen.getByRole("button", { name: "시작 열기" }));
+    expect(screen.getAllByRole("spinbutton")).toHaveLength(6);
+    for (let index = 0; index < 5; index += 1) move("연도", "ArrowUp");
+    for (let index = 0; index < 8; index += 1) move("월", "ArrowUp");
+    for (let index = 0; index < 13; index += 1) move("일", "ArrowUp");
+    fireEvent.click(screen.getByRole("button", { name: "확인" }));
+    expect(formValue()).toEqual({
+      ...range,
+      startDate: "2021-02-08",
+      endDate: "2021-02-08",
+    });
+  });
+  it("윤년에서 평년으로 바꾸면 일 휠도 28일로 보정해요", () => {
+    render(
+      <Editor
+        initial={{ ...range, startDate: "2024-02-29", endDate: "2024-02-29" }}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "시작 열기" }));
+    move("연도");
+    expect(screen.getByRole("spinbutton", { name: "일" })).toHaveAttribute(
+      "aria-valuetext",
+      "28일",
+    );
+    expect(screen.getByRole("spinbutton", { name: "일" })).toHaveAttribute(
+      "aria-valuemax",
+      "27",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "확인" }));
+    expect(formValue().startDate).toBe("2025-02-28");
+  });
+  it("월을 바꿀 때 일 휠을 새 달에 맞추고 단일 날짜의 종료도 시작과 같게 해요", () => {
+    render(
+      <Editor
+        dateOnly
+        singleDate
+        initial={{ ...range, startDate: "2026-03-31", endDate: "2026-03-31" }}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "시작 열기" }));
+    expect(screen.getAllByRole("spinbutton")).toHaveLength(3);
+    move("월");
+    expect(screen.getByRole("spinbutton", { name: "일" })).toHaveAttribute(
+      "aria-valuetext",
+      "30일",
+    );
+    expect(screen.getByRole("spinbutton", { name: "일" })).toHaveAttribute(
+      "aria-valuemax",
+      "29",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "확인" }));
+    expect(formValue()).toEqual({
+      startDate: "2026-04-30",
+      endDate: "2026-04-30",
+      startTime: "",
+      endTime: "",
+    });
+  });
+  it("종료 날짜를 시작보다 앞으로 바꾸면 확인을 막아요", () => {
+    render(<Editor />);
+    fireEvent.click(screen.getByRole("button", { name: "종료 열기" }));
+    move("연도", "ArrowUp");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "종료는 시작보다 뒤여야 해요.",
+    );
+    expect(screen.getByRole("button", { name: "확인" })).toBeDisabled();
+  });
+  it("시간만 입력할 때는 기존 시간 휠 3개만 보여요", () => {
+    render(<Editor timeOnly singleDate />);
+    fireEvent.click(screen.getByRole("button", { name: "시작 열기" }));
+    expect(screen.getAllByRole("spinbutton")).toHaveLength(3);
+    expect(
+      screen.queryByRole("spinbutton", { name: "연도" }),
+    ).not.toBeInTheDocument();
+    move("분");
+    fireEvent.click(screen.getByRole("button", { name: "확인" }));
+    expect(formValue().startTime).toBe("09:01");
+  });
 });
