@@ -1,6 +1,11 @@
 "use client";
-import { useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo } from "react";
+import {
+  useInfiniteQuery,
+  useQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { createBrowserSupabaseClient } from "@/shared/api";
 import { isMockDataEnabled } from "@/shared/config";
 import {
@@ -12,15 +17,18 @@ import {
   applyReceipt,
   applyActions,
 } from "../api/api";
+import { mergeChatPages } from "./chat.utils";
 export function useChat(
   familyId: string | undefined,
   visibility: "shared" | "private" = "shared",
   userId?: string | null,
 ) {
   const queryClient = useQueryClient();
-  const query = useQuery({
-    queryKey: ["chat", familyId, visibility, userId],
-    queryFn: () => fetchChat(visibility),
+  const query = useInfiniteQuery({
+    queryKey: ["chat", familyId, visibility, userId, "pages"],
+    queryFn: ({ pageParam }) => fetchChat(visibility, pageParam),
+    initialPageParam: null as number | null,
+    getNextPageParam: (page) => page.nextBefore,
     enabled: !!familyId && !!userId,
     refetchInterval: 60000,
   });
@@ -54,7 +62,11 @@ export function useChat(
       void client.removeChannel(channel);
     };
   }, [familyId, queryClient, visibility]);
-  return query;
+  const data = useMemo(
+    () => query.data && mergeChatPages(query.data.pages),
+    [query.data],
+  );
+  return { ...query, data };
 }
 export function useChatActions() {
   const client = useQueryClient();

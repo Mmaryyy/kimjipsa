@@ -280,6 +280,10 @@ export type Database<
     };
     Views: { [_ in never]: never };
     Functions: {
+      chat_page: {
+        Args: { input?: Json };
+        Returns: Json;
+      };
       chat_command: {
         Args: { operation: string; input?: Json };
         Returns: Json;

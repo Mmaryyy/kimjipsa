@@ -18,7 +18,7 @@ type IdContext = { params: Promise<{ id: string }> };
 export function chatGET(request: Request) {
   return handleRoute(request, () =>
     listChat(
-      new URL(request.url).searchParams.get("after"),
+      new URL(request.url).searchParams.get("before"),
       new URL(request.url).searchParams.get("visibility"),
     ),
   );

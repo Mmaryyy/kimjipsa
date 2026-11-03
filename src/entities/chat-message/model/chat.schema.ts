@@ -115,6 +115,7 @@ export const chatSchema = z.object({
   familyId: z.uuid(),
   name: z.string(),
   workerOnline: z.boolean(),
+  nextBefore: z.number().int().positive().safe().nullable(),
   messages: z.array(messageSchema),
   runs: z.array(
     z.object({

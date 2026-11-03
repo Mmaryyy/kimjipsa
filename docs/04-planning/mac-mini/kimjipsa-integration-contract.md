@@ -66,7 +66,7 @@ Realtime으로 작업 알림을 받은 워커가 HTTPS RPC로 대기열의 작�
 | 인터페이스 제안 | 담당과 처리 |
 | --- | --- |
 | POST /api/chat | 앱이 사용자·가정을 확인하고 text, attachmentIds, clientRequestId를 접수. 메시지와 작업 ID 반환 |
-| GET /api/chat | 앱이 공용 대화의 마지막 순서 이후 메시지와 현재 작업·카드 상태 반환 |
+| GET /api/chat | `visibility=shared\|private`, 선택적 `before` 순서 커서. 최근 50개 또는 커서 이전 50개를 시간순으로 반환하고, `nextBefore`가 null이면 이전 대화 없음. 작업·카드·사진 정보는 해당 페이지 메시지에 연결된 것만 반환 |
 | POST /api/chat/attachments | 앱이 비공개 업로드 권한 발급. 업로드 완료 확인 후에만 작업 첨부 허용 |
 | POST /api/chat/runs/:id/cancel | 앱이 가족과 실행 상태를 확인해 취소 요청. 실행 중이면 워커에 중단 전달 |
 | GET /api/agent/config | 등록된 워커에 한해 연결된 가족의 실행 설정·설정 버전과 필요한 자격 공급 |

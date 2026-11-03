@@ -36,7 +36,7 @@ const ChatMessage = ({
   cancelling,
   onCancel,
 }: Props) => (
-  <li className="space-y-2">
+  <li data-message-id={message.id} className="space-y-2">
     <div className={messageRowStyles({ role: message.role })}>
       {message.role === "assistant" && (
         <Sparkles

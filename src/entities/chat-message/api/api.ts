@@ -7,20 +7,13 @@ import {
   type ReceiptItem,
   type ChatVisibility,
 } from "../model/chat.schema";
-export async function fetchChat(visibility: ChatVisibility = "shared") {
-  let chat = chatSchema.parse(
-    await request(`${chatRoutes.messages}?visibility=${visibility}`),
-  );
-  while (chat.messages.length && chat.messages.length % 100 === 0) {
-    const next = chatSchema.parse(
-      await request(
-        `${chatRoutes.messages}?visibility=${visibility}&after=${chat.messages.at(-1)!.sequence}`,
-      ),
-    );
-    chat = { ...next, messages: [...chat.messages, ...next.messages] };
-    if (next.messages.length < 100) break;
-  }
-  return chat;
+export async function fetchChat(
+  visibility: ChatVisibility = "shared",
+  before: number | null = null,
+) {
+  const params = new URLSearchParams({ visibility });
+  if (before !== null) params.set("before", String(before));
+  return chatSchema.parse(await request(`${chatRoutes.messages}?${params}`));
 }
 export async function fetchSettings() {
   return settingsSchema.parse(await request(chatRoutes.settings));

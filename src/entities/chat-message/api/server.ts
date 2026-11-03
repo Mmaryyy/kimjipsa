@@ -49,21 +49,22 @@ async function command(operation: string, input: Json = {}) {
   return result.data;
 }
 export async function listChat(
-  after: string | null,
+  before: string | null,
   visibility: string | null = "shared",
 ) {
-  const cursor = z.coerce
-    .number()
-    .int()
-    .nonnegative()
-    .safe()
-    .parse(after ?? 0);
-  return chatSchema.parse(
-    await command("list", {
-      after: cursor,
+  const cursor =
+    before === null
+      ? null
+      : z.coerce.number().int().positive().safe().parse(before);
+  const client = await createServerSupabaseClient();
+  const result = await client.rpc("chat_page", {
+    input: {
+      before: cursor,
       visibility: chatVisibilitySchema.parse(visibility ?? "shared"),
-    }),
-  );
+    },
+  });
+  throwDatabaseError(result.error, errors);
+  return chatSchema.parse(result.data);
 }
 export async function confirmActions(id: string, raw: unknown) {
   const input = z

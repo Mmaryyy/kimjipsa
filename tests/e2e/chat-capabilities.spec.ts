@@ -45,6 +45,7 @@ for (const viewport of [
             familyId,
             name: "집사",
             workerOnline: true,
+            nextBefore: null,
             runs: [],
             receipts: [],
             proposals: [],

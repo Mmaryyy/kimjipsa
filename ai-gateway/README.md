@@ -17,7 +17,7 @@
 
 ## 처음 설치할 때
 
-1. 기존 DB 마이그레이션 뒤에 `20261104000000_family_agent.sql`, `20261104010000_local_gateway_model.sql`, `20261104020000_agent_capabilities.sql` 순서로 적용한다. 이미 앞의 두 파일을 적용했다면 세 번째만 실행한다. 기존 재고·대화는 유지하며 새 워커는 `capabilitiesVersion=2`를 확인한다.
+1. 기존 DB 마이그레이션 뒤에 `20261104000000_family_agent.sql`, `20261104010000_local_gateway_model.sql`, `20261104020000_agent_capabilities.sql`, `20261104030000_chat_pagination.sql` 순서로 적용한다. 앞의 세 파일을 이미 적용했다면 네 번째만 실행한다. 기존 재고·대화는 유지하며 워커는 `capabilitiesVersion=2`를 확인하고 앱은 `chat_page`로 최근 대화부터 조회한다.
 2. 앱 서버에는 Supabase 설정, 파일 정리용 `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`을 둔다. 모델 키와 `SECRET_ENCRYPTION_KEY`는 사용하지 않는다.
 3. `config.example.json`을 `config.local.json`으로 복사하고 이 컴퓨터의 경로·연결 정보를 넣는다.
 4. 전용 워커를 한 번 등록한다. 기존 워커는 중복 생성하지 않는다.

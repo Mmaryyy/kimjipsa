@@ -26,8 +26,26 @@ const ChatPage = () => {
   );
   const { cancel } = useChatActions();
   const now = useChatClock();
-  const { viewportRef, contentRef, onScroll, onLatest, awayFromBottom } =
-    useChatScroll();
+  const { fetchNextPage } = query;
+  const onLoadOlder = useCallback(
+    () => fetchNextPage({ cancelRefetch: false }),
+    [fetchNextPage],
+  );
+  const {
+    viewportRef,
+    contentRef,
+    onScroll,
+    onLatest,
+    onOlder,
+    awayFromBottom,
+  } = useChatScroll({
+    scope: `${account.data?.membership?.familyId}:${account.data?.userId}:${visibility}`,
+    messages: query.data?.messages,
+    hasOlder: query.hasNextPage,
+    fetching: query.isFetching,
+    olderFailed: query.isFetchNextPageError,
+    onLoadOlder,
+  });
   useChatViewport();
   const chat = query.data;
   const runs = useMemo(
@@ -65,14 +83,14 @@ const ChatPage = () => {
           onVisibilityChange={setVisibility}
           name={chat?.name ?? "집사"}
           online={chat?.workerOnline}
-          failed={query.isError}
+          failed={query.isError && !query.isFetchNextPageError}
         />
       }
     >
       <div
         ref={viewportRef}
         onScroll={onScroll}
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 [overflow-anchor:none]"
         aria-label="대화 내역"
         tabIndex={0}
       >
@@ -88,7 +106,7 @@ const ChatPage = () => {
               <Skeleton className="h-24 w-3/4" />
             </div>
           )}
-          {query.error && (
+          {query.error && !query.isFetchNextPageError && (
             <ErrorState
               message={query.error.message}
               onRetry={onRefetch}
@@ -103,12 +121,36 @@ const ChatPage = () => {
               맥미니 연결을 기다리고 있어요. 보낸 요청은 연결되면 처리해요.
             </Text>
           )}
+          {chat && query.hasNextPage && (
+            <div className="flex flex-col items-center gap-2 py-3">
+              {query.isFetchNextPageError && (
+                <Text
+                  as="p"
+                  role="alert"
+                  variant="caption"
+                  className="text-error-text"
+                >
+                  이전 대화를 불러오지 못했어요. 다시 시도해 주세요.
+                </Text>
+              )}
+              <Button
+                variant="glass"
+                size="sm"
+                onClick={onOlder}
+                disabled={query.isFetching}
+              >
+                {query.isFetchingNextPage
+                  ? "이전 대화를 불러오는 중…"
+                  : "이전 대화 불러오기"}
+              </Button>
+            </div>
+          )}
           <ol
             role="log"
             aria-label={
               visibility === "private" ? "나만 보는 대화" : "가족 대화"
             }
-            aria-live="polite"
+            aria-live={query.isFetchingNextPage ? "off" : "polite"}
             aria-relevant="additions text"
             className="space-y-6"
           >
@@ -149,7 +191,7 @@ const ChatPage = () => {
         <ChatComposer
           key={visibility}
           visibility={visibility}
-          disabled={!chat || query.isError}
+          disabled={!chat || (query.isError && !query.isFetchNextPageError)}
         />
       </div>
     </PageLayout>
