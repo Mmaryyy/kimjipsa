@@ -1,0 +1,151 @@
+import "server-only";
+import { createClient } from "@supabase/supabase-js";
+import { z } from "zod";
+import { ApiError, type Database, type Json } from "@/shared/api";
+import { getSupabaseConfig } from "@/shared/config";
+import {
+  createServerSupabaseClient,
+  throwDatabaseError,
+} from "@/shared/server";
+import {
+  chatSchema,
+  receiptItemSchema,
+  sendSchema,
+  settingsInputSchema,
+  settingsSchema,
+} from "../model/chat.schema";
+const errors = {
+  unauthorized: [401, "로그인이 필요해요."],
+  forbidden: [403, "권한이 없어요."],
+  family_required: [403, "가정에 참여해 주세요."],
+  ai_key_missing: [
+    503,
+    "집사 연결 업데이트가 필요해요. 관리자에게 알려 주세요.",
+  ],
+  state_conflict: [409, "내용이 바뀌었거나 만료되었어요. 새로고침해 주세요."],
+  invalid_inventory: [400, "품목의 수량과 단위를 확인해 주세요."],
+  invalid_chat: [400, "입력 내용을 확인해 주세요."],
+  attachment_expired: [410, "사진이 만료되었어요. 다시 첨부해 주세요."],
+  invalid_attachment: [400, "사진 업로드를 완료해 주세요."],
+  not_found: [404, "내용을 찾을 수 없어요."],
+  lease_lost: [409, "작업 권한이 만료되었어요."],
+} as const;
+async function command(operation: string, input: Json = {}) {
+  const client = await createServerSupabaseClient();
+  const result = await client.rpc("chat_command", { operation, input });
+  throwDatabaseError(result.error, errors);
+  return result.data;
+}
+export async function listChat(after: string | null) {
+  const cursor = z.coerce
+    .number()
+    .int()
+    .nonnegative()
+    .safe()
+    .parse(after ?? 0);
+  return chatSchema.parse(await command("list", { after: cursor }));
+}
+export async function sendChat(raw: unknown) {
+  return command("send", sendSchema.parse(raw));
+}
+export async function cancelRun(id: string) {
+  return command("cancel", { id: z.uuid().parse(id) });
+}
+export async function confirmReceipt(id: string, raw: unknown, cancel = false) {
+  const input = z
+    .object({
+      version: z.number().int().positive(),
+      items: z.array(receiptItemSchema).min(1).max(100).optional(),
+    })
+    .parse(raw);
+  if (!cancel && !input.items?.some((item) => item.selected && item.unit_id))
+    throw new ApiError("invalid_inventory", "품목과 단위를 선택해 주세요.");
+  return command(cancel ? "cancel-receipt" : "confirm", {
+    ...input,
+    id: z.uuid().parse(id),
+  });
+}
+export async function getAiSettings() {
+  return settingsSchema.parse(await command("settings"));
+}
+export async function saveAiSettings(raw: unknown) {
+  return command("save-settings", settingsInputSchema.parse(raw));
+}
+export async function changeMemory(raw: unknown) {
+  const input = z
+    .discriminatedUnion("action", [
+      z.object({
+        action: z.literal("save-memory"),
+        id: z.uuid().optional(),
+        version: z.number().int().positive().optional(),
+        text: z.string().trim().min(1).max(2000),
+      }),
+      z.object({
+        action: z.literal("delete-memory"),
+        id: z.uuid(),
+        version: z.number().int().positive(),
+      }),
+      z.object({ action: z.literal("reset-memories") }),
+    ])
+    .parse(raw);
+  return command(input.action, input);
+}
+const attachmentSchema = z.object({ id: z.uuid(), path: z.string() });
+export async function createAttachment(raw: unknown) {
+  const input = z
+    .object({ mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]) })
+    .parse(raw);
+  const attachment = attachmentSchema.parse(
+    await command("attachment-create", input),
+  );
+  const client = await createServerSupabaseClient();
+  const result = await client.storage
+    .from("chat-attachments")
+    .createSignedUploadUrl(attachment.path);
+  if (result.error)
+    throw new ApiError(
+      "upload_failed",
+      "사진 업로드를 준비하지 못했어요.",
+      502,
+    );
+  return { id: attachment.id, url: result.data.signedUrl };
+}
+export async function completeAttachment(id: string) {
+  return command("attachment-ready", { id: z.uuid().parse(id) });
+}
+export async function readAttachment(id: string) {
+  const attachment = attachmentSchema.parse(
+    await command("attachment-read", { id: z.uuid().parse(id) }),
+  );
+  const client = await createServerSupabaseClient();
+  const result = await client.storage
+    .from("chat-attachments")
+    .createSignedUrl(attachment.path, 60);
+  if (result.error)
+    throw new ApiError("attachment_expired", "사진을 불러오지 못했어요.", 410);
+  return { url: result.data.signedUrl };
+}
+export async function getAgentConfig(request: Request) {
+  const authorization = request.headers.get("authorization");
+  if (!authorization?.startsWith("Bearer "))
+    throw new ApiError("unauthorized", "인증이 필요해요.", 401);
+  const { url, key } = getSupabaseConfig();
+  const client = createClient<Database>(url, key, {
+    global: { headers: { Authorization: authorization } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const result = await client.rpc("agent_command", { operation: "config" });
+  throwDatabaseError(result.error, errors);
+  const config = z
+    .object({
+      workerId: z.uuid(),
+      familyId: z.uuid(),
+      connectionMode: z.literal("local"),
+      version: z.number().nullable(),
+      memoryVersion: z.number().nullable(),
+      name: z.string().nullable(),
+      memoryEnabled: z.boolean().nullable(),
+    })
+    .parse(result.data);
+  return config;
+}

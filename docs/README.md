@@ -42,4 +42,12 @@
 
 AI 스킬은 저장소 루트 `.agents/skills/`에 있습니다(`.claude/skills`는 심볼릭 링크).
 
+## 맥미니 연동 계획
+
+2026-11-04 사용자가 앱·맥미니 구현과 보관 정책을 승인했습니다. 구체 결정은 [ADR-0017](02-architecture/ADR/0017-local-family-agent.md), 적용·검증 상태는 [구현 진행 상태](04-planning/mac-mini/IMPLEMENTATION.md)를 봅니다. 아래 첨부 계획 원문은 보존합니다.
+
+- [앱과 클라우드 구현 계획](04-planning/mac-mini/kimjipsa-app-plan.md): 앱에 추가할 기능과 Vercel·Supabase 작업
+- [맥미니 구현 계획](04-planning/mac-mini/kimjipsa-mac-mini-plan.md): 로컬 Hermes·워커 개발과 운영
+- [공통 연동 규약](04-planning/mac-mini/kimjipsa-integration-contract.md): 두 환경의 API·이벤트·작업 상태와 복구 규칙
+
 요구사항 ID는 `CAL`(일정), `INV`(재고), `CART`(장바구니), `BOT`(챗봇), `ACC`(가정·계정) 접두사를 씁니다.

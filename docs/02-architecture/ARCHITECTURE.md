@@ -9,12 +9,12 @@
   ├─ 로그인 · 실시간 구독 ─────────────► Supabase (Auth · Postgres/RLS · Realtime)
   └─ API 요청 ─► 서버 라우트 (Vercel)
                    ├─ 질문자 권한으로 조회 ──► Supabase
-                   ├─ AI 호출 (어댑터) ──────► Claude / Gemini (BYOK)
+                   ├─ Supabase 작업 큐 ──────► 맥미니 Hermes
                    └─ M3 연동 ───────────────► Google Calendar (읽기+쓰기)
 ```
 
 - 브라우저가 Supabase에 직접 닿는 것은 **로그인과 실시간 구독**뿐이다.
-- AI는 **서버 라우트에서만** 호출한다. 키가 브라우저에 나가지 않고, 챗봇도 질문자 권한으로 데이터를 거르기 위해서다.
+- 앱의 서버 라우트에서 인증·권한을 확인한 작업만 맥미니 워커가 처리한다. 모델 인증은 Hermes가 관리하며 브라우저에 전달하지 않는다(ADR-0017).
 - 개인 정보 보호가 필요한 조회(일정)는 서버가 요청자 권한으로 걸러서 내려보낸다. 화면에서 가리는 것으로 끝내지 않는다.
 
 ## 2. 책임 분담
@@ -22,7 +22,7 @@
 | 주체 | 하는 일 | 하지 않는 일 |
 | --- | --- | --- |
 | 브라우저 | 화면, 입력 검증(UX용), Realtime 구독, 서비스 워커(오프라인 읽기 전용, 푸시 수신) | AI·구글 호출, 암호화 키 접근, 권한 판정의 최종 결정 |
-| 서버 라우트 | 권한 필터링, 챗봇 도구 실행, AI 어댑터 호출, 키 복호화, 푸시 발송, 입력 검증(최종) | 화면 렌더링 로직 |
+| 서버 라우트 | 권한 필터링, 챗봇 작업 등록, 푸시 발송, 입력 검증(최종) | 화면 렌더링 로직 |
 | Supabase | 인증, 데이터 저장, RLS, 실시간 변경 알림 | 비즈니스 규칙의 단독 보유(규칙은 entity 서버 함수가 소유) |
 | 스케줄러 `PENDING` | 아침 요약, 일정 시작 전 알림, 대화 요약 트리거, 90일 삭제 | 미정(DEC-004) |
 
@@ -41,8 +41,8 @@ app/                         # Next 라우트 (얇게: src/pages 재수출) + ap
 pages/                       # 빈 폴더 (README만)
 src/
   app/                       # 프로바이더, 전역 스타일, PWA 등록, 앱 셸
-  pages/                     # home, calendar, inventory, cart, settings, onboarding, invite
-  widgets/                   # app-nav, chat-panel, calendar-view
+  pages/                     # home, calendar, inventory, cart, chat, settings, onboarding, invite
+  widgets/                   # app-nav, calendar-view
   features/                  # cart-checkout, chat-send   (그 외는 페이지에서 시작해 승격)
   entities/                  # user, family, event, inventory-item, inventory-meta, cart-item, chat-message
   shared/                    # api(Supabase 클라이언트, 요청 결과 래퍼), ui, lib, config, pwa
@@ -55,8 +55,8 @@ src/
 | 일정(CAL) | `entities/event`, `pages/calendar`, `widgets/calendar-view` | 일정 타입, D-day 계산, **개인 일정 필터(서버 함수 한 곳)**, 카테고리, 달력 뷰 |
 | 재고(INV) | `entities/inventory-item`, `entities/inventory-meta`, `pages/inventory` | 부족·없음·임박 판정, 단위·카테고리·보관 장소, 수량 조정 |
 | 장바구니(CART) | `entities/cart-item`, `features/cart-checkout`, `pages/cart` | 실시간 목록, 체크, 구매 완료 → 재고 반영(두 entity를 엮음) |
-| 챗봇(BOT) | `entities/chat-message`, `features/chat-send`, `widgets/chat-panel`, 서버 도구 | 대화, 기본 메시지/FAQ, 도구 호출, 확인 대기 액션, 기억 |
-| 가정·계정(ACC) | `entities/user`, `entities/family`, `pages/settings`, `pages/onboarding`, `pages/invite` | 로그인, 가정, 초대, 설정, AI 키 |
+| 챗봇(BOT) | `entities/chat-message`, `features/chat-send`, `pages/chat`, `app/ui/chat-launcher`, 서버 도구 | 전용 대화 화면과 진입 버튼, 기본 메시지/FAQ, 도구 호출, 확인 대기 액션, 기억 |
+| 가정·계정(ACC) | `entities/user`, `entities/family`, `pages/settings`, `pages/onboarding`, `pages/invite` | 로그인, 가정, 초대, 집사 설정 |
 
 ## 6. 핵심 설계 규칙
 
@@ -65,7 +65,7 @@ src/
 3. **직접 요청은 즉시 실행, 챗봇 판단은 `pending_action`.** 챗봇 도구는 호출 맥락(직접 요청 / 자체 판단)을 구분해 실행 경로를 나눈다. 확인 대기는 5분 뒤 만료되며 만료돼도 데이터는 바뀌지 않는다. (BOT-07, BOT-08)
 4. **파생 값은 저장하지 않는다.** 부족/없음/임박/D-day 남은 일수는 계산한다. (`CODING_STANDARDS.md` §5)
 5. **AI는 어댑터 한 겹.** 제공자 차이(도구 호출 형식, OCR)는 어댑터 안에서 흡수하고, 챗봇 도메인 코드는 제공자를 모른다. 가정당 제공자는 하나다.
-6. **AI 키 없음은 정상 상태.** 키가 없으면 AI 경로만 막고 기본 메시지/FAQ는 AI 없이 동작한다. (BOT-05)
+6. **AI는 맥미니에서 자동 연결.** 앱에서 모델 키를 요구하지 않는다. 워커 오프라인이면 작업 대기를 안내하고 FAQ는 계속 동작한다. (BOT-05)
 7. **슬라이스 간 흐름은 상위에서 조립한다.** 구매 완료 → 재고 반영은 `cart-checkout` 한 feature가 두 entity를 import해 처리한다. (FSD.md §6)
 
 ## 7. 데이터 흐름 예시 (PROPOSED)
@@ -88,3 +88,7 @@ src/
 3. 권한이 걸린 조회는 서버 함수로 만들고 화면과 챗봇이 함께 쓰게 한다.
 4. 새 데이터 항목은 `DATA_MODEL.md`를 먼저 확인한다. 명세에 없는 필드는 추가하지 말고 `DECISIONS_REQUIRED.md`에 올린다.
 5. 기술·구조 변경이 있으면 ADR을 작성한다.
+
+## 2026-11-04 가족 집사 연동
+
+가족 집사 실행 구조는 [ADR-0017](ADR/0017-local-family-agent.md)을 따른다. 앱 → Vercel → Supabase 영속 작업 → `ai-gateway/` 맥미니 워커 → 로컬 Hermes → 작업 권한 RPC 순서다. 앱은 제공자·모델·키를 다루지 않으며 맥미니의 `kimjipsa` 프로필이 기본 Hermes 모델·인증을 사용한다.

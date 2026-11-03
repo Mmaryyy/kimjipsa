@@ -65,7 +65,7 @@ MVP는 A 또는 B 중 단순한 쪽. 키 교체 절차(마스터 키 회전 시 
 ### Impact
 ACC-08/09, 챗봇 서버 코드, 환경 변수·시크릿 구성(변경 시 검증 제안 필요).
 ### Status
-CONFIRMED (2026-10-30, 권장안 A, ADR-0016). AI 키에 쓴다(구글 캘린더 연동은 범위 제외).
+SUPERSEDED (2026-11-04, ADR-0017). 기존 AES-GCM 결정(ADR-0016)은 앱 BYOK 중단으로 사용하지 않는다. 인증은 맥미니 Hermes에서 관리한다.
 
 ## DEC-004
 ### Topic
@@ -195,7 +195,9 @@ INV-17은 사진을 올려 AI가 품목을 추출한다. 이미지를 보관할�
 ### Impact
 파일 저장소 필요 여부, 개인정보 처리방침.
 ### Status
-PENDING
+CONFIRMED (2026-11-04 사용자 승인)
+### Decision
+비공개 Supabase Storage에 24시간 보관, 5분 주기 삭제. 영수증 초안은 7일. 가족 기억 원본은 Supabase. 구성원 탈퇴 시 공유 기록 유지·작성자 비움, 마지막 구성원 탈퇴 시 전체 삭제. ADR-0017 참고.
 
 ## DEC-012
 ### Topic
@@ -209,7 +211,9 @@ Claude, Gemini 두 곳만 지원하고 도구 호출 형식이 다르다. 출시
 ### Impact
 `entities/chat-message` 서버 코드, 의존성.
 ### Status
-PENDING
+CONFIRMED (2026-11-04 맥미니 구현 요청)
+### Decision
+설치된 Hermes 실행 API를 얇은 워커로 연결. 2026-11-04 사용자 변경: 앱 BYOK를 제거하고 기존 Hermes 모델·인증을 `kimjipsa` 프로필에서 자동 사용. ADR-0017 참고.
 
 ## DEC-013
 ### Topic

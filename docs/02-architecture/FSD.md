@@ -101,8 +101,8 @@ Next의 `app/`, `pages/`와 FSD의 `app`, `pages`가 이름이 겹친다. 이렇
 | `shared` | `api`(Supabase 클라이언트, 요청 결과 래퍼), `ui`(Button, Dialog, EmptyState, Skeleton 등), `lib`(날짜, 포맷, `cn`), `config`(라우트 상수), `pwa` | 도메인을 모름 |
 | `entities` | `user`, `family`, `event`, `inventory-item`, `inventory-meta`, `cart-item`, `chat-message` | 도메인 명사. `event`는 일정과 D-day, 일정 카테고리, 개인 일정 필터를 한 슬라이스에 모은다. `inventory-meta`(단위, 카테고리, 보관 장소)는 재고, 장바구니, 설정 세 곳이 쓰므로 별도 entity로 둔다 |
 | `features` | `cart-checkout`, `chat-send` | 구매 완료는 두 entity를 엮고 규칙이 복잡하다. 챗봇 전송은 여러 화면의 채팅창이 쓴다 |
-| `widgets` | `app-nav`, `chat-panel`, `calendar-view` | 모든 페이지가 쓰는 내비게이션, 모든 화면에서 열리는 채팅창, 홈과 일정 두 페이지가 쓰는 달력 |
-| `pages` | `home`, `calendar`, `inventory`, `cart`, `settings`, `onboarding`, `invite` | 라우트 |
+| `widgets` | `app-nav`, `calendar-view` | 모든 페이지가 쓰는 내비게이션, 홈과 일정 두 페이지가 쓰는 달력 |
+| `pages` | `home`, `calendar`, `inventory`, `cart`, `chat`, `settings`, `onboarding`, `invite` | 라우트. 채팅은 2026-11-04 사용자 변경으로 전용 화면에 둠 |
 
 **페이지 안에서 시작하고, 두 번째 사용처가 생기면 승격한다**
 
@@ -113,7 +113,7 @@ Next의 `app/`, `pages/`와 FSD의 `app`, `pages`가 이름이 겹친다. 이렇
 | 재고 +/- 조정, 다 썼어요 | `pages/inventory` | 홈 요약에서도 누르게 하면 feature |
 | 홈 재고 요약, 장바구니 요약 | `pages/home` | 다른 페이지가 쓰면 widget |
 | 장바구니 담기, 체크 | `pages/cart` | 재고 화면에서 담기를 쓰면 `features/cart-add` |
-| 초대 링크 만들기, AI 키 등록, 푸시 설정, 홈 화면 설정, 탈퇴 | `pages/settings` | 다른 곳에서 재사용할 때 |
+| 초대 링크 만들기, 집사 설정, 푸시 설정, 홈 화면 설정, 탈퇴 | `pages/settings` | 다른 곳에서 재사용할 때 |
 | 알림(`notification`) | 서버 코드와 `pages/settings` | 알림 목록 화면이 생기면 entity |
 
 ## 6. 슬라이스 사이 흐름 처리
@@ -131,3 +131,9 @@ FSD에서는 같은 레이어의 슬라이스끼리 import할 수 없다. 이 �
 - 새 프로젝트이므로 처음부터 `error`로 둔다.
 - 설정을 넣은 뒤 규칙이 실제로 위반을 잡는지 일부러 어긴 코드(canary)로 한 번 확인한다.
 - 검증 명령 실행은 `AGENTS.md`의 작업 규칙에 따라 사용자 승인 뒤에 한다.
+
+## 8. 맥미니 워커 (2026-11-04)
+
+`ai-gateway/`는 Next.js 앱과 별도로 실행하는 Node TypeScript 프로세스다. FSD 레이어가 아니며 앱 UI·서버 모듈을 실행하지 않는다. 의존성 없는 `entities/chat-message/model/chat.schema.ts`의 전송 스키마와 `shared/api/database.types.ts` 타입만 직접 참조한다. 개발 중 남은 `vendor/` 소스와 `.runtime/` 데이터는 Git·앱 타입 검사·린트 대상에서 제외한다. 나머지 앱 코드는 기존 FSD public API 규칙을 따른다.
+
+맥미니 워커는 설치된 Hermes CLI를 실행하고 `~/.hermes/profiles/kimjipsa`를 사용한다. `scripts/prepare-profile.py`는 Hermes 런타임의 YAML 라이브러리로 모델 설정만 동기화한다.

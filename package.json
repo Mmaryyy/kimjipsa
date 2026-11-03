@@ -17,7 +17,8 @@
     "lint:canary": "node scripts/check-boundaries.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "gateway:start": "node --experimental-strip-types ai-gateway/src/worker.mts"
   },
   "dependencies": {
     "@date-fns/tz": "1.5.0",

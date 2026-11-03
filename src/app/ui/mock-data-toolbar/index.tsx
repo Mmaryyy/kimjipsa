@@ -85,7 +85,7 @@ function MockDataBanner() {
   );
 }
 
-export function MockDataToolbar() {
+const MockDataToolbar = () => {
   const enabled = isMockDataEnabled();
   const onEnabledChange = useCallback((checked: boolean) => {
     const value = checked ? "1" : "";
@@ -99,10 +99,10 @@ export function MockDataToolbar() {
         style={
           {
             "--mock-toolbar-bottom":
-              "calc(var(--bottom-navigation-offset) + env(safe-area-inset-bottom) + var(--sp-4))",
+              "calc(var(--bottom-navigation-offset) + env(safe-area-inset-bottom) + var(--sp-4) + var(--hit) + var(--sp-4))",
           } as CSSProperties
         }
-        className="fixed right-2 bottom-[var(--mock-toolbar-bottom)] z-50 lg:bottom-8"
+        className="fixed right-2 bottom-[var(--mock-toolbar-bottom)] z-50 lg:bottom-24"
       >
         <Dialog.Trigger asChild>
           <Button
@@ -145,4 +145,5 @@ export function MockDataToolbar() {
       </div>
     </Dialog.Root>
   );
-}
+};
+export default MockDataToolbar;

@@ -5,10 +5,12 @@ import { cn } from "@/shared/lib";
 import dynamic from "next/dynamic";
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
+import ChatLauncher from "./chat-launcher";
 import { AccountGate } from "@/widgets/account-gate";
 import {
   accountRoutes,
   catalogPath,
+  chatPath,
   viewportPath,
   viewportSpacingPath,
 } from "@/shared/config";
@@ -18,16 +20,14 @@ import { SplashScreen } from "./splash-screen";
 const MockDataToolbar =
   process.env.NODE_ENV === "development"
     ? dynamic(
-        () =>
-          import("./mock-data-toolbar").then(
-            (module) => module.MockDataToolbar,
-          ),
+        () => import("./mock-data-toolbar").then((module) => module.default),
         { ssr: false },
       )
     : () => null;
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "/";
+  const chatPage = pathname === chatPath;
   const publicPage =
     [
       accountRoutes.login,
@@ -58,13 +58,17 @@ export function AppLayout({ children }: { children: ReactNode }) {
           "pb-[calc(var(--bottom-navigation-offset)+env(safe-area-inset-bottom))] lg:max-w-280",
           "lg:px-10 lg:pb-10",
           "group-data-[public=true]/app:pb-0",
+          chatPage && "p-0 lg:p-0",
         ])}
         tabIndex={-1}
       >
-        {process.env.NODE_ENV === "development" && <MockDataToolbar />}
+        {process.env.NODE_ENV === "development" && !chatPage && (
+          <MockDataToolbar />
+        )}
         <SkeletonStatus key={pathname}>{children}</SkeletonStatus>
       </main>
-      {!publicPage && <BottomNavigation pathname={pathname} />}
+      {!publicPage && !chatPage && <BottomNavigation pathname={pathname} />}
+      {!publicPage && !chatPage && <ChatLauncher />}
     </div>
   );
   return publicPage ? (

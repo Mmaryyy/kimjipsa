@@ -7,7 +7,8 @@
 | 대상 | 경로 |
 | --- | --- |
 | 로그인, 실시간 구독 | 브라우저 → Supabase 직접 |
-| AI 호출, 구글 캘린더, 푸시 발송, 키 복호화 | 서버 라우트에서만 |
+| AI 호출 | 인증된 맥미니 워커에서만 (ADR-0017) |
+| 구글 캘린더, 푸시 발송 | 서버 라우트에서만 |
 | 개인 일정이 섞이는 일정 조회, 챗봇 도구 | 서버 라우트가 요청자 권한으로 걸러서 응답 |
 | 가정 범위 단순 CRUD(재고, 장바구니 등) | Supabase 직접 + RLS 가능 여부는 DEC-001에서 함께 정함 `PENDING` |
 
@@ -37,7 +38,7 @@ type ApiResult<T> =
 
 - 모든 라우트는 세션에서 사용자와 가정을 확인한다. 클라이언트가 보낸 `family_id`, `user_id`를 신뢰하지 않는다.
 - **개인 일정**: 요청자가 작성자가 아니면 `title`, `place`, `memo`를 응답에서 제거한다. 시간·카테고리 색·개인 표시는 남긴다 (CAL-04). 이 필터는 화면 조회와 챗봇 도구가 같은 함수를 쓴다 (BOT-10).
-- **관리자 전용**: AI 키 등록·교체·삭제, 초대 링크 발급. MVP에서는 모두 관리자지만 `member`/`child` 역할 구조가 있으므로 역할 검사를 코드에 둔다 (ACC-06).
+- **관리자 전용**: 집사 이름·기억 사용 설정, 초대 링크 발급. MVP에서는 모두 관리자지만 `member`/`child` 역할 구조가 있으므로 역할 검사를 코드에 둔다 (ACC-06).
 - **대화·기억**: 본인 것만 조회·수정한다 (BOT-11).
 - 초대 수락: 토큰 존재·미사용·미만료·수락자가 무소속인지 확인한다 (ACC-04, ACC-05).
 
@@ -49,7 +50,7 @@ type ApiResult<T> =
 
 ## 6. 챗봇 API (PROPOSED)
 
-- `POST /api/chat`: 메시지를 받아 AI 어댑터를 호출한다. 키가 없으면 `ai_key_missing`과 등록 안내를 돌려준다 (BOT-05).
+- `POST /api/chat`: 메시지를 받아 가족 작업 큐에 등록한다. 맥미니 Hermes 모델을 자동 사용하며 앱 API 키를 요구하지 않는다 (BOT-05).
 - 도구 호출은 서버 안에서 실행하며 호출 맥락을 구분한다: **직접 요청**이면 즉시 실행하고 결과를 응답에 포함, **자체 판단**이면 `pending_actions`를 만들고 확인 버튼 데이터를 응답한다 (BOT-07, BOT-08).
 - `POST /api/chat/actions/:id/confirm|cancel`: 5분이 지난 요청은 `expired`로 거절하고 데이터를 바꾸지 않는다.
 - AI 오류(키 오류, 한도 초과)는 오류 코드와 해결 위치 안내를 반환한다 (BOT-16).
@@ -57,5 +58,9 @@ type ApiResult<T> =
 
 ## 7. 비밀 정보
 
-- AI 키는 평문으로 응답·로그에 남기지 않는다. 조회 응답은 끝 몇 자리만 포함한다 (ACC-08).
+- 모델 인증은 Hermes가 관리한다. 앱 설정·워커 설정 응답에 제공자·모델·키를 포함하지 않는다 (ACC-08).
 - 서비스 키, 암호화 마스터 키, VAPID 비공개 키는 서버 환경 변수로만 둔다. 환경 변수·시크릿을 추가하거나 바꾸는 작업은 끝내기 전에 검증할지 먼저 제안한다 (`AGENTS.md`).
+
+## 2026-11-04 가족 집사 연동
+
+가족 집사 API는 [연동 규약](../04-planning/mac-mini/kimjipsa-integration-contract.md)과 ADR-0017을 따른다. `/api/chat`·settings·memories·attachments·runs/:id/cancel 및 `/api/receipt-imports/:id/confirm|cancel`은 기존 쿠키·Origin 검사를 사용한다. `/api/agent/config`는 전용 워커 Bearer 인증, DB `agent_command`는 등록된 워커 JWT와 현재 작업 임대로 권한을 제한한다. `/api/cron/agent`는 기존 x-cron-secret으로 인증한다.

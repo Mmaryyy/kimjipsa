@@ -14,7 +14,7 @@ import HomeSettings from "../home-settings";
 import HouseholdSettings from "../household-settings";
 import Link from "next/link";
 import NotificationSettings from "../notification-settings";
-import PlannedSettingsSection from "./PlannedSection";
+import AiSettings from "../ai-settings";
 import SettingsRow from "../settings-row";
 import { cn } from "@/shared/lib";
 import { useSignOut } from "@/features/account";
@@ -45,8 +45,7 @@ const AppearanceSettingsPage = () => {
       </section>
       <AccountSettings section="members" />
       <HouseholdSettings />
-      <PlannedSettingsSection title="AI 집사" odId="set-ai" />
-      <PlannedSettingsSection title="기억" odId="set-memory" />
+      <AiSettings />
       <section
         data-od-id="set-account"
         aria-labelledby="account-settings-title"

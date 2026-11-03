@@ -12,8 +12,8 @@ families 1─N invites
 families 1─1 ai_settings
 families 1─N event_categories / units / inventory_categories / locations
 families 1─N events, inventory_items, cart_items
-users 1─N conversations 1─N messages
-users 1─N memories, users 1─N pending_actions
+families 1─N chat_messages, families 1─N agent_runs
+families 1─N family_memories, families 1─N receipt_imports
 events N─1 event_categories;  events N─1 users(owner)
 inventory_items N─1 units / inventory_categories / locations
 cart_items N─0..1 inventory_items;  cart_items N─1 users(added_by, checked_by)
@@ -51,7 +51,7 @@ DEC-009 ① 처리(2026-10-16 제안안 승인, 2026-10-21 P5a 구현): `push_su
 토큰, 만료 시각, 사용 여부. 제약: 1회 사용 후 무효, 생성 3일 후 만료, 한 명을 초대할 때마다 새 링크(ACC-05). 생성자(`created_by`), 수락자(`accepted_by`), 수락 시각(`accepted_at`) 필드를 둔다. 사용 여부는 `accepted_by`가 있는지로 판단한다. 명세에는 없는 필드이고 DEC-009 ⑤에서 사용자가 정했다.
 
 ### ai_settings (챗봇 명세와 같은 항목)
-가정 단위. AI 제공자(`claude`/`gemini`), **암호화한 키**, 마지막 연결 확인 결과, 챗봇 이름(챗봇 명세 쪽 설명). 화면에는 키 끝 몇 자리만 노출(ACC-08). 제약: 가정당 하나. 키는 복호화된 값을 브라우저에 보내지 않는다.
+가정 단위. 집사 이름·기억 사용 여부·설정 및 기억 버전·문맥 초기화 시각을 관리한다. 모델·인증은 맥미니 Hermes에서 관리한다(2026-11-04 사용자 변경, ADR-0017). 최초 마이그레이션의 provider/model/encrypted_key/key_suffix 컬럼은 호환을 위해 남기되 후속 `20261104010000_local_gateway_model.sql`의 RPC에서는 사용·반환하지 않는다.
 
 ## 3. 일정
 
@@ -189,3 +189,7 @@ P6 구현: `families.expiry_days`(0~30 정수, 기본 3), `inventory_items`에 `
 웹 푸시 on/off(`users.push_enabled`)는 계정 단위이며 모든 구독 기기에 함께 적용한다. 기기 구독 여부와 계정 설정은 별개다. 로그아웃 시 해당 기기의 구독만 삭제·해지하고 계정 설정은 유지한다.
 
 P6 입력 제한(2026-10-24): 품목 이름 100자, 목록 이름 30자, 임박 기준 0~30일. 앱 검증과 SQL 함수·CHECK에 같은 범위를 적용한다.
+
+## 2026-11-04 가족 집사 연동
+
+가족 공용 집사는 [ADR-0017](ADR/0017-local-family-agent.md)과 `supabase/migrations/20261104000000_family_agent.sql`을 따른다. private.ai_settings·private.agent_actions·private.agent_file_deletions, public.agent_workers·chat_messages·agent_runs·chat_attachments·receipt_imports·family_memories를 추가한다. 기존 users → 개인 대화·기억 관계는 families → 공용 대화·기억 관계로 대체한다. 가정 자체가 공용 대화 ID이며 별도 family_agents 테이블은 만들지 않는다.

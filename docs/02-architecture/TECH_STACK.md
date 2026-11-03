@@ -18,7 +18,7 @@ PROPOSED 항목은 `docs/04-planning/DECISIONS_REQUIRED.md`의 결정 번호와 
 | 백엔드·DB | Supabase: Postgres(RLS), Auth, Realtime | CONFIRMED | `AGENTS.md`, 기획서 §09. 장바구니 실시간 동기화(CART-02), 카카오·구글 로그인(ACC-01) |
 | 배포 | Vercel | CONFIRMED | `AGENTS.md`, 기획서 §09 |
 | 인증 수단 | 카카오, 구글 (애플은 v1.1) | CONFIRMED | ACC-01, ACC-16 |
-| AI 제공자 | Claude, Gemini (BYOK, 가정당 하나) | CONFIRMED | `AGENTS.md`, 기획서 §06, §12. 제공자 차이는 어댑터 한 겹으로 감쌈 |
+| AI 제공자 | 맥미니 Hermes 기본 모델·인증 자동 사용 | CONFIRMED | 2026-11-04 사용자 지시, ADR-0017. 앱 BYOK 대체 |
 | 외부 연동 | Google Calendar API (읽기+쓰기, M3) | CONFIRMED | CAL-15 |
 | 폴더 구조 | Feature-Sliced Design | CONFIRMED | `AGENTS.md`, 기획서 §09. 상세는 `FSD.md` |
 | 경계 강제 | `eslint-plugin-boundaries` 7.2.0 | CONFIRMED | ADR-0008, FSD.md §7. 레이어·슬라이스·public API와 entity `@x` 타입 예외 |
@@ -50,7 +50,7 @@ PROPOSED 항목은 `docs/04-planning/DECISIONS_REQUIRED.md`의 결정 번호와 
 | 공휴일 데이터 | 공공데이터포털 특일정보 API(`getRestDeInfo`), 서버 라우트 + 연도별 캐시 | CONFIRMED | 공식 출처라 대체·임시공휴일 반영. 테이블 없음 | 내장 목록, 구글 공휴일 캘린더 | 서비스 키가 시크릿. 실패 시 공휴일 없이 동작 | DEC-015, ADR-0014 |
 | 달력 스와이프 | `embla-carousel-react` 8.6.0 | CONFIRMED | 손가락을 따라 끌리는 월·주·일 넘김. 달력 자체는 직접 구현 유지 | 직접 구현, 캘린더 전체 라이브러리 | 의존성 1개 | ADR-0015 |
 | AI 호출 계층 | 직접 어댑터(Claude/Gemini 공식 SDK 또는 REST를 `AiProvider` 인터페이스로 감쌈) | PROPOSED | 지원이 두 곳뿐이라 얇은 어댑터로 충분(기획서 §09). 도구 호출·OCR 차이는 어댑터 안에서 흡수 | Vercel AI SDK | 제공자별 도구 호출 형식 차이를 직접 맞춰야 함 | DEC-012 |
-| 키 암호화 | 서버 AES-256-GCM(Node `crypto`), 마스터 키는 환경 변수 `SECRET_ENCRYPTION_KEY` | CONFIRMED | 요구는 "서버에서 암호화 저장, 화면엔 끝자리만"(ACC-08) | pgsodium, KMS | AI 키(ACC-08)에 쓴다. 키 교체 절차는 필요할 때 정한다 | DEC-003, ADR-0016 |
+| 모델 인증 | Hermes 로컬 인증 저장소 | CONFIRMED | 사용자 지시, ADR-0017. 앱 키 등록·암호화 사용 중단 | 이전 AES-GCM(ADR-0016) | 앱·DB에 모델 키 전송 없음 | DEC-003 |
 | 오류 모니터링 | Vercel 기본 로그(Functions/Runtime Logs). 서버 오류를 개인정보 없이 한 형식으로 남긴다 | CONFIRMED | 사용자 결정 2026-10-30. 새 의존성·외부 전송 없음 | Sentry | 알림이 없고 무료 플랜은 보관 기간이 짧다 | DEC-013 |
 | 오류 모니터링 확장 | Sentry(`@sentry/nextjs`) 무료 플랜 | PROPOSED | 나중에 오류 알림·스택 묶기가 필요할 때. 붙일 때 결정할 것: DSN·인증 토큰(시크릿), `beforeSend`로 이메일·일정 내용 같은 개인정보 제거, 소스맵 업로드, 개인정보처리방침의 처리 위탁에 Sentry 추가 | Vercel 로그 유지 | 오류 정보가 외부 서비스로 전송됨 | DEC-013 |
 | DB 백업 | 미구현 (`docs/04-planning/BACKUP_PLAN.md`) | PENDING | 사용자 결정 2026-10-30: 지금은 문서로만 남긴다 | GitHub Actions pg_dump, Supabase Pro, 수동 덤프 | 백업이 없는 동안 데이터 손실 시 복구 불가 | DEC-013 |
@@ -81,3 +81,7 @@ PROPOSED 항목은 `docs/04-planning/DECISIONS_REQUIRED.md`의 결정 번호와 
 - ESLint 9.39.5, eslint-plugin-boundaries 7.2.0, Prettier 3.9.10
 - Vitest 5.0.4, Testing Library React 16.3.3, Playwright 1.64.1
 - date-fns·TanStack Query·Zod·Supabase는 사용하는 Phase에서 설치한다.
+
+## 2026-11-04 가족 집사 연동
+
+가족 집사 실행은 설치된 Hermes 실행기 + Node TypeScript 워커, 전달은 Supabase pgmq Basic Queue + 비공개 Realtime으로 확정했다(사용자 구현 요청, ADR-0017). 모델 호출은 Hermes가 담당하며 Vercel AI Gateway/AI SDK 의존성을 추가하지 않는다.

@@ -22,6 +22,8 @@ export default defineConfig([
     "playwright-report/**",
     "test-results/**",
     "coverage/**",
+    "ai-gateway/vendor/**",
+    "ai-gateway/.runtime/**",
   ]),
   {
     files: ["app/**/*.{ts,tsx}", "src/**/*.{ts,tsx}"],

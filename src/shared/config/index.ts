@@ -1,5 +1,6 @@
 export {
   catalogPath,
+  chatPath,
   settingsPath,
   viewportPath,
   viewportSpacingPath,
@@ -45,3 +46,4 @@ export {
 export { cartRoutes } from "./cart-routes.constants";
 
 export { currentTermsVersion } from "./legal.constants";
+export { chatRoutes } from "./chat-routes.constants";

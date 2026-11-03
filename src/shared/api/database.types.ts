@@ -280,6 +280,18 @@ export type Database<
     };
     Views: { [_ in never]: never };
     Functions: {
+      chat_command: {
+        Args: { operation: string; input?: Json };
+        Returns: Json;
+      };
+      agent_command: {
+        Args: { operation: string; input?: Json };
+        Returns: Json;
+      };
+      agent_cleanup: {
+        Args: { worker_secret: string; operation: string; input?: Json };
+        Returns: Json;
+      };
       withdraw_account: { Args: Record<string, never>; Returns: undefined };
       change_member_role: {
         Args: { member_id: string; member_role: Role };

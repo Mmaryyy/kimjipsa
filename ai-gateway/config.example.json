@@ -1,0 +1,11 @@
+{
+  "appUrl": "http://127.0.0.1:3000",
+  "supabaseUrl": "https://YOUR_PROJECT.supabase.co",
+  "supabaseAnonKey": "YOUR_PUBLIC_ANON_KEY",
+  "workerEmail": "worker@example.invalid",
+  "keychainService": "kimjipsa-ai-gateway",
+  "hermesPort": 8643,
+  "hermesProfile": "/Users/YOUR_USER/.hermes/profiles/kimjipsa",
+  "hermesCommand": "/Users/YOUR_USER/.local/bin/hermes",
+  "hermesPython": "/absolute/path/to/hermes/python"
+}

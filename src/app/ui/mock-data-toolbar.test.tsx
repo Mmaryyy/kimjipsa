@@ -7,7 +7,7 @@ import {
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type * as Config from "@/shared/config";
-import { MockDataToolbar } from "./mock-data-toolbar";
+import MockDataToolbar from "./mock-data-toolbar";
 
 vi.mock("@/features/account", () => ({
   useAccount: () => ({ data: { profile: { displayName: "지수" } } }),
