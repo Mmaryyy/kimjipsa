@@ -13,7 +13,7 @@
 - 워커는 Supabase의 전용 계정으로 인증한다. 비밀번호는 macOS Keychain의 `kimjipsa-ai-gateway` 서비스에서 읽는다.
 - `config.local.json`은 Git에서 제외한다. 앱 URL, 공개 Supabase 설정, 워커 이메일, Hermes 실행기·Python·프로필 경로만 담는다. 검색용 `hermesSource`는 기본값 `~/.hermes/hermes-agent`이며 다른 설치 위치에서는 지정한다. 모델 키·service_role은 넣지 않는다.
 
-현재 앱 주소는 `http://127.0.0.1:3000`이다. 운영 앱을 사용하려면 `appUrl`을 그 HTTPS origin으로 바꾼다. Hermes는 설치된 공식 실행기로 시작한다. Python 경로는 `ruamel.yaml`이 들어 있는 Hermes 관리 런타임을 가리킨다. Hermes 업데이트가 해당 경로를 바꾸면 이 경로도 맞춰야 한다.
+현재 앱 주소는 `http://localhost:3000`이다. Next.js가 루프백 IP를 `localhost`로 정규화하므로 `appUrl`에도 `localhost`를 사용해야 쓰기 요청의 Origin 검사를 통과한다. 서버는 `127.0.0.1`에만 바인딩한다. 운영 앱을 사용하려면 `appUrl`을 그 HTTPS origin으로 바꾼다. Hermes는 설치된 공식 실행기로 시작한다. Python 경로는 `ruamel.yaml`이 들어 있는 Hermes 관리 런타임을 가리킨다. Hermes 업데이트가 해당 경로를 바꾸면 이 경로도 맞춰야 한다.
 
 ## 처음 설치할 때
 
@@ -52,13 +52,19 @@ Supabase가 가족 대화·기억의 원본이다. 작업이 끝나면 전용 �
 
 ## 자동 실행과 복구
 
-`launchd/com.kimjipsa.ai-gateway.plist`는 이 컴퓨터의 경로로 준비했다. 아직 로그인 항목에 설치하지 않았다. 직접 실행 중인 워커를 종료한 뒤 다음 명령으로 설치할 수 있다.
+앱 서버와 워커를 사용자 launchd 작업으로 등록한다. 터미널·Codex를 닫아도 실행하며, 프로세스가 종료되면 다시 시작한다. 앱 URL이 로컬 주소이므로 앱 서버도 함께 실행해야 한다.
+
+자동 실행 프로세스가 데스크탑 폴더 접근 승인에 멈추지 않도록 실행 파일은 `~/Library/Application Support/kimjipsa`에 복사한다. 소스 저장소는 그대로 둔다. 실행 폴더 권한은 `0700`, 환경 파일·워커 설정은 `0600`이다. Keychain의 비밀번호는 복사하지 않는다.
+
+저장소 루트에서 설치하거나, 코드를 수정한 뒤 실행 복사본을 갱신한다. 두 서비스가 잠시 중단되므로 처리 중인 채팅이 끝난 뒤 실행한다.
 
 ```sh
-mkdir -p ai-gateway/.runtime
-cp ai-gateway/launchd/com.kimjipsa.ai-gateway.plist ~/Library/LaunchAgents/
-launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.kimjipsa.ai-gateway.plist
+python3 ai-gateway/scripts/install-launchd.py
 ```
+
+설치 스크립트는 앱의 `app/`·`pages/`·`src/`와 인증용 `proxy.ts`, 의존성·설정·워커를 함께 복사한다. 루트 `pages/`가 빠지면 Next.js가 FSD의 `src/pages`를 라우터로 읽어 앱이 종료된다. 실행 폴더 안의 파일을 직접 개발하지 않고 소스를 고친 뒤 설치 스크립트를 다시 실행한다. `launchd/`의 두 plist는 이 컴퓨터의 Node 경로를 사용하며 설치 시 작업 경로를 실행 폴더로 치환한다.
+
+로그는 실행 폴더의 `ai-gateway/.runtime/` 안에 `local-app.log`, `local-app-error.log`, `worker.log`, `worker-error.log`로 남는다. 워커 상태는 위 `/health`에서 확인한다. 로컬 앱의 `/api/agent/config`에 인증 없이 접근하면 `401`이 정상이다. 자동 실행 중에는 같은 포트에 `yarn dev`·`yarn gateway:start`를 중복 실행하지 않는다.
 
 현재 워커 PID는 `.runtime/worker.pid`에 기록한다. SIGTERM으로 종료하면 전용 Hermes도 종료·정리한다. 강제 종료로 자식만 남으면 해당 `kimjipsa` 전용 프로세스를 종료한 뒤 워커를 재시작한다. 개인 게이트웨이를 종료하지 않는다. launchd는 로그인 후 시작하며 전원·절전 설정은 별도다.
 
