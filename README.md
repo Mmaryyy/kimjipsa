@@ -90,14 +90,18 @@ P2 실행에는 `.env.example`의 Supabase URL과 공개 anon 키를 `.env.local
 - 요구사항: [`docs/01-project/REQUIREMENTS.md`](./docs/01-project/REQUIREMENTS.md)
 - 미결 결정: [`docs/04-planning/DECISIONS_REQUIRED.md`](./docs/04-planning/DECISIONS_REQUIRED.md)
 
-## 저작권
+## 비밀값 커밋 방지
 
-Copyright © 2026 hazzul ([@Mmaryyy](https://github.com/Mmaryyy)). All rights reserved.
+키·비밀번호는 `.env.local`에만 넣는다(`.env*`는 `.gitignore`로 제외, `.env.example`만 추적).
+커밋 전에 [gitleaks](https://github.com/gitleaks/gitleaks)로 스테이징된 변경을 검사한다.
 
-이 저장소는 오픈 소스가 아니며 별도의 라이선스를 부여하지 않는다. 코드, 문서, 디자인, 이미지 등 모든 내용의 저작권은 저작권자에게 있다.
+```sh
+brew install gitleaks
+git config core.hooksPath .githooks   # 클론마다 한 번
+```
 
-- 공개 저장소이므로 GitHub 이용약관이 허용하는 범위(웹에서 열람, GitHub 안에서 포크)를 넘는 사용은 허락하지 않는다.
-- 저작권자의 사전 서면 허락 없이 전부 또는 일부를 복제, 수정, 배포, 재게시하거나 상업적·비상업적 서비스에 사용할 수 없다.
-- 사용 허락이 필요하면 GitHub 이슈로 문의한다.
+CI도 push·PR마다 저장소 전체 기록을 gitleaks로 검사한다.
 
-This repository is publicly viewable but is not open source. No license is granted to copy, modify, distribute, or use any part of it without prior written permission from the copyright holder.
+## 라이선스
+
+[MIT](./LICENSE) © 2026 hazzul

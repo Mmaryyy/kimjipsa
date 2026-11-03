@@ -2,6 +2,7 @@
   "name": "kimjipsa",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "packageManager": "yarn@4.18.1",
   "engines": {
     "node": ">=22.12.0"
