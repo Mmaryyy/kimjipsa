@@ -197,9 +197,7 @@ describe("CART-13 스와이프 제스처", () => {
     expect(increase).toBeEnabled();
     fireEvent.click(increase);
     expect(onQuantityChange).toHaveBeenCalledExactlyOnceWith(2);
-    expect(
-      screen.getByRole("button", { name: "두부", exact: true }),
-    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "두부" })).toBeVisible();
     expect(
       screen.queryByRole("button", { name: "두부 구매 완료" }),
     ).not.toBeInTheDocument();

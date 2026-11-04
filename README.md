@@ -4,7 +4,7 @@
 
 P2 로그인·약관·가정·초대 화면과 로컬 마이그레이션을 작성했다. 원격 DB 적용과 실제 OAuth·RLS 검증은 아직 하지 않았다.
 
-Node.js 22.12 이상과 Corepack을 사용한다.
+Node.js 22.23.4 이상(`.nvmrc`)과 Corepack을 사용한다.
 
 ```sh
 corepack enable

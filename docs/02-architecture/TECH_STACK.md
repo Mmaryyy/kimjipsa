@@ -74,7 +74,7 @@ PROPOSED 항목은 `docs/04-planning/DECISIONS_REQUIRED.md`의 결정 번호와 
 
 ## P0 설치 버전
 
-- Yarn 4.18.1 (`nodeLinker: node-modules`), Node.js 22.12 이상
+- Yarn 4.18.1 (`nodeLinker: node-modules`), Node.js 22.23.4 이상(`.nvmrc`·CI 고정. 보안 업데이트, jsdom 30 의 undici 8 은 22.19 이상 필요)
 - Next.js 16.4.1, React 19.3.1, TypeScript 6.0.3 (`strict`)
 - Tailwind CSS 4.3.3, CVA 0.7.1, shadcn/ui 수동 초기화(`components.json`)
 - radix-ui 1.8.1 (P1 추가. Checkbox·Switch·ToggleGroup·Dialog·AlertDialog·Toast에서 사용)
