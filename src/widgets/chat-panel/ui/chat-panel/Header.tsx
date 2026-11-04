@@ -1,4 +1,4 @@
-import { Button, StatusBadge, Text } from "@/shared/ui";
+import { Badge, Button, StatusBadge, Text } from "@/shared/ui";
 import { ChevronDown, X } from "lucide-react";
 
 import Image from "next/image";
@@ -36,18 +36,20 @@ const ChatHeader = ({ name, online, failed }: Props) => {
             <Text as="h1" variant="body" className="font-semibold">
               김{name}
             </Text>
-            <StatusBadge
-              variant={
-                failed || online === false
-                  ? "error"
-                  : online
-                    ? "success"
-                    : "warning"
-              }
-              className="rounded-full bg-[var(--fill-tertiary)] px-2 py-0.5 text-caption-sm text-foreground"
-            >
-              {connection}
-            </StatusBadge>
+            <Badge>
+              <StatusBadge
+                variant={
+                  failed || online === false
+                    ? "error"
+                    : online
+                      ? "success"
+                      : "warning"
+                }
+                className="text-inherit [font-size:inherit]"
+              >
+                {connection}
+              </StatusBadge>
+            </Badge>
           </div>
           <Text as="p" variant="caption-sm" className="text-muted-foreground">
             나만 보는 대화

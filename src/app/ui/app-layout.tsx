@@ -63,6 +63,7 @@ function AppShell({ children }: { children: ReactNode }) {
           "lg:px-10 lg:pb-10",
           "group-data-[public=true]/app:pb-0",
           !publicPage &&
+            ready &&
             !minimized && [
               "pb-[calc(var(--bottom-navigation-offset)+env(safe-area-inset-bottom)+var(--chat-launcher-clearance))]",
               "lg:pb-[calc(var(--sp-10)+var(--chat-launcher-clearance))]",

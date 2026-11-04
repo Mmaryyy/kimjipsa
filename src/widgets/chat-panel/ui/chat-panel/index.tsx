@@ -169,10 +169,11 @@ const ChatPanelConversation = () => {
             {chat && (
               <ChatMessages
                 key={chat.sessionVersion}
+                messages={chat.messages}
                 name={chat.name}
                 displayName={account.data?.profile?.displayName ?? "사용자"}
               >
-                {chat.messages.map((message) => {
+                {(message) => {
                   const run = runs.get(message.id);
                   return (
                     <ChatMessage
@@ -187,7 +188,7 @@ const ChatPanelConversation = () => {
                       onCancel={onCancel}
                     />
                   );
-                })}
+                }}
               </ChatMessages>
             )}
           </ol>
@@ -223,6 +224,7 @@ const ChatPanel = () => {
         if (!next) onClose();
       }}
       presentation="panel"
+      overlayClassName="md:bg-transparent"
       className="top-[var(--chat-viewport-top,0px)] h-[var(--chat-viewport-height,100dvh)]"
       title="집사와 대화"
       description="나만 보는 개인 대화"

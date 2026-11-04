@@ -147,14 +147,13 @@ export function useTabLens(hrefs: readonly string[]) {
     };
     const measure = () => {
       cancel();
-      const box = element.getBoundingClientRect();
       const step = original.clientWidth / hrefs.length;
       bounds = {
         height: original.clientHeight,
         step,
         max: step * (hrefs.length - 1),
-        left: box.left + original.offsetLeft,
-        center: box.left + box.width / 2,
+        left: original.offsetLeft,
+        center: element.clientWidth / 2,
         viewportWidth: window.innerWidth,
       };
       syncRoute();
@@ -169,9 +168,11 @@ export function useTabLens(hrefs: readonly string[]) {
       paint();
     };
     const position = (clientX: number) => {
+      const box = element.getBoundingClientRect();
+      const localX = (clientX - box.left) * (element.clientWidth / box.width);
       const x =
         bounds.center +
-        (clientX - bounds.center) / (1 + state.lift * tokens.railExpansion);
+        (localX - bounds.center) / (1 + state.lift * tokens.railExpansion);
       return Math.max(
         0,
         Math.min(bounds.max, x - bounds.left - bounds.step / 2),

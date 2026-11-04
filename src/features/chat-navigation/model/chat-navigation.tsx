@@ -80,12 +80,19 @@ export const ChatNavigationProvider = ({
     setOpen(true);
   }, []);
   useEffect(() => {
+    if (
+      pathname === accountRoutes.login ||
+      pathname === accountRoutes.onboarding
+    ) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 인증 화면으로 이동하면 대기 중인 시트 열기도 취소해요.
+      setOpen(false);
+    }
     if (pathname === chatPath) {
       redirecting.current = true;
       router.replace(accountRoutes.home);
-    } else if (redirecting.current && pathname === accountRoutes.home) {
+    } else if (redirecting.current) {
       redirecting.current = false;
-      onOpen();
+      if (pathname === accountRoutes.home) onOpen();
     }
   }, [pathname, router, onOpen]);
   const onClose = useCallback(() => {

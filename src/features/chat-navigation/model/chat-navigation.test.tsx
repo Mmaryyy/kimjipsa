@@ -117,3 +117,25 @@ it("BOT-01 저장소가 막혀도 최소화해요", () => {
   fireEvent.click(screen.getByText("최소화"));
   expect(screen.getByText("메뉴 집사")).toBeVisible();
 });
+
+it.each([
+  ["/login", "/"],
+  ["/", "/login", "/"],
+])(
+  "BOT-01 /chat 인증 이동 %j 뒤 홈에서 시트를 다시 열지 않아요",
+  (...paths) => {
+    router.pathname = "/chat";
+    const view = mount();
+    for (const pathname of paths) {
+      router.pathname = pathname;
+      view.rerender(
+        <ToastProvider>
+          <ChatNavigationProvider>
+            <Controls />
+          </ChatNavigationProvider>
+        </ToastProvider>,
+      );
+    }
+    expect(screen.getByText("대화 닫힘")).toBeVisible();
+  },
+);

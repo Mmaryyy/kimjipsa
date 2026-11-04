@@ -1,31 +1,23 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
-import { useChatNavigation } from "@/features/chat-navigation";
-import { cn } from "@/shared/lib";
+
 import { Button } from "@/shared/ui";
+import Image from "next/image";
+import { cn } from "@/shared/lib";
+import { useChatNavigation } from "@/features/chat-navigation";
+
+import { useNavigationScroll } from "../../model/use-navigation-scroll";
 
 const peekLines = ["...", "무엇이든 도와줄 수 있어!", "오늘 할 일 알려줄까?"];
 
 const ChatLauncher = () => {
   const { onOpen } = useChatNavigation();
   const [peek, setPeek] = useState("");
-  const [hidden, setHidden] = useState(false);
+  const { scrolling, keyboardOpen } = useNavigationScroll();
+  const [focused, setFocused] = useState(false);
+  const hidden = keyboardOpen || (scrolling && !focused);
   const linkRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    let scrollTimer: ReturnType<typeof setTimeout>;
-    const onScroll = () => {
-      clearTimeout(scrollTimer);
-      setHidden(document.activeElement !== linkRef.current);
-      scrollTimer = setTimeout(() => setHidden(false), 500);
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      clearTimeout(scrollTimer);
-    };
-  }, []);
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
     let last = -1;
@@ -63,7 +55,8 @@ const ChatLauncher = () => {
       <Button
         ref={linkRef}
         tabIndex={hidden ? -1 : undefined}
-        onFocus={() => setHidden(false)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         onClick={onOpen}
         aria-label="AI 집사 채팅 열기"
         data-od-id="bot-fab"

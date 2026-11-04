@@ -10,6 +10,7 @@ import { useId, useState, type ReactNode } from "react";
 import {
   Text,
   StatusBadge,
+  Badge,
   Banner,
   Button,
   TextButton,
@@ -107,6 +108,7 @@ function AppearanceSamples({ onAction }: { onAction: () => void }) {
       </div>
 
       <SectionHeader title="상태와 배너" />
+      <Badge>중립 배지</Badge>
       <div className="grid gap-4 py-4">
         {statusVariants.map((variant) => (
           <div key={variant}>

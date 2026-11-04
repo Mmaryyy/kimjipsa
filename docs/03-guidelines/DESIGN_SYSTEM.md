@@ -148,6 +148,7 @@ AppLayout ─ 모바일: 본문 + 하단 탭(유리 캡슐) / lg 이상: 왼쪽 
 | 페이지·섹션 머리 | `PageHeader`, `SectionHeader` | `src/shared/ui/page-header.tsx`, `src/shared/ui/section-header.tsx` |
 | 글자·유리·아이콘 버튼 | `Button`, `TextButton` | `src/shared/ui/button.tsx`, `src/shared/ui/text-button.tsx` |
 | 대상 이름을 보여 주는 확인창 | `ConfirmDialog` | `src/shared/ui/confirm-dialog.tsx` |
+| 중립 캡슐 배지 | `Badge` | `src/shared/ui/badge/index.tsx` |
 | 상태 배지 | `StatusBadge`, `InventoryBadges` | `src/shared/ui/status-badge.tsx`, `src/entities/inventory-item/ui/inventory-badges/index.tsx` |
 | 빈 값·로딩·오류 | `EmptyState`, `ListSkeleton`, `SkeletonSection`, `ErrorState` | `src/shared/ui/empty-state.tsx`, `src/shared/ui/list-skeleton.tsx`, `src/shared/ui/skeleton.tsx`, `src/shared/ui/error-state.tsx` |
 | 스위치·입력 행 | `Switch`, `FormFieldRow` | `src/shared/ui/switch.tsx`, `src/shared/ui/form-field-row.tsx` |
@@ -229,7 +230,7 @@ AppLayout ─ 모바일: 본문 + 하단 탭(유리 캡슐) / lg 이상: 왼쪽 
 
 - 하단 탭은 콘텐츠 위의 캡슐이다. 머리 버튼의 크기·글자·색은 §2-2를 따른다. 일정·장바구니 설정은 카테고리 관리, 재고 설정은 목록 관리 시트를 연다.
 - 유리는 탐색 컨트롤에만 쓴다. 그룹은 backdrop 하나만 사용하고 머리 전체를 불투명하게 덮지 않는다. 정지 선택은 회색 면과 inset 그림자만, 아이콘은 선택 여부와 렌즈 복사본 모두 같은 Lucide 선형을 쓰고 색만 바뀐다.
-- 다크 유리는 iOS 다크 참고처럼 짙은 회색 면(#232325~#2a2a2c), 흰 테두리 8%·위쪽 가장자리 최대 12%·0.5px 하이라이트 8%, 작은 바깥 그림자를 쓰고 선택 면은 검정 대신 대비가 약한 짙은 회색으로 둔다.
+- 다크 유리는 iOS 다크 참고처럼 짙은 회색 면(#232325~#2a2a2c), 투명 테두리·위쪽 가장자리 최대 10%·0.5px 하이라이트 8%, 작은 바깥 그림자를 쓰고 선택 면은 검정 대신 대비가 약한 짙은 회색으로 둔다.
 - 머리 유리 글자 버튼은 하단 탭 비선택 글자와 같은 `text-muted-foreground`다. 홈 종 아이콘도 `text-muted-foreground`를 쓴다. 하단 탭의 비선택 아이콘은 `--icon-secondary`이며, 선택 탭과 렌즈 안 복사본의 글자·아이콘은 `text-primary`다. 마스크에도 쓰는 `--glass-text` 토큰 값은 유지한다.
 - 앱 토큰 `--glass-bg`, `--glass-bg-hover`, `--glass-bg-pressed`, `--glass-bg-opaque`, `--glass-text`, `--glass-border`, `--glass-filter`, `--glass-sheen`, `--glass-edge`, `--glass-highlight`, `--glass-optics-opacity`, `--glass-selected-bg/shadow/text/opaque`, `--tab-lens-bg/shadow/edge`, `--shadow-glass`는 `src/app/styles/tokens.css`에 둔다. 라이트는 흰색 50%, 다크는 짙은 회색 88%, 필터는 둘 다 blur 10px·saturate 1.65다. 다크 가장자리·그림자는 별도 값이다.
 - 모션 수치는 `shared/lib/liquid-tab-motion.constants.ts`가 단일 출처다. follow 1800/70, settle 620/42, lift 800/48 스프링, 바 4%, 내용 22%, 렌즈 가로 16%·세로 38%, 속도 늘어남 최대 14%를 사용한다. 드래그 시작 6px, 세로 취소 8px, 탭 허용 12px, 해제 영역 여유 44px이다.

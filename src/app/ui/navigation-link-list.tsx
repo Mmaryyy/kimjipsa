@@ -1,14 +1,16 @@
+import { appNavigation, appNavigationWithBot } from "../config";
+import { cartRoutes, chatPath } from "@/shared/config";
+import { cn, isCurrentPath } from "@/shared/lib";
+
 import Link from "next/link";
 import { useChatNavigation } from "@/features/chat-navigation";
-import { appNavigation, appNavigationWithBot } from "../config";
-import { isCurrentPath } from "@/shared/lib";
-import { cartRoutes, chatPath } from "@/shared/config";
+
 export function NavigationLinkList({ pathname }: { pathname: string }) {
   const { minimized, ready, onOpen } = useChatNavigation();
   const navigation = ready && minimized ? appNavigationWithBot : appNavigation;
   return (
     <ul>
-      {navigation.map(({ href, label, icon: Icon }) => {
+      {navigation.map(({ href, label }) => {
         const active =
           isCurrentPath(pathname, href) ||
           (href === cartRoutes.cart &&
@@ -26,10 +28,12 @@ export function NavigationLinkList({ pathname }: { pathname: string }) {
                   : undefined
               }
               data-od-id={href === chatPath ? "tab-bot" : undefined}
-              className="kj-hit"
+              className={cn([
+                "kj-hit",
+                "aria-[current=page]:text-[var(--link)]",
+              ])}
               aria-current={active ? "page" : undefined}
             >
-              <Icon size={22} aria-hidden="true" />
               <span>{label}</span>
             </Link>
           </li>

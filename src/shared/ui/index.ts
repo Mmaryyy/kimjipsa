@@ -46,5 +46,5 @@ export {
   PromptInputFooter,
   PromptInputSubmit,
 } from "./ai-elements/prompt-input";
-export { Suggestion } from "./ai-elements/suggestion";
 export { Loader } from "./ai-elements/loader";
+export { default as Badge } from "./badge";

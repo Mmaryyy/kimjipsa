@@ -90,4 +90,4 @@ PROPOSED 항목은 `docs/04-planning/DECISIONS_REQUIRED.md`의 결정 번호와 
 
 ## P11 대화 UI (2026-11-04 사용자 승인)
 
-AI Elements의 Conversation·Message·PromptInput·Suggestion과 Loader를 필요한 부분만 shadcn CLI로 설치했다(ADR-0019). 추가 패키지는 `use-stick-to-bottom` 1.1.6(Conversation의 스크롤 컨텍스트) 하나다. `lucide-react`·`radix-ui`·공용 Button·Textarea는 기존 것을 사용한다. `ai`는 타입만 필요해 로컬 타입으로 대체하며 Streamdown·nanoid·cmdk는 설치하지 않는다. API·DB·Hermes 실행 계층은 유지한다.
+AI Elements의 Conversation·Message·PromptInput과 Loader를 필요한 부분만 shadcn CLI로 설치했다(ADR-0019). 추가 패키지는 `use-stick-to-bottom` 1.1.6(Conversation의 스크롤 컨텍스트) 하나다. `lucide-react`·`radix-ui`·공용 Button·Textarea는 기존 것을 사용한다. `ai`는 타입만 필요해 로컬 타입으로 대체하며 Streamdown·nanoid·cmdk는 설치하지 않는다. API·DB·Hermes 실행 계층은 유지한다.

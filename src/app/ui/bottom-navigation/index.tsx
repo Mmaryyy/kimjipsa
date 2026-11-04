@@ -7,6 +7,8 @@ import { useChatNavigation } from "@/features/chat-navigation";
 import { appNavigation, appNavigationWithBot } from "../../config";
 import { useTabLens } from "./use-tab-lens";
 
+import { useNavigationScroll } from "../../model/use-navigation-scroll";
+
 const defaultHrefs = appNavigation.map((item) => item.href);
 const botHrefs = appNavigationWithBot.map((item) => item.href);
 const faceClass = cn([
@@ -51,6 +53,7 @@ const BottomNavigation = ({ pathname }: Props) => {
   const navigation = minimized ? appNavigationWithBot : appNavigation;
   const hrefs = minimized ? botHrefs : defaultHrefs;
   const nav = useTabLens(hrefs);
+  const { collapsed, keyboardOpen } = useNavigationScroll();
   const activeIndex = navigation.findIndex(
     ({ href }) =>
       isCurrentPath(pathname, href) ||
@@ -60,6 +63,8 @@ const BottomNavigation = ({ pathname }: Props) => {
     <nav
       ref={nav}
       aria-label="하단 메뉴"
+      hidden={keyboardOpen}
+      data-collapsed={collapsed}
       style={
         {
           "--tab-count": hrefs.length,
@@ -73,6 +78,8 @@ const BottomNavigation = ({ pathname }: Props) => {
       className={cn([
         "fixed inset-x-3 bottom-[calc(var(--bottom-navigation-bottom)+env(safe-area-inset-bottom,0px))] z-40",
         "mx-auto max-w-120 lg:hidden",
+        "origin-bottom transition-transform duration-[var(--dur)] ease-[var(--ease)]",
+        "data-[collapsed=true]:[transform:scale(0.9)] motion-reduce:transform-none motion-reduce:transition-none",
         "group touch-pan-y select-none [-webkit-touch-callout:none]",
         "[--lens-reveal:calc(var(--lens-lift,0)*var(--glass-optics-opacity))]",
         "motion-reduce:[--lens-reveal:0] forced-colors:[--lens-reveal:0]",

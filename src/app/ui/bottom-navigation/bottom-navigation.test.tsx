@@ -96,6 +96,29 @@ describe("P10.6 하단 메뉴 접근성과 렌즈 제스처", () => {
     expect(container.querySelector("[data-copy]")).toHaveAttribute("inert");
   });
 
+  it("90%로 축소된 바에서도 레일 좌표로 끌어 탭을 선택해요", () => {
+    render(<BottomNavigation pathname="/" />);
+    const nav = screen.getByRole("navigation");
+    vi.mocked(nav.getBoundingClientRect).mockReturnValue({
+      left: 17.5,
+      top: 0,
+      right: 332.5,
+      bottom: 50.4,
+      width: 315,
+      height: 50.4,
+      x: 17.5,
+      y: 0,
+      toJSON() {},
+    });
+    fireEvent(
+      screen.getByRole("link", { name: "오늘" }),
+      pointer("pointerdown", 49, 25),
+    );
+    fireEvent(nav, pointer("pointermove", 188.5, 25));
+    fireEvent(nav, pointer("pointerup", 188.5, 25));
+    expect(router.push).toHaveBeenCalledExactlyOnceWith("/inventory");
+  });
+
   it("놓을 때 한 번만 가장 가까운 탭으로 이동하고 후속 클릭은 막아요", () => {
     render(<BottomNavigation pathname="/" />);
     const nav = screen.getByRole("navigation");
