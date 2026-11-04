@@ -13,7 +13,6 @@ import {
   sendSchema,
   settingsInputSchema,
   settingsSchema,
-  chatVisibilitySchema,
 } from "../model/chat.schema";
 const errors = {
   confirmation_required: [400, "제안한 변경은 확인 후 실행할 수 있어요."],
@@ -46,11 +45,22 @@ async function command(operation: string, input: Json = {}) {
   const client = await createServerSupabaseClient();
   const result = await client.rpc("chat_command", { operation, input });
   throwDatabaseError(result.error, errors);
+  if (
+    result.data &&
+    typeof result.data === "object" &&
+    !Array.isArray(result.data) &&
+    result.data.chatExpired === true
+  )
+    throw new ApiError(
+      "chat_expired",
+      "대화가 만료되었어요. 새 대화에서 다시 요청해 주세요.",
+      410,
+    );
   return result.data;
 }
 export async function listChat(
   before: string | null,
-  visibility: string | null = "shared",
+  visibility: string | null = "private",
 ) {
   const cursor =
     before === null
@@ -60,7 +70,7 @@ export async function listChat(
   const result = await client.rpc("chat_page", {
     input: {
       before: cursor,
-      visibility: chatVisibilitySchema.parse(visibility ?? "shared"),
+      visibility: z.literal("private").parse(visibility ?? "private"),
     },
   });
   throwDatabaseError(result.error, errors);
@@ -129,7 +139,7 @@ export async function createAttachment(raw: unknown) {
   const input = z
     .object({
       mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]),
-      visibility: chatVisibilitySchema.default("shared"),
+      visibility: z.literal("private").default("private"),
     })
     .parse(raw);
   const attachment = attachmentSchema.parse(

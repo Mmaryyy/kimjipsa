@@ -18,19 +18,18 @@ import {
   applyActions,
 } from "../api/api";
 import { mergeChatPages } from "./chat.utils";
-export function useChat(
-  familyId: string | undefined,
-  visibility: "shared" | "private" = "shared",
-  userId?: string | null,
-) {
+export function useChat(familyId: string | undefined, userId?: string | null) {
   const queryClient = useQueryClient();
   const query = useInfiniteQuery({
-    queryKey: ["chat", familyId, visibility, userId, "pages"],
-    queryFn: ({ pageParam }) => fetchChat(visibility, pageParam),
+    queryKey: ["chat", familyId, "private", userId, "pages"],
+    queryFn: ({ pageParam, signal }) => fetchChat(pageParam, signal),
     initialPageParam: null as number | null,
     getNextPageParam: (page) => page.nextBefore,
     enabled: !!familyId && !!userId,
     refetchInterval: 60000,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always",
   });
   useEffect(() => {
     if (!familyId || isMockDataEnabled()) return;
@@ -61,7 +60,13 @@ export function useChat(
       subscription.unsubscribe();
       void client.removeChannel(channel);
     };
-  }, [familyId, queryClient, visibility]);
+  }, [familyId, queryClient]);
+  const { data: pagination, refetch } = query;
+  useEffect(() => {
+    const pages = pagination?.pages;
+    if (pages?.some((page) => page.sessionVersion !== pages[0].sessionVersion))
+      void refetch();
+  }, [pagination, refetch]);
   const data = useMemo(
     () => query.data && mergeChatPages(query.data.pages),
     [query.data],

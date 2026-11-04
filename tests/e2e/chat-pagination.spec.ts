@@ -15,6 +15,7 @@ async function prepareChat(page: Page, testInfo: TestInfo) {
   );
   const requests: Array<{ before: number | null; visibility: string }> = [];
   let count = 121;
+  let sessionVersion = 1;
   let failOlder = false;
   let releaseOlder: (() => void) | undefined;
   let olderGate: Promise<void> | undefined;
@@ -51,13 +52,14 @@ async function prepareChat(page: Page, testInfo: TestInfo) {
             return;
           }
         }
-        const end = Math.min(
-          visibility === "private" ? 3 : count,
-          before === null ? count : before - 1,
-        );
+        const end = Math.min(count, before === null ? count : before - 1);
         const start = Math.max(1, end - 49);
         data = {
           familyId,
+          sessionVersion,
+          expiresAt: count
+            ? new Date(Date.now() + 3600000).toISOString()
+            : null,
           name: "집사",
           workerOnline: true,
           nextBefore: start > 1 ? start : null,
@@ -87,6 +89,10 @@ async function prepareChat(page: Page, testInfo: TestInfo) {
   await page.route("https://**/*", (route) => route.abort());
   return {
     requests,
+    expire() {
+      count = 0;
+      sessionVersion++;
+    },
     holdOlder() {
       olderGate = new Promise<void>((resolve) => {
         releaseOlder = resolve;
@@ -114,9 +120,9 @@ for (const width of [360, 1280]) {
     const messages = page.getByRole("log").locator(":scope > li");
     await expect(messages).toHaveCount(50);
     await expect(
-      page.getByText("공용 대화 121", { exact: true }),
+      page.getByText("개인 대화 121", { exact: true }),
     ).toBeVisible();
-    await expect(page.getByText("공용 대화 1", { exact: true })).toHaveCount(0);
+    await expect(page.getByText("개인 대화 1", { exact: true })).toHaveCount(0);
     expect(chat.requests.every((request) => request.before === null)).toBe(
       true,
     );
@@ -128,24 +134,24 @@ for (const width of [360, 1280]) {
         () => chat.requests.filter((request) => request.before === 72).length,
       )
       .toBe(1);
-    const anchor = page.getByText("공용 대화 72", { exact: true });
+    const anchor = page.getByText("개인 대화 72", { exact: true });
     const before = (await anchor.boundingBox())!.y;
     chat.releaseOlder();
     await expect(messages).toHaveCount(100);
     await expect
       .poll(async () => Math.abs((await anchor.boundingBox())!.y - before))
       .toBeLessThan(2);
-    await expect(page.getByText("공용 대화 22", { exact: true })).toHaveCount(
+    await expect(page.getByText("개인 대화 22", { exact: true })).toHaveCount(
       1,
     );
-    await expect(page.getByText("공용 대화 1", { exact: true })).toHaveCount(0);
+    await expect(page.getByText("개인 대화 1", { exact: true })).toHaveCount(0);
 
     // Sending triggers the same query invalidation as a live update; keep the reader's position.
     await page
       .getByRole("textbox", { name: "집사에게 보낼 메시지" })
       .fill("새 요청");
     await page.getByRole("button", { name: "보내기", exact: true }).click();
-    await expect(page.getByText("공용 대화 122", { exact: true })).toHaveCount(
+    await expect(page.getByText("개인 대화 122", { exact: true })).toHaveCount(
       1,
     );
     await expect
@@ -153,7 +159,7 @@ for (const width of [360, 1280]) {
       .toBeLessThan(2);
     await page.getByRole("button", { name: "최근 대화 보기" }).click();
     await expect(
-      page.getByText("공용 대화 122", { exact: true }),
+      page.getByText("개인 대화 122", { exact: true }),
     ).toBeInViewport();
 
     await viewport.evaluate((element) => {
@@ -168,18 +174,10 @@ for (const width of [360, 1280]) {
     );
     expect(new Set(ids).size).toBe(122);
 
-    await page.getByRole("radio", { name: "나만 보기" }).click();
-    await expect(messages).toHaveCount(3);
-    await expect(
-      page.getByText("개인 대화 3", { exact: true }),
-    ).toBeInViewport();
-    await expect(page.getByText("공용 대화 122", { exact: true })).toHaveCount(
-      0,
-    );
-    await page.getByRole("radio", { name: "가족 공용" }).click();
-    await expect(
-      page.getByText("공용 대화 122", { exact: true }),
-    ).toBeInViewport();
+    expect(
+      chat.requests.every((request) => request.visibility === "private"),
+    ).toBe(true);
+    await expect(page.getByRole("radio")).toHaveCount(0);
     await page.screenshot({
       path: testInfo.outputPath(`pagination-${width}.png`),
     });
@@ -211,7 +209,28 @@ test("BOT-01 이전 대화 조회 실패 시 현재 대화 유지·재시도", a
   await expect(error).toHaveCount(0);
 });
 
-test("BOT-10/11 이전 대화를 불러오는 중 모드 전환 시 응답 격리", async ({
+test("BOT-11/14 만료 후 다시 열면 이전 페이지와 초안을 표시하지 않아요", async ({
+  page,
+}, testInfo) => {
+  const chat = await prepareChat(page, testInfo);
+  await page.goto("/chat");
+  await expect(page.getByRole("log").locator(":scope > li")).toHaveCount(50);
+  await page
+    .getByRole("textbox", { name: "집사에게 보낼 메시지" })
+    .fill("오래된 초안");
+  await page.getByRole("link", { name: "설정", exact: true }).click();
+  await expect(page).toHaveURL(/\/settings$/);
+  chat.expire();
+  await page.goBack();
+  await expect(page).toHaveURL(/\/chat$/);
+  await expect(page.getByText("우리 집 일을 함께 챙겨요")).toBeVisible();
+  await expect(page.getByText(/^개인 대화 /)).toHaveCount(0);
+  await expect(
+    page.getByRole("textbox", { name: "집사에게 보낼 메시지" }),
+  ).toHaveValue("");
+});
+
+test("BOT-11/14 이전 페이지 요청 중 만료되면 과거 대화를 합치지 않아요", async ({
   page,
 }, testInfo) => {
   const chat = await prepareChat(page, testInfo);
@@ -224,9 +243,8 @@ test("BOT-10/11 이전 대화를 불러오는 중 모드 전환 시 응답 격�
   await expect
     .poll(() => chat.requests.some((request) => request.before === 72))
     .toBe(true);
-  await page.getByRole("radio", { name: "나만 보기" }).click();
-  await expect(page.getByRole("log").locator(":scope > li")).toHaveCount(3);
+  chat.expire();
   chat.releaseOlder();
-  await expect(page.getByText("개인 대화 3", { exact: true })).toBeInViewport();
-  await expect(page.getByText(/^공용 대화 /)).toHaveCount(0);
+  await expect(page.getByText("우리 집 일을 함께 챙겨요")).toBeVisible();
+  await expect(page.getByText(/^개인 대화 /)).toHaveCount(0);
 });

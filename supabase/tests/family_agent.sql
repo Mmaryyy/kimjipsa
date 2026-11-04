@@ -47,6 +47,10 @@ begin
   perform set_config('request.jwt.claim.sub',person::text,true);
   result:=public.chat_command('confirm',jsonb_build_object('id',receipt,'version',1,'items',items));
   perform set_config('request.jwt.claim.sub',partner::text,true);
+  begin
+    perform public.chat_command('confirm',jsonb_build_object('id',receipt,'version',1,'items',items)); raise exception 'partner read private receipt';
+  exception when raise_exception then if sqlerrm<>'not_found' then raise; end if; end;
+  perform set_config('request.jwt.claim.sub',person::text,true);
   if result is distinct from public.chat_command('confirm',jsonb_build_object('id',receipt,'version',1,'items',items)) then raise exception 'confirm replay changed'; end if;
   reset role;
   if (select quantity from public.inventory_items where id=stock)<>3 then raise exception 'duplicate stock addition'; end if;

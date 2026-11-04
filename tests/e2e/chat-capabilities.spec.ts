@@ -7,7 +7,7 @@ for (const viewport of [
   { width: 390, height: 844 },
   { width: 1280, height: 900 },
 ]) {
-  test(`BOT-10 개인 채팅 전환과 초안 분리 ${viewport.width}`, async ({
+  test(`BOT-10/11 개인 전용 채팅과 요청 ${viewport.width}`, async ({
     page,
     context,
   }, testInfo) => {
@@ -43,6 +43,8 @@ for (const viewport of [
           const visibility = url.searchParams.get("visibility");
           data = {
             familyId,
+            sessionVersion: 1,
+            expiresAt: new Date(Date.now() + 3600000).toISOString(),
             name: "집사",
             workerOnline: true,
             nextBefore: null,
@@ -76,12 +78,11 @@ for (const viewport of [
     // No real account, model request or mutation reaches a service in this UI test.
     await page.route("https://**/*", (route) => route.abort());
     await page.goto("/chat");
+    await expect(page.getByRole("radio")).toHaveCount(0);
     await expect(
-      page.getByText("가족 대화 내용", { exact: true }),
+      page.getByText("마지막 메시지 후 1시간이 지나면 대화 기록이 삭제돼요."),
     ).toBeVisible();
     const input = page.getByRole("textbox", { name: "집사에게 보낼 메시지" });
-    await input.fill("공용 초안");
-    await page.getByRole("radio", { name: "나만 보기" }).click();
     await expect(
       page.getByText("개인 일정 내용", { exact: true }),
     ).toBeVisible();
@@ -102,13 +103,10 @@ for (const viewport of [
       visibility: "private",
       text: "개인 일정 조회해줘",
     });
+    await expect(input).toBeEnabled();
+    await expect(input).toHaveValue("");
     await page.screenshot({
       path: testInfo.outputPath(`private-chat-${viewport.width}.png`),
     });
-    await page.getByRole("radio", { name: "가족 공용" }).click();
-    await expect(page.getByText("개인 일정 내용", { exact: true })).toHaveCount(
-      0,
-    );
-    await expect(input).toHaveValue("");
   });
 }

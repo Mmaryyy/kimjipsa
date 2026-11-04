@@ -1,6 +1,6 @@
 # 김집사 맥미니 워커
 
-앱의 가족 작업을 받아 설치된 Hermes의 `kimjipsa` 전용 프로필에서 처리한다. 앱에는 제공자·모델·API 키 입력이 없다. 기존 Hermes 기본 프로필의 모델 설정을 실행마다 읽으며 인증은 Hermes의 공용 인증 저장소를 사용한다. 개인 대화·기억·메신저 설정은 복사하지 않는다.
+앱의 가족 작업을 받아 설치된 Hermes의 `kimjipsa` 전용 프로필에서 처리한다. 앱에는 제공자·모델·API 키 입력이 없다. 김집사 프로필의 모델 설정을 사용하며, 최초 모델 설정이 없을 때만 기본 프로필에서 가져온다. 인증은 Hermes의 공용 인증 저장소를 사용한다. 개인 대화·기억·메신저 설정은 복사하지 않는다.
 
 ## 실행
 
@@ -9,7 +9,7 @@
 - 워커 상태: `http://127.0.0.1:8644/health`. `ready`/`running`이면 200이다.
 - 공용 Hermes API: `127.0.0.1:8643`. 워커가 지속 실행하며 루프백 인증을 적용한다. 개인·사진·검색 처리는 기억이 꺼진 `kimjipsa-private` 프로필과 `8645`에서 분리한다.
 - 전용 프로필: `~/.hermes/profiles/kimjipsa`. `gateway.standalone`으로 개인 게이트웨이와 별도로 실행한다.
-- 기본 모델을 Hermes에서 바꾸면 다음 작업 실행에 반영한다. 앱에 설정을 복사하지 않는다.
+- 김집사 프로필의 모델을 Hermes에서 바꾸면 다음 작업 실행에 반영한다. 프링글스(`default`)의 모델 변경은 김집사에 전파하지 않는다. 개인·사진·검색용 임시 프로필도 김집사 모델을 사용하며, 앱에 설정을 복사하지 않는다.
 - 워커는 Supabase의 전용 계정으로 인증한다. 비밀번호는 macOS Keychain의 `kimjipsa-ai-gateway` 서비스에서 읽는다.
 - `config.local.json`은 Git에서 제외한다. 앱 URL, 공개 Supabase 설정, 워커 이메일, Hermes 실행기·Python·프로필 경로만 담는다. 검색용 `hermesSource`는 기본값 `~/.hermes/hermes-agent`이며 다른 설치 위치에서는 지정한다. 모델 키·service_role은 넣지 않는다.
 
@@ -33,7 +33,7 @@
    touch ~/.hermes/profiles/kimjipsa/.kimjipsa-managed
    ```
 
-6. 워커가 `scripts/prepare-profile.py`로 기본 모델과 전용 API 설정을 맞춘다. 기존 Hermes 기본 프로필은 모델과 로그인이 이미 구성돼 있어야 한다. 새 가정용 자격증명 입력은 없다.
+6. 워커가 `scripts/prepare-profile.py`로 전용 모델과 API 설정을 맞춘다. 김집사의 모델 설정이 없으면 구성된 기본 모델로 초기화하고 이후 선택을 보존한다. Hermes 로그인은 이미 구성돼 있어야 하며 새 가정용 자격증명 입력은 없다.
 7. `yarn gateway:start`로 시작한다.
 
 기본 연결은 `/api/agent/config`의 `connectionMode=local`과 워커 health로 확인한다. Hermes는 설치된 실행기를 사용하며 예전에 내보낸 `vendor/` 소스는 실행에 사용하지 않는다.

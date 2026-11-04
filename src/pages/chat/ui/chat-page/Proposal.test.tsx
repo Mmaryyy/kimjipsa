@@ -52,29 +52,11 @@ describe("BOT-08 변경 제안", () => {
     });
   });
 });
-it("BOT-10 나만 보기 모드 선택과 비공개 안내를 보여줘요", () => {
-  const onVisibilityChange = vi.fn();
-  const { rerender } = render(
-    <ChatHeader
-      visibility="shared"
-      onVisibilityChange={onVisibilityChange}
-      name="집사"
-      online
-      failed={false}
-    />,
-  );
-  fireEvent.click(screen.getByRole("radio", { name: "나만 보기" }));
-  expect(onVisibilityChange).toHaveBeenCalledWith("private");
-  rerender(
-    <ChatHeader
-      visibility="private"
-      onVisibilityChange={onVisibilityChange}
-      name="집사"
-      online
-      failed={false}
-    />,
-  );
+it("BOT-11/14 개인 대화와 1시간 보관 안내만 보여줘요", () => {
+  render(<ChatHeader name="집사" online failed={false} />);
+  expect(screen.queryByRole("radio")).not.toBeInTheDocument();
+  expect(screen.getByText("나만 보는 대화")).toBeInTheDocument();
   expect(
-    screen.getByText("나만 보는 대화 · 가족 기억에 저장하지 않아요"),
+    screen.getByText("마지막 메시지 후 1시간이 지나면 대화 기록이 삭제돼요."),
   ).toBeInTheDocument();
 });

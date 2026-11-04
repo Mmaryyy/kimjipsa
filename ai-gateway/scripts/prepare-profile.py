@@ -28,7 +28,12 @@ def prepare(profile: Path, port: int, isolated=False):
     parser = YAML(typ="safe")
     parser.version = (1, 1)
     source = parser.load((profile.parent.parent / "config.yaml").read_text())
-    model = source.get("model")
+    family_config = profile.with_name("kimjipsa") / "config.yaml"
+    family = {}
+    if family_config.exists():
+        family = parser.load(family_config.read_text()) or {}
+    # Only bootstrap from default; other bots' model changes must not overwrite this family.
+    model = family.get("model", source.get("model"))
     if isinstance(model, str):
         model = {"default": model}
     if not isinstance(model, dict) or not model.get("default"):
@@ -43,8 +48,9 @@ def prepare(profile: Path, port: int, isolated=False):
     config.setdefault("platform_toolsets", {})["api_server"] = ["no_mcp"] if isolated else ["memory", "skills", "kimjipsa", "no_mcp"]
     config.setdefault("display", {})["interim_assistant_messages"] = False
     config.setdefault("agent", {})["max_turns"] = 2 if isolated else 10
-    if source.get("custom_providers"):
-        config["custom_providers"] = source["custom_providers"]
+    custom_providers = family.get("custom_providers", source.get("custom_providers"))
+    if custom_providers:
+        config["custom_providers"] = custom_providers
     changed = False
     if isolated:
         config["memory"] = {"memory_enabled": False, "user_profile_enabled": False, "nudge_interval": 0}

@@ -1,13 +1,9 @@
 "use client";
 import { useCallback, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  postChat,
-  uploadPhoto,
-  type ChatVisibility,
-} from "@/entities/chat-message";
+import { postChat, uploadPhoto } from "@/entities/chat-message";
 import { compressPhoto } from "./photo.utils";
-export function useChatSend(visibility: ChatVisibility) {
+export function useChatSend(sessionVersion: number) {
   const [text, setText] = useState("");
   const [photos, setPhotos] = useState<string[]>([]);
   const requestId = useRef<string | null>(null);
@@ -16,12 +12,13 @@ export function useChatSend(visibility: ChatVisibility) {
     mutationFn: async () => {
       requestId.current ??= crypto.randomUUID();
       await postChat({
+        sessionVersion,
         text,
-        visibility,
         attachmentIds: photos,
         clientRequestId: requestId.current,
       });
     },
+    onError: () => client.invalidateQueries({ queryKey: ["chat"] }),
     onSuccess: async () => {
       setText("");
       setPhotos([]);
@@ -30,8 +27,7 @@ export function useChatSend(visibility: ChatVisibility) {
     },
   });
   const upload = useMutation({
-    mutationFn: async (file: File) =>
-      uploadPhoto(await compressPhoto(file), visibility),
+    mutationFn: async (file: File) => uploadPhoto(await compressPhoto(file)),
     onSuccess: (id) => {
       setPhotos((current) => [...current, id]);
       requestId.current = null;

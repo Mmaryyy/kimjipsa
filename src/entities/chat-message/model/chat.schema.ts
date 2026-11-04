@@ -112,6 +112,8 @@ export const receiptSchema = z.object({
   expires_at: z.string(),
 });
 export const chatSchema = z.object({
+  sessionVersion: z.number().int().positive(),
+  expiresAt: z.string().nullable(),
   familyId: z.uuid(),
   name: z.string(),
   workerOnline: z.boolean(),
@@ -149,10 +151,11 @@ export const settingsSchema = z.object({
 });
 export const sendSchema = z
   .object({
+    sessionVersion: z.number().int().positive(),
     text: z.string().trim().max(10000),
     attachmentIds: z.array(z.uuid()).max(4),
     clientRequestId: z.uuid(),
-    visibility: chatVisibilitySchema.default("shared"),
+    visibility: z.literal("private").default("private"),
   })
   .refine((v) => v.text.length > 0 || v.attachmentIds.length > 0);
 export const settingsInputSchema = z.object({

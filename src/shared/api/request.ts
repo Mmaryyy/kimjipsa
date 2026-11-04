@@ -14,10 +14,12 @@ export async function request<T>(
   url: string,
   body?: unknown,
   method?: "POST" | "PUT",
+  signal?: AbortSignal,
 ): Promise<T> {
   let response: Response;
   try {
     response = await fetch(url, {
+      signal,
       method: method ?? (body === undefined ? "GET" : "POST"),
       credentials: "same-origin",
       cache: "no-store",
@@ -25,7 +27,8 @@ export async function request<T>(
         body === undefined ? undefined : { "Content-Type": "application/json" },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
-  } catch {
+  } catch (error) {
+    if (signal?.aborted) throw error;
     throw new ApiError(
       "network_error",
       "연결을 확인하고 다시 시도해 주세요.",

@@ -1,27 +1,14 @@
 import Link from "next/link";
 import { ArrowLeft, Settings2 } from "lucide-react";
 import { accountRoutes, settingsPath } from "@/shared/config";
-import { Button, SegmentedControl, StatusBadge, Text } from "@/shared/ui";
+import { Button, StatusBadge, Text } from "@/shared/ui";
 
-import type { ChatVisibility } from "@/entities/chat-message";
-const visibilityOptions = [
-  { value: "shared", label: "가족 공용" },
-  { value: "private", label: "나만 보기" },
-] as const;
 interface Props {
-  visibility: ChatVisibility;
-  onVisibilityChange: (value: ChatVisibility) => void;
   name: string;
   online?: boolean;
   failed: boolean;
 }
-const ChatHeader = ({
-  name,
-  online,
-  failed,
-  visibility,
-  onVisibilityChange,
-}: Props) => {
+const ChatHeader = ({ name, online, failed }: Props) => {
   const connection = failed
     ? "연결 확인 실패"
     : online === undefined
@@ -51,9 +38,7 @@ const ChatHeader = ({
             김{name}
           </Text>
           <Text as="p" variant="caption" className="text-muted-foreground">
-            {visibility === "private"
-              ? "나만 보는 대화 · 가족 기억에 저장하지 않아요"
-              : "가족이 함께 보는 집사 대화"}
+            나만 보는 대화
           </Text>
         </div>
         <div role="status" aria-live="polite">
@@ -64,12 +49,9 @@ const ChatHeader = ({
           </StatusBadge>
         </div>
       </div>
-      <SegmentedControl
-        label="대화 공개 범위"
-        options={visibilityOptions}
-        value={visibility}
-        onValueChange={onVisibilityChange}
-      />
+      <Text as="p" variant="caption" className="text-muted-foreground">
+        마지막 메시지 후 1시간이 지나면 대화 기록이 삭제돼요.
+      </Text>
     </header>
   );
 };

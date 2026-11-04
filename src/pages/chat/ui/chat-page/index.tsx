@@ -1,13 +1,9 @@
 "use client";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { ArrowDown } from "lucide-react";
 import { useAccount } from "@/features/account";
 import { ChatComposer } from "@/features/chat-send";
-import {
-  useChat,
-  useChatActions,
-  type ChatVisibility,
-} from "@/entities/chat-message";
+import { useChat, useChatActions } from "@/entities/chat-message";
 import { Button, ErrorState, PageLayout, Skeleton, Text } from "@/shared/ui";
 import { useChatClock } from "../../model/use-chat-clock";
 import { useChatScroll } from "../../model/use-chat-scroll";
@@ -17,15 +13,18 @@ import ChatMessage from "./Message";
 import ChatWelcome from "./Welcome";
 
 const ChatPage = () => {
-  const [visibility, setVisibility] = useState<ChatVisibility>("shared");
   const account = useAccount();
   const query = useChat(
     account.data?.membership?.familyId,
-    visibility,
     account.data?.userId,
   );
   const { cancel } = useChatActions();
   const now = useChatClock();
+  const chat =
+    query.data &&
+    (!query.data.expiresAt || Date.parse(query.data.expiresAt) > now)
+      ? query.data
+      : undefined;
   const { fetchNextPage } = query;
   const onLoadOlder = useCallback(
     () => fetchNextPage({ cancelRefetch: false }),
@@ -39,15 +38,14 @@ const ChatPage = () => {
     onOlder,
     awayFromBottom,
   } = useChatScroll({
-    scope: `${account.data?.membership?.familyId}:${account.data?.userId}:${visibility}`,
-    messages: query.data?.messages,
+    scope: `${account.data?.membership?.familyId}:${account.data?.userId}:${query.data?.sessionVersion}`,
+    messages: chat?.messages,
     hasOlder: query.hasNextPage,
     fetching: query.isFetching,
     olderFailed: query.isFetchNextPageError,
     onLoadOlder,
   });
   useChatViewport();
-  const chat = query.data;
   const runs = useMemo(
     () => new Map(chat?.runs.map((run) => [run.input_message_id, run])),
     [chat?.runs],
@@ -79,8 +77,6 @@ const ChatPage = () => {
       className="fixed inset-x-0 top-[var(--chat-viewport-top,0px)] z-30 mx-auto flex h-[var(--chat-viewport-height,100dvh)] max-w-content-max flex-col overflow-hidden bg-background lg:left-62"
       header={
         <ChatHeader
-          visibility={visibility}
-          onVisibilityChange={setVisibility}
           name={chat?.name ?? "집사"}
           online={chat?.workerOnline}
           failed={query.isError && !query.isFetchNextPageError}
@@ -95,7 +91,7 @@ const ChatPage = () => {
         tabIndex={0}
       >
         <div ref={contentRef} className="pb-6">
-          {query.isPending && (
+          {(query.isPending || (!chat && !query.isError)) && (
             <div
               className="space-y-6 py-6"
               role="status"
@@ -113,9 +109,7 @@ const ChatPage = () => {
               retrying={query.isFetching}
             />
           )}
-          {!query.isPending && (!chat || chat.messages.length === 0) && (
-            <ChatWelcome />
-          )}
+          {!query.isPending && chat?.messages.length === 0 && <ChatWelcome />}
           {chat && !chat.workerOnline && (
             <Text as="p" variant="caption" className="py-3 text-warning-text">
               맥미니 연결을 기다리고 있어요. 보낸 요청은 연결되면 처리해요.
@@ -147,9 +141,7 @@ const ChatPage = () => {
           )}
           <ol
             role="log"
-            aria-label={
-              visibility === "private" ? "나만 보는 대화" : "가족 대화"
-            }
+            aria-label="나만 보는 대화"
             aria-live={query.isFetchingNextPage ? "off" : "polite"}
             aria-relevant="additions text"
             className="space-y-6"
@@ -189,8 +181,8 @@ const ChatPage = () => {
       )}
       <div className="shrink-0 bg-background px-4 pt-2 pb-[max(var(--sp-3),env(safe-area-inset-bottom))]">
         <ChatComposer
-          key={visibility}
-          visibility={visibility}
+          key={chat?.sessionVersion ?? "loading"}
+          sessionVersion={chat?.sessionVersion ?? 1}
           disabled={!chat || (query.isError && !query.isFetchNextPageError)}
         />
       </div>

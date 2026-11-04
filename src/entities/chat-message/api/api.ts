@@ -5,15 +5,21 @@ import {
   chatSchema,
   settingsSchema,
   type ReceiptItem,
-  type ChatVisibility,
 } from "../model/chat.schema";
 export async function fetchChat(
-  visibility: ChatVisibility = "shared",
   before: number | null = null,
+  signal?: AbortSignal,
 ) {
-  const params = new URLSearchParams({ visibility });
+  const params = new URLSearchParams({ visibility: "private" });
   if (before !== null) params.set("before", String(before));
-  return chatSchema.parse(await request(`${chatRoutes.messages}?${params}`));
+  return chatSchema.parse(
+    await request(
+      `${chatRoutes.messages}?${params}`,
+      undefined,
+      undefined,
+      signal,
+    ),
+  );
 }
 export async function fetchSettings() {
   return settingsSchema.parse(await request(chatRoutes.settings));
@@ -25,12 +31,12 @@ export function writeMemory(input: unknown) {
   return request(chatRoutes.memories, input);
 }
 export function postChat(input: {
-  visibility: ChatVisibility;
+  sessionVersion: number;
   text: string;
   attachmentIds: string[];
   clientRequestId: string;
 }) {
-  return request(chatRoutes.messages, input);
+  return request(chatRoutes.messages, { ...input, visibility: "private" });
 }
 export function cancelChat(id: string) {
   return request(chatRoutes.cancelRun(id), {});
@@ -43,11 +49,11 @@ export function applyReceipt(input: {
 }) {
   return request(chatRoutes.receipt(input.id, input.cancel), input);
 }
-export async function uploadPhoto(blob: Blob, visibility: ChatVisibility) {
+export async function uploadPhoto(blob: Blob) {
   const upload = z.object({ id: z.uuid(), url: z.url() }).parse(
     await request(chatRoutes.attachments, {
       mimeType: blob.type,
-      visibility,
+      visibility: "private",
     }),
   );
   const response = await fetch(upload.url, {

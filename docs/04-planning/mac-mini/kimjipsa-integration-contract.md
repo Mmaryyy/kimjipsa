@@ -12,7 +12,7 @@
 
 Hermes 자체 기억·조회 스킬에 관한 최신 규약은 [ADR-0018](../../02-architecture/ADR/0018-hermes-memory-and-household-skill.md)을 따른다. 공용 프로필의 기억은 유지하고 Supabase 기억과 별도로 관리한다. `POST /api/agent/read`는 활성 워커의 가정만 읽으며 개인 내용은 제외한다.
 
-- `/api/chat?visibility=shared|private`: 조회·전송·첨부의 모드를 일치시킨다. private는 요청자 본인만 조회·실행 취소·확인할 수 있다. 가족 기억에는 shared만 사용한다.
+- `/api/chat?visibility=private`: 앱 대화·첨부는 개인 전용이며 요청자만 조회·취소·확인한다. 마지막 메시지 후 1시간 만료 시 원문과 연결 작업을 삭제하고 `sessionVersion`을 올린다. 개인 대화는 가족 기억에 요약하지 않는다.
 - 워커 설정의 `capabilitiesVersion=2`를 요구한다. `/api/agent/context`와 `/api/agent/complete`는 워커 Bearer·동일 Origin·jobId·leaseToken을 사용한다. `context`는 범위 내 반복 일정을 전개하고 개인 일정 내용을 공개 범위에 따라 제거한다.
 - 결과 kind는 `reply`, `actions`, `action_proposal`, `receipt`, `add`, `proposal`, `summary`다. `calendar`와 `search`는 워커 내부의 추가 조회 요청이며 완료 RPC로 저장하지 않는다. 일정 추가 범위 조회는 1회·최대 366일이다.
 - actions는 domain(event/inventory/cart), label, payload, expected 리비전으로 구성한다. 기존 entity 입력 검증과 SQL 쓰기 규칙을 공유한다. 리비전은 모델 값 대신 서버 조회값으로 채운다. 직접 요청은 인용문 검사 후 즉시 실행, 자체 판단은 5분간 확인 대기, 묶음 변경은 전체 성공/전체 취소다.
@@ -67,8 +67,8 @@ Realtime으로 작업 알림을 받은 워커가 HTTPS RPC로 대기열의 작�
 
 | 인터페이스 제안 | 담당과 처리 |
 | --- | --- |
-| POST /api/chat | 앱이 사용자·가정을 확인하고 text, attachmentIds, clientRequestId를 접수. 메시지와 작업 ID 반환 |
-| GET /api/chat | `visibility=shared\|private`, 선택적 `before` 순서 커서. 최근 50개 또는 커서 이전 50개를 시간순으로 반환하고, `nextBefore`가 null이면 이전 대화 없음. 작업·카드·사진 정보는 해당 페이지 메시지에 연결된 것만 반환 |
+| POST /api/chat | 앱이 사용자·가정을 확인하고 text, attachmentIds, clientRequestId, sessionVersion을 접수. 메시지와 작업 ID 반환 |
+| GET /api/chat | `visibility=private`, 선택적 `before` 순서 커서. 최근 50개 또는 커서 이전 50개를 시간순으로 반환하고, `nextBefore`가 null이면 이전 대화 없음. 작업·카드·사진 정보는 해당 페이지 메시지에 연결된 것만 반환. `sessionVersion`, `expiresAt`으로 만료·페이지 초기화 판단 |
 | POST /api/chat/attachments | 앱이 비공개 업로드 권한 발급. 업로드 완료 확인 후에만 작업 첨부 허용 |
 | POST /api/chat/runs/:id/cancel | 앱이 가족과 실행 상태를 확인해 취소 요청. 실행 중이면 워커에 중단 전달 |
 | GET /api/agent/config | 등록된 워커에 한해 연결된 가족의 실행 설정·설정 버전과 필요한 자격 공급 |

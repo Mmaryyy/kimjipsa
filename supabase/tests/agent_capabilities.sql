@@ -1,7 +1,7 @@
 -- CAL-02/03/04, INV-02/07/16, CART-01/07, BOT-06/07/08/10/11.
 -- SCN-CAL-2/4, SCN-CART-4, SCN-BOT-5/6/7: disposable PostgreSQL only.
 begin;
-create function pg_temp.start_agent_turn(person uuid, worker uuid, scope text default 'shared') returns jsonb language plpgsql as $$
+create function pg_temp.start_agent_turn(person uuid, worker uuid, scope text default 'private') returns jsonb language plpgsql as $$
 declare job jsonb;
 begin
   perform set_config('request.jwt.claim.sub',person::text,true);
@@ -55,11 +55,8 @@ begin
   if context->'calendar'->'revisions' ? partner_event::text then raise exception 'partner revision leaked'; end if;
   action:=jsonb_build_object('domain','event','label','개인 일정 변경','payload',jsonb_build_object('id',own_event,'event',event_input||'{"title":"변경한 진료"}'),'expected',context->'calendar'->'revisions');
   perform public.agent_command('complete',lease||jsonb_build_object('kind','actions','text','변경','requestQuote','작업 실행','actions',jsonb_build_array(action)));
-  lease:=pg_temp.start_agent_turn(person,worker);
-  context:=public.agent_command('context',lease);
-  if context::text like '%변경한 진료%' or context::text like '%비밀%' then raise exception 'shared calendar leaked'; end if;
-  perform pg_temp.expect_error(format('select public.agent_command(''complete'',%L::jsonb)',lease||jsonb_build_object('kind','actions','text','잘못된 변경','requestQuote','작업 실행','actions',jsonb_build_array(action))), 'private_chat_required');
-  perform public.agent_command('complete',lease||'{"kind":"reply","text":"나만 보기에서 처리해 주세요"}');
+  perform set_config('request.jwt.claim.sub',person::text,true);
+  perform pg_temp.expect_error('select public.chat_page(''{"visibility":"shared"}'')','private_chat_required');
 
   -- Partner cannot read/cancel a private run or read the other user's private photos.
   perform set_config('request.jwt.claim.sub',person::text,true);

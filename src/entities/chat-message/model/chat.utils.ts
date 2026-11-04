@@ -2,29 +2,31 @@ import { uniqBy } from "lodash-es";
 import type { Chat } from "./chat.schema";
 
 export function mergeChatPages(pages: Chat[]): Chat | undefined {
-  const latest = pages[0];
+  const version = Math.max(...pages.map((page) => page.sessionVersion));
+  const current = pages.filter((page) => page.sessionVersion === version);
+  const latest = current[0];
   if (!latest) return;
   return {
     ...latest,
-    nextBefore: pages.at(-1)!.nextBefore,
+    nextBefore: current.at(-1)!.nextBefore,
     messages: uniqBy(
-      pages.flatMap((page) => page.messages),
+      current.flatMap((page) => page.messages),
       "id",
     ).sort((left, right) => left.sequence - right.sequence),
     runs: uniqBy(
-      pages.flatMap((page) => page.runs),
+      current.flatMap((page) => page.runs),
       "id",
     ),
     receipts: uniqBy(
-      pages.flatMap((page) => page.receipts),
+      current.flatMap((page) => page.receipts),
       "id",
     ),
     proposals: uniqBy(
-      pages.flatMap((page) => page.proposals),
+      current.flatMap((page) => page.proposals),
       "id",
     ),
     attachments: uniqBy(
-      pages.flatMap((page) => page.attachments),
+      current.flatMap((page) => page.attachments),
       "id",
     ),
   };

@@ -1,4 +1,4 @@
-"""BOT-10/12/13: disposable profile tests; never accesses the user's Hermes home."""
+"""BOT-05/10/12/13: disposable profile tests; never accesses the user's Hermes home."""
 
 import importlib.util
 import json
@@ -34,6 +34,7 @@ class ProfileTests(unittest.TestCase):
         self.assertTrue(prepare_profile.prepare(self.profile, 8643))
         self.assertFalse(prepare_profile.prepare(self.profile, 8643))
         config = json.loads((self.profile / "config.yaml").read_text())
+        self.assertEqual(config["model"]["default"], "fixture-model")
         self.assertTrue(config["memory"]["memory_enabled"])
         self.assertEqual(config["platforms"]["discord"]["token"], "fixture-only")
         self.assertEqual((self.profile / "memories/MEMORY.md").read_text(), "기존에 기억한 가족 선호")
@@ -68,6 +69,32 @@ class ProfileTests(unittest.TestCase):
         private.mkdir()
         with self.assertRaises(ValueError):
             prepare_profile.prepare(private, 8645, True)
+
+    def test_bot05_family_model_survives_default_model_changes(self):
+        prepare_profile.prepare(self.profile, 8643)
+        config = json.loads((self.profile / "config.yaml").read_text())
+        config["model"] = {"default": "family-terra", "provider": "family-provider"}
+        config["agent"]["reasoning_effort"] = "high"
+        config["custom_providers"] = [{"name": "family-provider"}]
+        (self.profile / "config.yaml").write_text(json.dumps(config))
+        (self.root / "config.yaml").write_text(json.dumps({
+            "model": {"default": "default-sol", "provider": "default-provider"},
+            "custom_providers": [{"name": "default-provider"}],
+        }))
+
+        prepare_profile.prepare(self.profile, 8643)
+        shared = json.loads((self.profile / "config.yaml").read_text())
+        self.assertEqual(shared["model"], config["model"])
+        self.assertEqual(shared["agent"]["reasoning_effort"], "high")
+        self.assertEqual(shared["custom_providers"], config["custom_providers"])
+
+        private = self.profile.with_name("kimjipsa-private")
+        prepare_profile.prepare(private, 8645, True)
+        isolated = json.loads((private / "config.yaml").read_text())
+        self.assertEqual(isolated["model"], config["model"])
+        self.assertEqual(isolated["custom_providers"], config["custom_providers"])
+        self.assertFalse(isolated["memory"]["memory_enabled"])
+        self.assertNotIn("discord", isolated["platforms"])
 
 
 if __name__ == "__main__":
