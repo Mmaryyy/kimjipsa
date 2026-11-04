@@ -1,6 +1,48 @@
-# P2 계정·가정 DB
+# Supabase 데이터베이스
 
-원격 DB에는 적용하지 않았다. `migrations/20261016000000_accounts_and_families.sql`은
+## 원격 연결·적용 이력 (2026-11-04)
+
+로컬 `.env.local`의 `SUPABASE_DB_URL`로 원격 DB에 직접 연결한다. Supabase
+**Connect → Method: Session pooler → URI**의 포트 **5432** 주소를 사용한다.
+이 맥의 네트워크에서는 IPv6 전용 Direct connection 주소에 연결할 수 없었다.
+비밀번호는 URL 인코딩하고, 연결 문자열을 채팅·로그·명령행 인자에 출력하지 않는다.
+앱·워커 실행에는 이 변수가 필요하지 않아 실행 복사본으로 옮기지 않는다.
+
+TLS는 인증서와 호스트 이름을 검증한다. Node PostgreSQL 클라이언트에서는
+`ssl.ca`에 [Supabase 공개 루트 인증서](certs/prod-ca-2021.crt)를 읽어 넣고
+`rejectUnauthorized: true`를 사용한다. URI의 `sslmode` 등 SSL 옵션이 별도로
+전달한 `ssl` 설정을 덮어쓰지 않도록 연결 설정을 구성한다. 인증서 검증을 끄지 않는다.
+인증서는 [Supabase 공식 배포 주소](https://supabase-downloads.s3-ap-southeast-1.amazonaws.com/prod/ssl/prod-ca-2021.crt)에서
+받았으며 2031-04-26까지 유효하다. DB 비밀번호와 달리 공개 인증서다.
+
+앱의 Supabase 프로젝트와 DB 연결 대상이 같은지 확인한 뒤 다음을 수행했다.
+
+- 기존 17개 마이그레이션의 테이블·열·제약·인덱스·함수·트리거·RLS 정책을
+  로컬 재구성 결과와 대조했다. 아래의 기존 차이는 보존했다.
+- `chat_page(jsonb)`와 페이지 조회 인덱스 3개가 원격 DB에 없는 것을 확인하여
+  `20261104030000_chat_pagination.sql`을 직접 적용했다.
+- Supabase CLI와 같은 `supabase_migrations.schema_migrations` 구조로 적용 이력
+  18개를 등록했다. 기존 17개 SQL은 다시 실행하지 않았다. 기존 이력의
+  `statements`는 실제 과거 실행문을 확정할 수 없어 NULL로 두었다.
+
+이후에는 적용 이력과 로컬 파일을 비교하여 새 마이그레이션만 적용하고, 성공한
+버전을 기록한다. 이미 적용된 파일을 수정하거나 전체 SQL을 재실행하지 않는다.
+연결 성공만으로 DB 변경을 자동 실행하지 않으며, 요청된 변경 범위에서 적용한다.
+
+### 기존 원격 DB와 로컬 초기 스키마의 차이
+
+- 원격 `users.terms_accepted_at`, `privacy_accepted_at`, `terms_version`은 NULL을
+  허용한다. `20261030010000_beta_consent.sql`의 기존 계정 보존 방침에 따른다.
+  동의 이력을 임의로 채우지 않았다.
+- 원격의 가정 이름·표시 이름 CHECK 제약은 비어 있지 않은지만 검사한다.
+  로컬 초기 스키마의 가정 이름 10자·표시 이름 6자 상한과 다르며, 원격
+  `create_family`에도 10자 검사가 없다. `complete_profile`의 6자 검사는 있다.
+  이 기존 차이는 이번 연결·이력 정리에서 수정하지 않았다. 이후 수정 시 별도
+  마이그레이션과 기존 데이터 확인이 필요하다.
+
+## P2 계정·가정 DB — 최초 작성 당시 기록
+
+P2 작성 당시에는 원격 DB에 적용하지 않았다. `migrations/20261016000000_accounts_and_families.sql`은
 ACC-01~07의 사용자, 가정, 구성원, 초대와 RLS·RPC를 담는다.
 
 승인 후 Supabase CLI와 Docker가 있는 로컬 환경에서 `supabase start`,
