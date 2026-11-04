@@ -115,9 +115,15 @@ for (const width of [360, 1280]) {
     await page.setViewportSize({ width, height: 800 });
     const chat = await prepareChat(page, testInfo);
     chat.holdOlder();
-    await page.goto("/chat");
+    await page.goto("/");
+    await page.getByRole("button", { name: "AI 집사 채팅 열기" }).click();
+    await expect(
+      page.getByRole("dialog", { name: "집사와 대화" }),
+    ).toBeVisible();
     const viewport = page.getByLabel("대화 내역", { exact: true });
-    const messages = page.getByRole("log").locator(":scope > li");
+    const messages = page
+      .getByRole("log")
+      .locator(":scope > li[data-message-id]");
     await expect(messages).toHaveCount(50);
     await expect(
       page.getByText("개인 대화 121", { exact: true }),
@@ -189,8 +195,12 @@ test("BOT-01 이전 대화 조회 실패 시 현재 대화 유지·재시도", a
 }, testInfo) => {
   const chat = await prepareChat(page, testInfo);
   chat.failOlder(true);
-  await page.goto("/chat");
-  const messages = page.getByRole("log").locator(":scope > li");
+  await page.goto("/");
+  await page.getByRole("button", { name: "AI 집사 채팅 열기" }).click();
+  await expect(page.getByRole("dialog", { name: "집사와 대화" })).toBeVisible();
+  const messages = page
+    .getByRole("log")
+    .locator(":scope > li[data-message-id]");
   await expect(messages).toHaveCount(50);
   await page.getByLabel("대화 내역", { exact: true }).evaluate((element) => {
     element.scrollTop = 0;
@@ -213,17 +223,23 @@ test("BOT-11/14 만료 후 다시 열면 이전 페이지와 초안을 표시하
   page,
 }, testInfo) => {
   const chat = await prepareChat(page, testInfo);
-  await page.goto("/chat");
-  await expect(page.getByRole("log").locator(":scope > li")).toHaveCount(50);
+  await page.goto("/");
+  await page.getByRole("button", { name: "AI 집사 채팅 열기" }).click();
+  await expect(page.getByRole("dialog", { name: "집사와 대화" })).toBeVisible();
+  await expect(
+    page.getByRole("log").locator(":scope > li[data-message-id]"),
+  ).toHaveCount(50);
   await page
     .getByRole("textbox", { name: "집사에게 보낼 메시지" })
     .fill("오래된 초안");
-  await page.getByRole("link", { name: "설정", exact: true }).click();
-  await expect(page).toHaveURL(/\/settings$/);
+  await page.getByRole("button", { name: "닫기", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "집사와 대화" })).toHaveCount(
+    0,
+  );
   chat.expire();
-  await page.goBack();
-  await expect(page).toHaveURL(/\/chat$/);
-  await expect(page.getByText("우리 집 일을 함께 챙겨요")).toBeVisible();
+  await page.getByRole("button", { name: "AI 집사 채팅 열기" }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByText(/안녕하세요, 테스트님/)).toBeVisible();
   await expect(page.getByText(/^개인 대화 /)).toHaveCount(0);
   await expect(
     page.getByRole("textbox", { name: "집사에게 보낼 메시지" }),
@@ -235,8 +251,12 @@ test("BOT-11/14 이전 페이지 요청 중 만료되면 과거 대화를 합치
 }, testInfo) => {
   const chat = await prepareChat(page, testInfo);
   chat.holdOlder();
-  await page.goto("/chat");
-  await expect(page.getByRole("log").locator(":scope > li")).toHaveCount(50);
+  await page.goto("/");
+  await page.getByRole("button", { name: "AI 집사 채팅 열기" }).click();
+  await expect(page.getByRole("dialog", { name: "집사와 대화" })).toBeVisible();
+  await expect(
+    page.getByRole("log").locator(":scope > li[data-message-id]"),
+  ).toHaveCount(50);
   await page.getByLabel("대화 내역", { exact: true }).evaluate((element) => {
     element.scrollTop = 0;
   });
@@ -245,6 +265,6 @@ test("BOT-11/14 이전 페이지 요청 중 만료되면 과거 대화를 합치
     .toBe(true);
   chat.expire();
   chat.releaseOlder();
-  await expect(page.getByText("우리 집 일을 함께 챙겨요")).toBeVisible();
+  await expect(page.getByText(/안녕하세요, 테스트님/)).toBeVisible();
   await expect(page.getByText(/^개인 대화 /)).toHaveCount(0);
 });

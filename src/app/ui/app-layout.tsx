@@ -1,4 +1,8 @@
 "use client";
+import {
+  ChatNavigationProvider,
+  useChatNavigation,
+} from "@/features/chat-navigation";
 import { SkeletonStatus } from "@/shared/ui";
 import { cn } from "@/shared/lib";
 
@@ -6,11 +10,11 @@ import dynamic from "next/dynamic";
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import ChatLauncher from "./chat-launcher";
+import { ChatPanel } from "@/widgets/chat-panel";
 import { AccountGate } from "@/widgets/account-gate";
 import {
   accountRoutes,
   catalogPath,
-  chatPath,
   viewportPath,
   viewportSpacingPath,
 } from "@/shared/config";
@@ -25,9 +29,9 @@ const MockDataToolbar =
       )
     : () => null;
 
-export function AppLayout({ children }: { children: ReactNode }) {
+function AppShell({ children }: { children: ReactNode }) {
+  const { minimized, ready, open } = useChatNavigation();
   const pathname = usePathname() ?? "/";
-  const chatPage = pathname === chatPath;
   const publicPage =
     [
       accountRoutes.login,
@@ -58,17 +62,20 @@ export function AppLayout({ children }: { children: ReactNode }) {
           "pb-[calc(var(--bottom-navigation-offset)+env(safe-area-inset-bottom))] lg:max-w-280",
           "lg:px-10 lg:pb-10",
           "group-data-[public=true]/app:pb-0",
-          chatPage && "p-0 lg:p-0",
+          !publicPage &&
+            !minimized && [
+              "pb-[calc(var(--bottom-navigation-offset)+env(safe-area-inset-bottom)+var(--chat-launcher-clearance))]",
+              "lg:pb-[calc(var(--sp-10)+var(--chat-launcher-clearance))]",
+            ],
         ])}
         tabIndex={-1}
       >
-        {process.env.NODE_ENV === "development" && !chatPage && (
-          <MockDataToolbar />
-        )}
+        {process.env.NODE_ENV === "development" && <MockDataToolbar />}
         <SkeletonStatus key={pathname}>{children}</SkeletonStatus>
       </main>
-      {!publicPage && !chatPage && <BottomNavigation pathname={pathname} />}
-      {!publicPage && !chatPage && <ChatLauncher />}
+      {!publicPage && ready && <BottomNavigation pathname={pathname} />}
+      {!publicPage && ready && !open && !minimized && <ChatLauncher />}
+      {!publicPage && <ChatPanel />}
     </div>
   );
   return publicPage ? (
@@ -77,5 +84,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
     <AccountGate splash={(leaving) => <SplashScreen leaving={leaving} />}>
       {shell}
     </AccountGate>
+  );
+}
+
+export function AppLayout({ children }: { children: ReactNode }) {
+  return (
+    <ChatNavigationProvider>
+      <AppShell>{children}</AppShell>
+    </ChatNavigationProvider>
   );
 }

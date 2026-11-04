@@ -1,4 +1,6 @@
+import { chatPath } from "@/shared/config";
 import {
+  Bot,
   CalendarDays,
   House,
   Package,
@@ -13,3 +15,9 @@ export const appNavigation = [
   { href: "/cart", label: "장바구니", icon: ShoppingBasket },
   { href: "/settings", label: "설정", icon: Settings },
 ] as const;
+
+export const appNavigationWithBot = [
+  ...appNavigation.slice(0, 4),
+  { href: chatPath, label: "집사", icon: Bot },
+  ...appNavigation.slice(4),
+];

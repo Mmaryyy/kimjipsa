@@ -73,25 +73,6 @@ const HomeSettingsForm = ({ settings }: { settings: Settings }) => {
     >
       <fieldset aria-busy={isSaving} className="grid min-w-0 gap-2">
         <legend className="sr-only">홈 구성</legend>
-        <FormFieldRow label="다가오는 일정" htmlFor="upcoming-enabled">
-          {(props) => (
-            <Controller
-              name="upcomingEnabled"
-              control={control}
-              render={({ field }) => (
-                <Switch
-                  {...props}
-                  data-od-id="s-widget"
-                  checked={field.value}
-                  onCheckedChange={(value) => {
-                    field.onChange(value);
-                    void handleSubmit(onSubmit)();
-                  }}
-                />
-              )}
-            />
-          )}
-        </FormFieldRow>
         <FormFieldRow
           label="캘린더 보기"
           htmlFor="home-view"
@@ -108,7 +89,7 @@ const HomeSettingsForm = ({ settings }: { settings: Settings }) => {
                   label="홈 캘린더 보기"
                   options={calendarViews.map((option) => ({
                     ...option,
-                    label: option.label.slice(0, 1),
+                    label: option.label,
                   }))}
                   value={field.value}
                   onValueChange={(value) => {
@@ -116,6 +97,25 @@ const HomeSettingsForm = ({ settings }: { settings: Settings }) => {
                     void handleSubmit(onSubmit)();
                   }}
                   {...props}
+                />
+              )}
+            />
+          )}
+        </FormFieldRow>
+        <FormFieldRow label="다가오는 일정" htmlFor="upcoming-enabled">
+          {(props) => (
+            <Controller
+              name="upcomingEnabled"
+              control={control}
+              render={({ field }) => (
+                <Switch
+                  {...props}
+                  data-od-id="s-widget"
+                  checked={field.value}
+                  onCheckedChange={(value) => {
+                    field.onChange(value);
+                    void handleSubmit(onSubmit)();
+                  }}
                 />
               )}
             />

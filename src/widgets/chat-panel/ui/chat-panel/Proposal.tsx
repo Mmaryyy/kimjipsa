@@ -13,6 +13,13 @@ const ChatActionProposal = ({ proposal, now }: Props) => {
   const { actions } = useChatActions();
   const editable =
     proposal.status === "draft" && Date.parse(proposal.expires_at) > now;
+  const remainingSeconds = Math.min(
+    300,
+    Math.max(0, Math.ceil((Date.parse(proposal.expires_at) - now) / 1000)),
+  );
+  const remainingTime = `${Math.floor(remainingSeconds / 60)}:${String(
+    remainingSeconds % 60,
+  ).padStart(2, "0")}`;
   let title = "확인 시간이 지났어요";
   if (editable) title = "이렇게 변경할까요?";
   if (proposal.status === "applied") title = "선택한 변경을 반영했어요";
@@ -36,7 +43,7 @@ const ChatActionProposal = ({ proposal, now }: Props) => {
   );
   return (
     <section aria-label="집사 변경 제안" className="space-y-3 py-4">
-      <Text as="h3" variant="headline">
+      <Text as="h3" variant="label">
         {title}
       </Text>
       <ul className="space-y-3">
@@ -56,24 +63,32 @@ const ChatActionProposal = ({ proposal, now }: Props) => {
                 }
               />
             )}
-            <Text>{action.label}</Text>
+            <Text variant="body-sm" className="leading-[1.55]">
+              {action.label}
+            </Text>
           </li>
         ))}
       </ul>
       {editable && (
         <>
-          <Text as="p" variant="caption" className="text-muted-foreground">
-            선택한 변경만 실행해요. 5분이 지나면 만료돼요.
+          <Text as="p" variant="caption-sm" className="text-muted-foreground">
+            선택한 변경만 실행해요. 남은 시간 {remainingTime}
           </Text>
           <div className="flex gap-2">
             <Button
+              size="sm"
+              className="text-body-sm"
+              data-od-id="pending-confirm"
               disabled={actions.isPending || !selected.length}
               onClick={onConfirm}
             >
               선택한 변경 실행
             </Button>
             <Button
+              size="sm"
+              className="text-body-sm"
               variant="gray"
+              data-od-id="pending-cancel"
               disabled={actions.isPending}
               onClick={onCancel}
             >
@@ -83,7 +98,7 @@ const ChatActionProposal = ({ proposal, now }: Props) => {
         </>
       )}
       {actions.error && (
-        <Text as="p" role="alert" className="text-error-text">
+        <Text as="p" variant="caption" role="alert" className="text-error-text">
           {actions.error.message}
         </Text>
       )}

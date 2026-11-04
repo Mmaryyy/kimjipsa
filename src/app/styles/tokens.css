@@ -395,6 +395,7 @@
   /* Product roles */
   --bot: var(--sys-indigo); /* 집사 챗봇 */
   --bot-text: var(--sys-indigo-ic);
+  --bot-avatar-bg: #7bc5e8;
   --celebrate: var(--sys-pink); /* 축하 D-day */
   --celebrate-text: var(--sys-pink-ic);
 
@@ -519,10 +520,13 @@
   --ctl-h-lg: 42px;
   --row-min: 40px;
   --content-max: 720px;
+  /* 집사 버튼 82px + 두 줄 peek 말풍선 40px + 본문과의 간격. */
+  --chat-launcher-clearance: calc(82px + 40px + var(--sp-4));
 
   /* Motion */
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
   --dur-fast: 160ms;
+  --dur-slow: 480ms;
   --dur: 280ms;
 }
 
@@ -605,21 +609,22 @@
     var(--glass-highlight);
 }
 [data-theme="dark"] {
-  --glass-bg: rgb(28 28 30 / 82%);
-  --glass-button-bg: rgb(28 28 30 / 96%);
-  --glass-bg-hover: rgb(38 38 40 / 96%);
-  --glass-bg-pressed: rgb(22 22 24 / 98%);
-  --glass-bg-opaque: #1c1c1e;
+  --glass-bg: rgb(38 38 40 / 88%);
+  --glass-button-bg: rgb(38 38 40 / 94%);
+  --glass-bg-hover: rgb(42 42 44 / 96%);
+  --glass-bg-pressed: rgb(35 35 37 / 96%);
+  --glass-bg-opaque: #262628;
   --glass-text: #f5f5f7;
-  --glass-selected-bg: rgb(0 0 0 / 72%);
-  --glass-selected-opaque: #080809;
+  --glass-selected-bg: rgb(48 48 50 / 88%);
+  --glass-selected-opaque: #303032;
   --glass-selected-text: #ffffff;
   --glass-selected-shadow: none;
-  --glass-border: rgb(100 100 106 / 24%);
+  --glass-border: transparent;
   --glass-edge: linear-gradient(
-    135deg,
-    rgb(180 180 188 / 32%),
-    rgb(28 28 30 / 8%)
+    180deg,
+    rgb(255 255 255 / 10%),
+    rgb(255 255 255 / 2%) 40%,
+    transparent 70%
   );
   --glass-sheen: linear-gradient(
     135deg,
@@ -627,36 +632,36 @@
     transparent 45%,
     rgb(0 0 0 / 12%)
   );
-  --glass-highlight: inset 0 1px 0 rgb(255 255 255 / 10%);
+  --glass-highlight: inset 0 0.5px 0 rgb(255 255 255 / 8%);
   --tab-lens-bg: rgb(255 255 255 / 6%);
   --tab-lens-shadow:
-    0 5px 14px rgb(0 0 0 / 16%), inset 0 1px 0 rgb(255 255 255 / 65%);
+    0 2px 8px rgb(0 0 0 / 18%), inset 0 0.5px 0 rgb(255 255 255 / 8%);
   --tab-lens-edge: linear-gradient(
-    155deg,
-    rgb(255 255 255 / 85%),
-    rgb(255 255 255 / 35%)
+    180deg,
+    rgb(255 255 255 / 10%),
+    rgb(255 255 255 / 2%) 40%,
+    transparent 70%
   );
-  --shadow-glass:
-    0 7px 22px rgb(0 0 0 / 32%), 0 1px 3px rgb(0 0 0 / 22%),
-    var(--glass-highlight);
+  --shadow-glass: 0 2px 8px rgb(0 0 0 / 18%), var(--glass-highlight);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --glass-bg: rgb(28 28 30 / 82%);
-    --glass-button-bg: rgb(28 28 30 / 96%);
-    --glass-bg-hover: rgb(38 38 40 / 96%);
-    --glass-bg-pressed: rgb(22 22 24 / 98%);
-    --glass-bg-opaque: #1c1c1e;
+    --glass-bg: rgb(38 38 40 / 88%);
+    --glass-button-bg: rgb(38 38 40 / 94%);
+    --glass-bg-hover: rgb(42 42 44 / 96%);
+    --glass-bg-pressed: rgb(35 35 37 / 96%);
+    --glass-bg-opaque: #262628;
     --glass-text: #f5f5f7;
-    --glass-selected-bg: rgb(0 0 0 / 72%);
-    --glass-selected-opaque: #080809;
+    --glass-selected-bg: rgb(48 48 50 / 88%);
+    --glass-selected-opaque: #303032;
     --glass-selected-text: #ffffff;
     --glass-selected-shadow: none;
-    --glass-border: rgb(100 100 106 / 24%);
+    --glass-border: transparent;
     --glass-edge: linear-gradient(
-      135deg,
-      rgb(180 180 188 / 32%),
-      rgb(28 28 30 / 8%)
+      180deg,
+      rgb(255 255 255 / 10%),
+      rgb(255 255 255 / 2%) 40%,
+      transparent 70%
     );
     --glass-sheen: linear-gradient(
       135deg,
@@ -664,18 +669,17 @@
       transparent 45%,
       rgb(0 0 0 / 12%)
     );
-    --glass-highlight: inset 0 1px 0 rgb(255 255 255 / 10%);
+    --glass-highlight: inset 0 0.5px 0 rgb(255 255 255 / 8%);
     --tab-lens-bg: rgb(255 255 255 / 6%);
     --tab-lens-shadow:
-      0 5px 14px rgb(0 0 0 / 16%), inset 0 1px 0 rgb(255 255 255 / 65%);
+      0 2px 8px rgb(0 0 0 / 18%), inset 0 0.5px 0 rgb(255 255 255 / 8%);
     --tab-lens-edge: linear-gradient(
-      155deg,
-      rgb(255 255 255 / 85%),
-      rgb(255 255 255 / 35%)
+      180deg,
+      rgb(255 255 255 / 10%),
+      rgb(255 255 255 / 2%) 40%,
+      transparent 70%
     );
-    --shadow-glass:
-      0 7px 22px rgb(0 0 0 / 32%), 0 1px 3px rgb(0 0 0 / 22%),
-      var(--glass-highlight);
+    --shadow-glass: 0 2px 8px rgb(0 0 0 / 18%), var(--glass-highlight);
   }
 }
 @supports not (

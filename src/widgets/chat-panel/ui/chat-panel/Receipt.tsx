@@ -36,9 +36,9 @@ const ReceiptCard = ({ receipt, now }: Props) => {
   return (
     <section
       aria-label={receipt.kind === "receipt" ? "영수증 확인" : "변경 제안 확인"}
-      className="space-y-4 py-4"
+      className="space-y-4 py-4 text-body-sm leading-[1.55]"
     >
-      <Text as="h3" variant="headline">
+      <Text as="h3" variant="label">
         {receipt.kind === "receipt" ? "영수증 품목 확인" : "재고 변경 확인"}
       </Text>
       {items.map((item, index) => {
@@ -68,12 +68,14 @@ const ReceiptCard = ({ receipt, now }: Props) => {
               반영하기
             </label>
             <Input
+              className="text-body-sm"
               aria-label={`품목 ${index + 1} 이름`}
               value={item.name}
               onChange={(event) => update(index, { name: event.target.value })}
             />
             <div className="grid grid-cols-2 gap-2">
               <Input
+                className="text-body-sm"
                 aria-label={`품목 ${index + 1} 수량`}
                 type="number"
                 min="0.001"
@@ -161,6 +163,7 @@ const ReceiptCard = ({ receipt, now }: Props) => {
                     ))}
                 </select>
                 <Input
+                  className="text-body-sm"
                   type="date"
                   aria-label={`품목 ${index + 1} 유통기한`}
                   value={item.expires_on ?? ""}
@@ -180,6 +183,8 @@ const ReceiptCard = ({ receipt, now }: Props) => {
       })}
       <div className="flex gap-2">
         <Button
+          size="sm"
+          className="text-body-sm"
           disabled={
             mutation.isPending ||
             !items.some((item) => item.selected) ||
@@ -199,6 +204,8 @@ const ReceiptCard = ({ receipt, now }: Props) => {
           재고에 반영하기
         </Button>
         <Button
+          size="sm"
+          className="text-body-sm"
           variant="gray"
           disabled={mutation.isPending}
           onClick={() =>
@@ -213,7 +220,7 @@ const ReceiptCard = ({ receipt, now }: Props) => {
         </Button>
       </div>
       {mutation.error && (
-        <Text as="p" role="alert" className="text-error-text">
+        <Text as="p" variant="caption" role="alert" className="text-error-text">
           {mutation.error.message}
         </Text>
       )}

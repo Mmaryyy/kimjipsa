@@ -1,1 +1,1 @@
-export { appNavigation } from "./navigation.constants";
+export { appNavigation, appNavigationWithBot } from "./navigation.constants";

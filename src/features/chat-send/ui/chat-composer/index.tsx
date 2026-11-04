@@ -1,8 +1,18 @@
 "use client";
-import { useRef } from "react";
-import { ArrowUp, ImagePlus, LoaderCircle, Paperclip, X } from "lucide-react";
-import { Button, Text, Textarea } from "@/shared/ui";
+
+import { ArrowUp, Paperclip, PlusIcon, X } from "lucide-react";
+import {
+  Button,
+  Loader,
+  PromptInput,
+  PromptInputFooter,
+  PromptInputSubmit,
+  PromptInputTextarea,
+  Text,
+} from "@/shared/ui";
 import { useChatSend } from "../../model/use-chat-send";
+import { useRef } from "react";
+
 interface Props {
   sessionVersion: number;
   disabled?: boolean;
@@ -15,7 +25,8 @@ const ChatComposer = ({ disabled = false, sessionVersion }: Props) => {
   const canSend = !disabled && !pending && (!!text.trim() || photos.length > 0);
   const error = send.error ?? upload.error;
   return (
-    <form
+    <PromptInput
+      data-od-id="chat-input"
       aria-label="집사에게 메시지 보내기"
       className="space-y-2"
       onSubmit={(event) => {
@@ -48,13 +59,13 @@ const ChatComposer = ({ disabled = false, sessionVersion }: Props) => {
       <label htmlFor="chat-message" className="sr-only">
         집사에게 보낼 메시지
       </label>
-      <Textarea
+      <PromptInputTextarea
         id="chat-message"
         rows={2}
         value={text}
         maxLength={10000}
         disabled={disabled || pending}
-        className="max-h-40 resize-none [field-sizing:content]"
+        className="max-h-40 resize-none text-body-sm leading-[1.55] placeholder:text-body-sm [field-sizing:content]"
         placeholder="나만 보는 집사에게 요청하세요"
         enterKeyHint="send"
         onChange={(event) => onText(event.target.value)}
@@ -70,7 +81,7 @@ const ChatComposer = ({ disabled = false, sessionVersion }: Props) => {
           }
         }}
       />
-      <div className="flex items-center justify-between gap-3">
+      <PromptInputFooter>
         <input
           ref={fileInput}
           className="sr-only"
@@ -87,30 +98,36 @@ const ChatComposer = ({ disabled = false, sessionVersion }: Props) => {
         />
         <Button
           variant="gray"
+          size="icon-sm"
           disabled={disabled || pending || photos.length >= 4}
+          aria-label="사진 첨부"
           onClick={() => fileInput.current?.click()}
         >
           {upload.isPending ? (
-            <LoaderCircle
-              className="size-4 motion-safe:animate-spin"
-              aria-hidden="true"
-            />
+            <Loader />
           ) : (
-            <ImagePlus className="size-4" aria-hidden="true" />
+            <PlusIcon className="size-4" aria-hidden="true" />
           )}
-          {upload.isPending ? "사진 준비 중" : "사진 첨부"}
         </Button>
-        <Button type="submit" disabled={!canSend}>
-          <ArrowUp className="size-4" aria-hidden="true" />
-          {send.isPending ? "보내는 중" : "보내기"}
-        </Button>
-      </div>
+        <PromptInputSubmit
+          data-od-id="chat-send"
+          aria-label={send.isPending ? "보내는 중" : "보내기"}
+          disabled={!canSend}
+          size="icon-sm"
+        >
+          {pending ? (
+            <Loader />
+          ) : (
+            <ArrowUp className="size-4" aria-hidden="true" />
+          )}
+        </PromptInputSubmit>
+      </PromptInputFooter>
       {error && (
         <Text as="p" role="alert" className="text-error-text">
           {error.message}
         </Text>
       )}
-    </form>
+    </PromptInput>
   );
 };
 export default ChatComposer;

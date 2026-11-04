@@ -36,14 +36,14 @@ describe("ACC-12 홈 구성 저장", () => {
       </ToastProvider>,
     );
     await act(async () => {
-      fireEvent.click(screen.getByRole("radio", { name: "주" }));
+      fireEvent.click(screen.getByRole("radio", { name: "주간" }));
       fireEvent.click(screen.getByRole("radio", { name: "5개" }));
     });
     expect(mutateAsync).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("radio", { name: "월" }));
+    fireEvent.click(screen.getByRole("radio", { name: "월간" }));
     await screen.findByText("홈 구성을 저장했어요");
     await act(async () => {
-      fireEvent.click(screen.getByRole("radio", { name: "월" }));
+      fireEvent.click(screen.getByRole("radio", { name: "월간" }));
     });
     expect(mutateAsync).toHaveBeenCalledTimes(1);
   });
@@ -60,7 +60,7 @@ describe("ACC-12 홈 구성 저장", () => {
         <HomeSettings />
       </ToastProvider>,
     );
-    const month = screen.getByRole("radio", { name: "월" });
+    const month = screen.getByRole("radio", { name: "월간" });
     fireEvent.click(month);
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
     await act(async () => {
@@ -75,7 +75,7 @@ describe("ACC-12 홈 구성 저장", () => {
         <HomeSettings />
       </ToastProvider>,
     );
-    fireEvent.click(screen.getByRole("radio", { name: "월" }));
+    fireEvent.click(screen.getByRole("radio", { name: "월간" }));
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
     await waitFor(() =>
       expect(screen.getByRole("radio", { name: "10개" })).toBeEnabled(),
@@ -108,7 +108,7 @@ describe("ACC-12 홈 구성 저장", () => {
         <HomeSettings />
       </ToastProvider>,
     );
-    const month = screen.getByRole("radio", { name: "월" });
+    const month = screen.getByRole("radio", { name: "월간" });
     month.focus();
     fireEvent.click(month);
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));

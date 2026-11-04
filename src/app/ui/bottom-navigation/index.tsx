@@ -2,11 +2,13 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { cn, isCurrentPath } from "@/shared/lib";
-import { cartRoutes } from "@/shared/config";
-import { appNavigation } from "../../config";
+import { cartRoutes, chatPath } from "@/shared/config";
+import { useChatNavigation } from "@/features/chat-navigation";
+import { appNavigation, appNavigationWithBot } from "../../config";
 import { useTabLens } from "./use-tab-lens";
 
-const hrefs = appNavigation.map((item) => item.href);
+const defaultHrefs = appNavigation.map((item) => item.href);
+const botHrefs = appNavigationWithBot.map((item) => item.href);
 const faceClass = cn([
   "flex min-h-11 flex-col items-center justify-center gap-0.5",
   "text-[length:calc(var(--sp-2)+var(--sp-half))] leading-[var(--lh-caption2)] whitespace-nowrap",
@@ -45,8 +47,11 @@ interface Props {
   pathname: string;
 }
 const BottomNavigation = ({ pathname }: Props) => {
+  const { minimized, onOpen } = useChatNavigation();
+  const navigation = minimized ? appNavigationWithBot : appNavigation;
+  const hrefs = minimized ? botHrefs : defaultHrefs;
   const nav = useTabLens(hrefs);
-  const activeIndex = appNavigation.findIndex(
+  const activeIndex = navigation.findIndex(
     ({ href }) =>
       isCurrentPath(pathname, href) ||
       (href === cartRoutes.cart && isCurrentPath(pathname, cartRoutes.restock)),
@@ -57,6 +62,7 @@ const BottomNavigation = ({ pathname }: Props) => {
       aria-label="하단 메뉴"
       style={
         {
+          "--tab-count": hrefs.length,
           "--tab-cell": `calc((100% - 8px) / ${hrefs.length})`,
           "--indicator-default-x": `${Math.max(0, activeIndex) * 100}%`,
           "--indicator-sx": 1,
@@ -94,13 +100,25 @@ const BottomNavigation = ({ pathname }: Props) => {
             "group-data-[animating]:will-change-transform",
           ])}
         />
-        <ul data-original className="relative grid grid-cols-5">
-          {appNavigation.map(({ href, label, icon: Icon }, index) => {
+        <ul
+          data-original
+          className="relative grid grid-cols-[repeat(var(--tab-count),minmax(0,1fr))]"
+        >
+          {navigation.map(({ href, label, icon: Icon }, index) => {
             const active = index === activeIndex;
             return (
               <li key={href}>
                 <Link
                   href={href}
+                  onClick={
+                    href === chatPath
+                      ? (event) => {
+                          event.preventDefault();
+                          onOpen();
+                        }
+                      : undefined
+                  }
+                  data-od-id={href === chatPath ? "tab-bot" : undefined}
                   draggable={false}
                   aria-current={active ? "page" : undefined}
                   className={cn([
@@ -160,12 +178,14 @@ const BottomNavigation = ({ pathname }: Props) => {
             aria-hidden="true"
             inert
             className={cn([
-              "pointer-events-none absolute inset-y-0 left-0 grid w-[calc(var(--tab-cell)*5)] grid-cols-5",
+              "pointer-events-none absolute inset-y-0 left-0 grid",
+              "w-[calc(var(--tab-cell)*var(--tab-count))]",
+              "grid-cols-[repeat(var(--tab-count),minmax(0,1fr))]",
               "text-primary",
               "forced-colors:hidden motion-reduce:hidden",
             ])}
           >
-            {appNavigation.map(({ href, label, icon: Icon }) => (
+            {navigation.map(({ href, label, icon: Icon }) => (
               <div
                 key={href}
                 className="flex min-h-14 items-center justify-center"

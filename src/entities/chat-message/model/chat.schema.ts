@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-export const chatVisibilitySchema = z.enum(["shared", "private"]);
-export type ChatVisibility = z.infer<typeof chatVisibilitySchema>;
 export const searchSourceSchema = z.object({
   title: z.string().max(300),
   url: z
@@ -99,7 +97,7 @@ export const messageSchema = z.object({
   author: z.string(),
   attachment_ids: z.array(z.uuid()),
   created_at: z.string(),
-  visibility: chatVisibilitySchema.default("shared"),
+  visibility: z.literal("private").default("private"),
   sources: z.array(searchSourceSchema).default([]),
 });
 export const receiptSchema = z.object({

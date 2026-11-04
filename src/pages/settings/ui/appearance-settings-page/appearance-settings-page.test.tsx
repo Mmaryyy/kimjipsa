@@ -16,6 +16,7 @@ vi.mock("../notification-settings", () => ({ default: () => <div /> }));
 vi.mock("../home-settings", () => ({ default: () => <div /> }));
 vi.mock("../account-settings", () => ({ default: () => <div /> }));
 vi.mock("../household-settings", () => ({ default: () => <div /> }));
+vi.mock("../ai-settings", () => ({ default: () => <div /> }));
 
 const { signOut, assign } = vi.hoisted(() => ({
   signOut: vi.fn(),

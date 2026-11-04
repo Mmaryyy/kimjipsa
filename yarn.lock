@@ -5678,6 +5678,7 @@ __metadata:
     tailwind-merge: "npm:3.7.0"
     tailwindcss: "npm:4.3.3"
     typescript: "npm:6.0.3"
+    use-stick-to-bottom: "npm:1.1.6"
     vaul: "npm:1.1.2"
     vite: "npm:8.3.4"
     vitest: "npm:5.0.4"
@@ -7806,6 +7807,15 @@ __metadata:
     "@types/react":
       optional: true
   checksum: 10c0/161599bf921cfaa41c85d2b01c871975ee99260f3e874c2d41c05890d41170297bdcf314bc5185e7a700de2034ac5b888e3efc8e9f35724f4918f53538d717c9
+  languageName: node
+  linkType: hard
+
+"use-stick-to-bottom@npm:1.1.6":
+  version: 1.1.6
+  resolution: "use-stick-to-bottom@npm:1.1.6"
+  peerDependencies:
+    react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+  checksum: 10c0/5ac713a8be5e85c265405acf1901da2358cf8712be95175af6c06a6a1338e827e282826d76930228e3543c1f1f88d7a42695928d6f2b1bbafc7f3c0176939800
   languageName: node
   linkType: hard
 

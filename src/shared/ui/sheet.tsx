@@ -4,6 +4,7 @@ import { cn, useMediaQuery } from "@/shared/lib";
 import { Dialog } from "radix-ui";
 import { SheetHeader } from "./sheet-header";
 import { Drawer } from "./drawer";
+import { sheetStyles } from "./sheet.variants";
 import type { SheetProps } from "./overlay.types";
 function DesktopSheet({
   open,
@@ -22,6 +23,8 @@ function DesktopSheet({
   onOpenAutoFocus,
   hideHeader = false,
   overlayClassName,
+  presentation = "sheet",
+  onEscapeKeyDown,
 }: SheetProps) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -29,15 +32,9 @@ function DesktopSheet({
       <Dialog.Portal>
         <Dialog.Overlay className={cn("kj-overlay", overlayClassName)} />
         <Dialog.Content
-          className={cn([
-            "fixed bottom-0 left-0 z-81 max-h-[var(--sheet-mobile-max-height)]",
-            "w-full overflow-x-hidden overflow-y-auto",
-            "bg-background px-4 pt-0 pb-[calc(var(--sp-6)+env(safe-area-inset-bottom))] text-foreground",
-            "[overflow-wrap:anywhere] shadow-[var(--shadow-sheet)] animate-sheet-in md:top-1/2",
-            "md:bottom-auto md:left-1/2 md:max-h-[var(--sheet-desktop-max-height)] md:w-130",
-            "md:-translate-1/2 motion-reduce:animate-none",
-            className,
-          ])}
+          aria-modal="true"
+          className={cn(sheetStyles({ presentation }), className)}
+          onEscapeKeyDown={onEscapeKeyDown}
           onCloseAutoFocus={onCloseAutoFocus}
           onOpenAutoFocus={onOpenAutoFocus}
           data-theme={theme}
@@ -70,7 +67,7 @@ function DesktopSheet({
 
 export function Sheet(props: SheetProps) {
   const coarse = useMediaQuery("(pointer: coarse)");
-  if (coarse) {
+  if (coarse && props.presentation !== "panel") {
     return <Drawer {...props} />;
   }
   return <DesktopSheet {...props} />;

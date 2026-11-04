@@ -14,6 +14,7 @@ import {
   settingsInputSchema,
   settingsSchema,
 } from "../model/chat.schema";
+import { mockChatPage, mockChatCommand } from "./mock.server";
 const errors = {
   confirmation_required: [400, "제안한 변경은 확인 후 실행할 수 있어요."],
   event_forbidden: [403, "이 일정을 변경할 권한이 없어요."],
@@ -42,6 +43,8 @@ const errors = {
   lease_lost: [409, "작업 권한이 만료되었어요."],
 } as const;
 async function command(operation: string, input: Json = {}) {
+  const mock = await mockChatCommand(operation, input);
+  if (mock) return mock.data;
   const client = await createServerSupabaseClient();
   const result = await client.rpc("chat_command", { operation, input });
   throwDatabaseError(result.error, errors);
@@ -66,11 +69,14 @@ export async function listChat(
     before === null
       ? null
       : z.coerce.number().int().positive().safe().parse(before);
+  const scope = z.literal("private").parse(visibility ?? "private");
+  const mock = await mockChatPage(cursor);
+  if (mock) return chatSchema.parse(mock);
   const client = await createServerSupabaseClient();
   const result = await client.rpc("chat_page", {
     input: {
       before: cursor,
-      visibility: z.literal("private").parse(visibility ?? "private"),
+      visibility: scope,
     },
   });
   throwDatabaseError(result.error, errors);

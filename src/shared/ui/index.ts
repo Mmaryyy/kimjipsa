@@ -33,3 +33,18 @@ export { onboardingStyles, wordmarkStyles } from "./onboarding.variants";
 export { Input } from "./input";
 export { Skeleton, SkeletonSection, SkeletonStatus } from "./skeleton";
 export { default as Textarea } from "./textarea";
+
+export {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from "./ai-elements/conversation";
+export { Message, MessageContent } from "./ai-elements/message";
+export {
+  PromptInput,
+  PromptInputTextarea,
+  PromptInputFooter,
+  PromptInputSubmit,
+} from "./ai-elements/prompt-input";
+export { Suggestion } from "./ai-elements/suggestion";
+export { Loader } from "./ai-elements/loader";

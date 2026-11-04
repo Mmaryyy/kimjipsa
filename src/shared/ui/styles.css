@@ -58,7 +58,6 @@
 /* Shared by floating navigation and header actions; one backdrop per island. */
 .glass-surface {
   color: var(--glass-text);
-  background: var(--glass-sheen), var(--glass-bg);
   border: 1px solid var(--glass-border);
   border-radius: var(--r-round);
   box-shadow: var(--shadow-glass);

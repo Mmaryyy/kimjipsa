@@ -1,5 +1,7 @@
 "use client";
 import { useLayoutEffect, useRef } from "react";
+import { useChatNavigation } from "@/features/chat-navigation";
+import { chatPath } from "@/shared/config";
 import { useRouter } from "next/navigation";
 import {
   advanceTabSpring,
@@ -12,6 +14,7 @@ import {
 export function useTabLens(hrefs: readonly string[]) {
   const nav = useRef<HTMLElement>(null);
   const router = useRouter();
+  const { onOpen } = useChatNavigation();
   useLayoutEffect(() => {
     const element = nav.current;
     if (!element) return;
@@ -264,7 +267,13 @@ export function useTabLens(hrefs: readonly string[]) {
         }, 5000);
       }
       selectedX = index * bounds.step;
-      router.push(hrefs[index]!);
+      if (hrefs[index] === chatPath) {
+        pendingIndex = null;
+        clearTimeout(routeReset);
+        onOpen();
+        syncRoute();
+        targetLiquidTab(state, selectedX, bounds.step);
+      } else router.push(hrefs[index]!);
     };
     const click = (event: MouseEvent) => {
       if (
@@ -348,6 +357,6 @@ export function useTabLens(hrefs: readonly string[]) {
         "--bottom-navigation-measured-height",
       );
     };
-  }, [hrefs, router]);
+  }, [hrefs, router, onOpen]);
   return nav;
 }

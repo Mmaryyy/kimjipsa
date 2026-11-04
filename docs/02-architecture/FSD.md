@@ -12,7 +12,7 @@ import는 위에서 아래로만 한다. 같은 레이어의 다른 슬라이스
 | --- | --- | --- |
 | `app` | 프로바이더, 전역 스타일, PWA 등록(서비스 워커), 앱 셸(내비게이션, 챗봇 아이콘 위치) | 전부 |
 | `pages` | 라우트 화면과 그 화면 전용 ui/model/lib/api | widgets, features, entities, shared |
-| `widgets` | 2개 이상 페이지가 쓰는 큰 조합 블록 | features, entities, shared |
+| `widgets` | 여러 페이지 또는 앱 셸이 쓰는 큰 조합 블록 | features, entities, shared |
 | `features` | 데이터가 붙은 사용자 행동 | entities, shared |
 | `entities` | 도메인 데이터: api, 상태, 훅, 도메인 배지·카드, 도메인 규칙 | shared (다른 entity는 `@x`로만) |
 | `shared` | 도메인을 모르는 것: Supabase 클라이언트, ui, lib, config, 타입 | shared |
@@ -101,8 +101,8 @@ Next의 `app/`, `pages/`와 FSD의 `app`, `pages`가 이름이 겹친다. 이렇
 | `shared` | `api`(Supabase 클라이언트, 요청 결과 래퍼), `ui`(Button, Dialog, EmptyState, Skeleton 등), `lib`(날짜, 포맷, `cn`), `config`(라우트 상수), `pwa` | 도메인을 모름 |
 | `entities` | `user`, `family`, `event`, `inventory-item`, `inventory-meta`, `cart-item`, `chat-message` | 도메인 명사. `event`는 일정과 D-day, 일정 카테고리, 개인 일정 필터를 한 슬라이스에 모은다. `inventory-meta`(단위, 카테고리, 보관 장소)는 재고, 장바구니, 설정 세 곳이 쓰므로 별도 entity로 둔다 |
 | `features` | `cart-checkout`, `chat-send` | 구매 완료는 두 entity를 엮고 규칙이 복잡하다. 챗봇 전송은 여러 화면의 채팅창이 쓴다 |
-| `widgets` | `app-nav`, `calendar-view` | 모든 페이지가 쓰는 내비게이션, 홈과 일정 두 페이지가 쓰는 달력 |
-| `pages` | `home`, `calendar`, `inventory`, `cart`, `chat`, `settings`, `onboarding`, `invite` | 라우트. 채팅은 2026-11-04 사용자 변경으로 전용 화면에 둠 |
+| `widgets` | `app-nav`, `calendar-view`, `chat-panel` | 모든 페이지가 쓰는 내비게이션, 홈과 일정 두 페이지가 쓰는 달력, 앱 셸의 대화 시트·패널 |
+| `pages` | `home`, `calendar`, `inventory`, `cart`, `chat`, `settings`, `onboarding`, `invite` | 라우트. `pages/chat`은 호환 경로만 유지. 2026-11-04 사용자 결정으로 대화 UI·훅·FAQ는 `widgets/chat-panel`에 두고 AppLayout이 한 번 렌더한다 |
 
 **페이지 안에서 시작하고, 두 번째 사용처가 생기면 승격한다**
 

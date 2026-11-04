@@ -77,7 +77,11 @@ for (const viewport of [
     });
     // No real account, model request or mutation reaches a service in this UI test.
     await page.route("https://**/*", (route) => route.abort());
-    await page.goto("/chat");
+    await page.goto("/");
+    await page.getByRole("button", { name: "AI 집사 채팅 열기" }).click();
+    await expect(
+      page.getByRole("dialog", { name: "집사와 대화" }),
+    ).toBeVisible();
     await expect(page.getByRole("radio")).toHaveCount(0);
     await expect(
       page.getByText("마지막 메시지 후 1시간이 지나면 대화 기록이 삭제돼요."),
@@ -110,3 +114,98 @@ for (const viewport of [
     });
   });
 }
+
+for (const width of [375, 1280]) {
+  test(`BOT-01 시트 열기·Esc·최소화·뒤로가기 ${width}`, async ({
+    page,
+    context,
+  }, testInfo) => {
+    await page.setViewportSize({ width, height: 900 });
+    await context.addCookies([
+      {
+        name: "kimjipsa-mock-enabled",
+        value: "1",
+        url: testInfo.project.use.baseURL!,
+      },
+      {
+        name: "kimjipsa-mock-stage",
+        value: "ready",
+        url: testInfo.project.use.baseURL!,
+      },
+    ]);
+    await page.goto("/");
+    const launcher = page.getByRole("button", { name: "AI 집사 채팅 열기" });
+    const dialog = page.getByRole("dialog", { name: "집사와 대화" });
+    await launcher.click();
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toHaveAttribute("aria-modal", "true");
+    for (let index = 0; index < 12; index++) await page.keyboard.press("Tab");
+    expect(
+      await dialog.evaluate((element) =>
+        element.contains(document.activeElement),
+      ),
+    ).toBe(true);
+    await expect(page.locator('[data-od-id="bot-fab"]')).toHaveCount(0);
+    await expect(page).toHaveURL(/\/$/);
+    const input = dialog.getByRole("textbox", { name: "집사에게 보낼 메시지" });
+    await input.fill("쓰던 글");
+    await input.dispatchEvent("keydown", { key: "Escape", isComposing: true });
+    await expect(input).toBeFocused();
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(input).not.toBeFocused();
+    await expect(input).toHaveValue("쓰던 글");
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+    await expect(launcher).toBeFocused();
+    await launcher.click();
+    if (width < 768) {
+      await page.goBack();
+      await expect(dialog).toHaveCount(0);
+      await expect(page).toHaveURL(/\/$/);
+      await launcher.click();
+    } else {
+      await page.mouse.click(300, 200);
+      await expect(dialog).toHaveCount(0);
+      await launcher.click();
+    }
+    await dialog.getByRole("button", { name: "최소화", exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(launcher).toHaveCount(0);
+    const botTab = page.getByRole("link", { name: "집사", exact: true });
+    await botTab.click();
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("button", { name: "닫기", exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(botTab).toBeFocused();
+    await page.reload();
+    await expect(launcher).toHaveCount(0);
+    await expect(botTab).toBeVisible();
+  });
+}
+
+test("BOT-01 /chat 직접 진입은 홈 위 시트를 열고 닫아도 홈에 남아요", async ({
+  page,
+  context,
+}, testInfo) => {
+  await context.addCookies([
+    {
+      name: "kimjipsa-mock-enabled",
+      value: "1",
+      url: testInfo.project.use.baseURL!,
+    },
+    {
+      name: "kimjipsa-mock-stage",
+      value: "ready",
+      url: testInfo.project.use.baseURL!,
+    },
+  ]);
+  await page.goto("/chat");
+  const dialog = page.getByRole("dialog", { name: "집사와 대화" });
+  await expect(page).toHaveURL(/\/$/);
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "닫기", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page).toHaveURL(/\/$/);
+});

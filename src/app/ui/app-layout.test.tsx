@@ -24,6 +24,7 @@ vi.mock("next/dynamic", () => ({
       return <button>목업 도구</button>;
     },
 }));
+vi.mock("@/widgets/chat-panel", () => ({ ChatPanel: () => null }));
 vi.mock("./sidebar-navigation", () => ({
   SidebarNavigation: () => <nav aria-label="사이드바" />,
 }));

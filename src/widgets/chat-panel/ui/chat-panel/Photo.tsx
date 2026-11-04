@@ -2,7 +2,7 @@
 import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { photoUrl } from "@/entities/chat-message";
-import { Text } from "@/shared/ui";
+import { Text, Loader } from "@/shared/ui";
 interface Props {
   id: string;
   expired: boolean;
@@ -24,7 +24,7 @@ const ChatPhoto = ({ id, expired }: Props) => {
   if (!query.data)
     return (
       <Text as="p" variant="caption">
-        사진을 불러오는 중…
+        <Loader /> 사진을 불러오는 중…
       </Text>
     );
   // Signed private URLs cannot pass through Next's public image optimizer.

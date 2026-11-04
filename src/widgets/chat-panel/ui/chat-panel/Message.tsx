@@ -1,7 +1,7 @@
-import { Sparkles } from "lucide-react";
+import ChatAvatar from "./Avatar";
 import type { Chat, Receipt, ActionProposal } from "@/entities/chat-message";
-import { Text } from "@/shared/ui";
-import { messageBubbleStyles, messageRowStyles } from "./chat.variants";
+import { cn } from "@/shared/lib";
+import { Text, Message, MessageContent } from "@/shared/ui";
 import ChatPhoto from "./Photo";
 import ChatRun from "./Run";
 import ReceiptCard from "./Receipt";
@@ -14,6 +14,7 @@ const timestamp = new Intl.DateTimeFormat("ko-KR", {
   hour: "2-digit",
   minute: "2-digit",
 });
+
 interface Props {
   message: Chat["messages"][number];
   attachments: Map<string, Chat["attachments"][number]>;
@@ -21,7 +22,6 @@ interface Props {
   receipt?: Receipt;
   proposal?: ActionProposal;
   now: number;
-  workerOnline: boolean;
   cancelling: boolean;
   onCancel: (id: string) => void;
 }
@@ -32,28 +32,36 @@ const ChatMessage = ({
   receipt,
   proposal,
   now,
-  workerOnline,
   cancelling,
   onCancel,
 }: Props) => (
   <li data-message-id={message.id} className="space-y-2">
-    <div className={messageRowStyles({ role: message.role })}>
-      {message.role === "assistant" && (
-        <Sparkles
-          className="mt-2 size-5 shrink-0 text-bot-text"
-          aria-hidden="true"
-        />
-      )}
-      <div className="min-w-0 max-w-[90%] space-y-1">
-        <div className="flex flex-wrap items-baseline gap-x-2 text-caption text-muted-foreground">
+    <Message from={message.role}>
+      <div
+        className={cn(
+          "grid min-w-0 grid-cols-1 gap-y-1",
+          "group-[.is-assistant]:grid-cols-[48px_minmax(0,1fr)] group-[.is-assistant]:gap-x-2",
+        )}
+      >
+        {message.role === "assistant" && <ChatAvatar />}
+        <div
+          className={cn(
+            "flex flex-wrap items-baseline gap-x-2 text-caption-sm font-semibold text-muted-foreground",
+            "group-[.is-user]:justify-end group-[.is-assistant]:col-start-2",
+          )}
+        >
           <span>{message.author}</span>
           <time dateTime={message.created_at}>
             {timestamp.format(new Date(message.created_at))}
           </time>
         </div>
-        <div className={messageBubbleStyles({ role: message.role })}>
+        <MessageContent className="group-[.is-assistant]:col-start-2">
           {message.text && (
-            <Text as="p" className="whitespace-pre-wrap break-words">
+            <Text
+              as="p"
+              variant="body-sm"
+              className="whitespace-pre-wrap break-words leading-[1.55]"
+            >
               {message.text}
             </Text>
           )}
@@ -94,34 +102,41 @@ const ChatMessage = ({
               })}
             </div>
           )}
-        </div>
+        </MessageContent>
+        {run && message.role === "user" && (
+          <ChatRun
+            run={run}
+            receipt={receipt}
+            proposal={proposal}
+            cancelling={cancelling}
+            now={now}
+            onCancel={onCancel}
+          />
+        )}
       </div>
-    </div>
-    {run && (
-      <ChatRun
-        run={run}
-        receipt={receipt}
-        proposal={proposal}
-        workerOnline={workerOnline}
-        hasPhotos={message.attachment_ids.length > 0}
-        cancelling={cancelling}
-        now={now}
-        onCancel={onCancel}
-      />
-    )}
-    {proposal && (
-      <ChatActionProposal
-        key={`${proposal.id}:${proposal.version}`}
-        proposal={proposal}
-        now={now}
-      />
-    )}
-    {receipt && (
-      <ReceiptCard
-        key={`${receipt.id}:${receipt.version}`}
-        receipt={receipt}
-        now={now}
-      />
+    </Message>
+    {(proposal || receipt) && (
+      <Message from="assistant">
+        <div className="grid min-w-0 grid-cols-[48px_minmax(0,1fr)] gap-x-2">
+          <ChatAvatar />
+          <MessageContent>
+            {proposal && (
+              <ChatActionProposal
+                key={`${proposal.id}:${proposal.version}`}
+                proposal={proposal}
+                now={now}
+              />
+            )}
+            {receipt && (
+              <ReceiptCard
+                key={`${receipt.id}:${receipt.version}`}
+                receipt={receipt}
+                now={now}
+              />
+            )}
+          </MessageContent>
+        </div>
+      </Message>
     )}
   </li>
 );
