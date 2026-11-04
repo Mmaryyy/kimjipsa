@@ -1,0 +1,5 @@
+name: kimjipsa-read
+version: 1.0.0
+description: Read the linked Kimjipsa household through its authenticated gateway.
+provides_tools:
+  - kimjipsa_read

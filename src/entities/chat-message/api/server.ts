@@ -162,19 +162,27 @@ export async function readAttachment(id: string) {
     throw new ApiError("attachment_expired", "사진을 불러오지 못했어요.", 410);
   return { url: result.data.signedUrl };
 }
+function createAgentClient(request: Request) {
+  const authorization = request.headers.get("authorization");
+  if (!authorization?.startsWith("Bearer "))
+    throw new ApiError("unauthorized", "인증이 필요해요.", 401);
+  const { url, key } = getSupabaseConfig();
+  return createClient<Database>(url, key, {
+    global: { headers: { Authorization: authorization } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+export async function agentReadRequest(request: Request, input: Json) {
+  const result = await createAgentClient(request).rpc("agent_read", { input });
+  throwDatabaseError(result.error, errors);
+  return result.data;
+}
 export async function agentRequest(
   request: Request,
   operation: string,
   input: Json = {},
 ) {
-  const authorization = request.headers.get("authorization");
-  if (!authorization?.startsWith("Bearer "))
-    throw new ApiError("unauthorized", "인증이 필요해요.", 401);
-  const { url, key } = getSupabaseConfig();
-  const client = createClient<Database>(url, key, {
-    global: { headers: { Authorization: authorization } },
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const client = createAgentClient(request);
   const result = await client.rpc("agent_command", { operation, input });
   throwDatabaseError(result.error, errors);
   return result.data;

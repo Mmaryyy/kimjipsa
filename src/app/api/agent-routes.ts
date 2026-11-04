@@ -5,6 +5,8 @@ import { tz } from "@date-fns/tz";
 import {
   agentRequest,
   agentResultSchema,
+  agentReadRequest,
+  agentReadSchema,
 } from "@/entities/chat-message/index.server";
 import { mapAgentEvents } from "@/entities/event/index.server";
 import { handleRoute, readJson } from "@/shared/server";
@@ -18,6 +20,40 @@ const rangeSchema = z
     ({ start, end }) =>
       start <= end && (Date.parse(end) - Date.parse(start)) / 86400000 <= 366,
   );
+export function agentReadPOST(request: Request) {
+  return handleRoute(request, async () => {
+    const input = agentReadSchema.parse(await readJson(request));
+    const result = await agentReadRequest(request, input);
+    if (input.resource !== "calendar") return result;
+    const today = new Date();
+    const range = rangeSchema.parse({
+      start:
+        input.start ?? format(today, "yyyy-MM-dd", { in: tz("Asia/Seoul") }),
+      end:
+        input.end ??
+        format(addMonths(today, 6, { in: tz("Asia/Seoul") }), "yyyy-MM-dd", {
+          in: tz("Asia/Seoul"),
+        }),
+    });
+    const calendar = z
+      .object({
+        records: z.array(z.unknown()),
+        exceptions: z.array(z.unknown()),
+        categories: z.array(z.unknown()),
+      })
+      .parse(result);
+    return {
+      range,
+      categories: calendar.categories,
+      events: mapAgentEvents(
+        calendar,
+        "00000000-0000-0000-0000-000000000000",
+        "shared",
+        range,
+      ),
+    };
+  });
+}
 export function agentContextPOST(request: Request) {
   return handleRoute(request, async () => {
     const params = z

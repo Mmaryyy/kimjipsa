@@ -1,4 +1,5 @@
 import { createServer } from "node:http";
+import { randomBytes } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { setTimeout as delay } from "node:timers/promises";
@@ -17,6 +18,7 @@ import {
 } from "./hermes.mts";
 import { searchWeb } from "./search.mts";
 import { withSnapshotChecks } from "./actions.mts";
+import { readToolRequest, type HouseholdReader } from "./read-tool.mts";
 const jobSchema = z.object({
   id: z.uuid(),
   familyId: z.uuid(),
@@ -30,11 +32,17 @@ const shutdown = new AbortController();
 let state = "starting";
 let activeJob: string | null = null;
 let lastError: string | null = null;
+const readToolToken = randomBytes(32).toString("hex");
+let householdReader: HouseholdReader | null = null;
 const log = (event: string, code?: string) =>
   process.stdout.write(
     `${JSON.stringify({ at: new Date().toISOString(), event, jobId: activeJob, code })}\n`,
   );
 const server = createServer((request, response) => {
+  if (request.url === "/hermes/read") {
+    void readToolRequest(request, response, readToolToken, householdReader);
+    return;
+  }
   if (request.method !== "GET" || request.url !== "/health") {
     response.writeHead(404).end();
     return;
@@ -147,6 +155,7 @@ async function runConnected(config: GatewayConfig) {
     if (!result.success) throw new Error("gateway_migration_required");
     return result.data;
   }
+  householdReader = (input) => cloud("/api/agent/read", input);
   async function drain() {
     if (processing) {
       rerun = true;
@@ -308,7 +317,7 @@ async function runConnected(config: GatewayConfig) {
           log("job_stopped", code);
         } finally {
           clearInterval(heartbeat);
-          await hermes.stop();
+          await hermes.finish();
           activeJob = null;
         }
         rerun = true;
@@ -352,6 +361,7 @@ async function runConnected(config: GatewayConfig) {
   try {
     await delay(2147483647, undefined, { signal: shutdown.signal });
   } finally {
+    householdReader = null;
     clearInterval(reconcile);
     subscription.unsubscribe();
     await client.removeChannel(channel);
@@ -362,6 +372,10 @@ async function runConnected(config: GatewayConfig) {
 }
 const bound = await listening;
 await mkdir(`${gatewayRoot}.runtime`, { recursive: true, mode: 0o700 });
+if (bound)
+  await writeFile(`${gatewayRoot}.runtime/read-tool-token`, readToolToken, {
+    mode: 0o600,
+  });
 if (bound)
   await writeFile(`${gatewayRoot}.runtime/worker.pid`, String(process.pid), {
     mode: 0o600,

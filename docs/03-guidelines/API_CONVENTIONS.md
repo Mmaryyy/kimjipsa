@@ -64,3 +64,5 @@ type ApiResult<T> =
 ## 2026-11-04 가족 집사 연동
 
 가족 집사 API는 [연동 규약](../04-planning/mac-mini/kimjipsa-integration-contract.md)과 ADR-0017을 따른다. `/api/chat`·settings·memories·attachments·runs/:id/cancel 및 `/api/receipt-imports/:id/confirm|cancel`은 기존 쿠키·Origin 검사를 사용한다. `/api/agent/config`는 전용 워커 Bearer 인증, DB `agent_command`는 등록된 워커 JWT와 현재 작업 임대로 권한을 제한한다. `/api/cron/agent`는 기존 x-cron-secret으로 인증한다.
+
+`POST /api/agent/read`는 ADR-0018의 Hermes 조회 스킬용이다. 등록·활성화된 워커의 가정에 대해 `memories`, `inventory`, `cart`, `calendar`만 읽는다. 일정의 개인 내용은 기존 필터로 가리고 날짜 전개도 기존 함수를 재사용한다. 임의 SQL·가정/사용자/공개 범위 지정·쓰기 요청은 받지 않는다.

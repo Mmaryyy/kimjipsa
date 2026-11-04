@@ -199,6 +199,8 @@ P6 입력 제한(2026-10-24): 품목 이름 100자, 목록 이름 30자, 임박 
 
 `20261104020000_agent_capabilities.sql`은 `chat_messages.visibility(shared/private)`, 개인 열람자 `viewer_id`, 검색 출처 `sources`와 `chat_attachments.visibility`를 추가한다. 기존 대화는 shared로 유지한다. 개인 메시지는 viewer만 읽으며 연결된 실행·영수증·제안·사진도 같은 권한으로 제한한다. 개인 대화는 가족 기억 요약에서 제외하고 계정 삭제 시 함께 삭제한다.
 
+`20261104040000_hermes_shared_read.sql`은 워커의 가정에 묶인 읽기 전용 `agent_read` RPC를 추가한다. 새 데이터 열·테이블은 없다. Hermes 자체 기억은 로컬 프로필에 별도로 저장하고 앱의 Supabase 기억 관리와 분리한다(ADR-0018).
+
 `agent_proposals`는 run별 하나의 변경 목록·상태·버전·5분 만료·적용 결과를 저장한다. 제안은 선택 항목만 원자적으로 실행하고 재확인은 같은 결과를 반환한다. 실제 변경과 `private.agent_actions` 기록, 실행 완료는 같은 트랜잭션이다. 대상의 스냅샷 리비전이 바뀌면 실행하지 않는다. 일정·재고·장바구니 쓰기는 기존 `save_event`·`write_inventory`·`write_cart`를 사용한다. 가정 채널에는 내용과 개인 메시지 ID 없이 변경 신호만 보낸다.
 
 2026-11-04 사용자 요청(BOT-01/11): `20261104030000_chat_pagination.sql`의 `chat_page`는 요청자의 가정·공개 범위를 적용한 최신 50개와 `before` 이전 50개를 조회한다. `sequence` 기준 커서를 사용하며 응답 메시지는 시간순이다. 다음 커서 `nextBefore`가 null이면 끝이다. 연결된 작업·영수증·제안·사진만 함께 반환하고, 공유/개인 조회용 인덱스를 둔다. 기존 대화와 보관 기간은 바뀌지 않는다.

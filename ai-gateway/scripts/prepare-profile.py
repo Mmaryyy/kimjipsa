@@ -1,17 +1,29 @@
-"""Use the local Hermes model in the dedicated family profile, without copying history."""
+"""Prepare a persistent shared Hermes profile or a disposable private profile."""
 
 import json
-import os
 import sys
 from pathlib import Path
-
 from ruamel.yaml import YAML
 
 
-def prepare(profile: Path, port: int):
-    if profile.name != "kimjipsa" or profile.parent.name != "profiles":
+def write_changed(path, text):
+    if path.is_file() and path.read_text() == text:
+        return False
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text)
+    path.chmod(0o600)
+    return True
+
+
+def prepare(profile: Path, port: int, isolated=False):
+    expected = "kimjipsa-private" if isolated else "kimjipsa"
+    if profile.name != expected or profile.parent.name != "profiles":
         raise ValueError("invalid_family_profile")
-    if not (profile / ".kimjipsa-managed").is_file():
+    marker = profile / (".kimjipsa-managed-private" if isolated else ".kimjipsa-managed")
+    if isolated and not profile.exists():
+        profile.mkdir(mode=0o700)
+        marker.touch(mode=0o600)
+    if not marker.is_file():
         raise ValueError("family_profile_not_prepared")
     parser = YAML(typ="safe")
     parser.version = (1, 1)
@@ -21,28 +33,49 @@ def prepare(profile: Path, port: int):
         model = {"default": model}
     if not isinstance(model, dict) or not model.get("default"):
         raise ValueError("local_model_missing")
-    config = {
-        "model": model,
-        "gateway": {"standalone": True},
-        "platforms": {"api_server": {"enabled": True, "host": "127.0.0.1", "port": port}},
-        "platform_toolsets": {"api_server": []},
-        "mcp_servers": {},
-        "memory": {"memory_enabled": False, "user_profile_enabled": False, "nudge_interval": 0},
-        "display": {"interim_assistant_messages": False},
-        "agent": {"max_turns": 2},
-    }
-    # Named model endpoints belong to the model configuration, not the personal agent context.
+    root = Path(__file__).resolve().parents[1]
+    target = profile / "config.yaml"
+    config = {} if isolated or not target.exists() else parser.load(target.read_text()) or {}
+    upgraded = (profile / ".kimjipsa-memory-v2").exists()
+    config["model"] = model
+    config.setdefault("gateway", {})["standalone"] = True
+    config.setdefault("platforms", {})["api_server"] = {"enabled": True, "host": "127.0.0.1", "port": port}
+    config.setdefault("platform_toolsets", {})["api_server"] = ["no_mcp"] if isolated else ["memory", "skills", "kimjipsa", "no_mcp"]
+    config.setdefault("display", {})["interim_assistant_messages"] = False
+    config.setdefault("agent", {})["max_turns"] = 2 if isolated else 10
     if source.get("custom_providers"):
         config["custom_providers"] = source["custom_providers"]
-    target = profile / "config.yaml"
-    target.write_text(json.dumps(config, ensure_ascii=False, indent=2) + "\n")
-    os.chmod(target, 0o600)
+    changed = False
+    if isolated:
+        config["memory"] = {"memory_enabled": False, "user_profile_enabled": False, "nudge_interval": 0}
+        config["mcp_servers"] = {}
+        config["plugins"] = {"enabled": []}
+    else:
+        if not upgraded:
+            config.setdefault("memory", {}).update({"memory_enabled": True, "user_profile_enabled": True, "nudge_interval": 10})
+            changed |= write_changed(profile / "SOUL.md", (root / "hermes-soul.md").read_text())
+        tools = config["platform_toolsets"].setdefault("discord", ["memory", "skills", "kimjipsa"])
+        if isinstance(tools, list):
+            for name in ["memory", "skills", "kimjipsa"]:
+                if name not in tools:
+                    tools.append(name)
+        enabled = config.setdefault("plugins", {}).setdefault("enabled", [])
+        if "kimjipsa-read" not in enabled:
+            enabled.append("kimjipsa-read")
+        plugin = profile / "plugins/kimjipsa-read"
+        for name in ["plugin.yaml", "__init__.py"]:
+            changed |= write_changed(plugin / name, (root / "hermes-plugin" / name).read_text())
+        changed |= write_changed(plugin / "bridge.json", json.dumps({"tokenFile": str(root / ".runtime/read-tool-token")}) + "\n")
+        changed |= write_changed(profile / "skills/kimjipsa-supabase/SKILL.md", (root / "skills/kimjipsa-supabase/SKILL.md").read_text())
+    changed |= write_changed(target, json.dumps(config, ensure_ascii=False, indent=2) + "\n")
+    if not isolated:
+        (profile / ".kimjipsa-memory-v2").touch(mode=0o600)
+    return changed
 
 
 if __name__ == "__main__":
     try:
-        prepare(Path(sys.argv[1]), int(sys.argv[2]))
+        print(json.dumps({"changed": prepare(Path(sys.argv[1]), int(sys.argv[2]), len(sys.argv) > 3 and sys.argv[3] == "isolated")}))
     except Exception:
-        # Config/provider exceptions may include credential-bearing endpoints.
         sys.stderr.write("family_profile_configuration_failed\n")
         sys.exit(1)

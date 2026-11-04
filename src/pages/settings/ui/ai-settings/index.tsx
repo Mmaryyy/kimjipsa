@@ -54,8 +54,11 @@ const AiSettingsForm = ({ settings }: Props) => {
                 checked={memoryEnabled}
                 onChange={(event) => setMemoryEnabled(event.target.checked)}
               />
-              가족 기억 사용하기
+              앱의 가족 기억 사용하기
             </label>
+            <Text as="p" variant="caption">
+              Hermes 자체 기억은 별도로 유지되며 Hermes에서 관리할 수 있어요.
+            </Text>
             <Button type="submit">
               {save.isPending ? "확인 중…" : "저장하기"}
             </Button>
@@ -164,7 +167,7 @@ const AiSettingsForm = ({ settings }: Props) => {
         open={reset}
         onOpenChange={setReset}
         title="가족 기억을 모두 지울까요?"
-        description="가족 모두에게 적용돼요."
+        description="앱의 가족 기억만 지워져요. Hermes 자체 기억은 유지돼요."
         pending={memory.isPending}
         onConfirm={() =>
           memory.mutate(

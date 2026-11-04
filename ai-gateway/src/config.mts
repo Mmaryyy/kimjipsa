@@ -23,7 +23,7 @@ export const configSchema = z.object({
   hermesPython: z.string().min(1),
   hermesSource: z.string().min(1).default(`${homedir()}/.hermes/hermes-agent`),
   hermesProfile: z.string().min(1),
-  hermesPort: z.number().int().min(1024).max(65535).default(8643),
+  hermesPort: z.number().int().min(1024).max(65533).default(8643),
 });
 export type GatewayConfig = z.infer<typeof configSchema>;
 export async function loadConfig() {

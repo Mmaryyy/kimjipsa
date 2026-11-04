@@ -1,6 +1,6 @@
 # 앱·맥미니 구현 진행 상태
 
-2026-11-04. 정책 승인: [ADR-0017](../../02-architecture/ADR/0017-local-family-agent.md).
+2026-11-04. 정책 승인: [ADR-0017](../../02-architecture/ADR/0017-local-family-agent.md), [ADR-0018](../../02-architecture/ADR/0018-hermes-memory-and-household-skill.md).
 
 ## 작성한 코드
 
@@ -10,7 +10,8 @@
 - 영수증: 품목 선택·이름·수량·단위·기존 재고 연결·카테고리·보관 장소·유통기한 수정, 원자적 반영과 재시도 결과 재사용.
 - 서버: 사용자 Origin 검사, 워커 Bearer 인증, 맥미니 자동 연결 설정 공급, 기억 목록·수정·삭제·초기화·끄기, 파일 정리 API.
 - DB: 가정별 직렬 큐·임대·변경 기록, 비공개 채널 권한, 파일 업로드 권한, 24시간 사진 만료·5분 삭제, 7일 영수증 만료, 90일 대화 삭제, 가족 탈퇴 후 파일 삭제 예약.
-- 맥미니: `ai-gateway/`, 설치된 Hermes 실행기·`kimjipsa` 전용 프로필·구조화 출력 검증, 작업 수신·재연결·임대 갱신·실패 정리, 5분 유휴 후 가족 기억 요약, 실행 후 로컬 파일 정리, Keychain 등록 도구·launchd 설정.
+- 맥미니: `ai-gateway/`, 설치된 Hermes 실행기·`kimjipsa` 공용 프로필·구조화 출력 검증, 작업 수신·재연결·임대 갱신·실패 정리, 5분 유휴 후 가족 기억 요약, Keychain 등록 도구·launchd 설정. 공용 Hermes 기억·사용자 프로필은 유지하고, 개인·사진·검색 작업은 기억이 꺼진 임시 프로필에서 실행 후 정리한다.
+- 조회 스킬: `kimjipsa-supabase`와 읽기 전용 `kimjipsa_read` 플러그인. Supabase 가족 기억·재고·장바구니·일정을 워커 가정 범위로 조회한다. 앱의 기억 관리와 Hermes 자체 기억 관리는 별개다.
 
 ## 검증·실행 상태
 
@@ -22,9 +23,10 @@
 - DB 통합 테스트: 전체 17개 마이그레이션 적용 후 `family_agent.sql`, `agent_capabilities.sql`, `cart_restock_undo.sql` 통과. 임시 PGlite PostgreSQL에서 권한·트랜잭션을 검사했으며 Supabase Auth·Storage·Realtime·pgmq·cron은 대체했다. 실제 네트워크 E2E와 구분한다.
 - 포매팅: 수행. 최종 결과는 작업 보고 참고.
 - 대화 페이지 검사: 폐기 가능한 PGlite DB에서 최신 50개·이전 커서·동시 추가·페이지별 부가 데이터·가정/개인 격리 통과. API를 대체한 Playwright로 모바일·데스크톱의 읽던 위치 유지, 실패 재시도, 조회 중 모드 전환까지 통과했다.
-- 워커: 127.0.0.1:8644에서 `ready`. 전용 Auth 계정·가정 연결·Keychain 등록 완료. `kimjipsa` 프로필은 기존 Hermes 기본 모델·인증을 자동 사용한다. 전용 API·모델 목록·도구 비활성화를 확인했다.
+- 워커: 127.0.0.1:8644에서 `ready`. 전용 Auth 계정·가정 연결·Keychain 등록 완료. `kimjipsa` 프로필은 기존 Hermes 기본 모델·인증을 자동 사용한다. 공용 API의 도구는 기억·스킬·가정 조회로 제한한다. 실제 임시 개인 프로필에서도 도구 없음·기억 비활성화를 확인했다.
 - Supabase: 사용자가 SQL Editor로 세 마이그레이션을 적용했다. 확장 워커는 `capabilitiesVersion=2`를 확인한다. 워커 로그인 성공, 로컬 `/api/agent/config`가 200과 `connectionMode=local`을 반환하며 모델 키는 포함하지 않는다.
-- DB 직접 연결: `.env.local`의 Session pooler URI로 TLS 인증서 검증·인증 성공. 기존 구조 대조 후 마이그레이션 18개의 적용 이력을 등록했다. 기존 동의 열·이름 길이 제약 차이는 보존했으며, 상세 내용은 [Supabase README](../../../supabase/README.md)에 기록했다.
+- DB 직접 연결: `.env.local`의 Session pooler URI로 TLS 인증서 검증·인증 성공. 기존 구조 대조 후 18개 적용 이력을 등록하고, 조회 스킬용 `20261104040000_hermes_shared_read.sql`을 추가 적용·기록했다. 기존 동의 열·이름 길이 제약 차이는 보존했으며, 상세 내용은 [Supabase README](../../../supabase/README.md)에 기록했다.
+- 기억·스킬 검사: Vitest 조회 인증·입력 범위·검색 격리 9건, 임시 프로필 보존·개인 격리 4건 통과. 설치된 Hermes 도구를 임시 프로필에서 호출해 자체 기억 저장·보존과 스킬 발견을 확인했다. PGlite에서 19개 마이그레이션과 가정 격리·개인 일정 가림·워커 해제·기억 끄기 검사를 통과했다. 실제 워커→앱→Supabase의 네 가지 조회는 성공했으며, 실제 AI·디스코드 메시지는 전송하지 않았다.
 - 로컬 앱: `http://localhost:3000`에서 실행 중. Next.js의 루프백 주소 정규화와 Origin 검사를 맞추기 위해 워커도 이 주소를 사용한다. 이 확인은 연결 상태 확인이며 실제 AI 왕복 검증을 대체하지 않는다.
 - 자동 실행: 로컬 앱·워커를 사용자 launchd에 등록했다. 실행 복사본은 `~/Library/Application Support/kimjipsa`에 두어 데스크탑 접근 승인 대기와 터미널 종료로 인한 중단을 방지한다. 소스 변경 후 `python3 ai-gateway/scripts/install-launchd.py`로 갱신한다.
 

@@ -85,3 +85,5 @@ PROPOSED 항목은 `docs/04-planning/DECISIONS_REQUIRED.md`의 결정 번호와 
 ## 2026-11-04 가족 집사 연동
 
 가족 집사 실행은 설치된 Hermes 실행기 + Node TypeScript 워커, 전달은 Supabase pgmq Basic Queue + 비공개 Realtime으로 확정했다(사용자 구현 요청, ADR-0017). 모델 호출은 Hermes가 담당하며 Vercel AI Gateway/AI SDK 의존성을 추가하지 않는다.
+
+후속 ADR-0018에 따라 Hermes 내장 기억과 프로필 스킬·네이티브 조회 플러그인을 사용한다. 플러그인은 Python 표준 라이브러리로 로컬 워커에 연결하며 새 런타임 의존성을 추가하지 않는다. Supabase 가족 기억과 Hermes 기억은 별도 관리한다.

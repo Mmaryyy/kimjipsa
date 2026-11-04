@@ -46,3 +46,4 @@
 0001~0003의 날짜는 결정이 `AGENTS.md`의 "확정된 주요 결정"에 반영된 날(커밋 c1281e5)이다. 실제 결정일을 아는 경우 고친다. 0004~0007은 사용자가 승인한 날이다.
 
 - [0017. 가족 공용 집사와 맥미니 실행 워커](0017-local-family-agent.md) — CONFIRMED (2026-11-04)
+- [0018. Hermes 자체 기억과 Supabase 조회 스킬](0018-hermes-memory-and-household-skill.md) — CONFIRMED (2026-11-04)

@@ -1,7 +1,8 @@
 import { spawn, execFile, type ChildProcess } from "node:child_process";
 import { promisify } from "node:util";
 import { randomBytes } from "node:crypto";
-import { writeFile, rm, readFile, readdir } from "node:fs/promises";
+import { rm, readFile } from "node:fs/promises";
+import { basename, dirname, join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { z } from "zod";
 import { gatewayRoot, type GatewayConfig } from "./config.mts";
@@ -43,16 +44,29 @@ export const contextSchema = z.object({
   attachments: z.array(z.object({ path: z.string(), mime_type: z.string() })),
 });
 export type AgentContext = z.infer<typeof contextSchema>;
+export function requiresIsolatedRuntime(
+  context: AgentContext,
+  hasImages: boolean,
+  isSearch: boolean,
+) {
+  return context.visibility === "private" || hasImages || isSearch;
+}
 export class HermesRuntime {
   private child: ChildProcess | null = null;
   private key = randomBytes(32).toString("hex");
   private profile: string;
   private config: GatewayConfig;
-  constructor(config: GatewayConfig) {
+  private isolated: boolean;
+  private privateRuntime: HermesRuntime | null = null;
+  private sessions = new Set<string>();
+  private activeRuns = new Set<string>();
+  constructor(config: GatewayConfig, isolated = false) {
     this.config = config;
     this.profile = config.hermesProfile;
+    this.isolated = isolated;
   }
   async stop() {
+    await this.privateRuntime?.stop();
     const child = this.child;
     this.child = null;
     if (child?.pid && child.exitCode === null && child.signalCode === null) {
@@ -68,44 +82,72 @@ export class HermesRuntime {
         );
       }
     }
-    if (!child) return;
-    // Only the dedicated profile's generated conversation artifacts are disposable.
-    await readFile(`${this.profile}/.kimjipsa-managed`, "utf8");
-    const directories = new Set([
-      "sessions",
-      "memories",
-      "logs",
-      "image_cache",
-      "audio_cache",
-      "cache",
-      "assets",
-      "backups",
-      "runtime",
-      "pending_messages",
-      "state",
-    ]);
-    for (const entry of await readdir(this.profile)) {
-      if (
-        directories.has(entry) ||
-        entry.startsWith("state.db") ||
-        entry.startsWith("response_store.db") ||
-        entry.startsWith("runs_idempotency.db") ||
-        entry.startsWith("api_server_") ||
-        entry === "gateway_state.json"
-      ) {
-        await rm(`${this.profile}/${entry}`, { recursive: true, force: true });
+    if (this.isolated && child) {
+      await readFile(`${this.profile}/.kimjipsa-managed-private`, "utf8");
+      await rm(this.profile, { recursive: true, force: true });
+      this.sessions.clear();
+    }
+    this.activeRuns.clear();
+  }
+  async finish() {
+    await this.privateRuntime?.stop();
+    if (this.isolated) return this.stop();
+    // A cancelled app request must not keep generating or writing memory in the shared gateway.
+    for (const run of this.activeRuns) {
+      let stopped = false;
+      try {
+        const signal = AbortSignal.timeout(10000);
+        await this.call(`/v1/runs/${encodeURIComponent(run)}/stop`, {}, signal);
+        for (let attempt = 0; attempt < 20; attempt++) {
+          const status = z
+            .object({ status: z.string() })
+            .parse(
+              await this.call(
+                `/v1/runs/${encodeURIComponent(run)}`,
+                undefined,
+                signal,
+              ),
+            );
+          if (
+            ["completed", "failed", "cancelled", "interrupted"].includes(
+              status.status,
+            )
+          ) {
+            stopped = true;
+            break;
+          }
+          await delay(200, undefined, { signal });
+        }
+      } catch {
+        /* Stop the owned process if it cannot confirm cancellation. */
+      }
+      if (!stopped) {
+        await this.stop();
+        break;
       }
     }
+    this.activeRuns.clear();
+    for (const session of this.sessions) {
+      await this.call(
+        `/api/sessions/${encodeURIComponent(session)}`,
+        undefined,
+        AbortSignal.timeout(15000),
+        "DELETE",
+      ).catch(() => {});
+    }
+    this.sessions.clear();
   }
   async start(signal: AbortSignal) {
-    await this.stop();
+    if (this.isolated) await this.stop();
+    let changed: boolean;
     try {
-      await execute(
+      const prepared = await execute(
         this.config.hermesPython,
         [
           `${gatewayRoot}scripts/prepare-profile.py`,
           this.profile,
           String(this.config.hermesPort),
+          this.isolated ? "isolated" : "shared",
         ],
         {
           env: {
@@ -116,10 +158,20 @@ export class HermesRuntime {
           signal,
         },
       );
+      changed = z
+        .object({ changed: z.boolean() })
+        .parse(JSON.parse(prepared.stdout)).changed;
     } catch {
       throw new Error("local_model_configuration_failed");
     }
-    await writeFile(`${this.profile}/SOUL.md`, instructions, { mode: 0o600 });
+    if (
+      this.child &&
+      this.child.exitCode === null &&
+      this.child.signalCode === null
+    ) {
+      if (!changed) return;
+      await this.stop();
+    }
     const env: NodeJS.ProcessEnv = {
       NODE_ENV: process.env.NODE_ENV ?? "production",
       PATH: process.env.PATH,
@@ -133,7 +185,7 @@ export class HermesRuntime {
     };
     this.child = spawn(
       this.config.hermesCommand,
-      ["--profile", "kimjipsa", "gateway", "run", "--no-supervise"],
+      ["--profile", basename(this.profile), "gateway", "run", "--no-supervise"],
       { cwd: gatewayRoot, env, stdio: "ignore" },
     );
     let launchFailed = false;
@@ -150,13 +202,35 @@ export class HermesRuntime {
         throw new Error("hermes_start_failed");
       try {
         const response = await this.call("/v1/toolsets", undefined, signal);
-        // Empty allowlist is checked against the live server before any private data is sent.
+        // Verify the live tool boundary before supplying any household context.
         const result = z
-          .object({ data: z.array(z.object({ enabled: z.boolean() })) })
+          .object({
+            data: z.array(
+              z.object({
+                name: z.string(),
+                enabled: z.boolean(),
+                tools: z.array(z.string()),
+              }),
+            ),
+          })
           .safeParse(response);
         if (!result.success) throw new Error("hermes_tool_policy_unknown");
-        if (result.data.data.some((tool) => tool.enabled))
+        const allowed = new Set(
+          this.isolated ? [] : ["memory", "skills", "kimjipsa"],
+        );
+        if (
+          result.data.data.some(
+            (tool) => tool.enabled && !allowed.has(tool.name),
+          )
+        )
           throw new Error("hermes_tools_enabled");
+        if (
+          !this.isolated &&
+          !result.data.data.some(
+            (tool) => tool.enabled && tool.tools.includes("kimjipsa_read"),
+          )
+        )
+          throw new Error("hermes_tool_policy_unknown");
         return;
       } catch (error) {
         if (error instanceof Error && error.message.startsWith("hermes_tool"))
@@ -167,18 +241,18 @@ export class HermesRuntime {
     throw new Error("hermes_start_failed");
   }
   async ready(signal: AbortSignal) {
-    if (
-      !this.child ||
-      this.child.exitCode !== null ||
-      this.child.signalCode !== null
-    )
-      await this.start(signal);
+    await this.start(signal);
   }
-  async call(path: string, body: unknown, signal: AbortSignal) {
+  async call(
+    path: string,
+    body: unknown,
+    signal: AbortSignal,
+    method?: string,
+  ) {
     const response = await fetch(
       `http://127.0.0.1:${this.config.hermesPort}${path}`,
       {
-        method: body === undefined ? "GET" : "POST",
+        method: method ?? (body === undefined ? "GET" : "POST"),
         headers: {
           Authorization: `Bearer ${this.key}`,
           "Content-Type": "application/json",
@@ -205,8 +279,32 @@ export class HermesRuntime {
     signal: AbortSignal,
     onAdmitted: (id: string) => Promise<void>,
     searchResults?: Array<{ title: string; url: string; description: string }>,
-  ) {
+  ): Promise<z.infer<typeof agentResultSchema>> {
+    if (
+      !this.isolated &&
+      requiresIsolatedRuntime(context, images.length > 0, !!searchResults)
+    ) {
+      this.privateRuntime ??= new HermesRuntime(
+        {
+          ...this.config,
+          hermesProfile: join(dirname(this.profile), "kimjipsa-private"),
+          hermesPort: this.config.hermesPort + 2,
+        },
+        true,
+      );
+      return this.privateRuntime.run(
+        jobId,
+        runtime,
+        context,
+        images,
+        signal,
+        onAdmitted,
+        searchResults,
+      );
+    }
     await this.start(signal);
+    const sessionId = `kimjipsa-app-${jobId}`;
+    this.sessions.add(sessionId);
     const safeContext = searchResults
       ? { message: context.message.text, results: searchResults }
       : {
@@ -244,7 +342,7 @@ export class HermesRuntime {
           "Idempotency-Key": jobId,
         },
         body: JSON.stringify({
-          session_id: `family-${runtime.familyId}-${context.visibility}-${context.visibility === "private" ? context.actorId : "shared"}-${runtime.memoryVersion}`,
+          session_id: sessionId,
           instructions: searchResults
             ? searchInstructions
             : context.kind === "summary"
@@ -260,6 +358,7 @@ export class HermesRuntime {
     const admitted = z
       .object({ run_id: z.string() })
       .parse(await response.json());
+    this.activeRuns.add(admitted.run_id);
     await onAdmitted(admitted.run_id);
     for (let attempt = 0; attempt < 600; attempt++) {
       signal.throwIfAborted();
@@ -273,14 +372,17 @@ export class HermesRuntime {
           ),
         );
       if (status.status === "completed") {
+        this.activeRuns.delete(admitted.run_id);
         try {
           return agentResultSchema.parse(JSON.parse(status.output ?? ""));
         } catch {
           throw new Error("invalid_response");
         }
       }
-      if (["failed", "cancelled", "interrupted"].includes(status.status))
+      if (["failed", "cancelled", "interrupted"].includes(status.status)) {
+        this.activeRuns.delete(admitted.run_id);
         throw new Error("model_unavailable");
+      }
       await delay(1000, undefined, { signal });
     }
     throw new Error("execution_unknown");

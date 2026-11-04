@@ -29,6 +29,10 @@ TLS는 인증서와 호스트 이름을 검증한다. Node PostgreSQL 클라이�
 버전을 기록한다. 이미 적용된 파일을 수정하거나 전체 SQL을 재실행하지 않는다.
 연결 성공만으로 DB 변경을 자동 실행하지 않으며, 요청된 변경 범위에서 적용한다.
 
+같은 날 `20261104040000_hermes_shared_read.sql`을 추가 적용하여 현재 이력은 19개다.
+Hermes 조회 스킬이 활성 워커의 가정 정보를 읽는 RPC이며 개인 일정 내용·쓰기 권한은
+제공하지 않는다. 기존 데이터는 변경하지 않았다.
+
 ### 기존 원격 DB와 로컬 초기 스키마의 차이
 
 - 원격 `users.terms_accepted_at`, `privacy_accepted_at`, `terms_version`은 NULL을

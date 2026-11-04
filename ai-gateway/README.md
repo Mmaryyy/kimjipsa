@@ -7,7 +7,7 @@
 저장소 루트에서 `yarn gateway:start`.
 
 - 워커 상태: `http://127.0.0.1:8644/health`. `ready`/`running`이면 200이다.
-- 전용 Hermes API: `127.0.0.1:8643`. 워커가 실행·종료하며 루프백 인증을 적용한다.
+- 공용 Hermes API: `127.0.0.1:8643`. 워커가 지속 실행하며 루프백 인증을 적용한다. 개인·사진·검색 처리는 기억이 꺼진 `kimjipsa-private` 프로필과 `8645`에서 분리한다.
 - 전용 프로필: `~/.hermes/profiles/kimjipsa`. `gateway.standalone`으로 개인 게이트웨이와 별도로 실행한다.
 - 기본 모델을 Hermes에서 바꾸면 다음 작업 실행에 반영한다. 앱에 설정을 복사하지 않는다.
 - 워커는 Supabase의 전용 계정으로 인증한다. 비밀번호는 macOS Keychain의 `kimjipsa-ai-gateway` 서비스에서 읽는다.
@@ -17,7 +17,7 @@
 
 ## 처음 설치할 때
 
-1. 기존 DB 마이그레이션 뒤에 `20261104000000_family_agent.sql`, `20261104010000_local_gateway_model.sql`, `20261104020000_agent_capabilities.sql`, `20261104030000_chat_pagination.sql` 순서로 적용한다. 앞의 세 파일을 이미 적용했다면 네 번째만 실행한다. 기존 재고·대화는 유지하며 워커는 `capabilitiesVersion=2`를 확인하고 앱은 `chat_page`로 최근 대화부터 조회한다.
+1. `supabase/migrations`의 적용 이력을 비교해 미적용 파일만 순서대로 실행한다. `20261104040000_hermes_shared_read.sql`은 스킬의 읽기 전용 RPC를 추가한다. 이미 적용된 파일은 다시 실행하지 않는다. 직접 DB 연결과 이력 관리는 [Supabase README](../supabase/README.md)를 따른다.
 2. 앱 서버에는 Supabase 설정, 파일 정리용 `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`을 둔다. 모델 키와 `SECRET_ENCRYPTION_KEY`는 사용하지 않는다.
 3. `config.example.json`을 `config.local.json`으로 복사하고 이 컴퓨터의 경로·연결 정보를 넣는다.
 4. 전용 워커를 한 번 등록한다. 기존 워커는 중복 생성하지 않는다.
@@ -36,13 +36,19 @@
 6. 워커가 `scripts/prepare-profile.py`로 기본 모델과 전용 API 설정을 맞춘다. 기존 Hermes 기본 프로필은 모델과 로그인이 이미 구성돼 있어야 한다. 새 가정용 자격증명 입력은 없다.
 7. `yarn gateway:start`로 시작한다.
 
-이 컴퓨터는 위 설치를 완료했다. 후속 SQL 적용과 `/api/agent/config`의 `connectionMode=local` 응답, 전용 프로필 API·모델 목록·도구 비활성화를 확인했다. 연결 확인에 사용한 설치 소스 커밋은 `c314285f077e91937c995d419b9fa40af9eb4981`이다. 예전에 내보낸 `vendor/` 소스는 실행에 사용하지 않는다.
+기본 연결은 `/api/agent/config`의 `connectionMode=local`과 워커 health로 확인한다. Hermes는 설치된 실행기를 사용하며 예전에 내보낸 `vendor/` 소스는 실행에 사용하지 않는다.
 
 ## 실행 권한과 기록
 
-범용 도구와 로컬 기억을 끄고 API의 toolsets가 모두 비활성인지 확인한 후에만 가족 데이터를 보낸다. 작업 문맥과 변경 결과는 `/api/agent/context`·`/api/agent/complete`와 가정·작업 임대로 제한된 Supabase RPC를 사용한다. 일정 조회·등록·변경, 장바구니 조회·추가·구매 완료, 재고 조회·추가·차감·수정·삭제를 지원한다. 개인 일정은 ‘나만 보기’에서만 제공한다. 모델이 반환한 수량 추가도 서버에서 요청 인용·단위·가정 범위를 다시 확인한다. 영수증은 사용자가 확인해야 반영된다.
+공용 API에는 `memory`, `skills`, `kimjipsa` 도구만 허용한다. 임의 셸·파일·MCP 도구는 앱 요청에서 사용하지 않는다. 작업 문맥과 변경 결과는 `/api/agent/context`·`/api/agent/complete`와 가정·작업 임대로 제한된 Supabase RPC를 사용한다. 일정 조회·등록·변경, 장바구니 조회·추가·구매 완료, 재고 조회·추가·차감·수정·삭제를 지원한다. 개인 일정은 ‘나만 보기’에서만 제공한다. 영수증은 사용자가 확인해야 반영된다.
 
-Supabase가 가족 대화·기억의 원본이다. 작업이 끝나면 전용 프로세스를 종료하고 그 프로필의 세션·사진 캐시·응답 DB·실행 로그를 정리한다. 프로필 식별 정보·설정·SOUL은 유지한다. 이 프로필은 앱 전용이므로 별도 CLI 대화를 진행하지 않는다.
+Supabase는 앱 대화·가족 기억의 원본이고, Hermes 자체 기억은 공용 프로필의 `memories/`에 별도로 보관한다. 앱의 기억 끄기·삭제·초기화는 Supabase에만 적용하며 Hermes 기억은 Hermes에서 관리한다. 공용 프로필과 디스코드 설정·스킬·기억을 작업 뒤 지우지 않는다. 앱의 개별 세션만 API로 정리하고, 임시 개인 프로필은 종료 후 삭제한다. 같은 프로필에 두 게이트웨이를 동시에 띄우지 않는다. 디스코드는 이 공용 게이트웨이에 설정하여 사용한다.
+
+## Supabase 조회 스킬
+
+`kimjipsa-supabase` 스킬이 `kimjipsa_read` 도구로 가족 기억·재고·장바구니·공용 일정/개인 일정의 가려진 상태를 조회한다. 스킬은 `skills/`, 도구는 `hermes-plugin/`에서 관리하고 프로필 준비 시 설치한다. 도구는 로컬 토큰으로 워커의 `/hermes/read`를 호출하고, 워커는 자신의 Supabase 세션으로 앱의 `/api/agent/read`를 호출한다. RPC는 등록·활성화된 워커의 가정만 조회한다. DB 비밀번호나 service_role은 사용하지 않는다.
+
+스킬의 정보가 최신 상태이며 Hermes 자체 기억은 참고 정보다. Supabase 데이터를 자체 기억에 자동 복사하지 않는다. ‘나만 보기’·사진·검색 처리는 자체 기억과 이 도구가 없는 별도 프로필에서 실행하므로 공용 프로필에 개인 내용을 전달하지 않는다. 일반 Hermes·디스코드의 조회 스킬은 읽기 전용이며, 앱의 변경 작업은 기존 확인·권한 검사를 유지한다.
 
 임대는 90초, 갱신은 20초다. 취소·설정 변경·만료 이후의 결과 저장은 거부한다. 모든 일정·재고·장바구니 쓰기와 결과 기록은 한 트랜잭션에 있다. 만료된 작업에 변경 기록이 없으면 실패로 정리하고, 기록이 있는 상태 불명 작업은 자동 재실행하지 않는다. Realtime 재연결·작업 종료·60초 보정 조회로 누락된 신호를 복구한다.
 
