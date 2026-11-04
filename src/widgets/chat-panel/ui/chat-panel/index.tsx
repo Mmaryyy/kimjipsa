@@ -1,25 +1,27 @@
 "use client";
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useChatNavigation } from "@/features/chat-navigation";
-import { useAccount } from "@/features/account";
-import { ChatComposer } from "@/features/chat-send";
-import { useChat, useChatActions } from "@/entities/chat-message";
+
 import {
   Button,
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
   ErrorState,
   Sheet,
   Skeleton,
   Text,
-  Conversation,
-  ConversationContent,
-  ConversationScrollButton,
 } from "@/shared/ui";
-import { useChatClock } from "../../model/use-chat-clock";
-import { useChatScroll } from "../../model/use-chat-scroll";
-import { useChatViewport } from "../../model/use-chat-viewport";
+import { ChatComposer, useChatSend } from "@/features/chat-send";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useChat, useChatActions } from "@/entities/chat-message";
+
 import ChatHeader from "./Header";
 import ChatMessage from "./Message";
 import ChatMessages from "./Messages";
+import { useAccount } from "@/features/account";
+import { useChatClock } from "../../model/use-chat-clock";
+import { useChatNavigation } from "@/features/chat-navigation";
+import { useChatScroll } from "../../model/use-chat-scroll";
+import { useChatViewport } from "../../model/use-chat-viewport";
 
 const ChatPanelConversation = () => {
   const account = useAccount();
@@ -34,6 +36,21 @@ const ChatPanelConversation = () => {
     (!query.data.expiresAt || Date.parse(query.data.expiresAt) > now)
       ? query.data
       : undefined;
+  const reply = useChatSend(chat?.sessionVersion ?? 1);
+  const choiceDisabled =
+    reply.send.isPending ||
+    reply.upload.isPending ||
+    query.isError ||
+    !chat ||
+    chat.runs.some(
+      (run) => run.status === "queued" || run.status === "running",
+    );
+  const onChoice = useCallback(
+    (label: string) => {
+      if (!choiceDisabled) reply.send.mutate(label);
+    },
+    [choiceDisabled, reply.send],
+  );
   const { fetchNextPage } = query;
   const onLoadOlder = useCallback(
     () => fetchNextPage({ cancelRefetch: false }),
@@ -77,7 +94,9 @@ const ChatPanelConversation = () => {
   );
   const composerRef = useRef<HTMLDivElement>(null);
   const composerDisabled =
-    !chat || (query.isError && !query.isFetchNextPageError);
+    reply.send.isPending ||
+    !chat ||
+    (query.isError && !query.isFetchNextPageError);
   useEffect(() => {
     // 첫 조회가 끝나도 사용자가 옮긴 포커스는 가져오지 않아요.
     if (
@@ -186,6 +205,18 @@ const ChatPanelConversation = () => {
                       now={now}
                       cancelling={cancel.isPending}
                       onCancel={onCancel}
+                      choicesDisabled={
+                        choiceDisabled ||
+                        message.id !== chat.messages.at(-1)?.id
+                      }
+                      selectedChoice={
+                        chat.messages.find(
+                          (entry) =>
+                            entry.role === "user" &&
+                            entry.sequence > message.sequence,
+                        )?.text
+                      }
+                      onChoice={onChoice}
                     />
                   );
                 }}
@@ -208,7 +239,7 @@ const ChatPanelConversation = () => {
       >
         <ChatComposer
           key={chat?.sessionVersion ?? "loading"}
-          sessionVersion={chat?.sessionVersion ?? 1}
+          reply={reply}
           disabled={composerDisabled}
         />
       </div>

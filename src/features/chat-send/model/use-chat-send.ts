@@ -6,19 +6,28 @@ import { compressPhoto } from "./photo.utils";
 export function useChatSend(sessionVersion: number) {
   const [text, setText] = useState("");
   const [photos, setPhotos] = useState<string[]>([]);
+  const [draftVersion, setDraftVersion] = useState(sessionVersion);
+  if (draftVersion !== sessionVersion) {
+    setDraftVersion(sessionVersion);
+    setText("");
+    setPhotos([]);
+  }
   const requestId = useRef<string | null>(null);
   const client = useQueryClient();
   const send = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (reply?: string) => {
       requestId.current ??= crypto.randomUUID();
       await postChat({
         sessionVersion,
-        text,
-        attachmentIds: photos,
+        text: reply ?? text,
+        attachmentIds: reply === undefined ? photos : [],
         clientRequestId: requestId.current,
       });
     },
-    onError: () => client.invalidateQueries({ queryKey: ["chat"] }),
+    onError: () => {
+      requestId.current = null;
+      return client.invalidateQueries({ queryKey: ["chat"] });
+    },
     onSuccess: async () => {
       setText("");
       setPhotos([]);

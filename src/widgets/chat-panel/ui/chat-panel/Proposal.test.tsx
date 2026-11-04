@@ -62,11 +62,11 @@ describe("BOT-08 변경 제안", () => {
     });
   });
 });
-it("BOT-11/14 개인 대화와 1시간 보관 안내만 보여줘요", () => {
+it("BOT-11 이름과 연결 배지를 보여주고 공개 범위 전환은 없어요", () => {
   render(<ChatHeader name="집사" online failed={false} />);
   expect(screen.queryByRole("radio")).not.toBeInTheDocument();
-  expect(screen.getByText("나만 보는 대화")).toBeInTheDocument();
-  expect(
-    screen.getByText("마지막 메시지 후 1시간이 지나면 대화 기록이 삭제돼요."),
-  ).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "김집사" })).toBeInTheDocument();
+  expect(screen.getByText("연결됨(맥미니)")).toBeInTheDocument();
+  expect(screen.queryByText("나만 보는 대화")).not.toBeInTheDocument();
+  expect(screen.queryByText(/1시간/)).not.toBeInTheDocument();
 });

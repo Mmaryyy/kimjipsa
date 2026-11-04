@@ -33,7 +33,16 @@ const allowedCartCommand = cartCommandSchema.refine(
 const eventCommand = z.object({
   id: z.uuid().nullable(),
   occurrenceDate: z.iso.date().nullable().default(null),
-  event: eventSchema,
+  event: z.preprocess((raw) => {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return raw;
+    const event = raw as Record<string, unknown>;
+    return {
+      ...event,
+      place: event.place ?? "",
+      memo: event.memo ?? "",
+      celebrateMessage: event.celebrateMessage ?? "",
+    };
+  }, eventSchema),
 });
 export function parseAgentActions(raw: unknown): AgentAction[] {
   return z
@@ -41,15 +50,26 @@ export function parseAgentActions(raw: unknown): AgentAction[] {
     .min(1)
     .max(20)
     .parse(raw)
-    .map((action) => {
-      let payload;
-      if (action.domain === "event")
-        payload = eventCommand.parse(action.payload);
-      else if (action.domain === "inventory")
-        payload = inventoryCommand.parse(action.payload);
-      else {
-        payload = allowedCartCommand.parse(action.payload);
+    .map((action, index) => {
+      try {
+        let payload;
+        if (action.domain === "event")
+          payload = eventCommand.parse(action.payload);
+        else if (action.domain === "inventory")
+          payload = inventoryCommand.parse(action.payload);
+        else {
+          payload = allowedCartCommand.parse(action.payload);
+        }
+        return { ...action, payload };
+      } catch (error) {
+        if (error instanceof z.ZodError)
+          throw new z.ZodError(
+            error.issues.map((issue) => ({
+              ...issue,
+              path: ["actions", index, "payload", ...issue.path],
+            })),
+          );
+        throw error;
       }
-      return { ...action, payload };
     });
 }

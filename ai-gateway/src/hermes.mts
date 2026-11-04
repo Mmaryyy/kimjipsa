@@ -34,7 +34,11 @@ export const contextSchema = z.object({
   calendarRange: z.object({ start: z.string(), end: z.string() }),
   message: z.object({ text: z.string(), attachment_ids: z.array(z.uuid()) }),
   history: z.array(
-    z.object({ role: z.enum(["user", "assistant"]), text: z.string() }),
+    z.object({
+      role: z.enum(["user", "assistant"]),
+      text: z.string(),
+      choices: agentResultSchema.shape.choices,
+    }),
   ),
   memories: z.array(z.string()),
   inventory: z.array(z.record(z.string(), z.unknown())),

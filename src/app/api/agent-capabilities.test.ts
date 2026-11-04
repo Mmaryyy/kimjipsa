@@ -188,3 +188,135 @@ describe("BOT-07 입력 검증", () => {
     ).toBe(false);
   });
 });
+
+const eventAction = (overrides: Record<string, unknown> = {}) => [
+  {
+    domain: "event",
+    label: "치과 등록",
+    payload: {
+      id: null,
+      event: {
+        title: "치과",
+        categoryId: category,
+        visibility: "private",
+        startDate: "2026-11-05",
+        endDate: "2026-11-05",
+        startTime: "15:00",
+        endTime: null,
+        isAllDay: false,
+        ...overrides,
+      },
+    },
+  },
+];
+it.each([{}, { place: null, memo: null, celebrateMessage: null }])(
+  "BOT-07 장소·메모 생략과 null을 agent 경로에서만 허용해요",
+  (fields) => {
+    expect(
+      parseAgentActions(eventAction(fields))[0].payload.event,
+    ).toMatchObject({ place: "", memo: "", celebrateMessage: "" });
+  },
+);
+it.each([
+  "categoryId",
+  "visibility",
+  "startDate",
+  "endDate",
+  "startTime",
+  "endTime",
+])("BOT-07 %s 누락은 보정하지 않고 필드 경로로 거절해요", (field) => {
+  expect(() =>
+    parseAgentActions(
+      JSON.parse(JSON.stringify(eventAction({ [field]: undefined }))),
+    ),
+  ).toThrow();
+});
+it("BOT-07 categoryId 누락 진단에는 전체 액션 경로를 남겨요", () => {
+  try {
+    parseAgentActions(
+      JSON.parse(JSON.stringify(eventAction({ categoryId: undefined }))),
+    );
+    throw new Error("accepted");
+  } catch (error) {
+    expect(error).toMatchObject({
+      issues: [
+        expect.objectContaining({
+          path: ["actions", 0, "payload", "event", "categoryId"],
+        }),
+      ],
+    });
+  }
+});
+it("BOT-07 선택지는 reply에만 서로 다른 2~6개를 허용해요", () => {
+  const choices = [
+    { label: "공유 일정", value: "shared" },
+    { label: "개인 일정", value: "private" },
+  ];
+  expect(
+    agentResultSchema.parse({ kind: "reply", text: "공개 범위는요?", choices })
+      .choices,
+  ).toEqual(choices);
+  for (const invalid of [
+    choices.slice(0, 1),
+    Array(7).fill(choices[0]),
+    [choices[0], choices[0]],
+  ])
+    expect(
+      agentResultSchema.safeParse({
+        kind: "reply",
+        text: "질문",
+        choices: invalid,
+      }).success,
+    ).toBe(false);
+  expect(
+    agentResultSchema.safeParse({
+      kind: "actions",
+      text: "실행",
+      choices,
+      actions: eventAction(),
+    }).success,
+  ).toBe(false);
+  expect(
+    agentResultSchema.parse({ kind: "reply", text: "언제인가요?" }).choices,
+  ).toEqual([]);
+});
+
+it("BOT-07/08 되묻기는 표시하고 다른 결과에는 표시를 거절해요", () => {
+  expect(
+    agentResultSchema.parse({
+      kind: "reply",
+      text: "언제인가요?",
+      awaitingAnswer: true,
+    }).awaitingAnswer,
+  ).toBe(true);
+  expect(
+    agentResultSchema.parse({
+      kind: "reply",
+      text: "공개 범위는요?",
+      awaitingAnswer: false,
+      choices: [
+        { label: "공유 일정", value: "shared" },
+        { label: "개인 일정", value: "private" },
+      ],
+    }).awaitingAnswer,
+  ).toBe(true);
+  expect(
+    agentResultSchema.parse({ kind: "reply", text: "조회 결과예요" })
+      .awaitingAnswer,
+  ).toBe(false);
+  expect(
+    agentResultSchema.safeParse({
+      kind: "actions",
+      text: "등록",
+      actions: eventAction(),
+      awaitingAnswer: true,
+    }).success,
+  ).toBe(false);
+  expect(
+    agentResultSchema.safeParse({
+      kind: "reply",
+      text: "질문",
+      awaitingAnswer: "true",
+    }).success,
+  ).toBe(false);
+});

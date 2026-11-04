@@ -10,16 +10,16 @@ import {
   PromptInputTextarea,
   Text,
 } from "@/shared/ui";
-import { useChatSend } from "../../model/use-chat-send";
+
+import type { useChatSend } from "../../model/use-chat-send";
 import { useRef } from "react";
 
 interface Props {
-  sessionVersion: number;
+  reply: ReturnType<typeof useChatSend>;
   disabled?: boolean;
 }
-const ChatComposer = ({ disabled = false, sessionVersion }: Props) => {
-  const { text, photos, onText, onRemove, send, upload } =
-    useChatSend(sessionVersion);
+const ChatComposer = ({ disabled = false, reply }: Props) => {
+  const { text, photos, onText, onRemove, send, upload } = reply;
   const fileInput = useRef<HTMLInputElement>(null);
   const pending = send.isPending || upload.isPending;
   const canSend = !disabled && !pending && (!!text.trim() || photos.length > 0);
@@ -66,7 +66,7 @@ const ChatComposer = ({ disabled = false, sessionVersion }: Props) => {
         maxLength={10000}
         disabled={disabled || pending}
         className="max-h-40 resize-none text-body-sm leading-[1.55] placeholder:text-body-sm [field-sizing:content]"
-        placeholder="나만 보는 집사에게 요청하세요"
+        placeholder="무엇을 도와드릴까요?"
         enterKeyHint="send"
         onChange={(event) => onText(event.target.value)}
         onKeyDown={(event) => {

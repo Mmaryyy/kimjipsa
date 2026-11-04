@@ -22,6 +22,7 @@ const message: Chat["messages"][number] = {
   visibility: "private",
   attachment_ids: [],
   sources: [],
+  choices: [],
 };
 const run: Chat["runs"][number] = {
   id: "run",

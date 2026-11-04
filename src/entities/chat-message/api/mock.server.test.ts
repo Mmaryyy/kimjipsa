@@ -25,7 +25,12 @@ beforeEach(() => {
 describe("BOT-01/08/10 P11 대화 목업", () => {
   it("조회·직접 요청 결과·확인 대기를 실제 응답 계약으로 보여줘요", async () => {
     const chat = chatSchema.parse(await mockChatPage(null));
-    expect(chat.messages).toHaveLength(5);
+    expect(chat.messages).toHaveLength(6);
+    expect(chat.messages[4]).toMatchObject({
+      choices: [],
+      awaiting_answer: true,
+    });
+    expect(chat.messages[3].awaiting_answer).toBe(false);
     expect(chat.sessionVersion).toBe(1);
     expect(
       chat.messages.every((message) => message.visibility === "private"),
@@ -46,10 +51,10 @@ describe("BOT-01/08/10 P11 대화 목업", () => {
       text: "내 요청",
       attachmentIds: [],
     });
-    expect((await mockChatPage(null))?.messages).toHaveLength(6);
+    expect((await mockChatPage(null))?.messages).toHaveLength(7);
     context.perspective = 1;
     const other = (await mockChatPage(null))!;
-    expect(other.messages).toHaveLength(5);
+    expect(other.messages).toHaveLength(6);
     expect(other.messages.some((message) => message.text === "내 요청")).toBe(
       false,
     );
@@ -122,4 +127,22 @@ describe("BOT-01/08/10 P11 대화 목업", () => {
     expect(await mockChatPage(null)).toBeNull();
     expect(await mockChatCommand("settings", {})).toBeNull();
   });
+});
+
+it("BOT-07 선택지와 보낸 답장을 다시 조회해도 유지해요", async () => {
+  const first = chatSchema.parse(await mockChatPage(null));
+  const question = first.messages.at(-1)!;
+  expect(question.choices).toHaveLength(2);
+  expect(question.awaiting_answer).toBe(true);
+  await mockChatCommand("send", {
+    sessionVersion: first.sessionVersion,
+    text: question.choices[1].label,
+    attachmentIds: [],
+  });
+  const refreshed = chatSchema.parse(await mockChatPage(null));
+  expect(
+    refreshed.messages.find((message) => message.id === question.id)?.choices,
+  ).toEqual(question.choices);
+  expect(refreshed.messages.at(-1)?.text).toBe("개인 일정");
+  expect(refreshed.messages.at(-1)?.awaiting_answer).toBe(false);
 });

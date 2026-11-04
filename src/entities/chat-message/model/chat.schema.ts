@@ -57,6 +57,21 @@ export const receiptItemSchema = z.object({
   expires_on: z.iso.date().nullable(),
   reason: z.string().max(500).default(""),
 });
+const choiceSchema = z.object({
+  label: z.string().trim().min(1).max(30),
+  value: z.string().trim().min(1).max(200),
+});
+const choicesSchema = z
+  .array(choiceSchema)
+  .max(6)
+  .refine(
+    (choices) =>
+      choices.length !== 1 &&
+      new Set(choices.map((choice) => choice.value)).size === choices.length &&
+      new Set(choices.map((choice) => choice.label)).size === choices.length,
+    "선택지는 서로 다른 항목 2~6개로 보내 주세요.",
+  )
+  .default([]);
 export const agentResultSchema = z
   .object({
     kind: z.enum([
@@ -71,6 +86,8 @@ export const agentResultSchema = z
       "calendar",
     ]),
     text: z.string().trim().min(1).max(20000),
+    choices: choicesSchema,
+    awaitingAnswer: z.boolean().default(false),
     requestQuote: z.string().max(10000).default(""),
     items: z.array(receiptItemSchema).max(100).default([]),
     memories: z.array(z.string().trim().min(1).max(2000)).max(20).default([]),
@@ -78,6 +95,18 @@ export const agentResultSchema = z
     query: z.string().trim().max(500).default(""),
     range: z.object({ start: z.iso.date(), end: z.iso.date() }).optional(),
     sources: z.array(searchSourceSchema).max(5).default([]),
+  })
+  .overwrite((result) => ({
+    ...result,
+    awaitingAnswer: result.awaitingAnswer || result.choices.length > 0,
+  }))
+  .refine((result) => !result.awaitingAnswer || result.kind === "reply", {
+    path: ["awaitingAnswer"],
+    message: "되묻기는 질문 답변에만 사용할 수 있어요.",
+  })
+  .refine((result) => result.kind === "reply" || result.choices.length === 0, {
+    path: ["choices"],
+    message: "선택지는 질문 답변에만 사용할 수 있어요.",
   })
   .refine(
     (result) =>
@@ -99,6 +128,8 @@ export const messageSchema = z.object({
   created_at: z.string(),
   visibility: z.literal("private").default("private"),
   sources: z.array(searchSourceSchema).default([]),
+  choices: choicesSchema,
+  awaiting_answer: z.boolean().optional(),
 });
 export const receiptSchema = z.object({
   id: z.uuid(),

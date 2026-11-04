@@ -21,6 +21,7 @@ async function mockState() {
       role: "user" | "assistant",
       text: string,
       sequence: number,
+      awaiting_answer = false,
     ) => ({
       id: randomUUID(),
       role,
@@ -34,8 +35,10 @@ async function mockState() {
           : family.members[context.perspective]!.display_name,
       attachment_ids: [],
       sources: [],
+      choices: [],
+      awaiting_answer,
     });
-    const messages = [
+    const messages: Chat["messages"] = [
       message("user", "이번 주 토요일에 뭐 있어?", 1),
       message(
         "assistant",
@@ -48,8 +51,17 @@ async function mockState() {
         "assistant",
         "토요일 15:00에 일정이 겹쳐요. ‘가족 산책’ 일정을 삭제해 드릴까요?",
         5,
+        true,
       ),
     ];
+    messages.push({
+      ...message("assistant", "새 일정은 누구에게 보여 드릴까요?", 6),
+      awaiting_answer: true,
+      choices: [
+        { label: "공유 일정", value: "shared" },
+        { label: "개인 일정", value: "private" },
+      ],
+    });
     const runId = randomUUID();
     const settings = (context.values.get("chat:settings") as
       AiSettings | undefined) ?? {
@@ -163,6 +175,8 @@ export async function mockChatCommand(operation: string, raw: unknown) {
       attachment_ids: input.attachmentIds as string[],
       visibility: "private",
       sources: [],
+      choices: [],
+      awaiting_answer: false,
     });
     state.chat.runs.push({
       id: randomUUID(),

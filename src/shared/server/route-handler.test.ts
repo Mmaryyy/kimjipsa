@@ -85,3 +85,33 @@ describe("P10 서버 오류 로그", () => {
     expect(log).not.toHaveBeenCalled();
   });
 });
+
+it("BOT-07 검증 응답에는 첫 이슈의 필드만 더하고 입력값은 보내지 않아요", async () => {
+  const response = await handleRoute(
+    new Request("https://example.test/api/agent/complete"),
+    async () => {
+      z.object({
+        actions: z.array(
+          z.object({
+            payload: z.object({
+              event: z.object({
+                categoryId: z.uuid("카테고리를 선택해 주세요."),
+              }),
+            }),
+          }),
+        ),
+      }).parse({
+        actions: [{ payload: { event: { categoryId: "PRIVATE_VALUE" } } }],
+      });
+    },
+  );
+  expect(response.status).toBe(400);
+  expect(await response.json()).toEqual({
+    ok: false,
+    error: {
+      code: "validation_failed",
+      message: "카테고리를 선택해 주세요.",
+      field: "actions.0.payload.event.categoryId",
+    },
+  });
+});

@@ -14,6 +14,7 @@ const message = (id: string): Chat["messages"][number] => ({
   visibility: "private",
   attachment_ids: [],
   sources: [],
+  choices: [],
 });
 
 it("BOT-03 인사·기능 목록은 기존 대화 맨 앞에 있고 FAQ는 로컬 질문·답을 덧붙여요", () => {

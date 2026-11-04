@@ -127,7 +127,16 @@ export async function handleRoute<T>(
       );
     }
     return NextResponse.json(
-      { ok: false, error: { code: failure.code, message: failure.message } },
+      {
+        ok: false,
+        error: {
+          code: failure.code,
+          message: failure.message,
+          ...(error instanceof ZodError
+            ? { field: error.issues[0]?.path.join(".") }
+            : {}),
+        },
+      },
       {
         status: failure.status,
         headers,

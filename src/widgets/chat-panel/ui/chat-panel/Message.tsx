@@ -1,11 +1,12 @@
+import type { ActionProposal, Chat, Receipt } from "@/entities/chat-message";
+import { Button, Message, MessageContent, Text } from "@/shared/ui";
+
+import ChatActionProposal from "./Proposal";
 import ChatAvatar from "./Avatar";
-import type { Chat, Receipt, ActionProposal } from "@/entities/chat-message";
-import { cn } from "@/shared/lib";
-import { Text, Message, MessageContent } from "@/shared/ui";
 import ChatPhoto from "./Photo";
 import ChatRun from "./Run";
 import ReceiptCard from "./Receipt";
-import ChatActionProposal from "./Proposal";
+import { cn } from "@/shared/lib";
 
 const timestamp = new Intl.DateTimeFormat("ko-KR", {
   timeZone: "Asia/Seoul",
@@ -24,6 +25,9 @@ interface Props {
   now: number;
   cancelling: boolean;
   onCancel: (id: string) => void;
+  choicesDisabled?: boolean;
+  selectedChoice?: string;
+  onChoice?: (label: string) => void;
 }
 const ChatMessage = ({
   message,
@@ -34,6 +38,9 @@ const ChatMessage = ({
   now,
   cancelling,
   onCancel,
+  choicesDisabled = true,
+  selectedChoice,
+  onChoice,
 }: Props) => (
   <li data-message-id={message.id} className="space-y-2">
     <Message from={message.role}>
@@ -65,11 +72,33 @@ const ChatMessage = ({
               {message.text}
             </Text>
           )}
-          {message.sources.length > 0 && (
-            <ol
-              aria-label="웹 검색 출처"
-              className="mt-3 space-y-1 text-caption"
+          {message.role === "assistant" && message.choices.length > 0 && (
+            <div
+              role="group"
+              aria-label="답 고르기"
+              className="flex flex-wrap gap-2"
             >
+              {message.choices.map((choice) => (
+                <Button
+                  key={choice.value}
+                  variant="gray"
+                  size="sm"
+                  className={cn(
+                    "rounded-full border border-[var(--separator)] bg-transparent px-3 py-1",
+                    "text-caption text-foreground aria-pressed:border-primary",
+                    "aria-pressed:bg-[var(--accent-soft)] aria-pressed:text-primary disabled:opacity-40",
+                  )}
+                  aria-pressed={choice.label === selectedChoice}
+                  disabled={choicesDisabled}
+                  onClick={() => onChoice?.(choice.label)}
+                >
+                  {choice.label}
+                </Button>
+              ))}
+            </div>
+          )}
+          {message.sources.length > 0 && (
+            <ol aria-label="웹 검색 출처" className="space-y-1 text-caption">
               {message.sources.map((source, index) => (
                 <li key={source.url}>
                   <a
@@ -85,7 +114,7 @@ const ChatMessage = ({
             </ol>
           )}
           {message.attachment_ids.length > 0 && (
-            <div className="mt-2 grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {message.attachment_ids.map((id) => {
                 const attachment = attachments.get(id);
                 return (

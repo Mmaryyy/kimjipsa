@@ -31,29 +31,24 @@ const ChatHeader = ({ name, online, failed }: Props) => {
             "p-[calc(var(--sp-2)-var(--sp-1)/4)] object-contain",
           )}
         />
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <Text as="h1" variant="body" className="font-semibold">
-              김{name}
-            </Text>
-            <Badge>
-              <StatusBadge
-                variant={
-                  failed || online === false
-                    ? "error"
-                    : online
-                      ? "success"
-                      : "warning"
-                }
-                className="text-inherit [font-size:inherit]"
-              >
-                {connection}
-              </StatusBadge>
-            </Badge>
-          </div>
-          <Text as="p" variant="caption-sm" className="text-muted-foreground">
-            나만 보는 대화
+        <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
+          <Text as="h1" variant="body" className="font-semibold">
+            김{name}
           </Text>
+          <Badge>
+            <StatusBadge
+              variant={
+                failed || online === false
+                  ? "error"
+                  : online
+                    ? "success"
+                    : "warning"
+              }
+              className="text-inherit [font-size:inherit]"
+            >
+              {connection}
+            </StatusBadge>
+          </Badge>
         </div>
         <Button
           variant="gray"
@@ -76,9 +71,6 @@ const ChatHeader = ({ name, online, failed }: Props) => {
           <X aria-hidden="true" />
         </Button>
       </div>
-      <Text as="p" variant="caption" className="text-muted-foreground">
-        마지막 메시지 후 1시간이 지나면 대화 기록이 삭제돼요.
-      </Text>
     </header>
   );
 };

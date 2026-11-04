@@ -16,6 +16,7 @@ import {
   contextSchema,
   runtimeConfigSchema,
 } from "./hermes.mts";
+import { CloudError, readCloudResponse } from "./cloud-response.mts";
 import { searchWeb } from "./search.mts";
 import { withSnapshotChecks } from "./actions.mts";
 import { readToolRequest, type HouseholdReader } from "./read-tool.mts";
@@ -34,9 +35,13 @@ let activeJob: string | null = null;
 let lastError: string | null = null;
 const readToolToken = randomBytes(32).toString("hex");
 let householdReader: HouseholdReader | null = null;
-const log = (event: string, code?: string) =>
+const log = (
+  event: string,
+  code?: string,
+  diagnostic?: { message?: string; field?: string },
+) =>
   process.stdout.write(
-    `${JSON.stringify({ at: new Date().toISOString(), event, jobId: activeJob, code })}\n`,
+    `${JSON.stringify({ at: new Date().toISOString(), event, jobId: activeJob, code, ...diagnostic })}\n`,
   );
 const server = createServer((request, response) => {
   if (request.url === "/hermes/read") {
@@ -137,16 +142,7 @@ async function runConnected(config: GatewayConfig) {
       signal: AbortSignal.any([shutdown.signal, AbortSignal.timeout(30000)]),
       redirect: "error",
     });
-    const envelope = z
-      .object({
-        ok: z.boolean(),
-        data: z.unknown().optional(),
-        error: z.object({ code: z.string() }).optional(),
-      })
-      .parse(await response.json());
-    if (!response.ok || !envelope.ok)
-      throw new Error(envelope.error?.code ?? "worker_config_failed");
-    return envelope.data;
+    return readCloudResponse(response);
   }
   async function cloudConfig() {
     const result = runtimeConfigSchema.safeParse(
@@ -314,7 +310,16 @@ async function runConnected(config: GatewayConfig) {
               : "hermes_unavailable";
           await rpc("fail", { ...input, code }).catch(() => {});
           lastError = code;
-          log("job_stopped", code);
+          log(
+            "job_stopped",
+            code,
+            error instanceof CloudError
+              ? {
+                  message: error.detail,
+                  field: error.field,
+                }
+              : undefined,
+          );
         } finally {
           clearInterval(heartbeat);
           await hermes.finish();
