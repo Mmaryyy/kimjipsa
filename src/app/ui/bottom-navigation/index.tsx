@@ -1,13 +1,14 @@
 "use client";
-import Link from "next/link";
-import type { CSSProperties } from "react";
-import { cn, isCurrentPath } from "@/shared/lib";
-import { cartRoutes, chatPath } from "@/shared/config";
-import { useChatNavigation } from "@/features/chat-navigation";
-import { appNavigation, appNavigationWithBot } from "../../config";
-import { useTabLens } from "./use-tab-lens";
 
+import { appNavigation, appNavigationWithBot } from "../../config";
+import { cartRoutes, chatPath } from "@/shared/config";
+import { cn, isCurrentPath } from "@/shared/lib";
+
+import type { CSSProperties } from "react";
+import Link from "next/link";
+import { useChatNavigation } from "@/features/chat-navigation";
 import { useNavigationScroll } from "../../model/use-navigation-scroll";
+import { useTabLens } from "./use-tab-lens";
 
 const defaultHrefs = appNavigation.map((item) => item.href);
 const botHrefs = appNavigationWithBot.map((item) => item.href);
@@ -79,7 +80,7 @@ const BottomNavigation = ({ pathname }: Props) => {
         "fixed inset-x-3 bottom-[calc(var(--bottom-navigation-bottom)+env(safe-area-inset-bottom,0px))] z-40",
         "mx-auto max-w-120 lg:hidden",
         "origin-bottom transition-transform duration-[var(--dur)] ease-[var(--ease)]",
-        "data-[collapsed=true]:[transform:scale(0.9)] motion-reduce:transform-none motion-reduce:transition-none",
+        "data-[collapsed=true]:[transform:scale(0.85)] motion-reduce:transform-none motion-reduce:transition-none",
         "group touch-pan-y select-none [-webkit-touch-callout:none]",
         "[--lens-reveal:calc(var(--lens-lift,0)*var(--glass-optics-opacity))]",
         "motion-reduce:[--lens-reveal:0] forced-colors:[--lens-reveal:0]",
