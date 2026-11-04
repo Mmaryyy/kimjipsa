@@ -162,7 +162,7 @@ const AiSettingsForm = ({ settings, onSaved }: Props) => {
       <section
         data-od-id="set-memory"
         aria-label="가족 기억"
-        className="mt-10 space-y-3"
+        className="flex flex-col gap-3"
       >
         <GroupLabel>가족 기억</GroupLabel>
         {settings.memories.length === 0 && (

@@ -172,7 +172,9 @@ describe("CART-03 CART-07 CART-13 CART-14 제자리 처리", () => {
   );
   it("수량만 변경해 저장해요", async () => {
     showCart();
-    fireEvent.click(screen.getByRole("button", { name: "달걀 수량 변경" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "달걀 수량 2개, 눌러서 바꾸기" }),
+    );
     fireEvent.click(screen.getByRole("button", { name: "달걀 늘리기" }));
     await waitFor(() =>
       expect(state.write).toHaveBeenCalledWith(
@@ -183,12 +185,43 @@ describe("CART-03 CART-07 CART-13 CART-14 제자리 처리", () => {
       ),
     );
   });
+  it("CART-01 수량을 펼쳐 직접 입력하고 다른 항목이나 Esc로 접어요", async () => {
+    showCart();
+    const quantity = () =>
+      screen.getByRole("button", { name: /달걀 수량 .*눌러서 바꾸기/ });
+    expect(quantity()).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(quantity());
+    expect(screen.getByRole("button", { name: "달걀 늘리기" })).toHaveFocus();
+    fireEvent.click(
+      screen.getByRole("button", { name: "달걀 수량 직접 입력" }),
+    );
+    const input = screen.getByRole("textbox", { name: "달걀 수량" });
+    fireEvent.change(input, { target: { value: "3.5" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() =>
+      expect(state.write).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: "save",
+          item: expect.objectContaining({ quantity: 3.5 }),
+        }),
+      ),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: /두부 수량 .*눌러서 바꾸기/ }),
+    );
+    expect(quantity()).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: "두부 늘리기" })).toHaveFocus();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(
+      screen.getByRole("button", { name: /두부 수량 .*눌러서 바꾸기/ }),
+    ).toHaveAttribute("aria-expanded", "false");
+  });
   it("오프라인에서는 수량과 처리를 막아요", () => {
     state.items[0]!.is_checked = true;
     state.offline = true;
     showCart();
     expect(
-      screen.getByRole("button", { name: "달걀 수량 변경" }),
+      screen.getByRole("button", { name: "달걀 수량 2개, 눌러서 바꾸기" }),
     ).toBeDisabled();
     expect(screen.getByRole("button", { name: "구매 완료(1)" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "삭제" })).toBeDisabled();

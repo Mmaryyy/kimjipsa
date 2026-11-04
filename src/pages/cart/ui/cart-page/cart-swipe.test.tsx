@@ -75,7 +75,7 @@ describe("CART-13 스와이프 제스처", () => {
     pointer(row, "pointermove", 100, 30);
     // Touch capture moves from the child hit target to the row while dragging.
     pointer(
-      screen.getByRole("button", { name: "두부 수량 변경" }),
+      screen.getByRole("button", { name: "두부 수량 1모, 눌러서 바꾸기" }),
       "lostpointercapture",
       100,
       30,
@@ -125,7 +125,9 @@ describe("CART-13 스와이프 제스처", () => {
     row.setPointerCapture = vi.fn();
     const checkbox = screen.getByRole("checkbox", { name: "두부 담음" });
     const name = screen.getByRole("button", { name: "두부" });
-    const quantity = screen.getByRole("button", { name: "두부 수량 변경" });
+    const quantity = screen.getByRole("button", {
+      name: "두부 수량 1모, 눌러서 바꾸기",
+    });
     const content = checkbox.parentElement;
     pointer(row, "pointerdown", 300, 30);
     pointer(row, "pointermove", 260, 30);
@@ -147,9 +149,7 @@ describe("CART-13 스와이프 제스처", () => {
     fireEvent.click(quantity);
     expect(onEdit).not.toHaveBeenCalled();
     expect(onCheck).not.toHaveBeenCalled();
-    expect(
-      screen.queryByRole("group", { name: "두부" }),
-    ).not.toBeInTheDocument();
+    expect(quantity).toHaveAttribute("aria-expanded", "false");
     pointer(row, "pointerdown", 100, 30);
     pointer(row, "pointermove", 220, 30);
     pointer(row, "pointerup", 220, 30);
@@ -163,7 +163,9 @@ describe("CART-13 스와이프 제스처", () => {
     render(
       <SwipeExample onDelete={vi.fn()} onQuantityChange={onQuantityChange} />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "두부 수량 변경" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "두부 수량 1모, 눌러서 바꾸기" }),
+    );
     const row = screen.getByRole("listitem");
     row.setPointerCapture = vi.fn();
     pointer(row, "pointerdown", 300, 30);
@@ -176,6 +178,35 @@ describe("CART-13 스와이프 제스처", () => {
     ).toBeDisabled();
     fireEvent.click(increase);
     expect(onQuantityChange).not.toHaveBeenCalled();
+  });
+  it("CART-01 스테퍼 터치는 수량만 바꾸고 이름과 숨긴 스와이프 버튼을 유지해요", () => {
+    const onQuantityChange = vi.fn();
+    render(
+      <SwipeExample onDelete={vi.fn()} onQuantityChange={onQuantityChange} />,
+    );
+    const row = screen.getByRole("listitem");
+    row.setPointerCapture = vi.fn();
+    const quantity = screen.getByRole("button", {
+      name: "두부 수량 1모, 눌러서 바꾸기",
+    });
+    pointer(quantity, "pointerdown", 280, 30);
+    pointer(row, "pointermove", 250, 30);
+    pointer(row, "pointerup", 250, 30);
+    fireEvent.click(quantity);
+    const increase = screen.getByRole("button", { name: "두부 늘리기" });
+    expect(increase).toBeEnabled();
+    fireEvent.click(increase);
+    expect(onQuantityChange).toHaveBeenCalledExactlyOnceWith(2);
+    expect(
+      screen.getByRole("button", { name: "두부", exact: true }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "두부 구매 완료" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "두부 삭제" }),
+    ).not.toBeInTheDocument();
+    expect(row.setPointerCapture).not.toHaveBeenCalled();
   });
   it("세로 스크롤과 취소한 제스처는 동작 버튼을 열지 않아요", () => {
     render(<SwipeExample onDelete={vi.fn()} />);

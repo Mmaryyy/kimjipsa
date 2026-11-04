@@ -61,9 +61,16 @@ const CartItemRow = ({
       data-od-id={`cart-item-${index}`}
       aria-busy={pending}
       data-cart-row={item.id}
-      className="relative overflow-hidden"
+      className="relative overflow-clip"
       onPointerDown={(event) => {
-        if (disabled || !event.isPrimary || event.button !== 0) return;
+        if (
+          disabled ||
+          !event.isPrimary ||
+          event.button !== 0 ||
+          (event.target instanceof Element &&
+            event.target.closest('[role="group"]'))
+        )
+          return;
         dragged.current = false;
         gesture.current = {
           x: event.clientX,
@@ -152,7 +159,7 @@ const CartItemRow = ({
           className="mt-1"
         />
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-baseline gap-x-2">
+          <div className="flex flex-wrap justify-between items-baseline gap-x-2">
             <TextButton
               className={cn([
                 "min-h-0 min-w-0 max-w-full shrink justify-start whitespace-normal",
@@ -170,37 +177,21 @@ const CartItemRow = ({
                 {item.name}
               </span>
             </TextButton>
-            {quantityEditing ? (
-              <div className="-my-2 flex flex-wrap items-center gap-1">
-                <QuantityStepper
-                  label={item.name}
-                  value={item.quantity}
-                  min={Math.min(1, item.quantity)}
-                  unit={unit}
-                  allowDirectInput
-                  disabled={contentDisabled}
-                  onValueChange={onQuantityChange}
-                />
-                <TextButton
-                  size="sm"
-                  disabled={contentDisabled}
-                  onClick={() => setQuantityEditing(false)}
-                >
-                  완료
-                </TextButton>
-              </div>
-            ) : (
-              <TextButton
-                size="sm"
-                className="-my-2 min-h-11 min-w-11 p-0 font-normal text-muted-foreground"
-                aria-label={`${item.name} 수량 변경`}
+            <div className="-my-2 inline-flex items-center">
+              <QuantityStepper
+                collapsible={{
+                  open: quantityEditing,
+                  onOpenChange: setQuantityEditing,
+                }}
+                label={item.name}
+                value={item.quantity}
+                min={Math.min(1, item.quantity)}
+                unit={unit}
+                allowDirectInput
                 disabled={contentDisabled}
-                onClick={() => setQuantityEditing(true)}
-              >
-                {item.quantity}
-                {unit}
-              </TextButton>
-            )}
+                onValueChange={onQuantityChange}
+              />
+            </div>
           </div>
           {item.memo && (
             <p className="mt-0.5 text-caption text-muted-foreground">
