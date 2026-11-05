@@ -28,7 +28,7 @@ const ChatComposer = ({ disabled = false, reply }: Props) => {
     <PromptInput
       data-od-id="chat-input"
       aria-label="집사에게 메시지 보내기"
-      className="space-y-2"
+      className="space-y-2 rounded-[36px]!"
       onSubmit={(event) => {
         event.preventDefault();
         if (canSend) send.mutate();

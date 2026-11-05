@@ -52,7 +52,7 @@ const ChatHeader = ({ name, online, failed }: Props) => {
         </div>
         <Button
           variant="gray"
-          className="bg-transparent"
+          className="bg-transparent text-primary!"
           size="icon"
           aria-label="최소화"
           data-od-id="chat-minimize"
@@ -62,7 +62,7 @@ const ChatHeader = ({ name, online, failed }: Props) => {
         </Button>
         <Button
           variant="gray"
-          className="bg-transparent"
+          className="bg-transparent text-primary!"
           size="icon"
           aria-label="닫기"
           data-od-id="chat-close"
