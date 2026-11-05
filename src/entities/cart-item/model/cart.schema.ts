@@ -44,6 +44,7 @@ export const cartCommandSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("undo-restock"), token: z.uuid() }),
   z.object({
     action: z.literal("add"),
+    autoCategory: z.boolean().optional(),
     item: cartInputSchema,
     duplicate: z.enum(["ask", "merge", "separate"]).default("ask"),
   }),

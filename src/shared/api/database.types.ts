@@ -297,6 +297,10 @@ export type Database<
         Args: { operation: string; input?: Json };
         Returns: Json;
       };
+      cart_category_command: {
+        Args: { operation: string; input?: Json };
+        Returns: Json;
+      };
       agent_cleanup: {
         Args: { worker_secret: string; operation: string; input?: Json };
         Returns: Json;

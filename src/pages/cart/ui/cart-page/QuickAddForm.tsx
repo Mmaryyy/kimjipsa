@@ -1,3 +1,4 @@
+import { LoaderCircle } from "lucide-react";
 import { CartDuplicateDialog } from "@/features/cart-add";
 import { Button, Input, ConfirmDialog } from "@/shared/ui";
 import type { useCartQuickAdd } from "../../model/use-cart-quick-add";
@@ -23,6 +24,7 @@ const CartQuickAddForm = ({ quickAdd, pending, offline }: Props) => {
       <form
         data-od-id="cart-add-form"
         className="mt-2 flex gap-2"
+        aria-busy={add.pending}
         onSubmit={(event) => {
           event.preventDefault();
           if (name.trim() && !pending && !add.pending) onQuickAdd();
@@ -31,6 +33,7 @@ const CartQuickAddForm = ({ quickAdd, pending, offline }: Props) => {
         <div className="glass-surface relative flex min-w-0 flex-1 items-center">
           <Input
             aria-label="항목 추가"
+            aria-describedby="cart-add-status"
             placeholder="항목 추가 (예: 두부 2모)"
             value={name}
             onChange={(event) => onNameChange(event.target.value)}
@@ -40,15 +43,28 @@ const CartQuickAddForm = ({ quickAdd, pending, offline }: Props) => {
         </div>
         <Button
           type="submit"
+          aria-label={add.pending ? "장바구니에 담는 중" : undefined}
           variant="glass"
           size="sm"
           className="text-primary disabled:opacity-40"
           data-od-id="cart-add-submit"
           disabled={pending || add.pending || !name.trim()}
         >
-          추가
+          <span className="relative">
+            <span className={add.pending ? "invisible" : undefined}>추가</span>
+            {add.pending && (
+              <LoaderCircle
+                size={16}
+                aria-hidden
+                className="absolute inset-0 m-auto animate-spin motion-reduce:animate-none"
+              />
+            )}
+          </span>
         </Button>
       </form>
+      <p id="cart-add-status" role="status" className="sr-only">
+        {add.pending ? "카테고리를 확인하고 장바구니에 담고 있어요." : ""}
+      </p>
       {add.error && !add.duplicate && (
         <p role="alert" className="mt-2 text-caption text-error-text">
           {add.error}

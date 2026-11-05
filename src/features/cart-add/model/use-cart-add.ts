@@ -6,7 +6,10 @@ import {
   type CartItem,
 } from "@/entities/cart-item";
 import { useInventoryMeta } from "@/entities/inventory-item";
-export function useCartAdd(onAdded?: (message: string) => void) {
+export function useCartAdd(
+  onAdded?: (message: string) => void,
+  autoCategory = false,
+) {
   const action = useCartActions();
   const meta = useInventoryMeta();
   const [duplicate, setDuplicate] = useState<{
@@ -22,6 +25,7 @@ export function useCartAdd(onAdded?: (message: string) => void) {
           action: "add",
           item,
           duplicate: choice,
+          autoCategory,
         });
         if (result.duplicate) {
           setDuplicate({ item, existing: result.duplicate });
@@ -45,7 +49,7 @@ export function useCartAdd(onAdded?: (message: string) => void) {
         return false;
       }
     },
-    [action, onAdded, duplicate, meta.data],
+    [action, onAdded, duplicate, meta.data, autoCategory],
   );
   return { onAdd, duplicate, setDuplicate, error, pending: action.isPending };
 }

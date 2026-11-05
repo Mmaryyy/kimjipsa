@@ -1,7 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { ApiError, type Json } from "@/shared/api";
-import { compareItemNames } from "@/shared/lib";
+import { compareItemNames, normalizeItemName } from "@/shared/lib";
 import {
   createServerSupabaseClient,
   mockContext,
@@ -11,6 +11,7 @@ import {
 import { cartCommandSchema, cartItemSchema } from "../model/cart.schema";
 import { frequentCartItems } from "../lib/cart.utils";
 import type { CartData, CartWriteResult } from "./type";
+import { addWithCategory } from "./category.server";
 const errors = {
   unauthorized: [401, "로그인이 필요해요."],
   family_required: [403, "가정에 먼저 참여해 주세요."],
@@ -94,6 +95,8 @@ export async function writeCart(raw: unknown): Promise<CartWriteResult> {
   const mock = await mockContext();
   if (!mock) {
     const { client } = await cartContext();
+    if (command.action === "add" && command.autoCategory)
+      return addWithCategory(client, command);
     const result =
       command.action === "undo-restock"
         ? await client.rpc("undo_cart_restock", { token: command.token })
@@ -108,6 +111,21 @@ export async function writeCart(raw: unknown): Promise<CartWriteResult> {
     mockJson("inventory-meta"),
     mockJson("family"),
   ]);
+  if (command.action === "add" && command.autoCategory) {
+    const normalized = normalizeItemName(command.item.name);
+    const stock = inventory.find(
+      (item) => normalizeItemName(item.name) === normalized && item.category_id,
+    );
+    const purchase = items
+      .filter((item) => item.purchased_at && item.category_id)
+      .sort((a, b) => b.purchased_at!.localeCompare(a.purchased_at!))
+      .find((item) => normalizeItemName(item.name) === normalized);
+    command.item.category_id =
+      stock?.category_id ??
+      purchase?.category_id ??
+      meta.categories.find((entry) => entry.name === "기타")?.id ??
+      null;
+  }
   const actor = family.members[mock.perspective]!.user_id;
   const undoKey = "cart-restock-undo";
   if (command.action === "undo-restock") {

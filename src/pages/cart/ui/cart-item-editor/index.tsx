@@ -28,12 +28,13 @@ const CartItemEditor = ({ item, meta, disabled, onClose }: Props) => {
     resolver: zodResolver(cartInputSchema),
     defaultValues: item,
   });
+  const { isDirty, errors } = form.formState;
   const action = useCartActions();
   const [discard, setDiscard] = useState(false);
   const [error, setError] = useState("");
   const save = form.handleSubmit(async (input) => {
     if (disabled) return;
-    if (!form.formState.isDirty) {
+    if (!isDirty) {
       onClose();
       return;
     }
@@ -46,7 +47,7 @@ const CartItemEditor = ({ item, meta, disabled, onClose }: Props) => {
   });
   const close = () => {
     if (action.isPending) return;
-    if (form.formState.isDirty) setDiscard(true);
+    if (isDirty) setDiscard(true);
     else onClose();
   };
   return (
@@ -81,8 +82,8 @@ const CartItemEditor = ({ item, meta, disabled, onClose }: Props) => {
               key={key}
               label={label}
               htmlFor={`cart-edit-${key}`}
-              invalid={!!form.formState.errors[key]}
-              error={form.formState.errors[key]?.message}
+              invalid={!!errors[key]}
+              error={errors[key]?.message}
             >
               {(props) => (
                 <Input

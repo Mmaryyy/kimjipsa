@@ -178,7 +178,7 @@ export async function readAttachment(id: string) {
     throw new ApiError("attachment_expired", "사진을 불러오지 못했어요.", 410);
   return { url: result.data.signedUrl };
 }
-function createAgentClient(request: Request) {
+export function createAgentClient(request: Request) {
   const authorization = request.headers.get("authorization");
   if (!authorization?.startsWith("Bearer "))
     throw new ApiError("unauthorized", "인증이 필요해요.", 401);

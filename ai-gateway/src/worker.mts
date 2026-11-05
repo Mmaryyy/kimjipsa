@@ -163,6 +163,45 @@ async function runConnected(config: GatewayConfig) {
         rerun = false;
         shutdown.signal.throwIfAborted();
         const runtime = await cloudConfig();
+        const categoryJob = z
+          .object({
+            id: z.uuid(),
+            leaseToken: z.uuid(),
+            name: z.string().max(100),
+            categories: z.array(z.string().max(30)),
+          })
+          .nullable()
+          .parse(
+            await cloud("/api/agent/cart-category", { operation: "claim" }),
+          );
+        if (categoryJob) {
+          const lease = {
+            id: categoryJob.id,
+            leaseToken: categoryJob.leaseToken,
+          };
+          try {
+            const category = await hermes.recommendCategory(
+              categoryJob.id,
+              categoryJob.name,
+              categoryJob.categories,
+              AbortSignal.any([shutdown.signal, AbortSignal.timeout(75000)]),
+            );
+            await cloud("/api/agent/cart-category", {
+              ...lease,
+              operation: category === null ? "fail" : "complete",
+              category: category ?? undefined,
+            });
+          } catch {
+            await cloud("/api/agent/cart-category", {
+              ...lease,
+              operation: "fail",
+            }).catch(() => {});
+          } finally {
+            await hermes.finish();
+          }
+          rerun = true;
+          continue;
+        }
         await hermes.ready(shutdown.signal);
         const raw = await rpc("claim");
         if (raw === null) {

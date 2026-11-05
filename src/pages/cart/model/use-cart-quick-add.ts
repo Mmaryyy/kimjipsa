@@ -30,7 +30,7 @@ export function useCartQuickAdd(
     },
     [onMessage],
   );
-  const add = useCartAdd(onAdded);
+  const add = useCartAdd(onAdded, true);
   const onQuickAdd = useCallback(() => {
     const { unknownUnit: unitName, ...parsed } = parseCartQuickInput(
       name,

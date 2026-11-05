@@ -1,4 +1,5 @@
 export {
+  createAgentClient,
   listChat,
   sendChat,
   cancelRun,

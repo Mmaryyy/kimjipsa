@@ -157,3 +157,16 @@ agent_runs의 기본 상태는 queued, running, completed, failed, cancelled, un
 
 앱 담당은 A1에서 A7까지와 클라우드 설정을, 맥미니 담당은 M1에서 M6까지와 로컬 운영을 맡는다. 서로의 내부 구현을 복제하지 않고, 연동 규약과 단계별 인수 조건으로 작업을 연결한다.
 
+## 2026-11-05 장바구니 카테고리 추천 (CART-01, P10.11)
+
+채팅·기억을 만들지 않는 `cart-category` 요청을 사용한다. `20261105020000_cart_category_suggestions.sql`의 비공개 `private.cart_category_requests`에 영속 저장하며 기존 `worker:<id>:jobs`의 내용 없는 `job.ready` 신호와 60초 보정 조회를 재사용한다. 기존 채팅 `agent_runs`·결과 스키마는 바꾸지 않는다.
+
+- 브라우저는 기존 `POST /api/cart`의 add에 `autoCategory=true`만 보낸다. 서버는 요청자 세션의 `cart_category_command` prepare/status/add를 호출한다. 가정은 DB에서 세션으로 정한다. 정규화는 기존 `normalizeItemName`과 같은 SQL `private.normalize_cart_name`을 재사용하고 재고 → 최신 구매 기록 순으로 찾는다.
+- 일치가 없으면 요청에 품목 이름과 같은 가정의 카테고리 목록 스냅샷을 저장한다. 최근 2분 내 워커 신호가 없으면 기다리지 않고 기타로 담는다. 온라인이면 서버의 단일 상수 `categoryWaitMs=2500`까지만 상태를 조회한다. 대기 종료는 영속 요청을 취소하지 않는다.
+- 인증된 워커는 `POST /api/agent/cart-category`로 claim/complete/fail을 보낸다. claim은 해당 워커의 가정만 선점하고 id·leaseToken·name·categories(이름 목록)를 반환한다. 모델에는 name·categories만 보내고 ID·토큰은 보내지 않는다. 기억·도구가 꺼진 기존 격리 Hermes 프로필로 처리한다. 모델 키 없음·장애는 fail로 종료한다.
+- 임대는 90초, 모델 처리 상한은 75초다. 만료 임대 결과는 거절하고 재실행하지 않는다. 미선점 요청은 워커가 복구될 때까지 유지하며 완료·실패한 기록만 1시간 뒤 다음 prepare/claim 등 호출에서 가정 범위로 정리한다. 게이트웨이가 꺼진 동안에도 요청을 남겨 복구 후 처리할 수 있다.
+- 응답은 스냅샷에 있는 정확한 카테고리 이름만 허용하고 저장 시에도 같은 가정에 남아 있는 카테고리인지 확인한다. 목록 밖·삭제된 카테고리는 무시한다.
+- add는 기존 write_cart를 같은 트랜잭션으로 호출해 완료된 추천 또는 기타로 담고 새 항목 ID에만 요청을 연결한다. 중복 안내·수량 병합에는 연결하지 않는다. add 전 완료·add 후 완료 모두 같은 가정 잠금으로 직렬화한다.
+- 항목의 카테고리·이름·구매 상태가 바뀌면 요청 연결을 끊는 트리거로 늦은 응답을 무시한다. 카테고리를 바꿨다가 되돌려도 덮어쓰지 않는다. 늦은 저장은 기존 cart_items Realtime으로 화면에 반영한다. 새 테이블의 직접 조회·쓰기는 허용하지 않으며 service_role·새 환경 변수는 없다.
+
+배포 시 앱·워커 코드와 새 로컬 검증용 마이그레이션을 함께 준비한다. 원격 마이그레이션 적용과 워커 실행 복사본 갱신은 사람이 한다.

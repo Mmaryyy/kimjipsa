@@ -177,6 +177,42 @@ describe("CART-03 CART-07 CART-13 CART-14 제자리 처리", () => {
       expect(state.items).toHaveLength(2 - count);
     },
   );
+  it("CART-06 SCN-CART-1 링크를 수정해 저장 명령으로 보내요", async () => {
+    showCart();
+    fireEvent.click(screen.getByRole("button", { name: "달걀" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "쇼핑몰 링크" }), {
+      target: { value: "https://example.com/eggs" },
+    });
+    fireEvent.click(
+      within(screen.getByRole("dialog")).getAllByRole("button", {
+        name: "저장",
+      })[0]!,
+    );
+    await waitFor(() =>
+      expect(state.write).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: "save",
+          item: expect.objectContaining({
+            link_url: "https://example.com/eggs",
+          }),
+        }),
+      ),
+    );
+  });
+  it("CART-06 SCN-CART-1 바꾸고 닫으면 저장 확인을 보여요", async () => {
+    showCart();
+    fireEvent.click(screen.getByRole("button", { name: "달걀" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "쇼핑몰 링크" }), {
+      target: { value: "https://example.com/eggs" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "취소" }));
+    expect(
+      await screen.findByRole("alertdialog", {
+        name: /변경 사항을 저장할까요\?/,
+      }),
+    ).toBeVisible();
+    expect(state.write).not.toHaveBeenCalled();
+  });
   it("수량만 변경해 저장해요", async () => {
     showCart();
     fireEvent.click(
