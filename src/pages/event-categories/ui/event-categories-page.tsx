@@ -2,9 +2,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ChevronLeft, Plus } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { useEventCategories, type EventCategory } from "@/entities/event";
 import {
+  Button,
   EmptyState,
   ErrorState,
   ListSkeleton,
@@ -56,6 +57,15 @@ export function EventCategoriesPage() {
         <PageHeader
           odId="lists"
           title="일정 카테고리"
+          actions={
+            <Button
+              variant="glass"
+              data-od-id="lists-add"
+              onClick={() => setEditing(null)}
+            >
+              추가
+            </Button>
+          }
           navigation={
             <Link
               href={fromCalendar ? eventRoutes.calendar : settingsPath}
@@ -76,14 +86,6 @@ export function EventCategoriesPage() {
         data-od-id="lists-section"
       >
         <CategoryList onEdit={setEditing} />
-        <TextButton
-          className="mt-3"
-          data-od-id="lists-add"
-          onClick={() => setEditing(null)}
-        >
-          <Plus size={18} />
-          카테고리 추가
-        </TextButton>
       </section>
       <Sheet
         open={editing !== undefined}
