@@ -203,6 +203,22 @@
       "sort_order": 10,
       "icon_kind": null,
       "icon_value": ""
+    },
+    {
+      "id": "846fbdb6-80c1-47ad-a44e-8abc00b742b0",
+      "name": "통",
+      "enabled": true,
+      "sort_order": 11,
+      "icon_kind": null,
+      "icon_value": ""
+    },
+    {
+      "id": "1226424f-466d-4b86-a4b3-d9768008d8d6",
+      "name": "번들",
+      "enabled": true,
+      "sort_order": 12,
+      "icon_kind": null,
+      "icon_value": ""
     }
   ],
   "expiry_days": 3

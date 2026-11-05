@@ -10,12 +10,12 @@ import {
 import { AppLayout } from "@/app/ui";
 import type { ReactNode } from "react";
 import { ToastProvider } from "@/shared/ui";
-import { themeModeStorageKey } from "@/shared/config";
 import { themeBackground } from "@/app/config/theme.server";
+import { themeModeStorageKey } from "@/shared/config";
 
-const title = "김집사 | 집사야, 할 일이 있다";
+const title = "김집사 | 김집사, 일정 등록해~";
 const description =
-  "같이 사는 우리의 일정과 살림을 챙기는 내 손안의 합법적 따까리. 일단 뭐부터 할까요?";
+  "우리집 일정과 살림을 챙기는 내 손안의 합법적 따까리. 일단 뭐부터 할까요?";
 const ogImage = { url: "/images/thumbnail.png", width: 1200, height: 630 };
 
 export const metadata: Metadata = {
@@ -45,6 +45,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  maximumScale: 1,
   viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: themeBackground.light },

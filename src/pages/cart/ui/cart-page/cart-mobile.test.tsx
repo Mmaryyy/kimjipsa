@@ -105,6 +105,9 @@ describe("CART-03 CART-07 CART-13 CART-14 제자리 처리", () => {
       </ToastProvider>,
     );
     expect(screen.getByRole("button", { name: "구매 완료(1)" })).toBeVisible();
+    const actions = document.querySelector('[data-od-id="cart-actions"]')!;
+    expect(actions).toHaveAttribute("data-cart-actions-visible", "true");
+    expect(actions).not.toHaveAttribute("inert");
     expect(
       screen.getByRole("checkbox", { name: "달걀 담음" }).closest("li"),
     ).toBe(row);
@@ -122,6 +125,9 @@ describe("CART-03 CART-07 CART-13 CART-14 제자리 처리", () => {
     expect(
       screen.queryByRole("button", { name: /구매 완료/ }),
     ).not.toBeInTheDocument();
+    expect(actions).toHaveAttribute("data-cart-actions-visible", "false");
+    expect(actions).toHaveAttribute("inert");
+    expect(actions).toHaveAttribute("aria-hidden", "true");
   });
   it("SCN-CART-5 반영 없이 닫으면 체크를 유지해요", async () => {
     state.items[0]!.is_checked = true;

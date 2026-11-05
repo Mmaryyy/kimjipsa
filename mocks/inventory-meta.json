@@ -243,6 +243,14 @@
       "sort_order": 15,
       "icon_kind": null,
       "icon_value": ""
+    },
+    {
+      "id": "3bddd938-ab57-422c-92e7-60128502f2dd",
+      "name": "번들",
+      "enabled": true,
+      "sort_order": 16,
+      "icon_kind": null,
+      "icon_value": ""
     }
   ],
   "expiry_days": 3

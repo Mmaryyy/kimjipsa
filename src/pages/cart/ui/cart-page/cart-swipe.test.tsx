@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CartItem } from "@/entities/cart-item";
 import CartItemRow from "./Row";
@@ -20,12 +26,16 @@ const item: CartItem = {
 };
 const SwipeExample = ({
   onDelete,
+  pending = false,
+  checked = false,
   onPurchase = vi.fn(),
   onCheck = vi.fn(),
   onEdit = vi.fn(),
   onQuantityChange = vi.fn(),
 }: {
   onDelete: () => void;
+  pending?: boolean;
+  checked?: boolean;
   onPurchase?: () => void;
   onCheck?: () => void;
   onEdit?: () => void;
@@ -34,13 +44,13 @@ const SwipeExample = ({
   const [open, setOpen] = useState(false);
   return (
     <CartItemRow
-      item={item}
+      item={{ ...item, is_checked: checked }}
       index={0}
       unit="모"
       checkedBy="나"
       open={open}
       disabled={false}
-      pending={false}
+      pending={pending}
       onOpenChange={setOpen}
       onPurchase={onPurchase}
       onQuantityChange={onQuantityChange}
@@ -222,5 +232,57 @@ describe("CART-13 스와이프 제스처", () => {
     expect(
       screen.queryByRole("button", { name: "두부 삭제" }),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("CART-03 저장 진행 표시", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it("300ms 뒤 체크 표시 위에 링을 겹치고 저장이 끝나면 바로 지워요", () => {
+    vi.useFakeTimers();
+    const onDelete = vi.fn();
+    const { container, rerender } = render(
+      <SwipeExample onDelete={onDelete} pending checked />,
+    );
+    const checkbox = screen.getByRole("checkbox");
+    const content = checkbox.parentElement;
+    const spinner = () => container.querySelector(".lucide-loader-circle");
+    expect(checkbox).toBeChecked();
+    expect(screen.getByRole("listitem")).toHaveAttribute("aria-busy", "true");
+    expect(screen.getByRole("status")).toHaveClass("sr-only");
+    expect(screen.getByRole("status")).toHaveTextContent("저장 중");
+    expect(spinner()).toBeNull();
+    expect(content).not.toHaveClass("opacity-70");
+    act(() => vi.advanceTimersByTime(299));
+    expect(spinner()).toBeNull();
+    expect(content).not.toHaveClass("opacity-70");
+    act(() => vi.advanceTimersByTime(1));
+    expect(spinner()).toHaveClass("size-5", "motion-safe:animate-spin");
+    expect(content).toHaveClass("opacity-70", "motion-reduce:transition-none");
+    expect(checkbox).toBeChecked();
+    expect(checkbox.querySelector(".lucide-check")).not.toBeNull();
+    expect(
+      container.querySelector(".lucide-shopping-cart-plus"),
+    ).toHaveAttribute("aria-hidden", "true");
+    rerender(<SwipeExample onDelete={onDelete} checked />);
+    expect(spinner()).toBeNull();
+    expect(content).not.toHaveClass("opacity-70");
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.getByRole("listitem")).toHaveAttribute("aria-busy", "false");
+  });
+
+  it("빠른 저장은 링과 흐림을 남기지 않아요", () => {
+    vi.useFakeTimers();
+    const onDelete = vi.fn();
+    const { container, rerender } = render(
+      <SwipeExample onDelete={onDelete} pending />,
+    );
+    act(() => vi.advanceTimersByTime(200));
+    rerender(<SwipeExample onDelete={onDelete} />);
+    act(() => vi.advanceTimersByTime(300));
+    expect(container.querySelector(".lucide-loader-circle")).toBeNull();
+    expect(screen.getByRole("checkbox").parentElement).not.toHaveClass(
+      "opacity-70",
+    );
   });
 });

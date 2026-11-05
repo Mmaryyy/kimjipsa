@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { Search } from "lucide-react";
-import { cn, normalizeItemName } from "@/shared/lib";
+import { markHistoryBack, cn, normalizeItemName } from "@/shared/lib";
 import { inventoryRoutes, inventoryListPath } from "@/shared/config";
 import {
   useInventory,
@@ -241,7 +241,7 @@ const InventoryPage = () => {
         <div className="mt-2 grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3">
           <label
             data-od-id="inv-search"
-            className="flex items-center gap-2 rounded-sm bg-muted px-3"
+            className="glass-surface relative flex h-[var(--hit)] items-center gap-2 px-3"
           >
             <Search
               aria-hidden
@@ -408,6 +408,9 @@ const InventoryPage = () => {
               <Link
                 className="flex min-h-[var(--row-min)] items-center text-primary"
                 href={inventoryListPath(kind, "inventory")}
+                onNavigate={() => {
+                  markHistoryBack(inventoryRoutes.lists);
+                }}
                 data-od-id={odId}
               >
                 {label} 관리

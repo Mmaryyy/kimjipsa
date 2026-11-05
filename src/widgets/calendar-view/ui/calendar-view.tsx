@@ -29,7 +29,7 @@ import {
 } from "@/entities/event";
 import { useHolidays, type Holiday, type SpecialDay } from "@/entities/holiday";
 import { eventRoutes } from "@/shared/config";
-import { cn } from "@/shared/lib";
+import { markHistoryBack, cn } from "@/shared/lib";
 import {
   Button,
   categoryColors,
@@ -1007,7 +1007,10 @@ function CalendarContent({
               </Button>
               <Button variant="glass" asChild>
                 <Link
-                  href={eventRoutes.categories}
+                  href={`${eventRoutes.categories}?from=calendar`}
+                  onNavigate={() => {
+                    markHistoryBack(eventRoutes.categories);
+                  }}
                   aria-label="일정 카테고리 설정"
                 >
                   설정

@@ -5,12 +5,13 @@ interface Props {
   label: ReactNode;
   odId?: string;
   href?: ComponentProps<typeof Link>["href"];
+  onNavigate?: ComponentProps<typeof Link>["onNavigate"];
   action?: ReactNode;
 }
 
 const rowClassName = "flex min-h-11 items-center justify-between gap-3";
 
-const SettingsRow = ({ label, odId, href, action }: Props) => {
+const SettingsRow = ({ label, odId, href, onNavigate, action }: Props) => {
   const content = (
     <>
       {label}
@@ -26,7 +27,12 @@ const SettingsRow = ({ label, odId, href, action }: Props) => {
     );
 
   return (
-    <Link href={href} data-od-id={odId} className={rowClassName}>
+    <Link
+      href={href}
+      onNavigate={onNavigate}
+      data-od-id={odId}
+      className={rowClassName}
+    >
       {content}
     </Link>
   );

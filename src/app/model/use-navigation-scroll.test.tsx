@@ -4,6 +4,8 @@ import { useNavigationScroll } from "./use-navigation-scroll";
 
 afterEach(() => {
   cleanup();
+  delete document.documentElement.dataset.navigationScrollLocked;
+  delete document.documentElement.dataset.navigationScrollRestoreUntil;
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   vi.useRealTimers();
@@ -60,4 +62,31 @@ it("BOT-01 입력 중 키보드가 열리고 닫히는 것을 두 탐색 요소�
   act(() => viewport.dispatchEvent(new Event("resize")));
   expect(result.current.keyboardOpen).toBe(false);
   input.remove();
+});
+
+it("BOT-01 채팅 문서 잠금과 복원 스크롤은 탐색 버튼을 접거나 숨기지 않아요", () => {
+  vi.stubGlobal("matchMedia", () => ({ matches: false }));
+  vi.stubGlobal("scrollY", 360);
+  vi.stubGlobal("innerHeight", 800);
+  vi.spyOn(document.documentElement, "scrollHeight", "get").mockReturnValue(
+    2000,
+  );
+  const { result } = renderHook(() => useNavigationScroll());
+  const root = document.documentElement;
+  root.dataset.navigationScrollLocked = "true";
+  vi.stubGlobal("scrollY", 0);
+  fireEvent.scroll(window);
+  delete root.dataset.navigationScrollLocked;
+  root.dataset.navigationScrollRestoreUntil = String(performance.now() + 100);
+  vi.stubGlobal("scrollY", 360);
+  fireEvent.scroll(window);
+  expect(result.current.collapsed).toBe(false);
+  expect(result.current.scrolling).toBe(false);
+  delete root.dataset.navigationScrollRestoreUntil;
+  vi.stubGlobal("scrollY", 361);
+  fireEvent.scroll(window);
+  expect(result.current.collapsed).toBe(false);
+  vi.stubGlobal("scrollY", 380);
+  fireEvent.scroll(window);
+  expect(result.current.collapsed).toBe(true);
 });

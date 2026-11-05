@@ -1,6 +1,18 @@
-import { Button, Checkbox, QuantityStepper, TextButton } from "@/shared/ui";
-import { Check, Link as LinkIcon, Trash2 } from "lucide-react";
-import { useRef, useState } from "react";
+import {
+  Badge,
+  Button,
+  Checkbox,
+  Loader,
+  QuantityStepper,
+  TextButton,
+} from "@/shared/ui";
+import {
+  Check,
+  Link as LinkIcon,
+  ShoppingCartPlus,
+  Trash2,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 import type { CartItem } from "@/entities/cart-item";
 import { cn } from "@/shared/lib";
@@ -37,6 +49,15 @@ const CartItemRow = ({
   onEdit,
   onDelete,
 }: Props) => {
+  const [delayedPending, setDelayedPending] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(
+      () => setDelayedPending(pending),
+      pending ? 300 : 0,
+    );
+    return () => clearTimeout(timer);
+  }, [pending]);
+  const showSaving = pending && delayedPending;
   const [quantityEditing, setQuantityEditing] = useState(false);
   const [offset, setOffset] = useState<number | null>(null);
   const gesture = useRef<{
@@ -112,7 +133,7 @@ const CartItemRow = ({
     >
       <div
         className={cn([
-          "absolute inset-y-0 right-0 z-10 flex items-center gap-4 px-2",
+          "absolute top-0 right-0 z-10 flex h-11 items-center gap-4 px-2",
           "transition-transform motion-reduce:transition-none",
         ])}
         style={{
@@ -144,7 +165,8 @@ const CartItemRow = ({
       <div
         className={cn([
           "relative flex min-h-11 touch-pan-y items-start gap-3 bg-background py-2",
-          "transition-[padding] motion-reduce:transition-none",
+          "transition-[padding,opacity] duration-150 motion-reduce:transition-none",
+          showSaving && "opacity-70",
         ])}
         style={{
           paddingRight: revealedWidth,
@@ -158,26 +180,42 @@ const CartItemRow = ({
           onCheckedChange={onCheck}
           className="mt-1"
         />
+        {showSaving && (
+          <Loader
+            className={cn(
+              "pointer-events-none absolute top-3 left-0 size-5",
+              item.is_checked ? "text-primary-foreground" : "text-primary",
+            )}
+          />
+        )}
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap justify-between items-baseline gap-x-2">
-            <TextButton
-              className={cn([
-                "min-h-0 min-w-0 max-w-full shrink justify-start whitespace-normal",
-                "p-0 text-left font-normal text-foreground",
-              ])}
-              onClick={onEdit}
-              disabled={contentDisabled}
-            >
-              <span
-                className={cn(
-                  "break-words",
-                  item.is_checked && "text-muted-foreground line-through",
-                )}
+          <div className="flex min-h-7 items-center gap-x-2">
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              <TextButton
+                className={cn([
+                  "-my-2 min-h-11 min-w-0 max-w-full shrink justify-start",
+                  "p-0 text-left font-normal text-foreground",
+                ])}
+                onClick={onEdit}
+                disabled={contentDisabled}
               >
-                {item.name}
-              </span>
-            </TextButton>
-            <div className="-my-2 inline-flex items-center">
+                <span
+                  className={cn(
+                    "line-clamp-2 break-words whitespace-normal",
+                    item.is_checked && "text-muted-foreground line-through",
+                  )}
+                >
+                  {item.name}
+                </span>
+              </TextButton>
+              {item.is_checked && (
+                <Badge className="text-muted-foreground">
+                  <ShoppingCartPlus aria-hidden className="size-[1em]" />
+                  {checkedBy} 님<span className="sr-only"> 담음</span>
+                </Badge>
+              )}
+            </div>
+            <div className="-my-2 inline-flex shrink-0 items-center">
               <QuantityStepper
                 collapsible={{
                   open: quantityEditing,
@@ -211,13 +249,8 @@ const CartItemRow = ({
           )}
         </div>
         {pending && (
-          <span role="status" className="text-caption text-muted-foreground">
+          <span role="status" className="sr-only">
             저장 중
-          </span>
-        )}
-        {item.is_checked && (
-          <span className="mt-1 shrink-0 text-caption text-muted-foreground">
-            {checkedBy} 님 담음
           </span>
         )}
       </div>

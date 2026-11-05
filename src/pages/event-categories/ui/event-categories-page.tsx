@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ChevronLeft, Plus } from "lucide-react";
 import { useEventCategories, type EventCategory } from "@/entities/event";
 import {
@@ -12,7 +13,8 @@ import {
   Sheet,
   TextButton,
 } from "@/shared/ui";
-import { settingsPath } from "@/shared/config";
+import { eventRoutes, settingsPath } from "@/shared/config";
+import { useHistoryBack } from "@/shared/lib";
 import SortableCategoryList from "./sortable-category-list";
 import { EventCategoryForm } from "./event-category-form";
 
@@ -40,6 +42,9 @@ function CategoryList({
   return <SortableCategoryList categories={categories.data} onEdit={onEdit} />;
 }
 export function EventCategoriesPage() {
+  const searchParams = useSearchParams();
+  const { onNavigate } = useHistoryBack(eventRoutes.categories);
+  const fromCalendar = searchParams?.get("from") === "calendar";
   const [editing, setEditing] = useState<EventCategory | null | undefined>(
     undefined,
   );
@@ -53,12 +58,13 @@ export function EventCategoriesPage() {
           title="일정 카테고리"
           navigation={
             <Link
-              href={settingsPath}
+              href={fromCalendar ? eventRoutes.calendar : settingsPath}
+              onNavigate={onNavigate}
               data-od-id="lists-back"
-              className="inline-flex min-h-11 items-center gap-1 text-primary"
+              aria-label="뒤로"
+              className="inline-flex size-11 items-center justify-center text-primary"
             >
-              <ChevronLeft size={20} />
-              설정
+              <ChevronLeft aria-hidden size={20} />
             </Link>
           }
         />

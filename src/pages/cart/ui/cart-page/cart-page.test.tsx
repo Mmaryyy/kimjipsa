@@ -20,6 +20,7 @@ const state = vi.hoisted(() => ({
       icon_value: "",
     },
   ],
+  offline: false,
   saveUnit: vi.fn(),
   refetch: vi.fn(),
   add: vi.fn(),
@@ -29,6 +30,7 @@ vi.mock("@/entities/cart-item", async (original) => ({
   useCart: () => ({
     data: { items: [], frequent: [], members: [] },
     syncedAt: 0,
+    offline: state.offline,
   }),
   useCartActions: () => ({ pendingIds: [] }),
 }));
@@ -45,6 +47,7 @@ vi.mock("@/features/cart-add", () => ({
 }));
 afterEach(cleanup);
 beforeEach(() => {
+  state.offline = false;
   state.units.splice(1);
   state.saveUnit.mockReset().mockImplementation(async (command) => {
     if (command.id)
@@ -128,6 +131,89 @@ describe("CART-01 CART-12 빠른 추가 단위 확인", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "단위 저장 실패",
     );
+    expect(state.add).not.toHaveBeenCalled();
+  });
+});
+
+describe("CART-05 CART-14 SCN-CART-6 기본 품목 추가", () => {
+  it("기록이 없어도 네 품목을 보여 주고 기존 추가 경로로 수량 1을 담아요", () => {
+    render(
+      <ToastProvider>
+        <CartPage />
+      </ToastProvider>,
+    );
+    expect(
+      screen.getByRole("heading", { name: "자주 사는 품목" }),
+    ).toBeInTheDocument();
+    for (const name of ["휴지", "변기 세정제", "세탁세제", "생수"]) {
+      fireEvent.click(screen.getByRole("button", { name }));
+      expect(state.add).toHaveBeenLastCalledWith(
+        expect.objectContaining({ name, quantity: 1 }),
+      );
+    }
+    const form = document.querySelector('[data-od-id="cart-add-form"]')!;
+    const frequent = document.querySelector('[data-od-id="cart-frequent"]')!;
+    const list = document.querySelector('[data-od-id="cart-list"]')!;
+    expect(
+      form.compareDocumentPosition(frequent) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      frequent.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    const submit = screen.getByRole("button", { name: "추가" });
+    expect(submit).toBeDisabled();
+    fireEvent.change(screen.getByRole("textbox", { name: "항목 추가" }), {
+      target: { value: "두부" },
+    });
+    expect(submit).toBeEnabled();
+  });
+  it("생수를 누르면 가정의 번들 단위와 12개입 설명으로 담아요", () => {
+    state.units.push({ ...state.units[0]!, id: "bundle", name: "번들" });
+    render(
+      <ToastProvider>
+        <CartPage />
+      </ToastProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "생수" }));
+    expect(state.add).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "생수",
+        quantity: 1,
+        unit_id: "bundle",
+        memo: "12개입",
+      }),
+    );
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  });
+  it("기본 단위가 없으면 단위 없이 담고 확인창은 열지 않아요", () => {
+    render(
+      <ToastProvider>
+        <CartPage />
+      </ToastProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "세탁세제" }));
+    expect(state.add).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "세탁세제",
+        quantity: 1,
+        unit_id: null,
+      }),
+    );
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(state.saveUnit).not.toHaveBeenCalled();
+  });
+  it("오프라인에서는 기본 품목과 직접 추가를 모두 막아요", () => {
+    state.offline = true;
+    render(
+      <ToastProvider>
+        <CartPage />
+      </ToastProvider>,
+    );
+    for (const name of ["휴지", "변기 세정제", "세탁세제", "생수", "추가"]) {
+      const button = screen.getByRole("button", { name });
+      expect(button).toBeDisabled();
+      fireEvent.click(button);
+    }
     expect(state.add).not.toHaveBeenCalled();
   });
 });

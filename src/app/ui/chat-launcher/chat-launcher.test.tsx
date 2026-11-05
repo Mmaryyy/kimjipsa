@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import ChatLauncher from ".";
+import { setCartActionsVisible } from "@/shared/lib";
 
 afterEach(() => {
   vi.useRealTimers();
@@ -72,4 +73,32 @@ it("BOT-01 집 버튼에 키보드 포커스가 있으면 스크롤해도 유지
   fireEvent.scroll(window);
   expect(screen.queryByRole("button")).not.toBeInTheDocument();
   unmount();
+});
+
+it("BOT-01 CART-03 체크 버튼이 보이면 숨고 체크 해제나 페이지 이탈 시 돌아와요", async () => {
+  vi.stubGlobal("matchMedia", () => ({ matches: false }));
+  setCartActionsVisible(false);
+  const { unmount } = render(<ChatLauncher />);
+  const launcher = screen.getByRole("button", { name: "AI 집사 채팅 열기" });
+  const setVisible = async (visible: boolean) => {
+    await act(async () => {
+      setCartActionsVisible(visible);
+    });
+  };
+  try {
+    await setVisible(true);
+    expect(launcher.parentElement).toHaveAttribute("aria-hidden", "true");
+    expect(launcher.parentElement).toHaveAttribute("inert");
+    expect(launcher).toHaveAttribute("tabindex", "-1");
+    await setVisible(false);
+    expect(launcher.parentElement).not.toHaveAttribute("inert");
+    expect(launcher.parentElement).toHaveAttribute("aria-hidden", "false");
+    await setVisible(true);
+    await setVisible(false);
+    expect(launcher.parentElement).not.toHaveAttribute("inert");
+    expect(launcher.parentElement).toHaveAttribute("aria-hidden", "false");
+  } finally {
+    setCartActionsVisible(false);
+    unmount();
+  }
 });

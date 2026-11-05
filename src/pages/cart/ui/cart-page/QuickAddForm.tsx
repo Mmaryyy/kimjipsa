@@ -28,17 +28,21 @@ const CartQuickAddForm = ({ quickAdd, pending, offline }: Props) => {
           if (name.trim() && !pending && !add.pending) onQuickAdd();
         }}
       >
-        <Input
-          aria-label="항목 추가"
-          placeholder="항목 추가 (예: 두부 2모)"
-          value={name}
-          onChange={(event) => onNameChange(event.target.value)}
-          disabled={pending || add.pending}
-          className="min-h-[var(--ctl-h)] min-w-0 flex-1 bg-muted py-1"
-        />
+        <div className="glass-surface relative flex min-w-0 flex-1 items-center">
+          <Input
+            aria-label="항목 추가"
+            placeholder="항목 추가 (예: 두부 2모)"
+            value={name}
+            onChange={(event) => onNameChange(event.target.value)}
+            disabled={pending || add.pending}
+            className="h-full min-h-[var(--ctl-h)] rounded-[var(--r-round)] bg-transparent py-1"
+          />
+        </div>
         <Button
           type="submit"
+          variant="glass"
           size="sm"
+          className="text-primary disabled:opacity-40"
           data-od-id="cart-add-submit"
           disabled={pending || add.pending || !name.trim()}
         >

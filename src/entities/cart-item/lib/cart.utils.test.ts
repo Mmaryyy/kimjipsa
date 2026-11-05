@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { frequentCartItems, parseCartQuickInput } from "./cart.utils";
+import {
+  frequentCartItems,
+  parseCartQuickInput,
+  withFrequentCartDefaults,
+} from "./cart.utils";
 import type { CartItem } from "../api/type";
 const now = Date.parse("2026-10-26T00:00:00Z");
 const purchase = (name: string, days = 1): CartItem => ({
@@ -128,5 +132,73 @@ describe("CART-01 CART-12 빠른 추가", () => {
       unit_id: "piece",
     });
     expect(parseCartQuickInput("비타민C1000", units).name).toBe("비타민C1000");
+  });
+});
+
+describe("CART-05 SCN-CART-6 기본 품목 채우기", () => {
+  const defaults = ["휴지", "변기 세정제", "세탁세제", "생수"];
+  it("가정의 단위 ID와 기본 설명을 채우고 구매 기록의 정보는 유지해요", () => {
+    const units = [
+      { id: "pack", name: "팩" },
+      { id: "bottle", name: "통" },
+      { id: "bundle", name: "번들" },
+    ];
+    const purchased = {
+      ...purchase("휴지"),
+      unit_id: "original",
+      memo: "기록",
+    };
+    const result = withFrequentCartDefaults([purchased], units);
+    expect(result[0]).toBe(purchased);
+    expect(
+      result
+        .slice(1)
+        .map(({ name, unit_id, memo }) => ({ name, unit_id, memo })),
+    ).toEqual([
+      { name: "변기 세정제", unit_id: "pack", memo: "" },
+      { name: "세탁세제", unit_id: "bottle", memo: "" },
+      { name: "생수", unit_id: "bundle", memo: "12개입" },
+    ]);
+    expect(withFrequentCartDefaults([], units)[0]?.unit_id).toBe("pack");
+  });
+  it("단위가 없어도 확인창용 필드 없이 단위만 비워 담아요", () => {
+    const result = withFrequentCartDefaults([], []);
+    expect(result.every((item) => item.unit_id === null)).toBe(true);
+    expect(result.find((item) => item.name === "생수")?.memo).toBe("12개입");
+    expect(result.every((item) => !("unknownUnit" in item))).toBe(true);
+  });
+  it("구매 기록이 없으면 기본 네 개만 보여 줘요", () => {
+    const result = withFrequentCartDefaults(frequentCartItems([], now));
+    expect(result.map((item) => item.name)).toEqual(defaults);
+    expect(result.every((item) => item.quantity === 1)).toBe(true);
+  });
+  it("구매 기록의 순서와 정보를 유지하고 기본 품목을 뒤에 채워요", () => {
+    const items = [purchase("두부"), purchase("두부")];
+    const frequent = frequentCartItems(items, now);
+    const result = withFrequentCartDefaults(frequent);
+    expect(result.map((item) => item.name)).toEqual(["두부", ...defaults]);
+    expect(result[0]).toBe(frequent[0]);
+    expect(frequent).toHaveLength(1);
+  });
+  it("공백과 대소문자를 무시해 겹치는 이름은 채우지 않아요", () => {
+    const result = withFrequentCartDefaults([
+      purchase(" 변기세정제 "),
+      purchase("생 수"),
+    ]);
+    expect(result.map((item) => item.name)).toEqual([
+      " 변기세정제 ",
+      "생 수",
+      "휴지",
+      "세탁세제",
+    ]);
+  });
+  it.each([9, 10, 12])("구매 품목이 %i개여도 10개를 넘지 않아요", (count) => {
+    const items = Array.from({ length: count }, (_, index) =>
+      purchase(`품목${index}`),
+    );
+    const result = withFrequentCartDefaults(items);
+    expect(result).toHaveLength(10);
+    expect(result.slice(0, Math.min(count, 10))).toEqual(items.slice(0, 10));
+    if (count === 9) expect(result[9]?.name).toBe("휴지");
   });
 });

@@ -71,7 +71,7 @@ const ChatPanelConversation = () => {
     olderFailed: query.isFetchNextPageError,
     onLoadOlder,
   });
-  useChatViewport();
+  useChatViewport(viewportRef);
   const runs = useMemo(
     () => new Map(chat?.runs.map((run) => [run.input_message_id, run])),
     [chat?.runs],
@@ -256,7 +256,7 @@ const ChatPanel = () => {
       }}
       presentation="panel"
       overlayClassName="md:bg-transparent"
-      className="top-[var(--chat-viewport-top,0px)] h-[var(--chat-viewport-height,100dvh)]"
+      className="max-md:top-[var(--chat-viewport-top,0px)] max-md:h-[var(--chat-viewport-height,100dvh)]"
       title="집사와 대화"
       description="나만 보는 개인 대화"
       odId="chat-panel"

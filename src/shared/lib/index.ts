@@ -15,3 +15,10 @@ export {
   targetLiquidTab,
 } from "./liquid-tab-motion.utils";
 export { useDismissOnOutside } from "./use-dismiss-on-outside";
+
+export { useHistoryBack, markHistoryBack } from "./use-history-back";
+
+export {
+  setCartActionsVisible,
+  useCartActionsVisible,
+} from "./cart-actions-visibility";

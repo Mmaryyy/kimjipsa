@@ -55,6 +55,15 @@
   }
 }
 
+@keyframes kj-dialog-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* Shared by floating navigation and header actions; one backdrop per island. */
 .glass-surface {
   color: var(--glass-text);
@@ -64,7 +73,8 @@
   -webkit-backdrop-filter: var(--glass-filter);
   backdrop-filter: var(--glass-filter);
 }
-.glass-surface::before {
+.glass-surface::before,
+.surface-edge::before {
   content: "";
   position: absolute;
   inset: 0;

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/shared/ui";
 import Image from "next/image";
-import { cn } from "@/shared/lib";
+import { cn, useCartActionsVisible } from "@/shared/lib";
 import { useChatNavigation } from "@/features/chat-navigation";
 
 import { useNavigationScroll } from "../../model/use-navigation-scroll";
@@ -16,7 +16,8 @@ const ChatLauncher = () => {
   const [peek, setPeek] = useState("");
   const { scrolling, keyboardOpen } = useNavigationScroll();
   const [focused, setFocused] = useState(false);
-  const hidden = keyboardOpen || (scrolling && !focused);
+  const cartActionsVisible = useCartActionsVisible();
+  const hidden = cartActionsVisible || keyboardOpen || (scrolling && !focused);
   const linkRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -48,7 +49,7 @@ const ChatLauncher = () => {
         // SVG 아래 투명 여백 약 2px과 합쳐 탭 위 간격을 약 4px로 맞춰요.
         "bottom-[calc(var(--bottom-navigation-offset)-var(--sp-6)+2px+env(safe-area-inset-bottom))]",
         "transition-[opacity,translate,scale] duration-[var(--dur-slow)] ease-[var(--ease)]",
-        "motion-reduce:translate-none motion-reduce:scale-none motion-reduce:transition-opacity",
+        "motion-reduce:translate-none motion-reduce:scale-none motion-reduce:transition-none",
         hidden && "pointer-events-none translate-y-2.5 scale-95 opacity-0",
       )}
     >

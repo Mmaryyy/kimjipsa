@@ -1,4 +1,5 @@
 "use client";
+import { markHistoryBack } from "@/shared/lib";
 import Link from "next/link";
 import { useState } from "react";
 import { ChevronRight } from "lucide-react";
@@ -6,7 +7,7 @@ import {
   useInventoryMeta,
   useInventoryActions,
 } from "@/entities/inventory-item";
-import { inventoryListPath } from "@/shared/config";
+import { inventoryListPath, inventoryRoutes } from "@/shared/config";
 import {
   ErrorState,
   ListSkeleton,
@@ -61,6 +62,9 @@ const InventorySettings = () => {
         <Link
           key={kind}
           href={inventoryListPath(kind)}
+          onNavigate={() => {
+            markHistoryBack(inventoryRoutes.lists);
+          }}
           data-od-id={odId}
           className="flex min-h-[var(--row-min)] items-center justify-between gap-3 py-2"
         >

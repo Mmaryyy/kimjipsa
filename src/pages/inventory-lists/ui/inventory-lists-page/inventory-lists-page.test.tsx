@@ -1,4 +1,4 @@
-import type { ComponentProps } from "react";
+import type { AnchorHTMLAttributes, ComponentProps } from "react";
 import type * as DndModule from "@dnd-kit/core";
 import {
   cleanup,
@@ -8,6 +8,8 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { markHistoryBack } from "@/shared/lib";
+import { inventoryRoutes } from "@/shared/config";
 import { ToastProvider } from "@/shared/ui";
 import InventoryListsPage from ".";
 vi.mock("@dnd-kit/core", async (original) => ({
@@ -57,10 +59,32 @@ vi.mock("@dnd-kit/core", async (original) => ({
   },
 }));
 
-const state = vi.hoisted(() => ({ order: vi.fn(), offline: false, from: "" }));
+const state = vi.hoisted(() => ({
+  order: vi.fn(),
+  back: vi.fn(),
+  offline: false,
+  from: "",
+}));
 vi.mock("next/navigation", () => ({
+  useRouter: () => ({ back: state.back }),
   useSearchParams: () =>
     new URLSearchParams(`kind=categories&from=${state.from}`),
+}));
+vi.mock("next/link", () => ({
+  default: ({
+    onNavigate,
+    ...props
+  }: AnchorHTMLAttributes<HTMLAnchorElement> & {
+    onNavigate?: (event: { preventDefault: () => void }) => void;
+  }) => (
+    <a
+      {...props}
+      onClick={(event) => {
+        if (!event.ctrlKey && !event.metaKey) onNavigate?.(event);
+        event.preventDefault();
+      }}
+    />
+  ),
 }));
 vi.mock("@/entities/cart-item", () => ({
   useCart: () => ({ data: {}, offline: state.offline }),
@@ -82,6 +106,9 @@ vi.mock("@/entities/inventory-item", () => ({
 vi.mock("../list-editor", () => ({ default: () => null }));
 afterEach(cleanup);
 beforeEach(() => {
+  sessionStorage.clear();
+  window.history.replaceState({}, "", inventoryRoutes.lists);
+  state.back.mockReset();
   state.offline = false;
   state.from = "";
   state.order.mockReset().mockResolvedValue({});
@@ -156,15 +183,36 @@ it.each([
   ["cart", "장바구니", "/cart"],
   ["inventory", "재고", "/inventory"],
   ["", "설정", "/settings"],
-])("CART-04 %s에서 진입하면 원래 화면으로 돌아가요", (from, label, href) => {
+])("CART-04 %s에서 진입하면 원래 화면으로 돌아가요", (from, _label, href) => {
+  state.from = from;
+  markHistoryBack(inventoryRoutes.lists);
+  render(
+    <ToastProvider>
+      <InventoryListsPage />
+    </ToastProvider>,
+  );
+  const link = screen.getByRole("link", { name: "뒤로" });
+  expect(link).toHaveAttribute("href", href);
+  fireEvent.click(link);
+  expect(state.back).toHaveBeenCalledOnce();
+  expect(sessionStorage.getItem(inventoryRoutes.lists)).toBeNull();
+  expect(window.history.state[inventoryRoutes.lists]).toBe(true);
+});
+
+it.each([
+  ["", "/settings"],
+  ["cart", "/cart"],
+  ["inventory", "/inventory"],
+])("ACC-13 직접 진입하면 %s 출처로 이동해요", (from, href) => {
   state.from = from;
   render(
     <ToastProvider>
       <InventoryListsPage />
     </ToastProvider>,
   );
-  expect(screen.getByRole("link", { name: label })).toHaveAttribute(
-    "href",
-    href,
-  );
+  const link = screen.getByRole("link", { name: "뒤로" });
+  expect(link).toHaveAttribute("href", href);
+  expect(link).toHaveTextContent("");
+  fireEvent.click(link);
+  expect(state.back).not.toHaveBeenCalled();
 });

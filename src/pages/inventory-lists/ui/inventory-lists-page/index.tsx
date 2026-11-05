@@ -27,6 +27,7 @@ import {
   ConfirmDialog,
   Toast,
 } from "@/shared/ui";
+import { useHistoryBack } from "@/shared/lib";
 import InventoryListEditor from "../list-editor";
 const listLabels = {
   categories: "재고 카테고리",
@@ -35,13 +36,14 @@ const listLabels = {
 } as const;
 const InventoryListsPage = () => {
   const search = useSearchParams();
+  const { onNavigate } = useHistoryBack(inventoryRoutes.lists);
   const origin = search?.get("from");
-  const back =
+  const backHref =
     origin === "cart"
-      ? { href: cartRoutes.cart, label: "장바구니" }
+      ? cartRoutes.cart
       : origin === "inventory"
-        ? { href: inventoryRoutes.inventory, label: "재고" }
-        : { href: settingsPath, label: "설정" };
+        ? inventoryRoutes.inventory
+        : settingsPath;
   const query = search?.get("kind");
   const kind =
     query === "locations" || query === "units" ? query : "categories";
@@ -230,12 +232,13 @@ const InventoryListsPage = () => {
           }
           navigation={
             <Link
-              href={back.href}
+              href={backHref}
+              onNavigate={onNavigate}
               data-od-id="lists-back"
-              className="flex w-fit items-center gap-1 text-primary"
+              aria-label="뒤로"
+              className="inline-flex size-11 items-center justify-center text-primary"
             >
-              <ChevronLeft aria-hidden size={16} />
-              {back.label}
+              <ChevronLeft aria-hidden size={20} />
             </Link>
           }
         />

@@ -1,4 +1,5 @@
 "use client";
+import { markHistoryBack } from "@/shared/lib";
 
 import { CategoryDot, ErrorState, GroupLabel, Text } from "@/shared/ui";
 
@@ -31,6 +32,9 @@ const HouseholdSettings = () => {
         label="일정 카테고리"
         odId="s-cal-categories"
         href={eventRoutes.categories}
+        onNavigate={() => {
+          markHistoryBack(eventRoutes.categories);
+        }}
         action={
           <span className="flex items-center gap-2">
             <span className="flex gap-1">

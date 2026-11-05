@@ -40,7 +40,8 @@ export function ConfirmDialog({
         <AlertDialog.Content
           className={cn([
             "fixed top-1/2 left-1/2 z-81 w-[min(calc(var(--sp-10)*7.5),calc(100%-var(--sp-6)*2))]",
-            "-translate-1/2 rounded-sm bg-popover p-4 text-center text-foreground",
+            "surface-edge max-md:before:hidden md:rounded-[var(--r-dialog)] md:border md:border-[var(--glass-border)]",
+            "-translate-1/2 max-md:rounded-sm bg-popover p-4 text-center text-foreground",
             "[overflow-wrap:anywhere] [&_p]:mt-1",
           ])}
           data-theme={theme}

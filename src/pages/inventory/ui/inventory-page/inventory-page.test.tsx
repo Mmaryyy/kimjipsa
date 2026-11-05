@@ -200,6 +200,10 @@ describe("INV-03 INV-05 INV-08 SCN-INV-2 탭별 재고 요약", () => {
       });
       expectCounts(1, 1, 1);
       expect(screen.queryByText("다른 품목")).not.toBeInTheDocument();
+      fireEvent.change(screen.getByRole("searchbox", { name: "품목 검색" }), {
+        target: { value: "" },
+      });
+      expect(screen.getByText("다른 품목")).toBeInTheDocument();
       selectTab(empty.name);
       expectCounts(0, 0, 0);
       selectTab("전체");

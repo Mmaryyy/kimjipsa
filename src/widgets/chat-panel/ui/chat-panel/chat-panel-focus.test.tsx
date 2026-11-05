@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import {
   ChatNavigationProvider,
@@ -75,6 +81,7 @@ const openPanel = () => {
   return opener;
 };
 beforeEach(() => {
+  vi.stubGlobal("scrollTo", vi.fn());
   vi.stubGlobal("ResizeObserver", resizeObserver);
   localStorage.clear();
   state.loading = false;
@@ -88,7 +95,10 @@ beforeEach(() => {
     removeEventListener: vi.fn(),
   }));
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 it("BOT-01 데스크톱은 입력창에 포커스하고 닫으면 연 버튼으로 돌아가요", async () => {
   mount();

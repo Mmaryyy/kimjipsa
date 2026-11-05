@@ -509,6 +509,7 @@
      --r-round is reserved for native round controls only (switch knob, status dot). */
   --r-none: 0;
   --r-control: 4px;
+  --r-dialog: 20px;
   --r-round: 999px;
   --hairline: 0.5px solid var(--separator);
   --hit: 44px; /* 터치 영역 기준 (보이는 크기는 아래 컴팩트 토큰) */

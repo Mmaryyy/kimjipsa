@@ -3,8 +3,8 @@ import Link from "next/link";
 import { useCart } from "@/entities/cart-item";
 import { useInventoryMeta } from "@/entities/inventory-item";
 import { RestockSheet } from "@/features/cart-checkout";
-import { cn } from "@/shared/lib";
-import { inventoryListPath } from "@/shared/config";
+import { markHistoryBack, cn } from "@/shared/lib";
+import { inventoryListPath, inventoryRoutes } from "@/shared/config";
 import {
   Banner,
   Button,
@@ -44,8 +44,7 @@ const CartPage = () => {
         }}
       />
     );
-  else if (!cart.data || !meta.data)
-    content = <CartSkeleton frequent={Boolean(cart.data?.frequent.length)} />;
+  else if (!cart.data || !meta.data) content = <CartSkeleton />;
   else {
     const { frequent, members } = cart.data;
     const { units } = meta.data;
@@ -66,11 +65,11 @@ const CartPage = () => {
           pending={actions.pending}
           offline={cart.offline}
         />
-        <CartCheckedActions
-          count={actions.checked.length}
-          busy={actions.busy}
-          onPurchase={() => void actions.onProcessItems(actions.checked)}
-          onDelete={actions.onClear}
+        <CartFrequentItems
+          frequent={frequent}
+          units={units}
+          disabled={actions.pending || quickAdd.add.pending}
+          onAdd={quickAdd.add.onAdd}
         />
         <div data-od-id="cart-list">
           {actions.items.length ? (
@@ -98,10 +97,11 @@ const CartPage = () => {
             <EmptyState message="장바구니가 비었어요" />
           )}
         </div>
-        <CartFrequentItems
-          frequent={frequent}
-          disabled={actions.pending || quickAdd.add.pending}
-          onAdd={quickAdd.add.onAdd}
+        <CartCheckedActions
+          count={actions.checked.length}
+          busy={actions.busy}
+          onPurchase={() => void actions.onProcessItems(actions.checked)}
+          onDelete={actions.onClear}
         />
       </>
     );
@@ -113,7 +113,7 @@ const CartPage = () => {
       className={cn([
         "flex min-h-[calc(100dvh-var(--bottom-navigation-offset)-env(safe-area-inset-bottom))] flex-col",
         "lg:min-h-[calc(100dvh-var(--sp-10))]",
-        "pb-4 lg:pb-0",
+        actions.checked.length > 0 ? "pb-20" : "pb-4 lg:pb-0",
       ])}
       header={
         <PageHeader
@@ -128,6 +128,9 @@ const CartPage = () => {
               <Button variant="glass" asChild>
                 <Link
                   href={inventoryListPath("categories", "cart")}
+                  onNavigate={() => {
+                    markHistoryBack(inventoryRoutes.lists);
+                  }}
                   aria-label="장바구니 카테고리 설정"
                 >
                   설정

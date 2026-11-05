@@ -1,5 +1,5 @@
 import { normalizeItemName } from "@/shared/lib";
-import type { CartItem } from "../api/type";
+import type { CartInput, CartItem } from "../api/type";
 export const recentPurchaseWindowMs = 90 * 86400000;
 export function parseCartQuickInput(
   value: string,
@@ -58,4 +58,28 @@ export function frequentCartItems(items: CartItem[], now = Date.now()) {
     )
     .slice(0, 10)
     .map(({ item }) => item);
+}
+
+export function withFrequentCartDefaults(
+  items: CartInput[],
+  units: readonly { id: string; name: string }[] = [],
+): CartInput[] {
+  const names = new Set(items.map((item) => normalizeItemName(item.name)));
+  const defaults = [
+    { name: "휴지", unit: "팩", memo: "" },
+    { name: "변기 세정제", unit: "팩", memo: "" },
+    { name: "세탁세제", unit: "통", memo: "" },
+    { name: "생수", unit: "번들", memo: "12개입" },
+  ]
+    .filter(({ name }) => !names.has(normalizeItemName(name)))
+    .map(({ name, unit, memo }) => ({
+      name,
+      quantity: 1,
+      unit_id: units.find((entry) => entry.name === unit)?.id ?? null,
+      category_id: null,
+      inventory_item_id: null,
+      memo,
+      link_url: "",
+    }));
+  return [...items, ...defaults].slice(0, 10);
 }

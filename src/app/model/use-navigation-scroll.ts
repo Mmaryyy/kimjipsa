@@ -12,6 +12,16 @@ export function useNavigationScroll() {
     let timer: ReturnType<typeof setTimeout>;
     const onScroll = () => {
       const y = Math.max(0, window.scrollY);
+      const root = document.documentElement;
+      if (
+        root.dataset.navigationScrollLocked === "true" ||
+        performance.now() <
+          Number(root.dataset.navigationScrollRestoreUntil ?? 0)
+      ) {
+        previous = y;
+        travel = 0;
+        return;
+      }
       const delta = y - previous;
       travel = Math.sign(delta) === Math.sign(travel) ? travel + delta : delta;
       previous = y;
