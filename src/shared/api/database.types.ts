@@ -10,6 +10,7 @@ type CartRow = {
   link_url: string;
   added_by: string | null;
   checked_by: string | null;
+  checked_at: string | null;
   is_checked: boolean;
   inventory_item_id: string | null;
   purchased_at: string | null;

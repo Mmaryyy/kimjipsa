@@ -185,6 +185,7 @@ export async function writeCart(raw: unknown): Promise<CartWriteResult> {
         created_at: new Date().toISOString(),
         added_by: actor,
         checked_by: null,
+        checked_at: null,
         is_checked: false,
         purchased_at: null,
       });
@@ -194,9 +195,11 @@ export async function writeCart(raw: unknown): Promise<CartWriteResult> {
       Object.assign(current!, input);
     }
   } else if (command.action === "check") {
+    if (current!.is_checked === command.checked) return {};
     mock.values.delete(undoKey);
     current!.is_checked = command.checked;
     current!.checked_by = command.checked ? actor : null;
+    current!.checked_at = command.checked ? new Date().toISOString() : null;
   } else if (
     command.action === "delete" ||
     command.action === "clear-checked" ||

@@ -62,6 +62,7 @@ function fixture(): CartData {
       added_by: "actor",
       is_checked: false,
       checked_by: null,
+      checked_at: null,
       purchased_at: null,
     })),
   };
@@ -110,6 +111,35 @@ describe("CART-02 CART-14 SCN-CART-1 연결과 삭제 구독", () => {
         .callback(),
     );
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ["inventory-meta"] });
+    unmount();
+    client.clear();
+  });
+  it("SCN-CART-1 배우자의 체크 시각을 UPDATE 뒤 새로고침 없이 가져와요", async () => {
+    const { client, wrapper } = setup();
+    const { result, unmount } = renderHook(() => useCart(), { wrapper });
+    await waitFor(() => expect(result.current.isFetching).toBe(false));
+    const updated = fixture();
+    updated.items[0] = {
+      ...updated.items[0]!,
+      is_checked: true,
+      checked_by: "partner",
+      checked_at: "2026-11-05T01:00:00Z",
+    };
+    state.fetch.mockResolvedValue(updated);
+    act(() =>
+      state.subscriptions
+        .find(
+          ({ filter }) =>
+            filter.table === "cart_items" && filter.event === "UPDATE",
+        )!
+        .callback(),
+    );
+    await waitFor(() =>
+      expect(result.current.data?.items[0]).toMatchObject({
+        checked_by: "partner",
+        checked_at: "2026-11-05T01:00:00Z",
+      }),
+    );
     unmount();
     client.clear();
   });

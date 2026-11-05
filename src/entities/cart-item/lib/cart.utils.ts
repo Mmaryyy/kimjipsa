@@ -63,23 +63,49 @@ export function frequentCartItems(items: CartItem[], now = Date.now()) {
 export function withFrequentCartDefaults(
   items: CartInput[],
   units: readonly { id: string; name: string }[] = [],
+  categories: readonly { id: string; name: string }[] = [],
 ): CartInput[] {
   const names = new Set(items.map((item) => normalizeItemName(item.name)));
   const defaults = [
-    { name: "휴지", unit: "팩", memo: "" },
-    { name: "변기 세정제", unit: "팩", memo: "" },
-    { name: "세탁세제", unit: "통", memo: "" },
-    { name: "생수", unit: "번들", memo: "12개입" },
+    { name: "휴지", category: "생활용품", unit: "팩", memo: "" },
+    { name: "변기 세정제", category: "생활용품", unit: "팩", memo: "" },
+    { name: "세탁세제", category: "생활용품", unit: "통", memo: "" },
+    { name: "생수", category: "음료", unit: "번들", memo: "12개입" },
   ]
     .filter(({ name }) => !names.has(normalizeItemName(name)))
-    .map(({ name, unit, memo }) => ({
+    .map(({ name, category, unit, memo }) => ({
       name,
       quantity: 1,
       unit_id: units.find((entry) => entry.name === unit)?.id ?? null,
-      category_id: null,
+      category_id:
+        categories.find((entry) => entry.name === category)?.id ??
+        categories.find((entry) => entry.name === "기타")?.id ??
+        null,
       inventory_item_id: null,
       memo,
       link_url: "",
     }));
   return [...items, ...defaults].slice(0, 10);
+}
+
+export function groupCartItems(
+  items: CartItem[],
+  categories: readonly { id: string; name: string; sort_order: number }[],
+) {
+  const sorted = [...categories].sort((a, b) => a.sort_order - b.sort_order);
+  const otherId =
+    sorted.find((category) => category.name === "기타")?.id ?? "unassigned";
+  const groups = [
+    ...sorted,
+    ...(otherId === "unassigned" ? [{ id: otherId, name: "기타" }] : []),
+  ];
+  return groups.map((category) => ({
+    ...category,
+    items: items.filter(
+      (item) =>
+        (sorted.some((entry) => entry.id === item.category_id)
+          ? item.category_id
+          : otherId) === category.id,
+    ),
+  }));
 }

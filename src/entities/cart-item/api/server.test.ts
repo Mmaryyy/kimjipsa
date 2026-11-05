@@ -122,9 +122,24 @@ describe("CART-01 CART-03 CART-12 CART-13 SCN-CART-1 공동 장보기", () => {
     const item = await add();
     state.perspective = 1;
     await writeCart({ action: "check", id: item.id, checked: true });
-    expect(items[0]).toMatchObject({ is_checked: true, checked_by: partnerId });
+    expect(items[0]).toMatchObject({
+      is_checked: true,
+      checked_by: partnerId,
+      checked_at: expect.any(String),
+    });
+    const checkedAt = items[0]!.checked_at;
+    state.perspective = 0;
+    await writeCart({ action: "check", id: item.id, checked: true });
+    expect(items[0]).toMatchObject({
+      checked_by: partnerId,
+      checked_at: checkedAt,
+    });
     await writeCart({ action: "check", id: item.id, checked: false });
-    expect(items[0]).toMatchObject({ is_checked: false, checked_by: null });
+    expect(items[0]).toMatchObject({
+      is_checked: false,
+      checked_by: null,
+      checked_at: null,
+    });
   });
   it("clear-checked는 보낸 id 중 체크된 활성 항목만 삭제해요", async () => {
     const remove = await checked();

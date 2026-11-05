@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useCart } from "@/entities/cart-item";
+import { groupCartItems, useCart } from "@/entities/cart-item";
 import { useInventoryMeta } from "@/entities/inventory-item";
 import { RestockSheet } from "@/features/cart-checkout";
 import { markHistoryBack, cn } from "@/shared/lib";
@@ -48,16 +48,8 @@ const CartPage = () => {
   else {
     const { frequent, members } = cart.data;
     const { units } = meta.data;
-    const categories = [...meta.data.categories].sort(
-      (a, b) => a.sort_order - b.sort_order,
-    );
-    const otherId =
-      categories.find((category) => category.name === "기타")?.id ??
-      "unassigned";
-    const groups = [
-      ...categories,
-      ...(otherId === "unassigned" ? [{ id: "unassigned", name: "기타" }] : []),
-    ];
+    const categories = meta.data.categories;
+    const groups = groupCartItems(actions.items, categories);
     content = (
       <>
         <CartQuickAddForm
@@ -67,6 +59,7 @@ const CartPage = () => {
         />
         <CartFrequentItems
           frequent={frequent}
+          categories={categories}
           units={units}
           disabled={actions.pending || quickAdd.add.pending}
           onAdd={quickAdd.add.onAdd}
@@ -78,11 +71,10 @@ const CartPage = () => {
                 key={category.id}
                 category={category}
                 index={index}
-                categories={categories}
-                otherId={otherId}
                 units={units}
                 members={members}
                 items={actions.items}
+                rows={category.items}
                 pending={actions.pending}
                 busy={actions.busy}
                 pendingIds={actions.pendingIds}

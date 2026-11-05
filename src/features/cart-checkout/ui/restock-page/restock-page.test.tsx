@@ -24,6 +24,7 @@ const items: CartItem[] = [0, 1].map((index) => ({
   link_url: "",
   added_by: null,
   checked_by: null,
+  checked_at: null,
   is_checked: true,
   inventory_item_id: null,
   purchased_at: null,

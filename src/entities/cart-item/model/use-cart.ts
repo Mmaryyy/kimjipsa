@@ -185,6 +185,7 @@ export function useCartActions() {
               ...row,
               is_checked: command.checked,
               checked_by: command.checked ? data.actorId : null,
+              checked_at: command.checked ? new Date().toISOString() : null,
             },
           ];
         }),

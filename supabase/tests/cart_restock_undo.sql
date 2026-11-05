@@ -53,6 +53,19 @@ begin
     values (untouched_stock, household, '반영과 무관한 재고', 'quantity', 9, 'enough', unit);
   insert into public.cart_items(id, family_id, name, quantity, unit_id, purchased_at)
     values (historical_cart, household, '지난 구매', 1, unit, now() - interval '1 day');
+  -- CART-03: an agent re-check must preserve the original member and timestamp through undo.
+  update public.cart_items set checked_at = now() - interval '18 minutes' where id = first_cart;
+  perform set_config('request.jwt.claim.sub', purchaser::text, true);
+  perform private.write_cart(jsonb_build_object('action', 'check', 'id', first_cart, 'checked', true));
+  if not exists(select 1 from public.cart_items where id = first_cart
+    and checked_by = partner and checked_at = now() - interval '18 minutes') then
+    raise exception 'rechecking overwrote the original check';
+  end if;
+  begin
+    update public.cart_items set is_checked = false where id = first_cart;
+    raise exception 'unchecked row accepted a timestamp';
+  exception when check_violation then null;
+  end;
   select jsonb_agg(to_jsonb(c) order by c.id) into cart_before
     from public.cart_items c where c.family_id = household;
   select jsonb_agg(to_jsonb(i) order by i.id) into stock_before

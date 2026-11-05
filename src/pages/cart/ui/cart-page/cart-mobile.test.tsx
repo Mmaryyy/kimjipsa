@@ -57,6 +57,7 @@ beforeEach(() => {
     link_url: "",
     added_by: null,
     checked_by: null,
+    checked_at: null,
     is_checked: false,
     inventory_item_id: null,
     purchased_at: null,

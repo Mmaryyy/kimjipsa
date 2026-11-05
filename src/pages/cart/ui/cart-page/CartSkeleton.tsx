@@ -1,35 +1,59 @@
 import {
   Button,
   GroupLabel,
+  Input,
   List,
   Skeleton,
   SkeletonSection,
 } from "@/shared/ui";
+import CartFrequentItems from "./FrequentItems";
+
 const CartSkeleton = () => (
   <SkeletonSection label="장바구니를 불러오고 있어요">
-    <div aria-hidden="true">
+    <div aria-hidden="true" inert>
+      {/* shortcut: QuickAddForm 입력 행과 스타일을 함께 바꾼다. 입력 모양이 확장되면 공용화한다. */}
       <div className="mt-2 flex gap-2">
-        <Skeleton className="h-[var(--ctl-h)] min-w-0 flex-1" />
-        <Button size="sm" disabled>
+        <div className="glass-surface relative flex min-w-0 flex-1 items-center">
+          <Input
+            placeholder="항목 추가 (예: 두부 2모)"
+            disabled
+            className="h-full min-h-[var(--ctl-h)] rounded-[var(--r-round)] bg-transparent py-1"
+          />
+        </div>
+        <Button
+          variant="glass"
+          size="sm"
+          className="text-primary disabled:opacity-40"
+          disabled
+        >
           추가
         </Button>
       </div>
-      <section className="mt-4">
-        <GroupLabel className="pt-0">자주 사는 품목</GroupLabel>
-        <div className="flex gap-4 pt-1 pb-2.5">
-          <Skeleton className="h-[var(--ctl-h-sm)] w-20" />
-          <Skeleton className="h-[var(--ctl-h-sm)] w-20" />
-        </div>
-      </section>
-      <GroupLabel className="flex h-[calc(var(--sp-5)+var(--sp-half)+var(--type-caption-lh))] items-center">
-        <Skeleton className="h-3 w-16" />
+      <CartFrequentItems
+        frequent={[]}
+        units={[]}
+        categories={[]}
+        disabled
+        onAdd={async () => false}
+      />
+      <GroupLabel>
+        <span className="flex h-[var(--type-caption-lh)] items-center">
+          <Skeleton className="h-3 w-16" />
+        </span>
       </GroupLabel>
       <List>
         {Array.from({ length: 3 }, (_, index) => (
           <li key={index} className="flex min-h-11 items-start gap-3 py-2">
             <Skeleton className="mt-1 size-5 flex-none rounded-full" />
-            <div className="flex h-[var(--type-label-lh)] items-center">
-              <Skeleton className="h-4 w-32" />
+            <div className="min-w-0 flex-1">
+              <div className="flex min-h-7 items-center gap-x-2">
+                <div className="flex min-w-0 flex-1 items-center">
+                  <Skeleton className="h-4 w-32 max-w-full" />
+                </div>
+                <div className="-my-2 inline-flex h-11 shrink-0 items-center">
+                  <Skeleton className="h-4 w-11 rounded-full" />
+                </div>
+              </div>
             </div>
           </li>
         ))}

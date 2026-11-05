@@ -1,4 +1,5 @@
 "use client";
+import CartSummary from "../cart-summary";
 import InventorySummary from "../inventory-summary";
 
 import {
@@ -11,13 +12,7 @@ import {
   useEventCategories,
   useEvents,
 } from "@/entities/event";
-import {
-  ErrorState,
-  PageHeader,
-  PageLayout,
-  SectionHeader,
-  Text,
-} from "@/shared/ui";
+import { ErrorState, PageHeader, PageLayout } from "@/shared/ui";
 
 import { CalendarView } from "@/widgets/calendar-view";
 import CelebrationCardList from "../celebration-card-list";
@@ -126,12 +121,7 @@ const HomeSchedule = () => {
             />
           )}
           <InventorySummary />
-          <section data-od-id="cart-summary" aria-labelledby="cart-title">
-            <SectionHeader id="cart-title" title="장바구니" />
-            <Text as="p" variant="caption" className="text-muted-foreground">
-              준비 중이에요.
-            </Text>
-          </section>
+          <CartSummary instant={instant} />
         </div>
       </div>
     </PageLayout>

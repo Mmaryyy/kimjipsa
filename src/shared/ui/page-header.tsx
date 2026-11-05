@@ -27,21 +27,16 @@ const PageHeader = ({
 }: Props) => {
   return (
     <header className="kj-page-header" data-od-id={odId && `${odId}-header`}>
-      {navigation && (
-        <div
-          className={cn([
-            "mb-0.5 flex min-h-10 items-center justify-between gap-2 [&>div]:w-full",
-            "[&_a]:min-h-11 [&_a]:min-w-11 [&_a>svg]:-translate-x-1/4",
-          ])}
-        >
-          {navigation}
-        </div>
-      )}
       <div className="relative flex items-center gap-2">
+        {navigation && (
+          <div className="-ml-3 flex shrink-0 items-center [&_a]:min-h-11 [&_a]:min-w-11">
+            {navigation}
+          </div>
+        )}
         <div className="flex min-w-0 flex-1 items-center">
           <Text
             as={`h${headingLevel}`}
-            className="min-w-0 flex-1"
+            className={cn("min-w-0 flex-1", navigation && "truncate")}
             id={titleId}
             aria-label={titleAriaLabel}
             variant="title-lg"

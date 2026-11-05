@@ -82,6 +82,7 @@ describe("ACC-15 SCN-ACC-6 탈퇴와 관리자 권한", () => {
     expect(cart[0]).toMatchObject({
       added_by: null,
       checked_by: null,
+      checked_at: null,
       is_checked: true,
     });
     state.context.perspective = 1;

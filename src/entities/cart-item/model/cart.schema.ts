@@ -28,6 +28,7 @@ export const cartItemSchema = cartInputSchema.extend({
   created_at: z.iso.datetime({ offset: true }),
   added_by: nullableId,
   checked_by: nullableId,
+  checked_at: z.iso.datetime({ offset: true }).nullable(),
   is_checked: z.boolean(),
   purchased_at: z.iso.datetime({ offset: true }).nullable(),
 });

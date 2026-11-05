@@ -5,8 +5,7 @@ import CartItemRow from "./Row";
 interface Props {
   category: { id: string; name: string };
   index: number;
-  categories: { id: string }[];
-  otherId: string;
+  rows: CartItem[];
   items: CartItem[];
   units: InventoryMeta["units"];
   members: CartData["members"];
@@ -22,8 +21,7 @@ interface Props {
 const CartCategoryGroup = ({
   category,
   index,
-  categories,
-  otherId,
+  rows,
   items,
   units,
   members,
@@ -36,12 +34,6 @@ const CartCategoryGroup = ({
   onWrite,
   onEdit,
 }: Props) => {
-  const rows = items.filter(
-    (item) =>
-      (categories.some((entry) => entry.id === item.category_id)
-        ? item.category_id
-        : otherId) === category.id,
-  );
   if (!rows.length) return null;
   return (
     <section>

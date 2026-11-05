@@ -11,7 +11,8 @@
     "checked_by": null,
     "is_checked": false,
     "inventory_item_id": null,
-    "purchased_at": null
+    "purchased_at": null,
+    "checked_at": null
   },
   {
     "id": "13113cd1-a450-4b1d-a1c4-d05d2ac3acbb",
@@ -25,7 +26,8 @@
     "checked_by": null,
     "is_checked": false,
     "inventory_item_id": null,
-    "purchased_at": null
+    "purchased_at": null,
+    "checked_at": null
   },
   {
     "id": "a0aa34fb-ff38-4dc3-9f9f-9dfb19a09212",
@@ -39,7 +41,8 @@
     "checked_by": null,
     "is_checked": false,
     "inventory_item_id": null,
-    "purchased_at": null
+    "purchased_at": null,
+    "checked_at": null
   },
   {
     "id": "14a5fbd1-ba79-4cd7-ba98-37fb2489bb9e",
@@ -53,7 +56,8 @@
     "checked_by": null,
     "is_checked": false,
     "inventory_item_id": null,
-    "purchased_at": null
+    "purchased_at": null,
+    "checked_at": null
   },
   {
     "id": "c2608dcf-8fbc-4d85-9c1a-325116f78ddd",
@@ -67,7 +71,8 @@
     "checked_by": "10000000-0000-4000-8000-000000000002",
     "is_checked": true,
     "inventory_item_id": null,
-    "purchased_at": null
+    "purchased_at": null,
+    "checked_at": "2026-11-05T01:00:00Z"
   },
   {
     "id": "b805300b-f34a-4712-a6af-a6a3e83f5782",
@@ -81,7 +86,8 @@
     "checked_by": "10000000-0000-4000-8000-000000000002",
     "is_checked": true,
     "inventory_item_id": null,
-    "purchased_at": null
+    "purchased_at": null,
+    "checked_at": "2026-11-05T01:00:00Z"
   },
   {
     "id": "a36a737f-fce2-414f-a60b-cc7f435fde00",
@@ -95,7 +101,8 @@
     "checked_by": null,
     "is_checked": false,
     "inventory_item_id": null,
-    "purchased_at": null
+    "purchased_at": null,
+    "checked_at": null
   },
   {
     "id": "2e71a1d4-1553-4f28-a6cc-be12da80a2fb",
@@ -109,7 +116,8 @@
     "checked_by": "10000000-0000-4000-8000-000000000002",
     "is_checked": true,
     "inventory_item_id": null,
-    "purchased_at": "2026-10-25T00:00:00.000Z"
+    "purchased_at": "2026-10-25T00:00:00.000Z",
+    "checked_at": "2026-11-05T01:00:00Z"
   },
   {
     "id": "2bda6437-2761-4437-b823-635e0c2e1189",
@@ -123,7 +131,8 @@
     "checked_by": "10000000-0000-4000-8000-000000000002",
     "is_checked": true,
     "inventory_item_id": null,
-    "purchased_at": "2026-10-25T00:00:00.000Z"
+    "purchased_at": "2026-10-25T00:00:00.000Z",
+    "checked_at": "2026-11-05T01:00:00Z"
   },
   {
     "id": "c6a31e9a-ac44-4aa7-8b01-c2c394d2bd48",
@@ -137,7 +146,8 @@
     "checked_by": "10000000-0000-4000-8000-000000000002",
     "is_checked": true,
     "inventory_item_id": null,
-    "purchased_at": "2026-10-25T00:00:00.000Z"
+    "purchased_at": "2026-10-25T00:00:00.000Z",
+    "checked_at": "2026-11-05T01:00:00Z"
   },
   {
     "id": "5300aaa1-aa3e-4d0c-bb50-85acc683f776",
@@ -151,7 +161,8 @@
     "checked_by": "10000000-0000-4000-8000-000000000002",
     "is_checked": true,
     "inventory_item_id": null,
-    "purchased_at": "2026-10-25T00:00:00.000Z"
+    "purchased_at": "2026-10-25T00:00:00.000Z",
+    "checked_at": "2026-11-05T01:00:00Z"
   },
   {
     "id": "52d7b69e-2b9c-4908-b0f7-2bfe89a1df90",
@@ -165,7 +176,8 @@
     "checked_by": "10000000-0000-4000-8000-000000000002",
     "is_checked": true,
     "inventory_item_id": null,
-    "purchased_at": "2026-10-25T00:00:00.000Z"
+    "purchased_at": "2026-10-25T00:00:00.000Z",
+    "checked_at": "2026-11-05T01:00:00Z"
   },
   {
     "id": "73d91281-c89c-4192-ac66-b1975700fd86",
@@ -179,6 +191,7 @@
     "checked_by": "10000000-0000-4000-8000-000000000002",
     "is_checked": true,
     "inventory_item_id": null,
-    "purchased_at": "2026-10-25T00:00:00.000Z"
+    "purchased_at": "2026-10-25T00:00:00.000Z",
+    "checked_at": "2026-11-05T01:00:00Z"
   }
 ]

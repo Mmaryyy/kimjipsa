@@ -20,6 +20,7 @@ const item: CartItem = {
   inventory_item_id: null,
   added_by: null,
   checked_by: null,
+  checked_at: null,
   is_checked: false,
   purchased_at: null,
   created_at: new Date().toISOString(),

@@ -182,6 +182,7 @@ export const mockDataSchemas = {
         link_url: z.string(),
         added_by: z.uuid().nullable(),
         checked_by: z.uuid().nullable(),
+        checked_at: z.iso.datetime({ offset: true }).nullable(),
         is_checked: z.boolean(),
         inventory_item_id: z.uuid().nullable(),
         purchased_at: z.string().nullable(),

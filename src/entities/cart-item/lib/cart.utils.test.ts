@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   frequentCartItems,
+  groupCartItems,
   parseCartQuickInput,
   withFrequentCartDefaults,
 } from "./cart.utils";
@@ -17,6 +18,7 @@ const purchase = (name: string, days = 1): CartItem => ({
   link_url: "",
   added_by: null,
   checked_by: null,
+  checked_at: null,
   is_checked: true,
   inventory_item_id: null,
   purchased_at: new Date(now - days * 86400000).toISOString(),
@@ -137,6 +139,38 @@ describe("CART-01 CART-12 빠른 추가", () => {
 
 describe("CART-05 SCN-CART-6 기본 품목 채우기", () => {
   const defaults = ["휴지", "변기 세정제", "세탁세제", "생수"];
+  it("기본 품목의 카테고리를 이름으로 찾고 구매 기록의 카테고리는 유지해요", () => {
+    const categories = [
+      { id: "household", name: "생활용품" },
+      { id: "drinks", name: "음료" },
+      { id: "other", name: "기타" },
+    ];
+    expect(
+      withFrequentCartDefaults([], [], categories).map(
+        (item) => item.category_id,
+      ),
+    ).toEqual(["household", "household", "household", "drinks"]);
+    const purchased = { ...purchase("휴지"), category_id: "original" };
+    expect(withFrequentCartDefaults([purchased], [], categories)[0]).toBe(
+      purchased,
+    );
+  });
+  it("기본 카테고리를 지우거나 이름을 바꾸면 기타로 담고 기타도 없으면 비워요", () => {
+    const categories = [
+      { id: "renamed", name: "바꾼 이름" },
+      { id: "other", name: "기타" },
+    ];
+    expect(
+      withFrequentCartDefaults([], [], categories).map(
+        (item) => item.category_id,
+      ),
+    ).toEqual(["other", "other", "other", "other"]);
+    expect(
+      withFrequentCartDefaults([], [], categories.slice(0, 1)).every(
+        (item) => item.category_id === null,
+      ),
+    ).toBe(true);
+  });
   it("가정의 단위 ID와 기본 설명을 채우고 구매 기록의 정보는 유지해요", () => {
     const units = [
       { id: "pack", name: "팩" },
@@ -201,4 +235,29 @@ describe("CART-05 SCN-CART-6 기본 품목 채우기", () => {
     expect(result.slice(0, Math.min(count, 10))).toEqual(items.slice(0, 10));
     if (count === 9) expect(result[9]?.name).toBe("휴지");
   });
+});
+
+describe("CART-02 코너 묶기", () => {
+  it.each([true, false])(
+    "정렬하고 없는 ID와 미지정 항목을 기타로 묶어요: %s",
+    (hasOther) => {
+      const categories = [
+        { id: "b", name: "나", sort_order: 2 },
+        { id: "a", name: "가", sort_order: 1 },
+        ...(hasOther ? [{ id: "other", name: "기타", sort_order: 3 }] : []),
+      ];
+      const known = { ...purchase("두부"), category_id: "a" };
+      const unknown = { ...purchase("우유"), category_id: "new" };
+      const unassigned = purchase("휴지");
+      const groups = groupCartItems([known, unknown, unassigned], categories);
+      expect(groups.map((group) => group.id)).toEqual([
+        "a",
+        "b",
+        hasOther ? "other" : "unassigned",
+      ]);
+      expect(groups[0]?.items).toEqual([known]);
+      expect(groups[2]?.items).toEqual([unknown, unassigned]);
+      expect(categories[0]?.id).toBe("b");
+    },
+  );
 });
