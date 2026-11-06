@@ -66,11 +66,11 @@ describe("ACC-12 CAL-07 P4.12 첫 화면 미리 불러오기", () => {
     vi.unstubAllGlobals();
   });
 
-  it("SCN-CAL-10 완료해도 최소 900ms와 200ms 페이드 뒤에 화면을 보여 줘요", async () => {
+  it("SCN-CAL-10 완료해도 최소 2700ms와 200ms 페이드 뒤에 화면을 보여 줘요", async () => {
     prepare.mockResolvedValue(undefined);
     const client = mount();
     expect(prepare).toHaveBeenCalledWith(client);
-    await elapse(899);
+    await elapse(2699);
     expect(screen.getByText("스플래시")).toBeVisible();
     await elapse(1);
     expect(screen.getByText("페이드")).toBeVisible();
@@ -92,7 +92,7 @@ describe("ACC-12 CAL-07 P4.12 첫 화면 미리 불러오기", () => {
       Promise.allSettled([Promise.reject(new Error("조회 실패"))]),
     );
     mount();
-    await elapse(900);
+    await elapse(2700);
     await elapse(200);
     expect(screen.getByText("오늘 화면")).toBeVisible();
   });
@@ -101,7 +101,7 @@ describe("ACC-12 CAL-07 P4.12 첫 화면 미리 불러오기", () => {
     async (termsVersion) => {
       account.data.profile.termsVersion = termsVersion;
       mount();
-      await elapse(900);
+      await elapse(2700);
       await elapse(200);
       expect(screen.getByText("동의 폼")).toBeVisible();
       expect(screen.getByRole("button", { name: "로그아웃" })).toBeVisible();
@@ -113,7 +113,7 @@ describe("ACC-12 CAL-07 P4.12 첫 화면 미리 불러오기", () => {
   it("홈이 아닌 경로는 미리 불러오기를 기다리지 않아요", async () => {
     route.pathname = "/calendar";
     mount();
-    await elapse(900);
+    await elapse(2700);
     await elapse(200);
     expect(prepare).not.toHaveBeenCalled();
     expect(screen.getByText("오늘 화면")).toBeVisible();

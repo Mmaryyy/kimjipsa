@@ -23,6 +23,10 @@ cart_items N─0..1 inventory_items;  cart_items N─1 users(added_by, checked_b
 
 ## 2. 가정·계정
 
+### user_bot_settings (BOT-18)
+
+사용자별 캐릭터 타입은 `user_id`(users FK, 탈퇴 시 cascade, PK)와 `bot_type`(butler | nobi, 기본 butler)에 저장한다. 행이 없으면 집사로 표시한다. authenticated의 조회·등록·수정은 RLS로 본인만 허용하며 배우자에게 노출하지 않는다. 이름·기억 설정의 가정 공용 권한과 분리한다.
+
 ### users
 | 필드 | 설명 | 출처 |
 | --- | --- | --- |

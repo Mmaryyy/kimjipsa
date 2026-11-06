@@ -87,6 +87,10 @@ export type Database<
 > = {
   public: {
     Tables: {
+      user_bot_settings: Table<
+        { user_id: string; bot_type: string },
+        { user_id: string; bot_type: string }
+      >;
       cart_items: Table<CartRow, CartRow>;
       frequent_cart_overrides: Table<
         {

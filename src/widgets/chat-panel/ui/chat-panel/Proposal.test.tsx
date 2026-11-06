@@ -6,6 +6,9 @@ import type { ActionProposal } from "@/entities/chat-message";
 import ChatActionProposal from "./Proposal";
 import ChatHeader from "./Header";
 const mutate = vi.hoisted(() => vi.fn());
+vi.mock("@/features/account", () => ({
+  useBotCharacter: () => ({ avatar: "/images/kimjipsa-avatar.png" }),
+}));
 vi.mock("@/entities/chat-message", () => ({
   useChatActions: () => ({
     actions: { mutate, isPending: false, error: null },

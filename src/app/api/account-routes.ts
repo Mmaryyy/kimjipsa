@@ -5,6 +5,7 @@ import {
   authenticatedClient,
   getAccount,
   saveProfile,
+  saveBotType,
   withdrawAccount,
 } from "@/entities/user/index.server";
 import {
@@ -99,4 +100,8 @@ export function memberRolePOST(request: Request) {
     if (!(await isServerMockDataEnabled())) await authenticatedClient();
     return changeMemberRole(await readJson(request));
   });
+}
+
+export function botTypePOST(request: Request) {
+  return handleRoute(request, async () => saveBotType(await readJson(request)));
 }

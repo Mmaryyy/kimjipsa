@@ -3,24 +3,38 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import AiSettings from ".";
 import { ToastProvider } from "@/shared/ui";
 
-const { save, memory, settings, connection, account } = vi.hoisted(() => ({
-  connection: { failed: false, refetch: vi.fn(), pending: false },
-  account: { role: "admin" },
-  save: vi.fn(),
-  memory: vi.fn(),
-  settings: {
-    name: "집사",
-    memoryEnabled: true,
-    version: 1,
-    memoryVersion: 1,
-    memories: [{ id: "memory", text: "우유는 저지방", version: 1 }],
-  },
-}));
+const { saveType, save, memory, settings, connection, account } = vi.hoisted(
+  () => ({
+    connection: {
+      failed: false,
+      refetch: vi.fn(),
+      pending: false,
+      memoryPending: false,
+      memoryError: null as Error | null,
+    },
+    account: { role: "admin" },
+    saveType: vi.fn(),
+    save: vi.fn(),
+    memory: vi.fn(),
+    settings: {
+      name: "집사",
+      memoryEnabled: true,
+      version: 1,
+      memoryVersion: 1,
+      memories: [{ id: "memory", text: "우유는 저지방", version: 1 }],
+    },
+  }),
+);
 vi.mock("@/entities/chat-message", () => ({
   useAiSettings: () => ({
     query: { data: settings },
     save: { mutateAsync: save, isPending: connection.pending },
-    memory: { mutate: memory, isPending: false },
+    memory: {
+      mutate: memory,
+      reset: vi.fn(),
+      isPending: connection.memoryPending,
+      error: connection.memoryError,
+    },
   }),
   useChat: () => ({
     data: { workerOnline: true },
@@ -29,6 +43,11 @@ vi.mock("@/entities/chat-message", () => ({
   }),
 }));
 vi.mock("@/features/account", () => ({
+  useBotCharacter: () => ({
+    avatar: "/images/kimjipsa-avatar.png",
+    label: "집사",
+  }),
+  useSaveBotType: () => ({ mutate: saveType, isPending: false }),
   useAccount: () => ({
     data: {
       userId: "user",
@@ -37,11 +56,14 @@ vi.mock("@/features/account", () => ({
   }),
 }));
 beforeEach(() => {
+  saveType.mockReset();
   save.mockReset().mockResolvedValue(null);
   memory.mockReset();
   account.role = "admin";
   connection.failed = false;
   connection.pending = false;
+  connection.memoryPending = false;
+  connection.memoryError = null;
   connection.refetch.mockReset();
 });
 it("BOT-15/16 이름 변경과 기억 스위치는 달라졌을 때만 자동 저장해요", async () => {
@@ -128,3 +150,21 @@ it.each(["member", "admin"])(
     expect(connection.refetch).toHaveBeenCalledOnce();
   },
 );
+
+it("BOT-18 구성원도 타입을 바꾸고 같은 기본값은 저장하지 않아요", () => {
+  account.role = "member";
+  render(
+    <ToastProvider>
+      <AiSettings />
+    </ToastProvider>,
+  );
+  expect(screen.getByAltText("집사 미리보기")).toHaveAttribute("width", "48");
+  fireEvent.click(screen.getByRole("radio", { name: "집사" }));
+  expect(saveType).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("radio", { name: "노비" }));
+  expect(saveType).toHaveBeenCalledWith(
+    "nobi",
+    expect.objectContaining({ onSuccess: expect.any(Function) }),
+  );
+  expect(save).not.toHaveBeenCalled();
+});

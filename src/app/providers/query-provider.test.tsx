@@ -114,7 +114,7 @@ function gatedApp() {
 }
 async function settleAccountGate() {
   await act(async () => {
-    await vi.advanceTimersByTimeAsync(900);
+    await vi.advanceTimersByTimeAsync(2700);
   });
   await act(async () => {
     await vi.advanceTimersByTimeAsync(200);

@@ -124,7 +124,7 @@ describe("ACC-01 SCN-ACC-1 시작 화면과 로그인 1단계", () => {
     expect(screen.getAllByRole("button")).toHaveLength(1);
     expect(
       screen.getByRole("img", {
-        name: "팔에 흰 수건을 걸친 강아지 집사와 어깨 위 작은 노란 새",
+        name: "김집사 캐릭터",
       }),
     ).toBeVisible();
     expect(screen.getByRole("heading", { name: "김집사" })).toBeVisible();

@@ -1,9 +1,13 @@
 "use client";
-import type { LoginProvider } from "@/entities/user";
+import {
+  botCharacters,
+  type BotType,
+  type LoginProvider,
+} from "@/entities/user";
 import { ApiError } from "@/shared/api";
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useSyncExternalStore } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchAccount, signIn, updateProfile } from "../api/api";
+import { fetchAccount, signIn, updateProfile, updateBotType } from "../api/api";
 const subscribeBrowser = () => () => {};
 const getKakaoBrowser = () => /KAKAOTALK/i.test(navigator.userAgent);
 const getServerBrowser = () => false;
@@ -74,4 +78,49 @@ export function useProfileForm(onSaved?: () => void) {
     onSubmit: mutation.mutateAsync,
     saved: mutation.isSuccess,
   };
+}
+
+const botTypeStorageKey = "kimjipsa-bot-type";
+const getCachedBotType = (): BotType | null => {
+  try {
+    const value = localStorage.getItem(botTypeStorageKey);
+    return value && value in botCharacters ? (value as BotType) : null;
+  } catch {
+    return null;
+  }
+};
+const getServerBotType = () => null;
+
+// 계정을 받기 전에는 이 기기에서 마지막으로 본 타입을 쓰고, 그것도 없으면 ready=false로 그림을 비워 둔다.
+export function useBotCharacter() {
+  const account = useAccount();
+  const cached = useSyncExternalStore(
+    subscribeBrowser,
+    getCachedBotType,
+    getServerBotType,
+  );
+  const saved = account.data?.botType;
+  useEffect(() => {
+    if (!saved) return;
+    try {
+      localStorage.setItem(botTypeStorageKey, saved);
+    } catch {}
+  }, [saved]);
+  const type = saved ?? cached;
+  return {
+    ...botCharacters[type ?? "butler"],
+    ready: type !== null || !account.isPending,
+  };
+}
+export function useSaveBotType() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: updateBotType,
+    onSuccess: (_, botType: BotType) => {
+      client.setQueryData<Awaited<ReturnType<typeof fetchAccount>>>(
+        accountQueryKey,
+        (account) => (account ? { ...account, botType } : account),
+      );
+    },
+  });
 }

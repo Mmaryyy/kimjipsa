@@ -13,7 +13,13 @@ const { useAccount, replace, route } = vi.hoisted(() => ({
 vi.mock("@/widgets/account-gate/model/prefetch-home", () => ({
   prefetchHome: () => Promise.resolve(),
 }));
-vi.mock("@/features/account", () => ({ useAccount }));
+vi.mock("@/features/account", () => ({
+  useAccount,
+  useBotCharacter: () => ({
+    full: "/images/kimjipsa-dog-bird.png",
+    ready: true,
+  }),
+}));
 vi.mock("next/navigation", () => ({
   usePathname: () => route.pathname,
   useRouter: () => ({ replace }),
@@ -98,11 +104,11 @@ describe("ACC-01 SCN-ACC-1 첫 진입 계정 확인 스플래시", () => {
     expect(html).not.toContain("skeleton");
   });
 
-  it("빠른 계정 확인도 최소 900ms와 200ms 페이드 후에만 셸을 보여 줘요", async () => {
+  it("빠른 계정 확인도 최소 2700ms와 200ms 페이드 후에만 셸을 보여 줘요", async () => {
     useAccount.mockReturnValue(accountResult(readyAccount));
     render(app());
     expectSplashOnly();
-    await elapse(899);
+    await elapse(2699);
     expectSplashOnly();
     await elapse(1);
     expectSplashOnly();
@@ -114,9 +120,9 @@ describe("ACC-01 SCN-ACC-1 첫 진입 계정 확인 스플래시", () => {
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
-  it("900ms 뒤에도 조회 중이면 유지하고 조회가 끝나면 페이드해요", async () => {
+  it("2700ms 뒤에도 조회 중이면 유지하고 조회가 끝나면 페이드해요", async () => {
     const view = render(app());
-    await elapse(1500);
+    await elapse(2700);
     expectSplashOnly();
     useAccount.mockReturnValue(accountResult(readyAccount));
     view.rerender(app());
@@ -136,7 +142,7 @@ describe("ACC-01 SCN-ACC-1 첫 진입 계정 확인 스플래시", () => {
     async (account, destination) => {
       useAccount.mockReturnValue(accountResult(account));
       render(app());
-      await elapse(900);
+      await elapse(2700);
       expect(replace).not.toHaveBeenCalled();
       await elapse(200);
       expect(replace).toHaveBeenCalledWith(destination);
@@ -161,7 +167,7 @@ describe("ACC-01 SCN-ACC-1 첫 진입 계정 확인 스플래시", () => {
   it("로그인 후 앱 안에서 탭을 바꾸면 스플래시를 다시 띄우지 않아요", async () => {
     useAccount.mockReturnValue(accountResult(readyAccount));
     const view = render(app());
-    await elapse(900);
+    await elapse(2700);
     await elapse(200);
     route.pathname = "/calendar";
     view.rerender(app());
@@ -186,7 +192,7 @@ describe("ACC-01 SCN-ACC-1 첫 진입 계정 확인 스플래시", () => {
       accountResult(undefined, new Error("연결을 확인해 주세요")),
     );
     render(app());
-    await elapse(900);
+    await elapse(2700);
     await elapse(200);
     expect(screen.getByText("연결을 확인해 주세요")).toBeVisible();
     expect(screen.getByRole("button", { name: "다시 시도하기" })).toBeVisible();

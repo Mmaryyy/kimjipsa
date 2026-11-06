@@ -23,3 +23,9 @@ export {
   notificationSettingsSchema,
   type NotificationSettings,
 } from "./model/notification-settings.schema";
+
+export {
+  botCharacters,
+  botTypeOptions,
+  type BotType,
+} from "./model/bot-character.constants";

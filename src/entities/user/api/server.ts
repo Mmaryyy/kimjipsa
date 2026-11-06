@@ -12,9 +12,11 @@ import {
   createServerSupabaseClient,
   throwDatabaseError as throwSharedDatabaseError,
 } from "@/shared/server";
+import { botTypeOptions } from "../model/bot-character.constants";
 import type { Account } from "./type";
 import { providers, type LoginProvider } from "../model/providers.constants";
 import type { FamilyRole } from "@/entities/family/@x/user";
+const botTypeSchema = z.enum(botTypeOptions.map(({ value }) => value));
 const databaseErrors = {
   invalid_notification_settings: [400, "알림 설정을 확인해 주세요."],
   unauthorized: [401, "로그인이 필요해요."],
@@ -70,6 +72,9 @@ async function mockAccount(): Promise<Account | null> {
     return { userId: null, profile: null, membership: null };
   const displayName = context.values.get(`display-name:${member.user_id}`);
   return {
+    botType: botTypeSchema.parse(
+      context.values.get(`bot-type:${member.user_id}`) ?? "butler",
+    ),
     loginProvider: "kakao",
     userId: member.user_id,
     profile:
@@ -146,7 +151,7 @@ export async function getAccount(): Promise<Account> {
     await client.auth.signOut();
     throw error;
   }
-  const [profile, membership] = await Promise.all([
+  const [profile, membership, character] = await Promise.all([
     client
       .from("users")
       .select("display_name, terms_version")
@@ -157,10 +162,17 @@ export async function getAccount(): Promise<Account> {
       .select("family_id, role")
       .eq("user_id", user.id)
       .maybeSingle(),
+    client
+      .from("user_bot_settings")
+      .select("bot_type")
+      .eq("user_id", user.id)
+      .maybeSingle(),
   ]);
+  throwDatabaseError(character.error);
   throwDatabaseError(profile.error);
   throwDatabaseError(membership.error);
   return {
+    botType: botTypeSchema.parse(character.data?.bot_type ?? "butler"),
     loginProvider: z.enum(providers).parse(user.identities?.[0]?.provider),
     userId: user.id,
     profile: profile.data
@@ -319,6 +331,24 @@ export async function saveNotificationSettings(input: unknown) {
     push_enabled: settings.pushEnabled,
     morning_summary_time: settings.morningSummaryTime,
   });
+  throwDatabaseError(error);
+  return null;
+}
+
+export async function saveBotType(raw: unknown) {
+  const { botType } = z.object({ botType: botTypeSchema }).parse(raw);
+  const context = await mockContext();
+  if (context) {
+    const account = await mockAccount();
+    if (!account?.userId)
+      throw new ApiError("unauthorized", "로그인이 필요해요.", 401);
+    context.values.set(`bot-type:${account.userId}`, botType);
+    return null;
+  }
+  const { client, user } = await authenticatedClient();
+  const { error } = await client
+    .from("user_bot_settings")
+    .upsert({ user_id: user.id, bot_type: botType });
   throwDatabaseError(error);
   return null;
 }

@@ -1,5 +1,5 @@
 import { removeCurrentPushSubscription } from "@/entities/notification";
-import type { LoginProvider } from "@/entities/user";
+import type { BotType, LoginProvider } from "@/entities/user";
 import { isAuthSessionMissingError } from "@supabase/supabase-js";
 import { createBrowserSupabaseClient, request } from "@/shared/api";
 import {
@@ -104,4 +104,8 @@ export async function signIn(
     },
   });
   if (error) throw new Error("로그인을 시작하지 못했어요. 다시 시도해 주세요.");
+}
+
+export function updateBotType(botType: BotType) {
+  return request<null>(accountApiRoutes.botType, { botType });
 }

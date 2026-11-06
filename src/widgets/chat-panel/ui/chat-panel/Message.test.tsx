@@ -166,3 +166,7 @@ it.each(["failed", "unknown"] as const)(
     );
   },
 );
+
+vi.mock("@/features/account", () => ({
+  useBotCharacter: () => ({ avatar: "/images/kimjipsa-avatar.png" }),
+}));

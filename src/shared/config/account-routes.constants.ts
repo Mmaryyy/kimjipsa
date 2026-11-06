@@ -11,6 +11,7 @@ export const accountRoutes = {
 export const accountApiRoutes = {
   account: "/api/account",
   profile: "/api/account/profile",
+  botType: "/api/account/bot-type",
   withdraw: "/api/account/withdraw",
   family: "/api/family",
   memberRole: "/api/family/member-role",

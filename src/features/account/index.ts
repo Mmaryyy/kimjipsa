@@ -5,3 +5,5 @@ export { ProfileForm } from "./ui/profile-form";
 export { LoginIntroduction } from "./ui/login-introduction";
 
 export { withdrawAccount } from "./api/api";
+
+export { useBotCharacter, useSaveBotType } from "./model/use-account";

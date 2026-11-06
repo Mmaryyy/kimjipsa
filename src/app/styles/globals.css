@@ -1,4 +1,14 @@
 @import "tailwindcss";
+/* 스플래시 '김노비 → 김집사' 타이핑(BrandLogo). 길이를 바꾸면 BrandLogo·AccountGate 최소 시간도 맞춘다. */
+/* 플러그인 옵션 이름은 대소문자를 구분해서 포매터가 소문자로 바꾸지 않게 한다. */
+/* prettier-ignore */
+@plugin "tailwind-plugin-typed" {
+  delimiter: ",";
+  typeLetterDuration: 0.18;
+  pauseAfterWordDuration: 0.4;
+  deleteLetterDuration: 0.1;
+  pauseAfterDeletionDuration: 0.2;
+}
 @import "./tokens.css";
 @import "../../shared/ui/styles.css" layer(components);
 

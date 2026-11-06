@@ -8,3 +8,5 @@ export {
 } from "./api/server";
 
 export { withdrawAccount } from "./api/withdraw";
+
+export { saveBotType } from "./api/server";

@@ -5,6 +5,7 @@ import {
   LoginButtons,
   LoginIntroduction,
   useAccount,
+  useBotCharacter,
 } from "@/features/account";
 import { accountRoutes, onboardingPath } from "@/shared/config";
 import {
@@ -27,6 +28,7 @@ export function LoginFlow({
   loginRequested?: boolean;
 }) {
   const account = useAccount();
+  const character = useBotCharacter();
   const router = useRouter();
   const showLogin =
     loginRequested || inviteToken !== undefined || error !== undefined;
@@ -94,7 +96,9 @@ export function LoginFlow({
             className="flex flex-1 items-center justify-center"
             data-od-id="ob-start-logo"
           >
-            <BrandLogo />
+            <BrandLogo
+              characterSrc={character.ready ? character.full : undefined}
+            />
           </div>
           <Button
             size="block"

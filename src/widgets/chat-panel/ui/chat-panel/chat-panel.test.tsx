@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import type { Chat } from "@/entities/chat-message";
 import ChatMessages from "./Messages";
 import { chatFaqs } from "../../config/chat.constants";
@@ -87,3 +87,7 @@ it("BOT-03 FAQ 뒤에 보낸 대화와 이전 대화를 불러와도 클릭 순�
     screen.getByText(chatFaqs[1].answer).closest("li")?.nextElementSibling,
   ).toHaveTextContent("추가 전송");
 });
+
+vi.mock("@/features/account", () => ({
+  useBotCharacter: () => ({ avatar: "/images/kimjipsa-avatar.png" }),
+}));

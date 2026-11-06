@@ -1,3 +1,5 @@
+"use client";
+import { useBotCharacter } from "@/features/account";
 import { cn } from "@/shared/lib";
 import { BrandLogo } from "@/shared/ui";
 
@@ -8,6 +10,7 @@ export function SplashScreen({
   className?: string;
   leaving?: boolean;
 }) {
+  const character = useBotCharacter();
   return (
     <div
       className={cn(
@@ -23,7 +26,10 @@ export function SplashScreen({
       aria-label="김집사를 준비하고 있어요"
       data-od-id="splash-main"
     >
-      <BrandLogo />
+      <BrandLogo
+        typing
+        characterSrc={character.ready ? character.full : undefined}
+      />
     </div>
   );
 }

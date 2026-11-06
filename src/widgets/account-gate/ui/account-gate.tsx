@@ -112,7 +112,14 @@ export function AccountGate({
   const settled = !account.isPending && (!shouldPrefetch || prefetched);
   const leaving = minimumElapsed && settled && !released;
   useEffect(() => {
-    const timer = window.setTimeout(() => setMinimumElapsed(true), 900);
+    // 타이핑('김 → 김노비 → 김 → 김집사', BrandLogo)이 2.22초에 끝나고 잠깐 보이도록 기다린다. 동작 줄이기면 기존 900ms.
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const timer = window.setTimeout(
+      () => setMinimumElapsed(true),
+      reducedMotion ? 900 : 2700,
+    );
     return () => window.clearTimeout(timer);
   }, []);
   useEffect(() => {

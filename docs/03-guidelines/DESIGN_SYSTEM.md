@@ -287,3 +287,14 @@ AI Elements의 Chat 구성(Conversation·Message·PromptInput)을 사용하고 F
 - [수정]은 같은 메시지 안 폼이다. 선택 값은 badge 토글, 제목·장소·메모·품목명은 텍스트 입력, 날짜·시각은 공용 DateTimeInput, 수량은 QuantityStepper를 쓴다. [저장] 뒤 같은 카드의 요약과 확인 버튼으로 돌아간다. [수정 취소]는 저장하지 않고 카드로 돌아간다.
 - [취소]는 입력값을 버리고 “취소했어요”만 남긴다. 취소한 요청까지의 이전 대화는 다음 워커 문맥에서 제외한다.
 - 재고의 카테고리·위치·단위·모드와 장바구니 단위·중복 처리는 누락 시 실제 가정 목록의 선택 버튼 2~6개로 되묻는다. 6개를 넘으면 먼저 범위를 좁힌다. 장바구니 카테고리는 P10.11 자동 추천을 유지한다.
+
+### AI 집사 타입 (BOT-18, P11.1)
+
+설정의 타입 행(`s-bot-type`)은 집사·노비 세그먼트와 48px 미리보기로 구성한다. 사용자별 기본은 집사이며 구성원도 본인 타입을 저장할 수 있다. 캐릭터 매핑은 `src/entities/user/model/bot-character.constants.ts` 한 곳에 둔다.
+
+| 타입 | 채팅 썸네일·헤더·설정 미리보기 | 시작 화면·스플래시 |
+| --- | --- | --- |
+| 집사 (butler) | `/images/kimjipsa-avatar.png` | `/images/kimjipsa-dog-bird.png` |
+| 노비 (nobi) | `/images/nobi/nobi-avatar-dark.png` | `/images/nobi/nobi-full.png` |
+
+앱 아이콘(PWA)과 집사 버튼(런처, `/images/kimjipsa-house.svg` 집 모양)은 타입과 관계없이 고정한다(사용자 2026-11-06). 로그인 확인 전에는 집사로 표시하고 본인 설정을 불러온 뒤 선택 타입을 반영한다.

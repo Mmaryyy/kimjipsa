@@ -25,6 +25,11 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/",
 }));
 vi.mock("@/features/account", () => ({
+  useBotCharacter: () => ({
+    avatar: "/images/kimjipsa-avatar.png",
+    label: "집사",
+  }),
+  useSaveBotType: () => ({ mutate: vi.fn(), isPending: false }),
   useAccount: () => ({
     data: { userId: "me", membership: { familyId: "home" } },
   }),

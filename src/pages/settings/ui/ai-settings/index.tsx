@@ -5,8 +5,16 @@ import {
   useChat,
   type AiSettings as Settings,
 } from "@/entities/chat-message";
-import { useAccount } from "@/features/account";
+import Image from "next/image";
+import { cn } from "@/shared/lib";
+import { botTypeOptions } from "@/entities/user";
 import {
+  useAccount,
+  useBotCharacter,
+  useSaveBotType,
+} from "@/features/account";
+import {
+  SegmentedControl,
   Button,
   ConfirmDialog,
   GroupLabel,
@@ -29,6 +37,8 @@ interface Props {
 const AiSettingsForm = ({ settings, onSaved }: Props) => {
   const { save, memory } = useAiSettings();
   const account = useAccount();
+  const character = useBotCharacter();
+  const typeSave = useSaveBotType();
   const chat = useChat(
     account.data?.membership?.familyId,
     account.data?.userId,
@@ -85,6 +95,38 @@ const AiSettingsForm = ({ settings, onSaved }: Props) => {
             void onSave(name, memoryEnabled);
           }}
         >
+          <SettingsRow
+            label="타입"
+            action={
+              <div className="flex items-center gap-3" data-od-id="s-bot-type">
+                <Image
+                  src={character.avatar}
+                  alt={`${character.label} 미리보기`}
+                  width={48}
+                  height={48}
+                  className={cn(
+                    "size-12 shrink-0 rounded-full object-contain",
+                    character.avatarFramed && "bg-[var(--bot-avatar-bg)]",
+                  )}
+                />
+                <SegmentedControl
+                  label="AI 집사 타입"
+                  options={botTypeOptions}
+                  value={account.data?.botType ?? "butler"}
+                  disabled={typeSave.isPending}
+                  onValueChange={(value) => {
+                    if (value !== (account.data?.botType ?? "butler"))
+                      typeSave.mutate(value, { onSuccess: onSaved });
+                  }}
+                />
+              </div>
+            }
+          />
+          {typeSave.error && (
+            <Text as="p" role="alert" className="text-error-text">
+              {typeSave.error.message}
+            </Text>
+          )}
           <fieldset
             disabled={!admin || save.isPending}
             className="grid min-w-0 gap-2"

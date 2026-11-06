@@ -1,3 +1,4 @@
+import { useBotCharacter } from "@/features/account";
 import { Badge, Button, StatusBadge, Text } from "@/shared/ui";
 import { ChevronDown, X } from "lucide-react";
 
@@ -11,6 +12,7 @@ interface Props {
   failed: boolean;
 }
 const ChatHeader = ({ name, online, failed }: Props) => {
+  const character = useBotCharacter();
   const { onClose, onMinimize } = useChatNavigation();
   const connection =
     failed || online === false
@@ -22,13 +24,14 @@ const ChatHeader = ({ name, online, failed }: Props) => {
     <header className="shrink-0 space-y-3 bg-background px-4 pt-[max(var(--sp-2),env(safe-area-inset-top))] pb-4">
       <div className="flex items-center gap-2">
         <Image
-          src="/images/kimjipsa-avatar.png"
+          src={character.avatar}
           alt=""
           width={52}
           height={52}
           className={cn(
-            "size-13 shrink-0 rounded-full bg-[var(--bot-avatar-bg)]",
-            "p-[calc(var(--sp-2)-var(--sp-1)/4)] object-contain",
+            "size-13 shrink-0 rounded-full object-contain",
+            character.avatarFramed &&
+              "bg-[var(--bot-avatar-bg)] p-[calc(var(--sp-2)-var(--sp-1)/4)]",
           )}
         />
         <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
