@@ -1,4 +1,4 @@
-import type { CartItem } from "../model/cart.schema";
+import type { CartInput, CartItem } from "../model/cart.schema";
 export type {
   CartInput,
   CartItem,
@@ -7,7 +7,8 @@ export type {
 } from "../model/cart.schema";
 export type CartData = {
   items: CartItem[];
-  frequent: CartItem[];
+  frequent: CartInput[];
+  frequentSettings?: (CartInput & { hidden: boolean })[];
   networkError?: boolean;
   familyId: string;
   actorId: string;

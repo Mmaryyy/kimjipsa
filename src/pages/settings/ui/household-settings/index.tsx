@@ -7,7 +7,7 @@ import { ChevronRight } from "lucide-react";
 import InventorySettings from "../inventory-settings";
 import HouseholdSettingsSkeleton from "./Skeleton";
 import SettingsRow from "../settings-row";
-import { eventRoutes } from "@/shared/config";
+import { cartRoutes, eventRoutes } from "@/shared/config";
 import { useEventCategories } from "@/entities/event";
 
 const HouseholdSettings = () => {
@@ -50,6 +50,19 @@ const HouseholdSettings = () => {
         }
       />
       <InventorySettings />
+      <SettingsRow
+        label="자주 사는 품목"
+        href={cartRoutes.frequentItems}
+        odId="s-frequent-items"
+        onNavigate={() => markHistoryBack(cartRoutes.frequentItems)}
+        action={
+          <ChevronRight
+            aria-hidden
+            size={16}
+            className="text-[var(--icon-tertiary)]"
+          />
+        }
+      />
     </section>
   );
 };

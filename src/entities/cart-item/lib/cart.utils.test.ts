@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  resolveFrequentCartItems,
   frequentCartItems,
   groupCartItems,
   parseCartQuickInput,
@@ -260,4 +261,105 @@ describe("CART-02 코너 묶기", () => {
       expect(categories[0]?.id).toBe("b");
     },
   );
+});
+
+describe("CART-05 SCN-CART-6 덮어쓰기와 숨김", () => {
+  it("숨긴 상위 품목을 다음 순위로 채우고 다시 보이면 원래 순위로 돌아와요", () => {
+    const items = Array.from({ length: 12 }, (_, i) => purchase(`품목${i}`));
+    const override = {
+      ...items[0]!,
+      hidden: true,
+      memo: "덮어쓴 메모",
+      link_url: "https://example.com/",
+    };
+    const hidden = resolveFrequentCartItems(items, [override], [], []);
+    expect(hidden.frequent).toHaveLength(10);
+    expect(hidden.frequent.map((item) => item.name)).toEqual(
+      items.slice(1, 11).map((item) => item.name),
+    );
+    expect(hidden.frequentSettings[0]).toMatchObject(override);
+    const visible = resolveFrequentCartItems(
+      items,
+      [{ ...override, hidden: false }],
+      [],
+      [],
+    );
+    expect(visible.frequent[0]).toMatchObject({
+      memo: override.memo,
+      link_url: override.link_url,
+      quantity: 1,
+    });
+  });
+  it("후보에 없는 덮어쓰기로 칩이나 설정 항목을 만들지 않아요", () => {
+    const result = resolveFrequentCartItems(
+      [],
+      [{ name: "milktea", hidden: false }],
+      [],
+      [],
+    );
+    expect(result.frequentSettings.map((item) => item.name)).toEqual([
+      "휴지",
+      "변기 세정제",
+      "세탁세제",
+      "생수",
+    ]);
+    expect(result.frequent).toEqual(result.frequentSettings);
+  });
+  it("삭제된 카테고리와 단위는 원래 값으로 돌아가고 미지정 메모도 최신 값을 따라요", () => {
+    const original = {
+      ...purchase("Milk Tea"),
+      category_id: "category",
+      unit_id: "unit",
+      memo: "최신 메모",
+    };
+    const result = resolveFrequentCartItems(
+      [original],
+      [
+        {
+          name: "milktea",
+          hidden: false,
+          category_id: null,
+          unit_id: null,
+          memo: null,
+          link_url: "",
+        },
+      ],
+      [],
+      [],
+    );
+    expect(result.frequent[0]).toMatchObject({
+      ...original,
+      quantity: 1,
+      link_url: "",
+    });
+    const defaults = resolveFrequentCartItems(
+      [],
+      [{ name: "휴지", hidden: false, category_id: null, unit_id: null }],
+      [{ id: "pack", name: "팩" }],
+      [{ id: "household", name: "생활용품" }],
+    );
+    expect(defaults.frequent[0]).toMatchObject({
+      category_id: "household",
+      unit_id: "pack",
+    });
+  });
+  it("기본 품목도 정규화 이름으로 숨기고 덮어쓰며 다른 품목 값은 유지해요", () => {
+    const original = { ...purchase("Milk Tea"), quantity: 8, memo: "원래 값" };
+    const override = {
+      name: " 변기세정제 ",
+      category_id: null,
+      unit_id: null,
+      memo: "",
+      link_url: "",
+      hidden: true,
+    };
+    const result = resolveFrequentCartItems([original], [override], [], []);
+    expect(result.frequent.map((item) => item.name)).toEqual([
+      "Milk Tea",
+      "휴지",
+      "세탁세제",
+      "생수",
+    ]);
+    expect(result.frequent[0]).toMatchObject({ ...original, quantity: 1 });
+  });
 });

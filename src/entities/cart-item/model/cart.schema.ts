@@ -14,7 +14,7 @@ export const cartInputSchema = z.object({
   category_id: nullableId,
   memo: z.string().trim().max(1000),
   link_url: z.union([
-    z.literal(""),
+    z.literal("", { error: "http 또는 https 링크를 입력해 주세요." }),
     z
       .string()
       .regex(/^https?:\/\/[^\s]+$/, "http 또는 https 링크를 입력해 주세요.")
@@ -40,7 +40,27 @@ export const restockEntrySchema = z.object({
   location_id: z.uuid(),
   expires_on: z.iso.date().nullable(),
 });
+export const frequentOverrideSchema = cartInputSchema
+  .pick({
+    name: true,
+    category_id: true,
+    unit_id: true,
+    memo: true,
+    link_url: true,
+  })
+  .partial()
+  .extend({
+    name: cartInputSchema.shape.name,
+    memo: cartInputSchema.shape.memo.nullish(),
+    link_url: cartInputSchema.shape.link_url.nullish(),
+    hidden: z.boolean(),
+  });
+export type FrequentOverride = z.infer<typeof frequentOverrideSchema>;
 export const cartCommandSchema = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("save-frequent"),
+    item: frequentOverrideSchema,
+  }),
   z.object({ action: z.literal("undo-restock"), token: z.uuid() }),
   z.object({
     action: z.literal("add"),

@@ -1,3 +1,4 @@
+import { withFrequentCartDefaults } from "@/entities/cart-item";
 import {
   Button,
   GroupLabel,
@@ -30,9 +31,7 @@ const CartSkeleton = () => (
         </Button>
       </div>
       <CartFrequentItems
-        frequent={[]}
-        units={[]}
-        categories={[]}
+        frequent={withFrequentCartDefaults([])}
         disabled
         onAdd={async () => false}
       />

@@ -96,7 +96,9 @@ const CartQuickAddForm = ({ quickAdd, pending, offline }: Props) => {
         pending={add.pending}
         disabled={offline}
         error={add.error}
-        onChoose={(input, choice) => void add.onAdd(input, choice)}
+        onChoose={(input, choice) =>
+          void add.onAdd(input, choice, add.duplicate?.autoCategory)
+        }
         onClose={() => add.setDuplicate(null)}
       />
     </>

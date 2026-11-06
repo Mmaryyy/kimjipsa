@@ -8,8 +8,12 @@ import {
   mockJson,
   throwDatabaseError,
 } from "@/shared/server";
-import { cartCommandSchema, cartItemSchema } from "../model/cart.schema";
-import { frequentCartItems } from "../lib/cart.utils";
+import {
+  cartCommandSchema,
+  cartItemSchema,
+  frequentOverrideSchema,
+} from "../model/cart.schema";
+import { frequentCartItems, resolveFrequentCartItems } from "../lib/cart.utils";
 import type { CartData, CartWriteResult } from "./type";
 import { addWithCategory } from "./category.server";
 const errors = {
@@ -53,6 +57,7 @@ export async function listCart(): Promise<CartData> {
   if (mock) {
     const family = await mockJson("family");
     const items = await mockJson("cart-items");
+    const meta = await mockJson("inventory-meta");
     return {
       items: items
         .filter((item) => !item.purchased_at)
@@ -61,30 +66,59 @@ export async function listCart(): Promise<CartData> {
             a.created_at.localeCompare(b.created_at) ||
             a.id.localeCompare(b.id),
         ),
-      frequent: frequentCartItems(items),
+      ...resolveFrequentCartItems(
+        frequentCartItems(items, Date.now(), Infinity),
+        z
+          .array(frequentOverrideSchema)
+          .parse(mock.values.get("frequent-overrides") ?? []),
+        meta.units,
+        meta.categories,
+      ),
       familyId: family.id,
       actorId: family.members[mock.perspective]!.user_id,
       members: family.members,
     };
   }
   const { client, familyId, actorId } = await cartContext();
-  const [items, members, frequent] = await Promise.all([
-    client
-      .from("cart_items")
-      .select("*")
-      .eq("family_id", familyId)
-      .is("purchased_at", null)
-      .order("created_at")
-      .order("id"),
-    client.rpc("family_members"),
-    client.rpc("frequent_cart_items"),
-  ]);
+  const [items, members, frequent, overrides, units, categories] =
+    await Promise.all([
+      client
+        .from("cart_items")
+        .select("*")
+        .eq("family_id", familyId)
+        .is("purchased_at", null)
+        .order("created_at")
+        .order("id"),
+      client.rpc("family_members"),
+      client.rpc("frequent_cart_items"),
+      client
+        .from("frequent_cart_overrides")
+        .select("*")
+        .eq("family_id", familyId),
+      client.from("units").select("id,name").eq("family_id", familyId),
+      client
+        .from("inventory_categories")
+        .select("id,name")
+        .eq("family_id", familyId),
+    ]);
   throwDatabaseError(items.error, errors);
   throwDatabaseError(members.error, errors);
   throwDatabaseError(frequent.error, errors);
+  for (const result of [overrides, units, categories])
+    throwDatabaseError(result.error, errors);
   return {
     items: z.array(cartItemSchema).parse(items.data),
-    frequent: z.array(cartItemSchema).parse(frequent.data),
+    ...resolveFrequentCartItems(
+      z.array(cartItemSchema).parse(frequent.data),
+      z.array(frequentOverrideSchema).parse(
+        (overrides.data ?? []).map((row) => ({
+          ...row,
+          name: row.normalized_name,
+        })),
+      ),
+      units.data ?? [],
+      categories.data ?? [],
+    ),
     familyId,
     actorId,
     members: members.data ?? [],
@@ -97,6 +131,13 @@ export async function writeCart(raw: unknown): Promise<CartWriteResult> {
     const { client } = await cartContext();
     if (command.action === "add" && command.autoCategory)
       return addWithCategory(client, command);
+    if (command.action === "save-frequent") {
+      const result = await client.rpc("save_frequent_cart_override", {
+        payload: command.item as Json,
+      });
+      throwDatabaseError(result.error, errors);
+      return {};
+    }
     const result =
       command.action === "undo-restock"
         ? await client.rpc("undo_cart_restock", { token: command.token })
@@ -111,6 +152,29 @@ export async function writeCart(raw: unknown): Promise<CartWriteResult> {
     mockJson("inventory-meta"),
     mockJson("family"),
   ]);
+  if (command.action === "save-frequent") {
+    const input = command.item;
+    if (
+      (input.unit_id &&
+        !meta.units.some((entry) => entry.id === input.unit_id)) ||
+      (input.category_id &&
+        !meta.categories.some((entry) => entry.id === input.category_id))
+    )
+      throw new ApiError("invalid_cart", errors.invalid_cart[1]);
+    const overrides = z
+      .array(frequentOverrideSchema)
+      .parse(mock.values.get("frequent-overrides") ?? []);
+    const key = normalizeItemName(input.name);
+    mock.values.set("frequent-overrides", [
+      ...overrides.filter((entry) => normalizeItemName(entry.name) !== key),
+      {
+        ...overrides.find((entry) => normalizeItemName(entry.name) === key),
+        ...input,
+        name: key,
+      },
+    ]);
+    return {};
+  }
   if (command.action === "add" && command.autoCategory) {
     const normalized = normalizeItemName(command.item.name);
     const stock = inventory.find(

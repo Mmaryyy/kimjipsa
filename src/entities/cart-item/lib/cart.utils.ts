@@ -1,4 +1,5 @@
 import { normalizeItemName } from "@/shared/lib";
+import type { FrequentOverride } from "../model/cart.schema";
 import type { CartInput, CartItem } from "../api/type";
 export const recentPurchaseWindowMs = 90 * 86400000;
 export function parseCartQuickInput(
@@ -28,7 +29,11 @@ export function parseCartQuickInput(
   };
   return unitName && !parsedUnit ? { ...item, unknownUnit: unitName } : item;
 }
-export function frequentCartItems(items: CartItem[], now = Date.now()) {
+export function frequentCartItems(
+  items: CartItem[],
+  now = Date.now(),
+  limit = 10,
+) {
   const groups = new Map<
     string,
     { item: CartItem; purchases: number; recentPurchases: number }
@@ -56,7 +61,7 @@ export function frequentCartItems(items: CartItem[], now = Date.now()) {
         b.recentPurchases - a.recentPurchases ||
         a.item.name.localeCompare(b.item.name, "ko"),
     )
-    .slice(0, 10)
+    .slice(0, limit)
     .map(({ item }) => item);
 }
 
@@ -64,6 +69,7 @@ export function withFrequentCartDefaults(
   items: CartInput[],
   units: readonly { id: string; name: string }[] = [],
   categories: readonly { id: string; name: string }[] = [],
+  limit = 10,
 ): CartInput[] {
   const names = new Set(items.map((item) => normalizeItemName(item.name)));
   const defaults = [
@@ -85,7 +91,7 @@ export function withFrequentCartDefaults(
       memo,
       link_url: "",
     }));
-  return [...items, ...defaults].slice(0, 10);
+  return [...items, ...defaults].slice(0, limit);
 }
 
 export function groupCartItems(
@@ -108,4 +114,37 @@ export function groupCartItems(
           : otherId) === category.id,
     ),
   }));
+}
+
+export function resolveFrequentCartItems(
+  items: CartInput[],
+  overrides: FrequentOverride[],
+  units: readonly { id: string; name: string }[],
+  categories: readonly { id: string; name: string }[],
+) {
+  const candidates = withFrequentCartDefaults(
+    items,
+    units,
+    categories,
+    Infinity,
+  );
+  const frequentSettings = candidates.map((item) => {
+    const override = overrides.find(
+      (entry) => normalizeItemName(entry.name) === normalizeItemName(item.name),
+    );
+    return {
+      ...item,
+      category_id: override?.category_id ?? item.category_id,
+      unit_id: override?.unit_id ?? item.unit_id,
+      memo: override?.memo ?? item.memo,
+      link_url: override?.link_url ?? item.link_url,
+      name: item.name,
+      quantity: 1,
+      hidden: override?.hidden ?? false,
+    };
+  });
+  return {
+    frequentSettings,
+    frequent: frequentSettings.filter((item) => !item.hidden).slice(0, 10),
+  };
 }

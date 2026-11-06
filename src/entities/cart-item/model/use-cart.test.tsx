@@ -105,12 +105,19 @@ describe("CART-02 CART-14 SCN-CART-1 연결과 삭제 구독", () => {
     act(() => deletion.callback());
     await waitFor(() => expect(state.fetch).toHaveBeenCalled());
     const invalidate = vi.spyOn(client, "invalidateQueries");
-    act(() =>
-      state.subscriptions
-        .find(({ filter }) => filter.table === "inventory_categories")!
-        .callback(),
-    );
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["inventory-meta"] });
+    for (const table of ["inventory_categories", "units"]) {
+      invalidate.mockClear();
+      act(() =>
+        state.subscriptions
+          .find(({ filter }) => filter.table === table)!
+          .callback(),
+      );
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: ["inventory-meta"] });
+      expect(invalidate).toHaveBeenCalledWith({
+        queryKey: ["cart"],
+        refetchType: "active",
+      });
+    }
     unmount();
     client.clear();
   });

@@ -60,6 +60,10 @@ export function useCart() {
         refetchType: client.isMutating({ mutationKey }) ? "none" : "active",
       });
     };
+    const invalidateMeta = () => {
+      invalidate();
+      void client.invalidateQueries({ queryKey: ["inventory-meta"] });
+    };
     const channel = supabase
       .channel(`cart:${familyId}`)
       .on(
@@ -82,6 +86,16 @@ export function useCart() {
         },
         invalidate,
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "frequent_cart_overrides",
+          filter: `family_id=eq.${familyId}`,
+        },
+        invalidate,
+      )
       // DELETE cannot be filtered; ignore its PK-only payload and re-read through requester-scoped HTTP.
       .on(
         "postgres_changes",
@@ -96,9 +110,17 @@ export function useCart() {
           table: "inventory_categories",
           filter: `family_id=eq.${familyId}`,
         },
-        () => {
-          void client.invalidateQueries({ queryKey: ["inventory-meta"] });
+        invalidateMeta,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "units",
+          filter: `family_id=eq.${familyId}`,
         },
+        invalidateMeta,
       )
       .subscribe((status) => {
         const ready = status === "SUBSCRIBED";

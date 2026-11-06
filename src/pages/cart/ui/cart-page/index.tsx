@@ -17,7 +17,7 @@ import {
 } from "@/shared/ui";
 import { useCartPageActions } from "../../model/use-cart-page-actions";
 import { useCartQuickAdd } from "../../model/use-cart-quick-add";
-import CartItemEditor from "../cart-item-editor";
+import { CartItemEditor } from "@/features/cart-item-edit";
 import CartQuickAddForm from "./QuickAddForm";
 import CartFrequentItems from "./FrequentItems";
 import CartCheckedActions from "./CheckedActions";
@@ -59,10 +59,8 @@ const CartPage = () => {
         />
         <CartFrequentItems
           frequent={frequent}
-          categories={categories}
-          units={units}
           disabled={actions.pending || quickAdd.add.pending}
-          onAdd={quickAdd.add.onAdd}
+          onAdd={(item) => quickAdd.add.onAdd(item, "ask", false)}
         />
         <div data-od-id="cart-list">
           {actions.items.length ? (

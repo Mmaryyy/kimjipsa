@@ -283,7 +283,7 @@ describe("CART-05 SCN-CART-6 구매 기록 응답", () => {
     recent.purchased_at = new Date().toISOString();
     const result = await listCart();
     expect(result.items.map((item) => item.id)).toEqual([first.id, second.id]);
-    expect(result.frequent).toHaveLength(1);
+    expect(result.frequent).toHaveLength(5);
     expect(result.frequent[0]).toMatchObject({
       id: recent.id,
       memo: "최신 메모",
@@ -437,5 +437,83 @@ describe("CART-13 선택 삭제", () => {
     expect((await listCart()).items.map((item) => item.id)).toEqual([
       remaining.id,
     ]);
+  });
+});
+
+describe("CART-05 SCN-CART-6 자주 사는 품목 저장", () => {
+  it("기본 품목의 값 저장과 숨김, 다시 보이기가 칩과 담은 항목에 반영돼요", async () => {
+    const item = {
+      ...input({
+        name: " 휴 지 ",
+        memo: "큰 팩",
+        link_url: "https://example.com/paper",
+      }),
+      hidden: false,
+    };
+    await writeCart({ action: "save-frequent", item });
+    let data = await listCart();
+    const chip = data.frequent.find((entry) => entry.name === "휴지")!;
+    expect(chip).toMatchObject({
+      memo: item.memo,
+      link_url: item.link_url,
+      quantity: 1,
+      unit_id: item.unit_id,
+      category_id: item.category_id,
+    });
+    await writeCart({ action: "add", item: chip, duplicate: "separate" });
+    expect(items[0]).toMatchObject({ link_url: item.link_url, quantity: 1 });
+    await writeCart({
+      action: "save-frequent",
+      item: { ...item, hidden: true },
+    });
+    data = await listCart();
+    expect(data.frequent.some((entry) => entry.name === "휴지")).toBe(false);
+    expect(
+      data.frequentSettings?.find((entry) => entry.name === "휴지")?.hidden,
+    ).toBe(true);
+    await writeCart({ action: "save-frequent", item });
+    expect(
+      (await listCart()).frequent.some((entry) => entry.name === "휴지"),
+    ).toBe(true);
+  });
+  it("숨김만 저장해도 이전 값은 유지하고 새 설정은 기본 메모를 따르도록 해요", async () => {
+    await writeCart({
+      action: "save-frequent",
+      item: { name: "휴지", memo: "저장 메모", hidden: false },
+    });
+    await writeCart({
+      action: "save-frequent",
+      item: { name: "휴지", hidden: true },
+    });
+    await writeCart({
+      action: "save-frequent",
+      item: { name: "휴지", hidden: false },
+    });
+    await writeCart({
+      action: "save-frequent",
+      item: { name: "생수", hidden: false },
+    });
+    const data = await listCart();
+    expect(data.frequent.find((item) => item.name === "휴지")?.memo).toBe(
+      "저장 메모",
+    );
+    expect(data.frequent.find((item) => item.name === "생수")?.memo).toBe(
+      "12개입",
+    );
+  });
+  it("다른 가정의 목록 ID와 잘못된 링크를 거부하고 저장값을 유지해요", async () => {
+    const item = { ...input({ name: "휴지" }), hidden: false };
+    await writeCart({ action: "save-frequent", item });
+    const before = await listCart();
+    for (const invalid of [
+      { category_id: crypto.randomUUID() },
+      { unit_id: crypto.randomUUID() },
+      { link_url: "javascript:alert(1)" },
+    ]) {
+      await expect(
+        writeCart({ action: "save-frequent", item: { ...item, ...invalid } }),
+      ).rejects.toThrow();
+    }
+    expect((await listCart()).frequent).toEqual(before.frequent);
   });
 });

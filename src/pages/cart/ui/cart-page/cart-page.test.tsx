@@ -25,15 +25,22 @@ const state = vi.hoisted(() => ({
   refetch: vi.fn(),
   add: vi.fn(),
 }));
-vi.mock("@/entities/cart-item", async (original) => ({
-  ...(await original<typeof CartEntity>()),
-  useCart: () => ({
-    data: { items: [], frequent: [], members: [] },
-    syncedAt: 0,
-    offline: state.offline,
-  }),
-  useCartActions: () => ({ pendingIds: [] }),
-}));
+vi.mock("@/entities/cart-item", async (original) => {
+  const actual = await original<typeof CartEntity>();
+  return {
+    ...actual,
+    useCart: () => ({
+      data: {
+        items: [],
+        frequent: actual.withFrequentCartDefaults([], state.units),
+        members: [],
+      },
+      syncedAt: 0,
+      offline: state.offline,
+    }),
+    useCartActions: () => ({ pendingIds: [] }),
+  };
+});
 vi.mock("@/entities/inventory-item", () => ({
   useInventoryMeta: () => ({
     data: { units: state.units, categories: [] },
@@ -149,6 +156,8 @@ describe("CART-05 CART-14 SCN-CART-6 기본 품목 추가", () => {
       fireEvent.click(screen.getByRole("button", { name }));
       expect(state.add).toHaveBeenLastCalledWith(
         expect.objectContaining({ name, quantity: 1 }),
+        "ask",
+        false,
       );
     }
     const form = document.querySelector('[data-od-id="cart-add-form"]')!;
@@ -182,6 +191,8 @@ describe("CART-05 CART-14 SCN-CART-6 기본 품목 추가", () => {
         unit_id: "bundle",
         memo: "12개입",
       }),
+      "ask",
+      false,
     );
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
@@ -198,6 +209,8 @@ describe("CART-05 CART-14 SCN-CART-6 기본 품목 추가", () => {
         quantity: 1,
         unit_id: null,
       }),
+      "ask",
+      false,
     );
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
     expect(state.saveUnit).not.toHaveBeenCalled();

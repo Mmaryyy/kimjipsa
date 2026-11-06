@@ -88,6 +88,27 @@ export type Database<
   public: {
     Tables: {
       cart_items: Table<CartRow, CartRow>;
+      frequent_cart_overrides: Table<
+        {
+          family_id: string;
+          normalized_name: string;
+          category_id: string | null;
+          unit_id: string | null;
+          memo: string | null;
+          link_url: string | null;
+          hidden: boolean;
+        },
+        {
+          family_id: string;
+          normalized_name: string;
+          category_id: string | null;
+          unit_id: string | null;
+          memo: string | null;
+          link_url: string | null;
+          hidden: boolean;
+        }
+      >;
+
       inventory_items: Table<InventoryRow, InventoryRow>;
       inventory_categories: Table<InventoryMetaRow, InventoryMetaRow>;
       locations: Table<InventoryMetaRow, InventoryMetaRow>;
@@ -310,6 +331,7 @@ export type Database<
         Args: { member_id: string; member_role: Role };
         Returns: undefined;
       };
+      save_frequent_cart_override: { Args: { payload: Json }; Returns: Json };
       frequent_cart_items: { Args: Record<string, never>; Returns: CartRow[] };
       undo_cart_restock: { Args: { token: string }; Returns: Json };
       write_cart: { Args: { payload: Json }; Returns: Json };

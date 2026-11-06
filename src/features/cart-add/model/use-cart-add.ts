@@ -15,20 +15,29 @@ export function useCartAdd(
   const [duplicate, setDuplicate] = useState<{
     item: CartInput;
     existing: CartItem;
+    autoCategory: boolean;
   } | null>(null);
   const [error, setError] = useState("");
   const onAdd = useCallback(
-    async (item: CartInput, choice: "ask" | "merge" | "separate" = "ask") => {
+    async (
+      item: CartInput,
+      choice: "ask" | "merge" | "separate" = "ask",
+      recommendCategory = autoCategory,
+    ) => {
       setError("");
       try {
         const result = await action.mutateAsync({
           action: "add",
           item,
           duplicate: choice,
-          autoCategory,
+          autoCategory: recommendCategory,
         });
         if (result.duplicate) {
-          setDuplicate({ item, existing: result.duplicate });
+          setDuplicate({
+            item,
+            existing: result.duplicate,
+            autoCategory: recommendCategory,
+          });
           return false;
         }
         const existing = duplicate?.existing;
