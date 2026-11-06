@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import type * as EventEntity from "@/entities/event";
+import type * as InventoryEntity from "@/entities/inventory-item";
 import type { ActionProposal } from "@/entities/chat-message";
 import ChatActionProposal from "./Proposal";
 import ChatHeader from "./Header";
@@ -23,34 +25,41 @@ const proposal: ActionProposal = {
 const now = Date.parse("2026-11-04T03:00:00Z");
 beforeEach(() => mutate.mockClear());
 describe("BOT-08 변경 제안", () => {
-  it("SCN-BOT-7 남은 시간을 최대 5분의 분:초로 표시해요", () => {
-    const { rerender } = render(
-      <ChatActionProposal proposal={proposal} now={now - 1000} />,
-    );
-    expect(screen.getByText(/남은 시간 5:00/)).toBeInTheDocument();
-    rerender(<ChatActionProposal proposal={proposal} now={now + 1001} />);
-    expect(screen.getByText(/남은 시간 4:59/)).toBeInTheDocument();
-    rerender(<ChatActionProposal proposal={proposal} now={now + 299001} />);
-    expect(screen.getByText(/남은 시간 0:01/)).toBeInTheDocument();
+  it("SCN-BOT-7 시간이 지나도 타이머 없이 수정·확인할 수 있어요", () => {
+    render(<ChatActionProposal proposal={proposal} now={now + 3600000} />);
+    expect(screen.queryByText(/남은 시간|선택한 변경/)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "이렇게 반영할까요?" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "확인" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "수정" })).toBeEnabled();
   });
-  it("SCN-BOT-6 선택한 항목만 확인 요청에 포함해요", () => {
+  it("SCN-BOT-6 뺀 줄을 제외하고 확인하며 모두 빼면 확인할 수 없어요", () => {
     render(<ChatActionProposal proposal={proposal} now={now} />);
-    fireEvent.click(screen.getByRole("checkbox", { name: "우유 삭제" }));
-    fireEvent.click(screen.getByRole("button", { name: "선택한 변경 실행" }));
+    fireEvent.click(screen.getByRole("button", { name: "우유 삭제 빼기" }));
+    fireEvent.click(screen.getByRole("button", { name: "확인" }));
     expect(mutate).toHaveBeenCalledWith({
       id: "proposal",
       version: 1,
       selected: [1],
     });
+    fireEvent.click(screen.getByRole("button", { name: "약속 변경 빼기" }));
+    expect(screen.getByRole("button", { name: "확인" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "우유 삭제 되돌리기" }));
+    expect(screen.getByRole("button", { name: "확인" })).toBeEnabled();
   });
-  it("SCN-BOT-7 만료된 제안은 실행할 수 없어요", () => {
-    render(<ChatActionProposal proposal={proposal} now={now + 300000} />);
-    expect(
-      screen.queryByRole("button", { name: "선택한 변경 실행" }),
-    ).not.toBeInTheDocument();
-    expect(screen.getByRole("checkbox", { name: "우유 삭제" })).toBeDisabled();
-    expect(mutate).not.toHaveBeenCalled();
-  });
+  it.each(["applied", "cancelled"] as const)(
+    "%s 메시지는 버튼 없이 남아요",
+    (status) => {
+      render(
+        <ChatActionProposal proposal={{ ...proposal, status }} now={now} />,
+      );
+      expect(screen.queryByRole("button")).not.toBeInTheDocument();
+      if (status === "cancelled")
+        expect(screen.getByText("취소했어요")).toBeInTheDocument();
+    },
+  );
   it("취소는 변경 항목을 전송하지 않아요", () => {
     render(<ChatActionProposal proposal={proposal} now={now} />);
     fireEvent.click(screen.getByRole("button", { name: "취소" }));
@@ -69,4 +78,67 @@ it("BOT-11 이름과 연결 배지를 보여주고 공개 범위 전환은 없�
   expect(screen.getByText("연결됨(맥미니)")).toBeInTheDocument();
   expect(screen.queryByText("나만 보는 대화")).not.toBeInTheDocument();
   expect(screen.queryByText(/1시간/)).not.toBeInTheDocument();
+});
+
+vi.mock("@/entities/event", async (original) => ({
+  ...(await original<typeof EventEntity>()),
+  useEventCategories: () => ({ data: [], isError: false }),
+}));
+vi.mock("@/entities/inventory-item", async (original) => ({
+  ...(await original<typeof InventoryEntity>()),
+  useInventoryMeta: () => ({
+    data: { categories: [], locations: [], units: [] },
+    isError: false,
+  }),
+}));
+it("BOT-08 SCN-BOT-6 같은 메시지 안에서 제목을 수정하고 저장해요", async () => {
+  const editable: ActionProposal = {
+    ...proposal,
+    actions: [
+      {
+        domain: "event",
+        label: "치과 등록",
+        expected: {},
+        payload: { id: null, event: { title: "치과", place: "", memo: "" } },
+      },
+    ],
+  };
+  render(<ChatActionProposal proposal={editable} now={now} />);
+  fireEvent.click(screen.getByRole("button", { name: "수정" }));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText("제목"), {
+    target: { value: "정기 검진" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "저장" }));
+  await waitFor(() =>
+    expect(mutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actions: [
+          expect.objectContaining({
+            payload: {
+              id: null,
+              event: { title: "정기 검진", place: "", memo: "" },
+            },
+          }),
+        ],
+      }),
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    ),
+  );
+});
+
+it("BOT-08 SCN-BOT-6 단일 변경은 머리글 없이 질문과 세 버튼만 보여요", () => {
+  const label =
+    "11월 6일 종일, 데이부 워크샵을 회사 카테고리의 공유 일정으로 추가할까요?";
+  render(
+    <ChatActionProposal
+      proposal={{ ...proposal, actions: [{ ...proposal.actions[0], label }] }}
+      now={now}
+    />,
+  );
+  expect(screen.getByText(label)).toBeInTheDocument();
+  expect(screen.queryByRole("heading")).not.toBeInTheDocument();
+  expect(
+    screen.getAllByRole("button").map((button) => button.textContent),
+  ).toEqual(["확인", "수정", "취소"]);
 });

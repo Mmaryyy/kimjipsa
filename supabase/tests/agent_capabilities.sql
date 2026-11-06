@@ -17,6 +17,23 @@ begin
   end;
   raise exception 'Expected error: %',expected;
 end $$;
+-- Keep the original mutation checks, now through the confirmation boundary.
+create function pg_temp.complete_and_confirm(operation text, input jsonb) returns jsonb
+language plpgsql security definer set search_path='' as $$
+declare saved_sub text:=current_setting('request.jwt.claim.sub',true); actor uuid; proposal_id uuid; result jsonb;
+begin
+  perform public.agent_command(operation,input||jsonb_build_object('kind','action_proposal'));
+  select m.author_id,p.id into actor,proposal_id from public.agent_proposals p
+    join public.agent_runs r on r.id=p.run_id join public.chat_messages m on m.id=r.input_message_id
+    where r.id=(input->>'jobId')::uuid;
+  perform set_config('request.jwt.claim.sub',actor::text,true);
+  result:=public.chat_command('confirm-actions',jsonb_build_object('id',proposal_id,'version',1,
+    'selected',(select jsonb_agg(i) from generate_series(0,jsonb_array_length(input->'actions')-1) i)));
+  perform set_config('request.jwt.claim.sub',saved_sub,true);
+  return result;
+exception when others then
+  perform set_config('request.jwt.claim.sub',saved_sub,true); raise;
+end $$;
 do $$
 declare
   person uuid:=gen_random_uuid(); partner uuid:=gen_random_uuid(); outsider uuid:=gen_random_uuid(); worker uuid:=gen_random_uuid();
@@ -41,20 +58,20 @@ begin
   -- Private calendar creation reuses save_event with the original user's identity.
   lease:=pg_temp.start_agent_turn(person,worker,'private');
   action:=jsonb_build_object('domain','event','label','개인 일정 등록','payload',jsonb_build_object('id',null,'event',event_input),'expected','{}'::jsonb);
-  result:=public.agent_command('complete',lease||jsonb_build_object('kind','actions','text','등록했어요','requestQuote','작업 실행','actions',jsonb_build_array(action)));
+  result:=pg_temp.complete_and_confirm('complete',lease||jsonb_build_object('kind','actions','text','등록했어요','requestQuote','작업 실행','actions',jsonb_build_array(action)));
   own_event:=(result->0->'result'->>'id')::uuid;
   if auth.uid()<>worker then raise exception 'worker identity not restored'; end if;
   perform pg_temp.expect_error(format('select public.agent_command(''complete'',%L::jsonb)',lease||jsonb_build_object('kind','reply','text','중복')), 'lease_lost');
   lease:=pg_temp.start_agent_turn(partner,worker,'private');
   action:=jsonb_set(action,'{payload,event,title}','"배우자 비밀"');
-  result:=public.agent_command('complete',lease||jsonb_build_object('kind','actions','text','등록','requestQuote','작업 실행','actions',jsonb_build_array(action)));
+  result:=pg_temp.complete_and_confirm('complete',lease||jsonb_build_object('kind','actions','text','등록','requestQuote','작업 실행','actions',jsonb_build_array(action)));
   partner_event:=(result->0->'result'->>'id')::uuid;
   lease:=pg_temp.start_agent_turn(person,worker,'private');
   context:=public.agent_command('context',lease);
   if context::text not like '%내 비공개 진료%' or context::text like '%배우자 비밀%' then raise exception 'private calendar scope leaked'; end if;
   if context->'calendar'->'revisions' ? partner_event::text then raise exception 'partner revision leaked'; end if;
   action:=jsonb_build_object('domain','event','label','개인 일정 변경','payload',jsonb_build_object('id',own_event,'event',event_input||'{"title":"변경한 진료"}'),'expected',context->'calendar'->'revisions');
-  perform public.agent_command('complete',lease||jsonb_build_object('kind','actions','text','변경','requestQuote','작업 실행','actions',jsonb_build_array(action)));
+  perform pg_temp.complete_and_confirm('complete',lease||jsonb_build_object('kind','actions','text','변경','requestQuote','작업 실행','actions',jsonb_build_array(action)));
   perform set_config('request.jwt.claim.sub',person::text,true);
   perform pg_temp.expect_error('select public.chat_page(''{"visibility":"shared"}'')','private_chat_required');
 
@@ -77,13 +94,13 @@ begin
   lease:=pg_temp.start_agent_turn(person,worker);
   context:=public.agent_command('context',lease);
   action:=jsonb_build_object('domain','inventory','label','우유 차감','payload',jsonb_build_object('action','adjust','id',stock,'delta',-2),'expected',jsonb_build_object(stock::text,context->'inventory'->0->>'revision'));
-  perform public.agent_command('complete',lease||jsonb_build_object('kind','actions','text','차감','requestQuote','작업 실행','actions',jsonb_build_array(action)));
+  perform pg_temp.complete_and_confirm('complete',lease||jsonb_build_object('kind','actions','text','차감','requestQuote','작업 실행','actions',jsonb_build_array(action)));
   lease:=pg_temp.start_agent_turn(person,worker);
-  perform pg_temp.expect_error(format('select public.agent_command(''complete'',%L::jsonb)',lease||jsonb_build_object('kind','actions','text','오래된 변경','requestQuote','작업 실행','actions',jsonb_build_array(action))),'state_conflict');
+  perform pg_temp.expect_error(format('select pg_temp.complete_and_confirm(''complete'',%L::jsonb)',lease||jsonb_build_object('kind','actions','text','오래된 변경','requestQuote','작업 실행','actions',jsonb_build_array(action))),'state_conflict');
   context:=public.agent_command('context',lease);
   action:=jsonb_set(action,'{expected}',jsonb_build_object(stock::text,context->'inventory'->0->>'revision'));
   actions:=jsonb_build_array(action,jsonb_build_object('domain','inventory','label','잘못된 항목','payload',jsonb_build_object('action','save','id',null,'item',jsonb_build_object('name','잘못된 단위','mode','quantity','quantity',1,'unit_id',gen_random_uuid()))));
-  perform pg_temp.expect_error(format('select public.agent_command(''complete'',%L::jsonb)',lease||jsonb_build_object('kind','actions','text','묶음','requestQuote','작업 실행','actions',actions)),'invalid_inventory');
+  perform pg_temp.expect_error(format('select pg_temp.complete_and_confirm(''complete'',%L::jsonb)',lease||jsonb_build_object('kind','actions','text','묶음','requestQuote','작업 실행','actions',actions)),'invalid_inventory');
   context:=public.agent_command('context',lease);
   if (context->'inventory'->0->>'quantity')::numeric<>3 then raise exception 'partial mutation committed'; end if;
   if auth.uid()<>worker then raise exception 'failed mutation changed identity'; end if;
@@ -92,7 +109,7 @@ begin
   -- Existing inventory edit retains quantity and changes only the requested metadata.
   lease:=pg_temp.start_agent_turn(person,worker); context:=public.agent_command('context',lease);
   action:=jsonb_build_object('domain','inventory','label','우유 유통기한 수정','payload',jsonb_build_object('action','save','id',stock,'item',(context->'inventory'->0)||jsonb_build_object('expires_on','2026-12-01','location_id',location,'category_id',category)),'expected',jsonb_build_object(stock::text,context->'inventory'->0->>'revision'));
-  perform public.agent_command('complete',lease||jsonb_build_object('kind','actions','text','수정','requestQuote','작업 실행','actions',jsonb_build_array(action)));
+  perform pg_temp.complete_and_confirm('complete',lease||jsonb_build_object('kind','actions','text','수정','requestQuote','작업 실행','actions',jsonb_build_array(action)));
   reset role;
   if not exists(select 1 from public.inventory_items where id=stock and quantity=3 and expires_on='2026-12-01') then raise exception 'inventory edit failed'; end if;
   set local role authenticated;
@@ -100,13 +117,13 @@ begin
   -- Cart add and purchase completion atomically check, restock, and close the cart row.
   lease:=pg_temp.start_agent_turn(person,worker);
   action:=jsonb_build_object('domain','cart','label','우유 장바구니 추가','payload',jsonb_build_object('action','add','duplicate','ask','item',jsonb_build_object('name','우유','quantity',2,'unit_id',unit,'category_id',category,'inventory_item_id',stock,'memo','','link_url','')));
-  perform public.agent_command('complete',lease||jsonb_build_object('kind','actions','text','추가','requestQuote','작업 실행','actions',jsonb_build_array(action)));
+  perform pg_temp.complete_and_confirm('complete',lease||jsonb_build_object('kind','actions','text','추가','requestQuote','작업 실행','actions',jsonb_build_array(action)));
   lease:=pg_temp.start_agent_turn(person,worker);
-  perform pg_temp.expect_error(format('select public.agent_command(''complete'',%L::jsonb)',lease||jsonb_build_object('kind','actions','text','중복','requestQuote','작업 실행','actions',jsonb_build_array(action))),'cart_duplicate');
+  perform pg_temp.expect_error(format('select pg_temp.complete_and_confirm(''complete'',%L::jsonb)',lease||jsonb_build_object('kind','actions','text','중복','requestQuote','작업 실행','actions',jsonb_build_array(action))),'cart_duplicate');
   context:=public.agent_command('context',lease); cart:=(context->'cart'->0->>'id')::uuid;
   action:=jsonb_build_object('domain','cart','label','우유 구매 완료','payload',jsonb_build_object('action','restock','entries',jsonb_build_array(jsonb_build_object('id',cart,'quantity',2,'unit_id',unit,'category_id',category,'location_id',location,'expires_on',null))),'expected',jsonb_build_object(cart::text,context->'cart'->0->>'revision',stock::text,context->'inventory'->0->>'revision'));
-  result:=public.agent_command('complete',lease||jsonb_build_object('kind','actions','text','구매 완료','requestQuote','작업 실행','actions',jsonb_build_array(action)));
-  perform pg_temp.expect_error(format('select public.agent_command(''complete'',%L::jsonb)',lease||jsonb_build_object('kind','actions','text','중복 구매','requestQuote','작업 실행','actions',jsonb_build_array(action))),'lease_lost');
+  result:=pg_temp.complete_and_confirm('complete',lease||jsonb_build_object('kind','actions','text','구매 완료','requestQuote','작업 실행','actions',jsonb_build_array(action)));
+  perform pg_temp.expect_error(format('select pg_temp.complete_and_confirm(''complete'',%L::jsonb)',lease||jsonb_build_object('kind','actions','text','중복 구매','requestQuote','작업 실행','actions',jsonb_build_array(action))),'lease_lost');
   reset role;
   if (select quantity from public.inventory_items where id=stock)<>5 or (select purchased_at from public.cart_items where id=cart) is null then raise exception 'purchase did not restock once'; end if;
   set local role authenticated;
@@ -116,7 +133,7 @@ begin
   action:=jsonb_build_object('domain','inventory','label','우유 삭제','payload',jsonb_build_object('action','delete','id',stock),'expected',jsonb_build_object(stock::text,context->'inventory'->0->>'revision'));
   perform public.agent_command('complete',lease||jsonb_build_object('kind','action_proposal','text','삭제할까요?','actions',jsonb_build_array(action)));
   perform set_config('request.jwt.claim.sub',person::text,true);
-  snapshot:=public.chat_command('list','{"visibility":"private"}'); proposal:=(snapshot->'proposals'->0->>'id')::uuid;
+  snapshot:=public.chat_command('list','{"visibility":"private"}'); proposal:=(select (value->>'id')::uuid from jsonb_array_elements(snapshot->'proposals') where value->>'run_id'=lease->>'jobId');
   if proposal is null then raise exception 'proposal missing'; end if;
   perform set_config('request.jwt.claim.sub',partner::text,true);
   perform pg_temp.expect_error(format('select public.chat_command(''confirm-actions'',%L::jsonb)',jsonb_build_object('id',proposal,'version',1,'selected',jsonb_build_array(0))),'not_found');
@@ -130,7 +147,7 @@ begin
     if result='true'::jsonb then raise exception 'private broadcast leaked'; end if;
   end if;
   set local role authenticated;
-  -- A proposed shared calendar change expires after five minutes.
+  -- A proposed shared calendar change remains confirmable without a countdown.
   lease:=pg_temp.start_agent_turn(person,worker);
   action:=jsonb_build_object('domain','event','label','공유 일정 제안','payload',jsonb_build_object('id',null,'event',event_input||'{"visibility":"shared","title":"공유 약속"}'));
   perform public.agent_command('complete',lease||jsonb_build_object('kind','action_proposal','text','등록할까요?','actions',jsonb_build_array(action)));
@@ -138,16 +155,16 @@ begin
   update public.agent_proposals set expires_at=now()-interval '1 second' where run_id=(lease->>'jobId')::uuid returning id into proposal;
   set local role authenticated;
   perform set_config('request.jwt.claim.sub',person::text,true);
-  perform pg_temp.expect_error(format('select public.chat_command(''confirm-actions'',%L::jsonb)',jsonb_build_object('id',proposal,'version',1,'selected',jsonb_build_array(0))),'state_conflict');
-  -- Without an exact user request, direct changes must fail before saving anything.
+  perform public.chat_command('confirm-actions',jsonb_build_object('id',proposal,'version',1,'selected',jsonb_build_array(0)));
+  -- Direct completion is rejected, even with an exact user request.
   lease:=pg_temp.start_agent_turn(person,worker);
   perform pg_temp.expect_error(format('select public.agent_command(''complete'',%L::jsonb)',lease||jsonb_build_object('kind','actions','text','등록','requestQuote','모델이 지어낸 요청','actions',jsonb_build_array(action))),'confirmation_required');
-  perform public.agent_command('complete',lease||jsonb_build_object('kind','actions','text','등록','requestQuote','작업 실행','actions',jsonb_build_array(action)));
+  perform pg_temp.complete_and_confirm('complete',lease||jsonb_build_object('kind','actions','text','등록','requestQuote','작업 실행','actions',jsonb_build_array(action)));
   -- A user who left the family cannot execute a previously queued action.
   lease:=pg_temp.start_agent_turn(partner,worker,'private');
   reset role; delete from public.memberships where user_id=partner; set local role authenticated;
   perform pg_temp.expect_error(format('select public.agent_command(''context'',%L::jsonb)',lease),'forbidden');
-  perform pg_temp.expect_error(format('select public.agent_command(''complete'',%L::jsonb)',lease||jsonb_build_object('kind','actions','text','등록','requestQuote','작업 실행','actions',jsonb_build_array(action))),'forbidden');
+  perform pg_temp.expect_error(format('select pg_temp.complete_and_confirm(''complete'',%L::jsonb)',lease||jsonb_build_object('kind','actions','text','등록','requestQuote','작업 실행','actions',jsonb_build_array(action))),'forbidden');
   perform set_config('request.jwt.claim.sub',outsider::text,true);
   if jsonb_array_length(public.chat_command('list')->'messages')<>0 then raise exception 'other household leaked'; end if;
   perform pg_temp.expect_error('select public.agent_command(''claim'')','forbidden');

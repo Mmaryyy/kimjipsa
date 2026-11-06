@@ -8,6 +8,7 @@ import {
   throwDatabaseError,
 } from "@/shared/server";
 import {
+  agentActionSchema,
   chatSchema,
   receiptItemSchema,
   sendSchema,
@@ -87,13 +88,21 @@ export async function confirmActions(id: string, raw: unknown) {
     .object({
       version: z.number().int().positive(),
       cancel: z.boolean().default(false),
+      actions: z.array(agentActionSchema).min(1).max(20).optional(),
       selected: z.array(z.number().int().min(0).max(19)).max(20).default([]),
     })
     .parse(raw);
-  return command(input.cancel ? "cancel-actions" : "confirm-actions", {
-    ...input,
-    id: z.uuid().parse(id),
-  });
+  return command(
+    input.cancel
+      ? "cancel-actions"
+      : input.actions
+        ? "edit-actions"
+        : "confirm-actions",
+    {
+      ...input,
+      id: z.uuid().parse(id),
+    },
+  );
 }
 export async function sendChat(raw: unknown) {
   return command("send", sendSchema.parse(raw));

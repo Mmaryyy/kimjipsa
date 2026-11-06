@@ -5,6 +5,7 @@ import {
   chatSchema,
   settingsSchema,
   type ReceiptItem,
+  type AgentAction,
 } from "../model/chat.schema";
 export async function fetchChat(
   before: number | null = null,
@@ -76,6 +77,7 @@ export function applyActions(input: {
   id: string;
   version: number;
   selected: number[];
+  actions?: AgentAction[];
   cancel?: boolean;
 }) {
   return request(chatRoutes.actions(input.id), input);

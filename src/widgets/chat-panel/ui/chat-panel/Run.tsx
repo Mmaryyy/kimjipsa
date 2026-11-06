@@ -30,7 +30,7 @@ const ChatRun = ({
   const active = run.status === "queued" || run.status === "running";
   const confirming =
     (receipt?.status === "draft" && Date.parse(receipt.expires_at) > now) ||
-    (proposal?.status === "draft" && Date.parse(proposal.expires_at) > now);
+    proposal?.status === "draft";
   const label = confirming ? "내용 확인 대기" : states[run.status];
   const error =
     (run.status === "failed" || run.status === "unknown") && run.error_code

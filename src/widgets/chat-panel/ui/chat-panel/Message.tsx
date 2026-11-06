@@ -151,7 +151,7 @@ const ChatMessage = ({
           <MessageContent>
             {proposal && (
               <ChatActionProposal
-                key={`${proposal.id}:${proposal.version}`}
+                key={proposal.id}
                 proposal={proposal}
                 now={now}
               />

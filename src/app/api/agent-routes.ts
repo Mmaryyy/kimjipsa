@@ -10,7 +10,7 @@ import {
 } from "@/entities/chat-message/index.server";
 import { mapAgentEvents } from "@/entities/event/index.server";
 import { handleRoute, readJson } from "@/shared/server";
-import type { Json } from "@/shared/api";
+import { ApiError, type Json } from "@/shared/api";
 import { parseAgentActions } from "./agent-actions.schema";
 
 const leaseSchema = z.object({ jobId: z.uuid(), leaseToken: z.uuid() });
@@ -112,7 +112,13 @@ export function agentCompletePOST(request: Request) {
     const raw = await readJson(request);
     const lease = leaseSchema.parse(raw);
     const result = agentResultSchema.parse(raw);
-    if (result.kind === "actions" || result.kind === "action_proposal")
+    if (["actions", "add", "proposal"].includes(result.kind))
+      throw new ApiError(
+        "confirmation_required",
+        "모든 변경은 확인 후 실행할 수 있어요.",
+        400,
+      );
+    if (result.kind === "action_proposal")
       result.actions = parseAgentActions(result.actions);
     return agentRequest(request, "complete", { ...lease, ...result } as Json);
   });

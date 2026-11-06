@@ -163,16 +163,16 @@ describe("BOT-07 입력 검증", () => {
       ]),
     ).toThrow();
   });
-  it("지원하지 않는 장바구니 작업을 거절해요", () => {
-    expect(() =>
+  it("장바구니 삭제도 확인할 액션으로 허용해요", () => {
+    expect(
       parseAgentActions([
         {
           domain: "cart",
           label: "삭제",
           payload: { action: "delete", id: eventId },
         },
-      ]),
-    ).toThrow();
+      ])[0].payload,
+    ).toEqual({ action: "delete", id: eventId });
   });
   it.each([
     "javascript:alert(1)",
@@ -319,4 +319,30 @@ it("BOT-07/08 되묻기는 표시하고 다른 결과에는 표시를 거절해�
       awaitingAnswer: "true",
     }).success,
   ).toBe(false);
+});
+
+it("BOT-07 CAL-12 일정 삭제는 대상과 반복 범위를 검증해요", () => {
+  expect(
+    parseAgentActions([
+      {
+        domain: "event",
+        label: "삭제",
+        payload: {
+          action: "delete",
+          id: eventId,
+          occurrenceDate: null,
+          scope: null,
+        },
+      },
+    ])[0].payload.action,
+  ).toBe("delete");
+  expect(() =>
+    parseAgentActions([
+      {
+        domain: "event",
+        label: "삭제",
+        payload: { action: "delete", id: null },
+      },
+    ]),
+  ).toThrow();
 });

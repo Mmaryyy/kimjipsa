@@ -121,7 +121,9 @@ describe("BOT-01 요청 상태 캡션", () => {
           now={now + 300000}
         />,
       );
-      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+      if ("proposal" in confirmation)
+        expect(screen.getByRole("status")).toHaveTextContent("내용 확인 대기");
+      else expect(screen.queryByRole("status")).not.toBeInTheDocument();
     },
   );
 

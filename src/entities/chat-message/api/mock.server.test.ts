@@ -11,10 +11,13 @@ const context = vi.hoisted(() => ({
 }));
 vi.mock("@/shared/server", () => ({
   mockContext: async () => (context.enabled ? context : null),
-  mockJson: async () => ({
-    id: "10000000-0000-4000-8000-000000000001",
-    members: [{ display_name: "지수" }, { display_name: "민호" }],
-  }),
+  mockJson: async (name: string) =>
+    name === "event-categories"
+      ? [{ id: "10000000-0000-4000-8000-000000000012", name: "병원" }]
+      : {
+          id: "10000000-0000-4000-8000-000000000001",
+          members: [{ display_name: "지수" }, { display_name: "민호" }],
+        },
 }));
 beforeEach(() => {
   context.values.clear();
@@ -35,9 +38,7 @@ describe("BOT-01/08/10 P11 대화 목업", () => {
     expect(
       chat.messages.every((message) => message.visibility === "private"),
     ).toBe(true);
-    expect(Date.parse(chat.expiresAt!)).toBe(
-      Date.parse(chat.messages.at(-1)!.created_at) + 3600000,
-    );
+    expect(chat.expiresAt).toBeNull();
     expect(chat.runs[0].input_message_id).toBe(chat.messages[2].id);
     expect(chat.messages[2].role).toBe("user");
     expect(chat.proposals[0].status).toBe("draft");
@@ -59,13 +60,13 @@ describe("BOT-01/08/10 P11 대화 목업", () => {
       false,
     );
   });
-  it("만료된 제안을 거절하고 설정 변경을 유지해요", async () => {
+  it("오래된 버전을 거절하고 설정 변경을 유지해요", async () => {
     const chat = (await mockChatPage(null))!;
     chat.proposals[0].expires_at = new Date(Date.now() - 1).toISOString();
     await expect(
       mockChatCommand("confirm-actions", {
         id: chat.proposals[0].id,
-        version: 1,
+        version: 2,
         selected: [0],
       }),
     ).rejects.toThrow("만료");
@@ -83,7 +84,8 @@ describe("BOT-01/08/10 P11 대화 목업", () => {
     vi.useFakeTimers();
     try {
       vi.setSystemTime(new Date("2026-11-04T03:00:00Z"));
-      await mockChatPage(null);
+      const initial = (await mockChatPage(null))!;
+      initial.proposals[0].status = "cancelled";
       vi.setSystemTime(new Date("2026-11-04T03:30:00Z"));
       await mockChatCommand("send", {
         sessionVersion: 1,
@@ -145,4 +147,54 @@ it("BOT-07 선택지와 보낸 답장을 다시 조회해도 유지해요", asyn
   ).toEqual(question.choices);
   expect(refreshed.messages.at(-1)?.text).toBe("개인 일정");
   expect(refreshed.messages.at(-1)?.awaiting_answer).toBe(false);
+});
+
+it("BOT-07/08 SCN-BOT-6 수정 뒤 확인 결과는 새 메시지이며 취소는 값을 버려요", async () => {
+  const chat = (await mockChatPage(null))!;
+  const p = chat.proposals[0];
+  const actions = structuredClone(p.actions);
+  const event = actions[0].payload.event as Record<string, string>;
+  event.title = "정기 검진";
+  await mockChatCommand("edit-actions", { id: p.id, version: 1, actions });
+  expect(chat.messages).toHaveLength(6);
+  expect(p.actions[0].label).toContain("정기 검진");
+  await mockChatCommand("confirm-actions", {
+    id: p.id,
+    version: 2,
+    selected: [0],
+  });
+  expect((await mockChatPage(null))?.messages.at(-1)?.text).toContain(
+    "정기 검진 개인 일정을 추가했어요",
+  );
+  expect(p.status).toBe("applied");
+  p.status = "draft";
+  await mockChatCommand("cancel-actions", {
+    id: p.id,
+    version: 3,
+    selected: [],
+  });
+  expect(p.actions).toEqual([]);
+  expect(p.status).toBe("cancelled");
+});
+
+it("BOT-08 SCN-BOT-6 단일 변경을 수정하면 질문 하나로 다시 확인해요", async () => {
+  const chat = (await mockChatPage(null))!;
+  const p = chat.proposals[0];
+  p.actions = [p.actions[0]];
+  await mockChatCommand("edit-actions", {
+    id: p.id,
+    version: 1,
+    actions: p.actions,
+  });
+  expect(p.actions[0].label).toBe(
+    "11월 7일 15:00, 치과, 병원 카테고리의 개인 일정으로 추가할까요?",
+  );
+  await mockChatCommand("confirm-actions", {
+    id: p.id,
+    version: 2,
+    selected: [0],
+  });
+  const result = (await mockChatPage(null))?.messages.at(-1)?.text;
+  expect(result).toContain("추가했어요");
+  expect(result).not.toContain("할까요?");
 });

@@ -53,6 +53,8 @@ begin
   set local role authenticated; snapshot:=public.chat_page();
   if jsonb_array_length(snapshot->'messages')<>2 then raise exception 'assistant did not extend session'; end if;
   reset role;
+  -- Confirmed cards no longer protect an idle session from expiry.
+  update public.agent_proposals set status='applied' where id=old_proposal;
   update public.chat_messages set created_at=now()-interval '1 hour' where family_id=family and viewer_id=person;
   set local role authenticated;
   snapshot:=public.chat_page(jsonb_build_object('before',999999999));

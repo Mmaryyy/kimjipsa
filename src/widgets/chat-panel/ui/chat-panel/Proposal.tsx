@@ -1,101 +1,137 @@
 "use client";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { type ActionProposal, useChatActions } from "@/entities/chat-message";
-import { Button, Checkbox, Text } from "@/shared/ui";
+import { cn } from "@/shared/lib";
+import { Button, Text, TextButton } from "@/shared/ui";
+import ChatProposalForm from "./ProposalForm";
 interface Props {
   proposal: ActionProposal;
   now: number;
 }
-const ChatActionProposal = ({ proposal, now }: Props) => {
+const ChatActionProposal = ({ proposal }: Props) => {
   const [selected, setSelected] = useState(
     proposal.actions.map((_, index) => index),
   );
+  const [editing, setEditing] = useState(false);
   const { actions } = useChatActions();
-  const editable =
-    proposal.status === "draft" && Date.parse(proposal.expires_at) > now;
-  const remainingSeconds = Math.min(
-    300,
-    Math.max(0, Math.ceil((Date.parse(proposal.expires_at) - now) / 1000)),
-  );
-  const remainingTime = `${Math.floor(remainingSeconds / 60)}:${String(
-    remainingSeconds % 60,
-  ).padStart(2, "0")}`;
-  let title = "확인 시간이 지났어요";
-  if (editable) title = "이렇게 변경할까요?";
-  if (proposal.status === "applied") title = "선택한 변경을 반영했어요";
-  if (proposal.status === "cancelled") title = "제안을 취소했어요";
-  const shownActions =
-    proposal.status === "applied" ? (proposal.result ?? []) : proposal.actions;
-  const onConfirm = useCallback(
-    () =>
-      actions.mutate({ id: proposal.id, version: proposal.version, selected }),
-    [actions, proposal.id, proposal.version, selected],
-  );
-  const onCancel = useCallback(
-    () =>
-      actions.mutate({
-        id: proposal.id,
-        version: proposal.version,
-        selected: [],
-        cancel: true,
-      }),
-    [actions, proposal.id, proposal.version],
-  );
+  const editable = proposal.status === "draft";
+  const shownActions = proposal.actions;
+  if (editing && editable)
+    return (
+      <ChatProposalForm
+        actions={proposal.actions}
+        pending={actions.isPending}
+        error={actions.error?.message}
+        onClose={() => setEditing(false)}
+        onSave={(updated) =>
+          actions.mutate(
+            {
+              id: proposal.id,
+              version: proposal.version,
+              selected,
+              actions: updated,
+            },
+            { onSuccess: () => setEditing(false) },
+          )
+        }
+      />
+    );
   return (
-    <section aria-label="집사 변경 제안" className="space-y-3 py-4">
-      <Text as="h3" variant="label">
-        {title}
-      </Text>
-      <ul className="space-y-3">
-        {shownActions.map((action, index) => (
-          <li key={index} className="flex items-start gap-3">
-            {proposal.status !== "applied" && (
-              <Checkbox
-                aria-label={action.label}
-                disabled={!editable || actions.isPending}
-                checked={selected.includes(index)}
-                onCheckedChange={(checked) =>
-                  setSelected((current) =>
-                    checked
-                      ? [...current, index]
-                      : current.filter((value) => value !== index),
-                  )
-                }
-              />
-            )}
-            <Text variant="body-sm" className="leading-[1.55]">
-              {action.label}
-            </Text>
-          </li>
-        ))}
-      </ul>
-      {editable && (
+    <section aria-label="집사 변경 제안" className="space-y-3 py-2">
+      {proposal.status === "cancelled" ? (
+        <Text as="p" variant="body-sm">
+          취소했어요
+        </Text>
+      ) : (
         <>
-          <Text as="p" variant="caption-sm" className="text-muted-foreground">
-            선택한 변경만 실행해요. 남은 시간 {remainingTime}
-          </Text>
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              className="text-body-sm"
-              data-od-id="pending-confirm"
-              disabled={actions.isPending || !selected.length}
-              onClick={onConfirm}
-            >
-              선택한 변경 실행
-            </Button>
-            <Button
-              size="sm"
-              className="text-body-sm"
-              variant="gray"
-              data-od-id="pending-cancel"
-              disabled={actions.isPending}
-              onClick={onCancel}
-            >
-              취소
-            </Button>
-          </div>
+          {shownActions.length > 1 && (
+            <Text as="h3" variant="label">
+              이렇게 반영할까요?
+            </Text>
+          )}
+          <ul className="space-y-2">
+            {shownActions.map((action, index) => {
+              const included = selected.includes(index);
+              const toggleLabel = included ? "빼기" : "되돌리기";
+              return (
+                <li
+                  key={index}
+                  className="flex items-start justify-between gap-2"
+                >
+                  <Text
+                    variant="body-sm"
+                    className={cn(
+                      "min-w-0 break-words leading-[1.55]",
+                      editable && !included && "opacity-40",
+                    )}
+                  >
+                    {action.label}
+                  </Text>
+                  {editable && proposal.actions.length > 1 && (
+                    <TextButton
+                      size="sm"
+                      className="shrink-0 text-caption"
+                      aria-label={`${action.label} ${toggleLabel}`}
+                      disabled={actions.isPending}
+                      onClick={() =>
+                        setSelected((current) =>
+                          included
+                            ? current.filter((value) => value !== index)
+                            : [...current, index],
+                        )
+                      }
+                    >
+                      {toggleLabel}
+                    </TextButton>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         </>
+      )}
+      {editable && (
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            data-od-id="pending-confirm"
+            disabled={actions.isPending || !selected.length}
+            onClick={() =>
+              actions.mutate({
+                id: proposal.id,
+                version: proposal.version,
+                selected,
+              })
+            }
+          >
+            확인
+          </Button>
+          <Button
+            size="sm"
+            variant="gray"
+            data-od-id="pending-edit"
+            disabled={actions.isPending}
+            onClick={() => setEditing(true)}
+          >
+            수정
+          </Button>
+          <Button
+            size="sm"
+            variant="gray"
+            data-od-id="pending-cancel"
+            disabled={actions.isPending}
+            onClick={() =>
+              actions.mutate({
+                id: proposal.id,
+                version: proposal.version,
+                selected: [],
+                cancel: true,
+              })
+            }
+          >
+            취소
+          </Button>
+        </div>
       )}
       {actions.error && (
         <Text as="p" variant="caption" role="alert" className="text-error-text">

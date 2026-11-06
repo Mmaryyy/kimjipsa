@@ -27,7 +27,8 @@ const inventoryCommand = z.discriminatedUnion("action", [
   }),
 ]);
 const allowedCartCommand = cartCommandSchema.refine(
-  (payload) => ["add", "check", "restock"].includes(payload.action),
+  (payload) =>
+    ["add", "save", "delete", "check", "restock"].includes(payload.action),
   "지원하지 않는 장바구니 작업이에요.",
 );
 const eventCommand = z.object({
@@ -54,7 +55,17 @@ export function parseAgentActions(raw: unknown): AgentAction[] {
       try {
         let payload;
         if (action.domain === "event")
-          payload = eventCommand.parse(action.payload);
+          payload =
+            action.payload.action === "delete"
+              ? z
+                  .object({
+                    action: z.literal("delete"),
+                    id: z.uuid(),
+                    occurrenceDate: z.iso.date().nullable(),
+                    scope: z.enum(["single", "following"]).nullable(),
+                  })
+                  .parse(action.payload)
+              : eventCommand.parse(action.payload);
         else if (action.domain === "inventory")
           payload = inventoryCommand.parse(action.payload);
         else {

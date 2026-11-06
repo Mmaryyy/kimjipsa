@@ -14,8 +14,8 @@ Hermes 자체 기억·조회 스킬에 관한 최신 규약은 [ADR-0018](../../
 
 - `/api/chat?visibility=private`: 앱 대화·첨부는 개인 전용이며 요청자만 조회·취소·확인한다. 마지막 메시지 후 1시간 만료 시 원문과 연결 작업을 삭제하고 `sessionVersion`을 올린다. 개인 대화는 가족 기억에 요약하지 않는다.
 - 워커 설정의 `capabilitiesVersion=2`를 요구한다. `/api/agent/context`와 `/api/agent/complete`는 워커 Bearer·동일 Origin·jobId·leaseToken을 사용한다. `context`는 범위 내 반복 일정을 전개하고 개인 일정 내용을 공개 범위에 따라 제거한다.
-- 결과 kind는 `reply`, `actions`, `action_proposal`, `receipt`, `add`, `proposal`, `summary`다. `calendar`와 `search`는 워커 내부의 추가 조회 요청이며 완료 RPC로 저장하지 않는다. 일정 추가 범위 조회는 1회·최대 366일이다.
-- actions는 domain(event/inventory/cart), label, payload, expected 리비전으로 구성한다. 기존 entity 입력 검증과 SQL 쓰기 규칙을 공유한다. 리비전은 모델 값 대신 서버 조회값으로 채운다. 직접 요청은 인용문 검사 후 즉시 실행, 자체 판단은 5분간 확인 대기, 묶음 변경은 전체 성공/전체 취소다.
+- 결과 kind는 `reply`, `action_proposal`, `receipt`, `summary`다. `calendar`와 `search`는 워커 내부의 추가 조회 요청이며 완료 RPC로 저장하지 않는다. 일정 추가 범위 조회는 1회·최대 366일이다.
+- actions는 domain(event/inventory/cart), label, payload, expected 리비전으로 구성한다. 기존 entity 입력 검증과 SQL 쓰기 규칙을 공유한다. 리비전은 모델 값 대신 서버 조회값으로 채운다. 직접 요청을 포함한 모든 변경은 `action_proposal`로 확인 대기한다. 대화 완료의 `actions`·`add`·레거시 `proposal`는 HTTP와 RPC 양쪽에서 `confirmation_required`로 거절한다. 묶음 변경은 전체 성공/전체 취소다.
 - 검색어는 현재 사용자 메시지의 부분 문자열로 제한한다. 검색 결과에는 URL 출처를 저장하고 화면에 링크를 표시한다. 검색 답변으로 변경 작업을 실행할 수 없다.
 - 가정 Realtime payload는 `{changed:true}`다. 개인 메시지·실행 ID와 내용은 해당 사용자 권한으로 다시 조회한다.
 
@@ -170,3 +170,19 @@ agent_runs의 기본 상태는 queued, running, completed, failed, cancelled, un
 - 항목의 카테고리·이름·구매 상태가 바뀌면 요청 연결을 끊는 트리거로 늦은 응답을 무시한다. 카테고리를 바꿨다가 되돌려도 덮어쓰지 않는다. 늦은 저장은 기존 cart_items Realtime으로 화면에 반영한다. 새 테이블의 직접 조회·쓰기는 허용하지 않으며 service_role·새 환경 변수는 없다.
 
 배포 시 앱·워커 코드와 새 로컬 검증용 마이그레이션을 함께 준비한다. 원격 마이그레이션 적용과 워커 실행 복사본 갱신은 사람이 한다.
+
+## P10.12 모든 변경 확인 (2026-11-05 사용자 결정)
+
+이 절은 앞선 직접 요청 즉시 실행·5분 확인 만료 규약을 대체한다.
+
+- 대화의 모든 변경은 `action_proposal`. 필수 값은 먼저 `reply`의 `choices`(2~6개)·`awaitingAnswer`로 되묻는다. `actions`·레거시 `add`·`proposal`로는 변경할 수 없다.
+- RPC는 `agent_proposals` 하나를 만들고 액션에서 요약을 생성한다. 이때 워커 `text`를 `chat_messages`에 따로 저장하지 않는다. 앱은 원래 요청 아래 집사 확인 메시지 하나를 표시한다.
+- 액션 구조 `domain/label/payload/expected`와 요청자 권한·원래 리비전 검사는 유지한다. 일정 삭제 payload는 `{action:"delete",id,occurrenceDate,scope}`이며 반복 삭제는 `single/following`을 명시한다. 장바구니는 `save/delete`도 기존 쓰기 RPC를 사용한다.
+- `POST /api/chat/actions/:id`: `{version,selected}` 확인, `{version,cancel:true}` 취소, `{version,actions,selected:[]}` 수정 저장. 수정은 같은 순서·개수·domain·대상 id·action·occurrenceDate·expected를 유지하고 값만 바꾼다. 서버가 기존 입력 스키마와 실제 가정 메타데이터 id를 검증한다. 수정 저장은 데이터를 반영하지 않는다.
+- 확인은 남은 `selected` 줄만 기존 원자적 실행으로 반영한다. 처리 결과를 새 개인 집사 메시지로 저장하며 중복 확인은 결과 메시지를 추가하지 않는다. 카드에는 반영한 줄만 버튼 없이 남긴다.
+- 취소는 `actions=[]`로 폐기하고 해당 요청까지의 대화 이력을 후속 워커 문맥에서 제외한다. 화면에는 취소 상태만 남긴다. 모델은 취소한 값을 다시 제안하거나 이어 쓰지 않는다.
+- 확인 카드의 `expires_at`는 호환 필드를 유지하되 `infinity`로 저장한다. 초안이 남아 있는 개인 대화는 1시간 정리에서도 제외하고 `chat_page.expiresAt=null`로 내려 수정 중 끊기지 않게 한다. 확인·취소 후 기존 대화 만료를 다시 적용한다. 영수증 보관 정책은 기존대로다.
+- 재고 save의 mode·category_id·location_id·수량 모드 unit_id가 없으면 추측하지 않고 선택 버튼으로 묻는다. 목록은 context의 `categories`(inventoryCategories), `locations`, `units`의 정확한 id만 허용한다. 장바구니 단위와 중복 시 `merge/separate`도 선택지로 묻는다. 6개를 넘으면 먼저 질문으로 좁힌다.
+- 장바구니 추가의 category_id는 모델이 정하거나 묻지 않는다. 확인 트랜잭션 안에서 기존 `cart_category_command`의 prepare/add를 사용해 같은 이름 → AI 추천 → 기타·늦은 추천 갱신 흐름을 유지한다.
+
+새 마이그레이션은 `20261106020000_chat_confirmations.sql`이다. 기존 원격 적용 파일은 바꾸지 않는다. 앱과 DB를 적용한 뒤 맥미니 워커 재시작은 사용자가 수행한다.

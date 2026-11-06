@@ -1,4 +1,6 @@
 import "server-only";
+import { z } from "zod";
+import { parseAgentActions } from "./agent-actions.schema";
 import {
   listChat,
   sendChat,
@@ -24,9 +26,14 @@ export function chatGET(request: Request) {
   );
 }
 export function actionsPOST(request: Request, context: IdContext) {
-  return handleRoute(request, async () =>
-    confirmActions((await context.params).id, await readJson(request)),
-  );
+  return handleRoute(request, async () => {
+    const raw = z
+      .object({ actions: z.unknown().optional() })
+      .passthrough()
+      .parse(await readJson(request));
+    if (raw.actions !== undefined) raw.actions = parseAgentActions(raw.actions);
+    return confirmActions((await context.params).id, raw);
+  });
 }
 export function chatPOST(request: Request) {
   return handleRoute(request, async () => sendChat(await readJson(request)));
