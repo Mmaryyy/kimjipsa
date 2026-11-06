@@ -36,12 +36,13 @@ export function ConfirmDialog({
     <AlertDialog.Root open={open} onOpenChange={onOpenChange}>
       {trigger && <AlertDialog.Trigger asChild>{trigger}</AlertDialog.Trigger>}
       <AlertDialog.Portal>
-        <AlertDialog.Overlay className="kj-overlay" />
+        {/* Above every sheet (z-81, date sheet z-83) so a confirm opened from a sheet dims it too. */}
+        <AlertDialog.Overlay className="kj-overlay z-84" />
         <AlertDialog.Content
           className={cn([
-            "fixed top-1/2 left-1/2 z-81 w-[min(calc(var(--sp-10)*7.5),calc(100%-var(--sp-6)*2))]",
-            "surface-edge max-md:before:hidden md:rounded-[var(--r-dialog)] md:border md:border-[var(--glass-border)]",
-            "-translate-1/2 max-md:rounded-sm bg-popover p-4 text-center text-foreground",
+            "fixed top-1/2 left-1/2 z-85 w-[min(calc(var(--sp-10)*7.5),calc(100%-var(--sp-6)*2))]",
+            "surface-edge rounded-[var(--r-dialog)] border border-[var(--glass-border)]",
+            "-translate-1/2 bg-popover p-4 text-center text-foreground",
             "[overflow-wrap:anywhere] [&_p]:mt-1",
           ])}
           data-theme={theme}

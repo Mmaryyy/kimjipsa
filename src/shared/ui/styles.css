@@ -88,6 +88,14 @@
   pointer-events: none;
   opacity: var(--glass-optics-opacity);
 }
+/* Field groups (glass input, chat composer) ring the whole group, not the bare input. */
+.kj-field-focus:has(:is(input, textarea):focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.kj-field-focus :is(input, textarea):focus-visible {
+  outline: none;
+}
 button.glass-surface,
 a.glass-surface {
   background-color: var(--glass-button-bg);

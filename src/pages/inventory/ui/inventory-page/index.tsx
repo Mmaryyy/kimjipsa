@@ -239,25 +239,23 @@ const InventoryPage = () => {
     content = (
       <>
         <div className="mt-2 grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3">
-          <label
+          <Input
+            variant="glass"
             data-od-id="inv-search"
-            className="glass-surface relative flex h-[var(--hit)] items-center gap-2 px-3"
-          >
-            <Search
-              aria-hidden
-              className="size-4 text-[var(--icon-secondary)]"
-            />
-            <Input
-              aria-label="품목 검색"
-              type="search"
-              placeholder="품목 검색"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              onCompositionStart={() => setComposing(true)}
-              onCompositionEnd={() => setComposing(false)}
-              className="min-h-8 bg-transparent px-0 py-1"
-            />
-          </label>
+            icon={
+              <Search
+                aria-hidden
+                className="size-4 text-[var(--icon-secondary)]"
+              />
+            }
+            aria-label="품목 검색"
+            type="search"
+            placeholder="품목 검색"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            onCompositionStart={() => setComposing(true)}
+            onCompositionEnd={() => setComposing(false)}
+          />
           <SegmentedControl
             odId="inv-group-by"
             label="묶어 보기"

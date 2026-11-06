@@ -255,7 +255,8 @@ const ChatPanel = () => {
         if (!next) onClose();
       }}
       presentation="panel"
-      overlayClassName="md:bg-transparent"
+      /* Opaque on mobile: the iOS keyboard bar is translucent and sits below the panel. */
+      overlayClassName="max-md:bg-background md:bg-transparent"
       className="max-md:top-[var(--chat-viewport-top,0px)] max-md:h-[var(--chat-viewport-height,100dvh)]"
       title="집사와 대화"
       description="나만 보는 개인 대화"

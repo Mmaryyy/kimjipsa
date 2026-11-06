@@ -9,7 +9,10 @@ export const PromptInput = ({
   ...props
 }: ComponentProps<"form">) => (
   <form
-    className={cn("w-full space-y-2 rounded-control bg-card p-3", className)}
+    className={cn(
+      "kj-field-focus w-full space-y-2 rounded-control bg-card p-3",
+      className,
+    )}
     {...props}
   />
 );

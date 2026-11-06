@@ -14,13 +14,12 @@ const CartSkeleton = () => (
     <div aria-hidden="true" inert>
       {/* shortcut: QuickAddForm 입력 행과 스타일을 함께 바꾼다. 입력 모양이 확장되면 공용화한다. */}
       <div className="mt-2 flex gap-2">
-        <div className="glass-surface relative flex min-w-0 flex-1 items-center">
-          <Input
-            placeholder="항목 추가 (예: 두부 2모)"
-            disabled
-            className="h-full min-h-[var(--ctl-h)] rounded-[var(--r-round)] bg-transparent py-1"
-          />
-        </div>
+        <Input
+          variant="glass"
+          className="min-h-[var(--ctl-h)] flex-1"
+          placeholder="항목 추가 (예: 두부 2모)"
+          disabled
+        />
         <Button
           variant="glass"
           size="sm"
