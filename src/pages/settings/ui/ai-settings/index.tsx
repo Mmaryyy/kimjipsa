@@ -1,11 +1,12 @@
 "use client";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, useSyncExternalStore } from "react";
 import {
   useAiSettings,
   useChat,
   type AiSettings as Settings,
 } from "@/entities/chat-message";
 import Image from "next/image";
+import { ChevronRight } from "lucide-react";
 import { cn } from "@/shared/lib";
 import { botTypeOptions } from "@/entities/user";
 import {
@@ -14,6 +15,7 @@ import {
   useSaveBotType,
 } from "@/features/account";
 import {
+  Sheet,
   SegmentedControl,
   Button,
   ConfirmDialog,
@@ -25,10 +27,20 @@ import {
   StatusBadge,
   Toast,
   Input,
+  Textarea,
   Text,
   TextButton,
 } from "@/shared/ui";
 import SettingsRow from "../settings-row";
+
+const subscribeOnline = (notify: () => void) => {
+  window.addEventListener("online", notify);
+  window.addEventListener("offline", notify);
+  return () => {
+    window.removeEventListener("online", notify);
+    window.removeEventListener("offline", notify);
+  };
+};
 
 interface Props {
   settings: Settings;
@@ -51,8 +63,49 @@ const AiSettingsForm = ({ settings, onSaved }: Props) => {
   const [nameError, setNameError] = useState("");
   const [name, setName] = useState(settings.name);
   const [memoryEnabled, setMemoryEnabled] = useState(settings.memoryEnabled);
-  const [newMemory, setNewMemory] = useState("");
-  const [edits, setEdits] = useState<Record<string, string>>({});
+  const online = useSyncExternalStore(
+    subscribeOnline,
+    () => navigator.onLine,
+    () => true,
+  );
+  const [editor, setEditor] = useState<
+    Settings["memories"][number] | "new" | null
+  >(null);
+  const [memoryText, setMemoryText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [discard, setDiscard] = useState(false);
+  const opener = useRef<HTMLButtonElement | null>(null);
+  const memoryDisabled = !online || memory.isPending;
+  const selectedMemory = editor && editor !== "new" ? editor : null;
+  const changed = memoryText.trim() !== (selectedMemory?.text ?? "");
+  const closeEditor = () => {
+    setEditor(null);
+    setDiscard(false);
+    setDeleting(false);
+  };
+  const saveMemory = () => {
+    if (memoryDisabled || !memoryText.trim()) return;
+    if (!changed) {
+      closeEditor();
+      return;
+    }
+    memory.mutate(
+      {
+        action: "save-memory",
+        ...(selectedMemory && {
+          id: selectedMemory.id,
+          version: selectedMemory.version,
+        }),
+        text: memoryText.trim(),
+      },
+      { onSuccess: closeEditor },
+    );
+  };
+  const onEditorOpenChange = (open: boolean) => {
+    if (open || memory.isPending) return;
+    if (changed) setDiscard(true);
+    else closeEditor();
+  };
   const [reset, setReset] = useState(false);
   const admin = account.data?.membership?.role === "admin";
   const onSave = useCallback(
@@ -214,105 +267,160 @@ const AiSettingsForm = ({ settings, onSaved }: Props) => {
         )}
         <List>
           {settings.memories.map((item) => (
-            <ListRow
-              key={item.id}
-              trailing={
-                <TextButton
-                  disabled={memory.isPending}
-                  tone="danger"
-                  aria-label={`${item.text} 삭제하기`}
-                  onClick={() =>
-                    memory.mutate({
-                      action: "delete-memory",
-                      id: item.id,
-                      version: item.version,
-                    })
-                  }
-                >
-                  삭제하기
-                </TextButton>
-              }
-            >
-              <FormFieldRow label="기억" htmlFor={`memory-${item.id}`}>
-                {(props) => (
-                  <Input
-                    {...props}
-                    aria-label="기억 내용"
-                    className="w-full! bg-transparent px-0"
-                    value={edits[item.id] ?? item.text}
-                    disabled={memory.isPending}
-                    onChange={(event) =>
-                      setEdits((current) => ({
-                        ...current,
-                        [item.id]: event.target.value,
-                      }))
-                    }
-                    onBlur={() => {
-                      const text = (edits[item.id] ?? item.text).trim();
-                      if (text && text !== item.text)
-                        memory.mutate({
-                          action: "save-memory",
-                          id: item.id,
-                          version: item.version,
-                          text,
-                        });
-                    }}
-                    maxLength={2000}
-                  />
-                )}
-              </FormFieldRow>
+            <ListRow key={item.id} className="py-0">
+              <TextButton
+                className="w-full justify-start gap-3 text-left text-foreground"
+                disabled={memoryDisabled}
+                onClick={(event) => {
+                  opener.current = event.currentTarget;
+                  memory.reset();
+                  setMemoryText(item.text);
+                  setEditor(item);
+                }}
+              >
+                <span className="min-w-0 flex-1 truncate">{item.text}</span>
+                <ChevronRight
+                  aria-hidden
+                  className="size-4 shrink-0 text-muted-foreground"
+                />
+              </TextButton>
             </ListRow>
           ))}
         </List>
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            memory.mutate(
-              { action: "save-memory", text: newMemory },
-              { onSuccess: () => setNewMemory("") },
-            );
+        <TextButton
+          className="justify-start justify-self-start"
+          disabled={memoryDisabled}
+          onClick={(event) => {
+            opener.current = event.currentTarget;
+            memory.reset();
+            setMemoryText("");
+            setEditor("new");
           }}
         >
-          <FormFieldRow label="새 기억" htmlFor="new-family-memory">
-            {(props) => (
-              <div className="flex min-w-0 items-center gap-2">
-                <Input
-                  {...props}
-                  className="w-full! bg-transparent px-0"
-                  aria-label="새 가족 기억"
-                  value={newMemory}
-                  maxLength={2000}
-                  onChange={(event) => setNewMemory(event.target.value)}
-                  placeholder="가족의 선호나 습관"
-                />
-                <TextButton
-                  type="submit"
-                  disabled={!newMemory.trim() || memory.isPending}
-                >
-                  추가
-                </TextButton>
-              </div>
-            )}
-          </FormFieldRow>
-        </form>
+          새 기억 추가
+        </TextButton>
         {settings.memories.length > 0 && (
-          <TextButton tone="danger" onClick={() => setReset(true)}>
+          <TextButton
+            tone="danger"
+            className="justify-start justify-self-start"
+            disabled={memoryDisabled}
+            onClick={() => setReset(true)}
+          >
             기억 전체 초기화
           </TextButton>
         )}
-        {memory.error && (
+        {memory.error && !editor && (
           <Text as="p" role="alert">
             {memory.error.message}
           </Text>
         )}
       </section>
+      <Sheet
+        open={editor !== null}
+        onOpenChange={onEditorOpenChange}
+        title={selectedMemory ? "가족 기억 수정" : "새 기억 추가"}
+        description="가족의 선호나 습관을 저장해요."
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          opener.current?.focus();
+        }}
+        leadingAction={(onOpenChange) => (
+          <TextButton
+            disabled={memory.isPending}
+            onClick={() => onOpenChange(false)}
+          >
+            취소
+          </TextButton>
+        )}
+        action={
+          <TextButton
+            type="submit"
+            form="family-memory-form"
+            disabled={memoryDisabled || !memoryText.trim()}
+          >
+            저장
+          </TextButton>
+        }
+      >
+        <form
+          id="family-memory-form"
+          className="grid gap-4 py-4"
+          aria-busy={memory.isPending}
+          onSubmit={(event) => {
+            event.preventDefault();
+            saveMemory();
+          }}
+        >
+          <Textarea
+            id="family-memory-text"
+            aria-label="기억 내용"
+            rows={3}
+            className="resize-none overflow-y-auto bg-transparent px-0"
+            value={memoryText}
+            disabled={memoryDisabled}
+            maxLength={2000}
+            required
+            placeholder="가족의 선호나 습관"
+            onChange={(event) => setMemoryText(event.target.value)}
+          />
+          {selectedMemory && (
+            <TextButton
+              tone="danger"
+              className="justify-start justify-self-start"
+              disabled={memoryDisabled}
+              onClick={() => setDeleting(true)}
+            >
+              기억 삭제하기
+            </TextButton>
+          )}
+          {memory.error && (
+            <Text as="p" role="alert" className="text-error-text">
+              {memory.error.message}
+            </Text>
+          )}
+        </form>
+      </Sheet>
+      <ConfirmDialog
+        open={deleting}
+        onOpenChange={setDeleting}
+        title="가족 기억을 지울까요?"
+        description={memory.error?.message ?? "삭제한 기억은 되돌릴 수 없어요."}
+        targetName={selectedMemory?.text}
+        pending={memoryDisabled}
+        onConfirm={() => {
+          if (memoryDisabled || !selectedMemory) return;
+          memory.mutate(
+            {
+              action: "delete-memory",
+              id: selectedMemory.id,
+              version: selectedMemory.version,
+            },
+            { onSuccess: closeEditor },
+          );
+        }}
+      />
+      <ConfirmDialog
+        open={discard}
+        onOpenChange={setDiscard}
+        title="변경 사항을 저장할까요?"
+        description={
+          memory.error?.message ?? "저장하지 않으면 바꾼 내용이 사라져요."
+        }
+        cancelLabel="계속 편집"
+        confirmLabel="저장"
+        destructive={false}
+        pending={memoryDisabled}
+        onConfirm={saveMemory}
+        secondaryAction={{ label: "저장 안 함", onClick: closeEditor }}
+      />
       <ConfirmDialog
         open={reset}
         onOpenChange={setReset}
         title="가족 기억을 모두 지울까요?"
         description="앱의 가족 기억만 지워져요. Hermes 자체 기억은 유지돼요."
-        pending={memory.isPending}
+        pending={memoryDisabled}
         onConfirm={() =>
+          !memoryDisabled &&
           memory.mutate(
             { action: "reset-memories" },
             { onSuccess: () => setReset(false) },

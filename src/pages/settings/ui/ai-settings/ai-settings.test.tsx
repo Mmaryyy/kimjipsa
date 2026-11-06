@@ -1,5 +1,12 @@
 import { beforeEach, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import AiSettings from ".";
 import { ToastProvider } from "@/shared/ui";
 
@@ -92,31 +99,140 @@ it("BOT-15/16 이름 변경과 기억 스위치는 달라졌을 때만 자동 �
   );
   expect(screen.getByText("연결됨")).toBeInTheDocument();
 });
-it("BOT-13 가족 기억은 바뀐 내용만 저장하고 새 기억을 추가해요", () => {
+it("BOT-13 기억 목록을 누르면 시트에서 바뀐 내용만 저장해요", () => {
   render(
     <ToastProvider>
       <AiSettings />
     </ToastProvider>,
   );
-  const input = screen.getByLabelText("기억 내용");
-  fireEvent.blur(input);
+  expect(screen.queryByLabelText("기억 내용")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "우유는 저지방" }));
+  const sheet = within(screen.getByRole("dialog", { name: "가족 기억 수정" }));
+  expect(sheet.getByLabelText("기억 내용")).toHaveValue("우유는 저지방");
+  fireEvent.click(sheet.getByRole("button", { name: "저장" }));
   expect(memory).not.toHaveBeenCalled();
-  fireEvent.change(input, { target: { value: "우유는 일반" } });
-  fireEvent.blur(input);
-  expect(memory).toHaveBeenCalledWith({
-    action: "save-memory",
-    id: "memory",
-    version: 1,
-    text: "우유는 일반",
+  fireEvent.click(screen.getByRole("button", { name: "우유는 저지방" }));
+  fireEvent.change(screen.getByLabelText("기억 내용"), {
+    target: { value: "우유는 일반" },
   });
-  fireEvent.change(screen.getByLabelText("새 가족 기억"), {
+  fireEvent.blur(screen.getByLabelText("기억 내용"));
+  expect(memory).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "저장" }));
+  expect(memory).toHaveBeenCalledWith(
+    { action: "save-memory", id: "memory", version: 1, text: "우유는 일반" },
+    expect.objectContaining({ onSuccess: expect.any(Function) }),
+  );
+});
+it("BOT-13 새 기억은 목록 아래 버튼으로 시트를 열어 등록해요", () => {
+  render(
+    <ToastProvider>
+      <AiSettings />
+    </ToastProvider>,
+  );
+  const section = screen.getByRole("region", { name: "가족 기억" });
+  const add = within(section).getByRole("button", { name: "새 기억 추가" });
+  const reset = within(section).getByRole("button", {
+    name: "기억 전체 초기화",
+  });
+  expect(
+    section.querySelector("ul")!.compareDocumentPosition(add) &
+      Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  expect(
+    add.compareDocumentPosition(reset) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  fireEvent.click(add);
+  const sheet = within(screen.getByRole("dialog", { name: "새 기억 추가" }));
+  expect(sheet.getByRole("button", { name: "저장" })).toBeDisabled();
+  fireEvent.change(sheet.getByLabelText("기억 내용"), {
     target: { value: "아침은 간단히" },
   });
-  fireEvent.click(screen.getByRole("button", { name: "추가" }));
-  expect(memory).toHaveBeenLastCalledWith(
+  fireEvent.click(sheet.getByRole("button", { name: "저장" }));
+  expect(memory).toHaveBeenCalledWith(
     { action: "save-memory", text: "아침은 간단히" },
     expect.objectContaining({ onSuccess: expect.any(Function) }),
   );
+  act(() => memory.mock.calls[0][1].onSuccess());
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+});
+it("BOT-13 개별 삭제와 전체 초기화는 확인해야 실행해요", () => {
+  render(
+    <ToastProvider>
+      <AiSettings />
+    </ToastProvider>,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "우유는 저지방" }));
+  fireEvent.click(screen.getByRole("button", { name: "기억 삭제하기" }));
+  expect(memory).not.toHaveBeenCalled();
+  let confirm = within(screen.getByRole("alertdialog"));
+  fireEvent.click(confirm.getByRole("button", { name: "취소하기" }));
+  expect(memory).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "기억 삭제하기" }));
+  confirm = within(screen.getByRole("alertdialog"));
+  fireEvent.click(confirm.getByRole("button", { name: "삭제하기" }));
+  expect(memory).toHaveBeenCalledWith(
+    { action: "delete-memory", id: "memory", version: 1 },
+    expect.objectContaining({ onSuccess: expect.any(Function) }),
+  );
+  act(() => memory.mock.calls[0][1].onSuccess());
+  fireEvent.click(screen.getByRole("button", { name: "기억 전체 초기화" }));
+  expect(memory).toHaveBeenCalledTimes(1);
+  fireEvent.click(
+    within(screen.getByRole("alertdialog")).getByRole("button", {
+      name: "삭제하기",
+    }),
+  );
+  expect(memory).toHaveBeenLastCalledWith(
+    { action: "reset-memories" },
+    expect.objectContaining({ onSuccess: expect.any(Function) }),
+  );
+});
+it("BOT-13 저장 오류를 시트에 표시하고 오프라인과 대기 중에는 변경을 막아요", () => {
+  const { rerender } = render(
+    <ToastProvider>
+      <AiSettings />
+    </ToastProvider>,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "새 기억 추가" }));
+  fireEvent.change(screen.getByLabelText("기억 내용"), {
+    target: { value: "아침" },
+  });
+  connection.memoryError = new Error("저장 실패");
+  connection.memoryPending = true;
+  rerender(
+    <ToastProvider>
+      <AiSettings />
+    </ToastProvider>,
+  );
+  expect(screen.getByRole("alert")).toHaveTextContent("저장 실패");
+  expect(screen.getByRole("button", { name: "저장" })).toBeDisabled();
+  connection.memoryPending = false;
+  rerender(
+    <ToastProvider>
+      <AiSettings />
+    </ToastProvider>,
+  );
+  vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+  act(() => window.dispatchEvent(new Event("offline")));
+  expect(screen.getByRole("button", { name: "저장" })).toBeDisabled();
+  expect(screen.getByLabelText("기억 내용")).toBeDisabled();
+  vi.restoreAllMocks();
+});
+it("BOT-13 저장하지 않은 변경은 닫기 전에 확인해요", () => {
+  render(
+    <ToastProvider>
+      <AiSettings />
+    </ToastProvider>,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "새 기억 추가" }));
+  fireEvent.change(screen.getByLabelText("기억 내용"), {
+    target: { value: "아침" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "취소" }));
+  const confirm = within(screen.getByRole("alertdialog"));
+  fireEvent.click(confirm.getByRole("button", { name: "저장 안 함" }));
+  expect(memory).not.toHaveBeenCalled();
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
 it("BOT-15 저장에 실패하면 이전 설정으로 돌아와요", async () => {
   save.mockRejectedValueOnce(new Error("실패"));
