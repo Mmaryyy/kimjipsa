@@ -34,6 +34,7 @@ vi.mock("./event-category-form", () => ({ EventCategoryForm: () => null }));
 vi.mock("@/shared/ui", () => ({
   PageLayout: ({ header }: { header: ReactNode }) => header,
   PageHeader: ({ navigation }: { navigation: ReactNode }) => navigation,
+  Button: () => null,
   TextButton: () => null,
   Sheet: () => null,
 }));
