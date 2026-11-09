@@ -4,7 +4,6 @@ export type {
   EventDetails,
   EventCategory,
   EventCategoryInput,
-  EventCategoryColor,
 } from "./api/type";
 export { eventSchema, eventCategorySchema } from "./model/event.schema";
 export { eventVisibility, eventCategoryColors } from "./model/event.constants";
@@ -12,6 +11,8 @@ export {
   useEvents,
   useEvent,
   useEventCategories,
+  useSavedCategoryColors,
+  savedCategoryColorsQueryKey,
   eventQueryKey,
   categoryQueryKey,
 } from "./model/use-events";

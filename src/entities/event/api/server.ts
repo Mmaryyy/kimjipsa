@@ -5,6 +5,7 @@ import { tz } from "@date-fns/tz";
 import { addYears, format } from "date-fns";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/shared/api";
+import { categoryColorSchema } from "@/shared/lib";
 import { ApiError } from "@/shared/api";
 import {
   mockContext,
@@ -680,13 +681,37 @@ export async function listEventCategories(
     })),
   );
 }
+export async function listSavedCategoryColors(auth?: AuthContext) {
+  const mock = await mockEventContext();
+  if (mock) {
+    if (!mock.values.has("event-category-saved-colors")) {
+      const colors = (await mockCategories())
+        .map((category) => category.color)
+        .filter((color) => color.startsWith("#"));
+      mock.values.set("event-category-saved-colors", [...new Set(colors)]);
+    }
+    return z
+      .array(categoryColorSchema)
+      .parse(mock.values.get("event-category-saved-colors"));
+  }
+  const { client, familyId } = await eventContext(auth);
+  const { data, error } = await client
+    .from("event_category_saved_colors")
+    .select("color")
+    .eq("family_id", familyId)
+    .order("saved_at", { ascending: false })
+    .order("color");
+  throwDatabaseError(error, errors);
+  return z.array(categoryColorSchema).parse(data?.map((entry) => entry.color));
+}
 export async function saveEventCategory(
   input: unknown,
   id: string | null = null,
   auth?: AuthContext,
 ) {
   const category = eventCategorySchema.parse(input);
-  if (await mockEventContext()) {
+  const mock = await mockEventContext();
+  if (mock) {
     const categories = await mockCategories();
     const target =
       id === null
@@ -738,6 +763,13 @@ export async function saveEventCategory(
     };
     if (target) Object.assign(target, record);
     else categories.push(record);
+    if (category.color.startsWith("#")) {
+      const colors = await listSavedCategoryColors();
+      mock.values.set("event-category-saved-colors", [
+        category.color,
+        ...colors.filter((color) => color !== category.color),
+      ]);
+    }
     return record.id;
   }
   const { client } = await eventContext(auth);

@@ -29,6 +29,7 @@ PROPOSED 항목은 `docs/04-planning/DECISIONS_REQUIRED.md`의 결정 번호와 
 | 타이핑 애니메이션 | `tailwind-plugin-typed` 1.1.2 (MIT, CSS 전용) | CONFIRMED | 2026-11-06 사용자 지시. 스플래시 워드마크 '김노비 → 김집사'. v4에서 `;`가 클래스 값으로 안 잡혀 구분자를 `,`로 둔다. 애니메이션이 무한 반복이라 반복 횟수를 덮어써 멈춘다(`BrandLogo`) |
 | UI 프리미티브 | shadcn/ui (Radix 기반). 현재는 `radix-ui` 통합 패키지를 직접 쓰고 `kj-*` CSS로 외형을 입힘 | CONFIRMED | ADR-0004. 외형은 `docs/design/HANDOFF.md`에 맞춤. shadcn CLI가 만든 파일은 아직 없고(`components.json`만 있음) 추가할 때는 `shared/ui` 규칙(`README.md`)을 따른다 |
 | 아이콘 | `lucide-react` (shadcn/ui 기본 아이콘 라이브러리) | CONFIRMED | 사용자 결정(2026-10-15, P0 코드 리뷰 r002-f1): shadcn 기본값을 따르고 바꾸지 않는다. `components.json`의 `iconLibrary: "lucide"`. P1 이후 아이콘을 쓰는 컴포넌트에서 사용 |
+| 카테고리 직접 색 선택 | `react-colorful` 5.8.1 | CONFIRMED | 사용자 결정 2026-11-09, ADR-0020. 모바일 중첩 시트·데스크톱 팝오버, RGB·hex 입력 없이 선택으로 확정 |
 | 축하 색종이 | `canvas-confetti` 1.9.4 | CONFIRMED | 사용자 요청(2026-10-19, CAL-16): 축하 카드 색종이, 약 4.4KB gzip. 홈에서 동적 로드하고 동작 줄이기·숨은 탭에서는 중지 |
 | 목록 순서 변경 | `@dnd-kit/core` 6.3.1 · `@dnd-kit/sortable` 10.0.0 · `@dnd-kit/utilities` 3.2.2 | CONFIRMED | 사용자 결정(2026-10-19, P4.9): 손잡이 드래그와 터치·키보드 정렬, 기존 카테고리 저장 RPC 사용 |
 | 모바일 일정 폼 | `vaul` 1.1.2 (정확한 버전) | CONFIRMED | 사용자 승인(2026-10-21, P5.5 r111-f1). [유지보수 중단](https://github.com/emilkowalski/vaul) 상태를 알고 채택. shadcn Drawer 구성의 `shared/ui/drawer.tsx` 한 곳에서 감싸 교체 가능하게 유지. `(pointer: coarse)` 일정 추가·수정 폼만 적용하고 휠은 기존 Sheet 유지 |

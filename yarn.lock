@@ -5672,6 +5672,7 @@ __metadata:
     prettier: "npm:3.9.10"
     radix-ui: "npm:1.8.1"
     react: "npm:19.3.1"
+    react-colorful: "npm:5.8.1"
     react-dom: "npm:19.3.1"
     react-hook-form: "npm:7.90.0"
     server-only: "npm:0.0.1"
@@ -6650,6 +6651,16 @@ __metadata:
     "@types/react-dom":
       optional: true
   checksum: 10c0/837cfbc0b6c025cbd53951228f7b1f523f6f8d8312b01ad07a481d214b0a5ea1a626c1e25589335e0a32f451a753e380dd0fd9036fb5ceb6230298ac65d75a8f
+  languageName: node
+  linkType: hard
+
+"react-colorful@npm:5.8.1":
+  version: 5.8.1
+  resolution: "react-colorful@npm:5.8.1"
+  peerDependencies:
+    react: ">=16.8.0"
+    react-dom: ">=16.8.0"
+  checksum: 10c0/cd1705cdb218f9f43d376f36306968aa304e0d8018dcff198c798c2c56bf4873ea918580a57a0cceaab62ba7621663234ffad35f3d4ebd9198e65f926f9ec8fe
   languageName: node
   linkType: hard
 

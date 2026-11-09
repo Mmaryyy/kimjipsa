@@ -1,10 +1,7 @@
 import type { Recurrence } from "../lib/recurrence.utils";
 import type { z } from "zod";
 import type { eventSchema, eventCategorySchema } from "../model/event.schema";
-import type {
-  eventCategoryColors,
-  eventVisibility,
-} from "../model/event.constants";
+import type { eventVisibility } from "../model/event.constants";
 export type EventInput = z.infer<typeof eventSchema>;
 export type EventCategoryInput = z.infer<typeof eventCategorySchema>;
 export type EventCategory = EventCategoryInput & { id: string };
@@ -35,4 +32,3 @@ export type CalendarEvent = {
   canEdit: boolean;
   details: EventDetails | null;
 };
-export type EventCategoryColor = keyof typeof eventCategoryColors;

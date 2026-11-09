@@ -44,6 +44,14 @@
     opacity: 0.45;
   }
 }
+@keyframes kj-progress-slide {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
 @keyframes kj-sheet-in {
   from {
     opacity: 0;

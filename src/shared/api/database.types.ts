@@ -141,6 +141,10 @@ export type Database<
           id?: string;
         }
       >;
+      event_category_saved_colors: Table<
+        { family_id: string; color: string; saved_at: string },
+        { family_id: string; color: string; saved_at?: string }
+      >;
       event_categories: Table<
         {
           id: string;

@@ -400,12 +400,18 @@
   --celebrate-text: var(--sys-pink-ic);
 
   /* Calendar categories (CAL-08 기본값) */
-  --cat-home: var(--sys-teal); /* {우리집 이름} */
-  --cat-work: var(--sys-blue); /* 회사 */
-  --cat-family: var(--sys-green); /* 가족 */
-  --cat-meet: var(--sys-purple); /* 약속 */
-  --cat-clinic: var(--sys-pink); /* 병원 */
-  --cat-etc: var(--sys-brown); /* 기타 */
+  --cat-blue: #81a6c6;
+  --cat-sky: #aacddc;
+  --cat-cream: #f3e3d0;
+  --cat-sand: #d2c4b4;
+  --cat-sage: #a9c1a1;
+  --cat-gray: #b7b9bc;
+  --cat-home: var(--cat-sky);
+  --cat-work: var(--cat-blue);
+  --cat-family: var(--cat-sage);
+  --cat-meet: var(--cat-gray);
+  --cat-clinic: var(--cat-cream);
+  --cat-etc: var(--cat-sand);
 
   /* Typography — 스위트(Sweet / SUITE, 눈누 1150) on Apple text-style sizes.
      One family, weights 400 / 500 / 600 / 700 only. */

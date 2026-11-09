@@ -13,11 +13,15 @@ import {
   fetchEvents,
   fetchEvent,
   fetchCategories,
+  fetchSavedCategoryColors,
   fetchDdayDismissals,
   dismissDdayCard,
 } from "../api/api";
 import { eventPollingIntervalMs } from "./event.constants";
 export const eventQueryKey = ["events"] as const;
+export const savedCategoryColorsQueryKey = [
+  "event-category-saved-colors",
+] as const;
 export const categoryQueryKey = ["event-categories"] as const;
 export const eventsQueryOptions = queryOptions({
   queryKey: eventQueryKey,
@@ -85,6 +89,12 @@ export function useEvent(id: string) {
 export function useEventCategories() {
   return useQuery({
     ...categoriesQueryOptions,
+  });
+}
+export function useSavedCategoryColors() {
+  return useQuery({
+    queryKey: savedCategoryColorsQueryKey,
+    queryFn: fetchSavedCategoryColors,
   });
 }
 export function useDdayDismissals() {

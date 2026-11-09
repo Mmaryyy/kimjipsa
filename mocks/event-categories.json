@@ -2,7 +2,7 @@
   {
     "id": "10000000-0000-4000-8000-000000000010",
     "name": "도토리네",
-    "color": "teal",
+    "color": "sky",
     "sortOrder": 0
   },
   {
@@ -14,25 +14,25 @@
   {
     "id": "10000000-0000-4000-8000-000000000012",
     "name": "병원",
-    "color": "pink",
+    "color": "cream",
     "sortOrder": 2
   },
   {
     "id": "10000000-0000-4000-8000-000000000013",
     "name": "약속",
-    "color": "purple",
+    "color": "gray",
     "sortOrder": 3
   },
   {
     "id": "10000000-0000-4000-8000-000000000014",
     "name": "가족",
-    "color": "green",
+    "color": "sage",
     "sortOrder": 4
   },
   {
     "id": "10000000-0000-4000-8000-000000000015",
     "name": "기타",
-    "color": "brown",
+    "color": "sand",
     "sortOrder": 5
   }
 ]

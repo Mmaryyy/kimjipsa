@@ -4,6 +4,7 @@ export {
   saveEvent,
   deleteEvent,
   listEventCategories,
+  listSavedCategoryColors,
   saveEventCategory,
   deleteEventCategory,
 } from "./api/server";

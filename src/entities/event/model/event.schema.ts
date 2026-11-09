@@ -1,5 +1,6 @@
+import { categoryColorSchema } from "@/shared/lib";
 import { z } from "zod";
-import { eventCategoryColors, eventVisibility } from "./event.constants";
+import { eventVisibility } from "./event.constants";
 const date = z.iso.date({ error: "날짜를 확인해 주세요." });
 const time = z
   .string({ error: "시각을 확인해 주세요." })
@@ -97,13 +98,7 @@ export const eventCategorySchema = z.object({
     .string({ error: "카테고리 이름을 입력해 주세요." })
     .trim()
     .min(1, "카테고리 이름을 입력해 주세요."),
-  color: z.enum(
-    Object.keys(eventCategoryColors) as [
-      keyof typeof eventCategoryColors,
-      ...(keyof typeof eventCategoryColors)[],
-    ],
-    { error: "카테고리 색을 선택해 주세요." },
-  ),
+  color: categoryColorSchema,
   sortOrder: z
     .number({ error: "표시 순서를 확인해 주세요." })
     .int("표시 순서는 정수로 입력해 주세요.")

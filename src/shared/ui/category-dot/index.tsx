@@ -1,14 +1,12 @@
 import type { CSSProperties } from "react";
-import { categoryColors } from "./ui.constants";
-export function CategoryDot({
-  color,
-  cssColor,
-  label,
-}: {
-  color?: keyof typeof categoryColors;
+import { resolveCategoryColor, type CategoryColor } from "@/shared/lib";
+interface Props {
+  color?: CategoryColor;
   cssColor?: CSSProperties["color"];
   label?: string;
-}) {
+}
+
+const CategoryDot = ({ color, cssColor, label }: Props) => {
   return (
     <span
       data-slot="category-dot"
@@ -18,10 +16,11 @@ export function CategoryDot({
       aria-hidden={label ? undefined : true}
       style={
         {
-          "--category-color":
-            cssColor ?? (color ? categoryColors[color] : "var(--sys-teal)"),
+          "--category-color": cssColor ?? resolveCategoryColor(color),
         } as CSSProperties
       }
     />
   );
-}
+};
+
+export default CategoryDot;

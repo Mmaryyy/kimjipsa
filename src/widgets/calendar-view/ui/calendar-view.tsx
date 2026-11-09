@@ -1,4 +1,5 @@
 "use client";
+import { resolveCategoryColor } from "@/shared/lib";
 import { Suspense, type CSSProperties } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -32,7 +33,6 @@ import { eventRoutes } from "@/shared/config";
 import { markHistoryBack, cn } from "@/shared/lib";
 import {
   Button,
-  categoryColors,
   EmptyState,
   List,
   ListRow,
@@ -236,7 +236,7 @@ function CalendarDate({
             );
             const color =
               event.visibility !== "private" && category
-                ? categoryColors[category.color]
+                ? resolveCategoryColor(category.color)
                 : "var(--sys-gray3)";
             return <i key={event.id} style={{ background: color }} />;
           })}
@@ -256,7 +256,7 @@ function CalendarDate({
               );
               const color =
                 event.visibility !== "private" && category
-                  ? categoryColors[category.color]
+                  ? resolveCategoryColor(category.color)
                   : "var(--sys-gray3)";
               return (
                 <i
@@ -576,7 +576,7 @@ function TimelineEvent({
     event.visibility === "private"
       ? "var(--sys-gray3)"
       : category
-        ? categoryColors[category.color]
+        ? resolveCategoryColor(category.color)
         : "var(--label-tertiary)";
   const content = (
     <>

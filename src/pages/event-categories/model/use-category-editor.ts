@@ -5,6 +5,7 @@ import {
   saveCategory,
   deleteCategory,
   categoryQueryKey,
+  savedCategoryColorsQueryKey,
   eventQueryKey,
   type EventCategoryInput,
 } from "@/entities/event";
@@ -12,6 +13,9 @@ export function useCategoryEditor(id: string | undefined, onSaved: () => void) {
   const queryClient = useQueryClient();
   const onSuccess = async () => {
     await queryClient.invalidateQueries({ queryKey: categoryQueryKey });
+    await queryClient.invalidateQueries({
+      queryKey: savedCategoryColorsQueryKey,
+    });
     await queryClient.invalidateQueries({ queryKey: eventQueryKey });
     onSaved();
   };

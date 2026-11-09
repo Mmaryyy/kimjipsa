@@ -102,6 +102,8 @@
   --text-caption-xs--font-weight: var(--type-caption-xs-weight);
   --text-caption-xs--letter-spacing: var(--type-caption-xs-tracking);
   --animate-sheet-in: kj-sheet-in var(--dur) var(--ease);
+  --animate-progress-slide: kj-progress-slide var(--skeleton-duration) linear
+    infinite;
   --animate-skeleton-pulse: kj-pulse var(--skeleton-duration) ease-in-out
     infinite alternate;
   /* 시맨틱 토큰은 원본 변수를 직접 참조해요. */

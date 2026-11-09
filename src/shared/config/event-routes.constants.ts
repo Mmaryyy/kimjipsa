@@ -5,6 +5,7 @@ export const eventRoutes = {
 export const eventApiRoutes = {
   events: "/api/events",
   categories: "/api/event-categories",
+  savedColors: "/api/event-categories/saved-colors",
   dismissals: "/api/dday-dismissals",
 } as const;
 export function eventApiPath(id: string) {

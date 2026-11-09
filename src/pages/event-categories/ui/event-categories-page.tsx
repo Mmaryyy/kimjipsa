@@ -17,7 +17,7 @@ import {
 import { eventRoutes, settingsPath } from "@/shared/config";
 import { useHistoryBack } from "@/shared/lib";
 import SortableCategoryList from "./sortable-category-list";
-import { EventCategoryForm } from "./event-category-form";
+import EventCategoryForm from "./event-category-form";
 
 function CategoryList({
   onEdit,

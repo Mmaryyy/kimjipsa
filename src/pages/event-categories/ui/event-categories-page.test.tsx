@@ -30,7 +30,7 @@ vi.mock("@/entities/event", () => ({
   useEventCategories: () => ({ isPending: true }),
 }));
 vi.mock("./sortable-category-list", () => ({ default: () => null }));
-vi.mock("./event-category-form", () => ({ EventCategoryForm: () => null }));
+vi.mock("./event-category-form", () => ({ default: () => null }));
 vi.mock("@/shared/ui", () => ({
   PageLayout: ({ header }: { header: ReactNode }) => header,
   PageHeader: ({ navigation }: { navigation: ReactNode }) => navigation,

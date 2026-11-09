@@ -1,8 +1,5 @@
-import {
-  categoryColors,
-  type TextVariant,
-  type StatusVariant,
-} from "@/shared/ui";
+import { categoryColors } from "@/shared/lib";
+import { type TextVariant, type StatusVariant } from "@/shared/ui";
 
 const textSamples = {
   "title-lg": null,

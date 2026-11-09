@@ -22,3 +22,14 @@ export {
   setCartActionsVisible,
   useCartActionsVisible,
 } from "./cart-actions-visibility";
+
+export {
+  categoryColors,
+  categoryColorHex,
+  type CategoryColor,
+} from "./category-color.constants";
+export {
+  resolveCategoryColor,
+  readableTextColor,
+} from "./category-color.utils";
+export { categoryColorSchema } from "./category-color.schema";

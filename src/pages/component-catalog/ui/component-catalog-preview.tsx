@@ -1,4 +1,9 @@
 "use client";
+import {
+  readableTextColor,
+  resolveCategoryColor,
+  type CategoryColor,
+} from "@/shared/lib";
 
 import {
   InventoryStatusCapsule,
@@ -196,6 +201,29 @@ function AppearanceSamples({ onAction }: { onAction: () => void }) {
   );
 }
 
+const CategoryLabelSamples = () => (
+  <div className="flex flex-wrap gap-2 py-4" aria-label="카테고리 라벨 견본">
+    {[...categoryColorOptions, null].map((preset) => (
+      <span
+        key={preset ?? "custom"}
+        className="rounded px-2 py-1"
+        ref={(node) => {
+          if (!node) return;
+          const color =
+            preset ??
+            (getComputedStyle(document.documentElement)
+              .getPropertyValue("--sys-red")
+              .trim() as CategoryColor);
+          node.style.backgroundColor = resolveCategoryColor(color);
+          node.style.color = readableTextColor(color);
+        }}
+      >
+        {preset ?? "직접 선택"} 일정
+      </span>
+    ))}
+  </div>
+);
+
 function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
   const fieldId = useId();
   const [view, setView] =
@@ -379,6 +407,7 @@ function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
         ))}
       </div>
 
+      <CategoryLabelSamples />
       <SectionHeader title="시트와 확인창" />
       <div className="flex flex-wrap items-center gap-4 py-4">
         <Sheet

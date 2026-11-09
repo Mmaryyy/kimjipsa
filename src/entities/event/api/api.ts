@@ -1,3 +1,4 @@
+import type { CategoryColor } from "@/shared/lib";
 import { request } from "@/shared/api";
 import {
   eventApiRoutes,
@@ -25,6 +26,9 @@ export function deleteEvent(id: string, scope?: "single" | "following") {
 }
 export function fetchCategories() {
   return request<EventCategory[]>(eventApiRoutes.categories);
+}
+export function fetchSavedCategoryColors() {
+  return request<CategoryColor[]>(eventApiRoutes.savedColors);
 }
 export function saveCategory(input: EventCategoryInput, id?: string) {
   return request<string>(

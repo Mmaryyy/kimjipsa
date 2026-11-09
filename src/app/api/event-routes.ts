@@ -10,6 +10,7 @@ import {
   saveEvent,
   deleteEvent,
   listEventCategories,
+  listSavedCategoryColors,
   saveEventCategory,
   deleteEventCategory,
 } from "@/entities/event/index.server";
@@ -90,6 +91,9 @@ export function eventDeletePOST(request: Request, context: Context) {
 }
 export function categoriesGET(request: Request) {
   return handleRoute(request, () => authorized(listEventCategories));
+}
+export function savedCategoryColorsGET(request: Request) {
+  return handleRoute(request, () => authorized(listSavedCategoryColors));
 }
 export function categoriesPOST(request: Request) {
   return handleRoute(request, () =>

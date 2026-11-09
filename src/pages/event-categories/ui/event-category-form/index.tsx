@@ -1,5 +1,5 @@
 "use client";
-import { cn } from "@/shared/lib";
+import type { CategoryColor } from "@/shared/lib";
 
 import { useCallback, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
@@ -19,14 +19,14 @@ import {
   Text,
   TextButton,
 } from "@/shared/ui";
-import { useCategoryEditor } from "../model/use-category-editor";
-export function EventCategoryForm({
-  category,
-  onSaved,
-}: {
+import EventCategoryColorPicker from "./ColorPicker";
+import { useCategoryEditor } from "../../model/use-category-editor";
+interface Props {
   category?: EventCategory;
   onSaved: () => void;
-}) {
+}
+
+const EventCategoryForm = ({ category, onSaved }: Props) => {
   const categories = useEventCategories();
   const nextOrder =
     Math.max(
@@ -43,6 +43,7 @@ export function EventCategoryForm({
     control,
     handleSubmit,
     setError,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<Omit<EventCategoryInput, "sortOrder">>({
     resolver: zodResolver(eventCategorySchema.omit({ sortOrder: true })),
@@ -65,6 +66,16 @@ export function EventCategoryForm({
     [onSave, setError, category, nextOrder],
   );
   const color = useWatch({ control, name: "color" });
+  const customSelected = color.startsWith("#");
+  const colorLabel = customSelected
+    ? "직접 선택"
+    : eventCategoryColors[color as keyof typeof eventCategoryColors];
+  const onCustomColor = useCallback(
+    (color: CategoryColor) => {
+      setValue("color", color, { shouldDirty: true, shouldValidate: true });
+    },
+    [setValue],
+  );
   const busy = isSubmitting || deleting;
   return (
     <form
@@ -97,6 +108,7 @@ export function EventCategoryForm({
                 data-od-id="lists-name"
                 placeholder="이름"
                 readOnly={category?.name === "기타"}
+                autoComplete="off"
                 autoFocus
               />
             </div>
@@ -104,36 +116,9 @@ export function EventCategoryForm({
         </FormFieldRow>
         <fieldset data-od-id="lists-colors" className="min-w-0">
           <legend>
-            <GroupLabel as="span">
-              색상 · {eventCategoryColors[color]}
-            </GroupLabel>
+            <GroupLabel as="span">색상 · {colorLabel}</GroupLabel>
           </legend>
-          <div className="grid max-w-90 grid-cols-[repeat(auto-fill,calc(var(--sp-8)+var(--sp-1)))] gap-2 pt-2 pb-1">
-            {Object.entries(eventCategoryColors).map(([value, label]) => (
-              <label
-                key={value}
-                className={cn([
-                  "relative grid size-9 place-items-center [&_input]:absolute [&_input]:inset-0",
-                  "[&_input]:cursor-pointer [&_input]:opacity-0",
-                  "[&_[data-slot=category-dot]]:pointer-events-none [&_[data-slot=category-dot]]:size-6.5",
-                  "[&:has(input:checked)_[data-slot=category-dot]]:outline-2",
-                  "[&:has(input:checked)_[data-slot=category-dot]]:outline-[var(--category-color)]",
-                  "[&:has(input:checked)_[data-slot=category-dot]]:outline-offset-4",
-                  "[&:has(input:checked)_[data-slot=category-dot]]:scale-[var(--swatch-selected-scale)]",
-                  "has-[:focus-visible]:rounded-[var(--r-round)] has-[:focus-visible]:outline-2",
-                  "has-[:focus-visible]:outline-primary has-[:focus-visible]:outline-offset-2",
-                ])}
-              >
-                <input
-                  {...register("color")}
-                  type="radio"
-                  value={value}
-                  aria-label={label}
-                />
-                <CategoryDot color={value as EventCategoryInput["color"]} />
-              </label>
-            ))}
-          </div>
+          <EventCategoryColorPicker color={color} onChange={onCustomColor} />
           {errors.color && (
             <Text as="p" role="alert" className="text-error-text">
               {errors.color.message}
@@ -177,4 +162,6 @@ export function EventCategoryForm({
       />
     </form>
   );
-}
+};
+
+export default EventCategoryForm;

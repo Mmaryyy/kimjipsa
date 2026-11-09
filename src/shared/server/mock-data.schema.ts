@@ -3,7 +3,7 @@ import "server-only";
 import { tz } from "@date-fns/tz";
 import { addDays, format, subYears } from "date-fns";
 import { z } from "zod";
-import { categoryColors } from "@/shared/ui";
+import { categoryColorSchema } from "@/shared/lib";
 
 // Raw mock JSON contracts stay in shared; entity input rules live in their own models.
 const inventoryItemSchema = z.object({
@@ -118,12 +118,7 @@ const eventCategoriesSchema = z.array(
   z.object({
     id: z.uuid(),
     name: z.string().trim().min(1),
-    color: z.enum(
-      Object.keys(categoryColors) as [
-        keyof typeof categoryColors,
-        ...(keyof typeof categoryColors)[],
-      ],
-    ),
+    color: categoryColorSchema,
     sortOrder: z.number().int().min(0),
   }),
 );
