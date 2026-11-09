@@ -422,7 +422,7 @@ function DayEvents({
         id={home ? "today-schedule-title" : "cal-list-title"}
         title={title}
         action={
-          home && (
+          home ? (
             <Link
               className="text-caption text-primary"
               data-od-id="today-schedule-more"
@@ -430,6 +430,8 @@ function DayEvents({
             >
               캘린더
             </Link>
+          ) : (
+            add
           )
         }
       />
@@ -444,7 +446,7 @@ function DayEvents({
           layout="row"
           icon={null}
           message="등록된 일정이 없어요"
-          action={add}
+          action={home ? add : undefined}
         />
       ) : (
         <List>
@@ -461,7 +463,6 @@ function DayEvents({
           ))}
         </List>
       )}
-      {!home && <>{daily.length > 0 && add}</>}
     </section>
   );
 }
@@ -1061,7 +1062,7 @@ function CalendarContent({
       <div
         className={
           !home && view === "month"
-            ? "grid min-w-0 gap-6 lg:grid-cols-[1.4fr_1fr]"
+            ? "grid min-w-0 gap-6 lg:grid-cols-[1.4fr_1fr] lg:[&_[data-slot=section-header]]:mt-0"
             : "grid gap-2"
         }
       >
@@ -1081,6 +1082,7 @@ function CalendarContent({
         (loading || (!home && holidaysPending)) ? (
           <EventListSkeleton
             interactive={!home}
+            action={!home && <TextButton disabled>일정 등록</TextButton>}
             title={
               home
                 ? "오늘 일정"

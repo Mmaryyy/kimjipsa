@@ -214,6 +214,72 @@ const timelineEvent: CalendarEvent = {
   },
 };
 
+describe("CAL-07 SCN-CAL-8 날짜별 목록 머리", () => {
+  beforeEach(() => {
+    location.search = "view=month&date=2026-10-14";
+  });
+
+  it.each([false, true])(
+    "일정 유무(%s)와 관계없이 등록 링크는 날짜 머리에 한 번만 나와요",
+    (hasEvents) => {
+      render(
+        <CalendarView {...props} events={hasEvents ? [timelineEvent] : []} />,
+      );
+      const section = screen.getByRole("region", { name: "10월 14일 수요일" });
+      const heading = within(section).getByRole("heading");
+      const links = within(section).getAllByRole("link", { name: "일정 등록" });
+      expect(links).toHaveLength(1);
+      expect(heading.nextElementSibling).toBe(links[0]);
+      expect(links[0]).toHaveAttribute("data-od-id", "day-add");
+      expect(links[0]).toHaveAttribute(
+        "href",
+        "/calendar?date=2026-10-14&create=1",
+      );
+    },
+  );
+
+  it("날짜 머리의 등록 버튼은 기존 동작을 실행해요", () => {
+    const onAdd = vi.fn();
+    render(<CalendarView {...props} onAdd={onAdd} />);
+    const section = screen.getByRole("region", { name: "10월 14일 수요일" });
+    const buttons = within(section).getAllByRole("button", {
+      name: "일정 등록",
+    });
+    expect(buttons).toHaveLength(1);
+    expect(within(section).getByRole("heading").nextElementSibling).toBe(
+      buttons[0],
+    );
+    expect(buttons[0]).toHaveAttribute("data-od-id", "list-add");
+    fireEvent.click(buttons[0]);
+    expect(onAdd).toHaveBeenCalledOnce();
+  });
+
+  it("홈은 머리의 캘린더 링크와 빈 목록의 등록 링크를 유지해요", () => {
+    render(<CalendarView {...props} home />);
+    const section = screen.getByRole("region", { name: "10월 14일 일정" });
+    const heading = within(section).getByRole("heading");
+    expect(heading.nextElementSibling).toBe(
+      within(section).getByRole("link", { name: "캘린더" }),
+    );
+    expect(
+      within(section).getAllByRole("link", { name: "일정 등록" }),
+    ).toHaveLength(1);
+    expect(heading.parentElement).not.toContainElement(
+      within(section).getByRole("link", { name: "일정 등록" }),
+    );
+  });
+
+  it("로딩 중에도 날짜 머리에 비활성 등록 버튼 자리를 유지해요", () => {
+    render(<CalendarView {...props} loading onAdd={vi.fn()} />);
+    const group = screen.getByRole("group", {
+      name: "10월 14일 수요일을 불러오고 있어요",
+    });
+    const button = within(group).getByRole("button", { name: "일정 등록" });
+    expect(button).toBeDisabled();
+    expect(within(group).getByRole("heading").nextElementSibling).toBe(button);
+  });
+});
+
 function timelineSlot(label: string) {
   const row = screen.getByText(label).closest("li");
   if (!row) throw new Error(`${label} 시간 줄이 없어요`);

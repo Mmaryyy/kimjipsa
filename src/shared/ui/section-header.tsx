@@ -10,7 +10,10 @@ export function SectionHeader({
   action?: ReactNode;
 }) {
   return (
-    <div className="mt-8 mb-2 flex flex-wrap items-center justify-between gap-2">
+    <div
+      data-slot="section-header"
+      className="mt-8 mb-2 flex flex-wrap items-center justify-between gap-2"
+    >
       <Text as="h2" variant="title-sm" id={id} data-od-id={id}>
         {title}
       </Text>

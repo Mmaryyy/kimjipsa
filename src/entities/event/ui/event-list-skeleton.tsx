@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   GroupLabel,
   List,
@@ -59,9 +60,11 @@ export function EventRowsSkeleton({
 
 export function EventListSkeleton({
   title,
+  action,
   ...props
 }: {
   title: string;
+  action?: ReactNode;
   rows?: number;
   grouped?: boolean;
   dday?: boolean;
@@ -69,9 +72,11 @@ export function EventListSkeleton({
 }) {
   const particle = props.dday ? "를" : "을";
   return (
-    <SkeletonSection label={`${title}${particle} 불러오고 있어요`}>
-      <SectionHeader title={title} />
-      <EventRowsSkeleton {...props} />
-    </SkeletonSection>
+    <div data-slot={props.dday ? "dday-skeleton" : undefined}>
+      <SkeletonSection label={`${title}${particle} 불러오고 있어요`}>
+        <SectionHeader title={title} action={action} />
+        <EventRowsSkeleton {...props} />
+      </SkeletonSection>
+    </div>
   );
 }

@@ -13,6 +13,7 @@ import {
   useEvents,
 } from "@/entities/event";
 import { ErrorState, PageHeader, PageLayout } from "@/shared/ui";
+import { cn } from "@/shared/lib";
 
 import { CalendarView } from "@/widgets/calendar-view";
 import CelebrationCardList from "../celebration-card-list";
@@ -110,7 +111,13 @@ const HomeSchedule = () => {
               />
             ))}
         </div>
-        <div className="grid content-start gap-10">
+        <div
+          className={cn(
+            "grid content-start gap-10",
+            "lg:[&_[data-od-id=dday-section]_[data-slot=section-header]]:mt-0",
+            "lg:[&_[data-slot=dday-skeleton]_[data-slot=section-header]]:mt-0",
+          )}
+        >
           {loading ? (
             <EventListSkeleton title="D-day" dday />
           ) : (
