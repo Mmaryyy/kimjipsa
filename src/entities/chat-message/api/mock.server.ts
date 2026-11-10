@@ -7,6 +7,7 @@ import type { Chat, AiSettings, AgentAction } from "../model/chat.schema";
 interface MockChatState {
   chat: Chat;
   settings: AiSettings;
+  retryRequests: Map<string, { messageId: string; runId: string }>;
 }
 
 async function mockState() {
@@ -73,6 +74,7 @@ async function mockState() {
     context.values.set("chat:settings", settings);
     state = {
       settings,
+      retryRequests: new Map(),
       chat: {
         sessionVersion: 1,
         expiresAt: new Date(Date.parse(created_at) + 3600000).toISOString(),
@@ -87,6 +89,7 @@ async function mockState() {
           {
             id: runId,
             input_message_id: messages[2].id,
+            created_at,
             status: "completed",
             progress: "",
             version: 1,
@@ -161,6 +164,7 @@ async function mockState() {
     state.chat.expiresAt = null;
     state.chat.messages = [];
     state.chat.runs = [];
+    state.retryRequests.clear();
     state.chat.proposals = [];
     state.chat.receipts = [];
     state.chat.attachments = [];
@@ -173,6 +177,11 @@ export async function mockChatPage(before: number | null) {
   if (!mock) return null;
   return {
     ...mock.state.chat,
+    runs: [
+      ...new Map(
+        mock.state.chat.runs.map((run) => [run.input_message_id, run]),
+      ).values(),
+    ],
     name: mock.state.settings.name,
     expiresAt: mock.state.chat.proposals.some((p) => p.status === "draft")
       ? null
@@ -188,7 +197,19 @@ export async function mockChatCommand(operation: string, raw: unknown) {
   if (!context) return null;
   // Inputs have already passed the same schemas as real requests.
   const input = raw as Record<string, unknown>;
+  const previous = context.values.get(`chat:private:${context.perspective}`) as
+    MockChatState | undefined;
+  const expired =
+    previous?.chat.expiresAt &&
+    Date.parse(previous.chat.expiresAt) <= Date.now() &&
+    !previous.chat.proposals.some((proposal) => proposal.status === "draft");
   const mock = (await mockState())!;
+  if (operation === "retry" && expired)
+    throw new ApiError(
+      "chat_expired",
+      "대화가 만료되었어요. 다시 요청해 주세요.",
+      410,
+    );
   const { state } = mock;
   if (operation === "settings") return { data: state.settings };
   if (operation === "save-settings") {
@@ -225,6 +246,7 @@ export async function mockChatCommand(operation: string, raw: unknown) {
     state.chat.runs.push({
       id: randomUUID(),
       input_message_id: id,
+      created_at,
       status: "queued",
       progress: "",
       version: 1,
@@ -331,6 +353,76 @@ export async function mockChatCommand(operation: string, raw: unknown) {
     ).toISOString();
     proposal.version++;
     return { data: null };
+  }
+  if (operation === "retry") {
+    const run = state.chat.runs.find((entry) => entry.id === input.id);
+    const message = state.chat.messages.find(
+      (entry) => entry.id === run?.input_message_id,
+    );
+    if (!run || !message || message.role !== "user")
+      throw new ApiError("forbidden", "권한이 없어요.", 403);
+    const requestId = input.clientRequestId as string;
+    const duplicate = state.retryRequests.get(requestId);
+    if (duplicate) {
+      if (duplicate.messageId !== message.id)
+        throw new ApiError(
+          "state_conflict",
+          "내용이 바뀌었거나 만료되었어요.",
+          409,
+        );
+      return { data: { id: duplicate.runId } };
+    }
+    const latest = state.chat.runs.findLast(
+      (entry) => entry.input_message_id === message.id,
+    );
+    if (
+      state.chat.messages.findLast((entry) => entry.role === "user")?.id !==
+        message.id ||
+      latest?.id !== run.id ||
+      !["failed", "cancelled", "unknown"].includes(run.status) ||
+      state.chat.runs.some(
+        (entry) =>
+          entry.input_message_id === message.id &&
+          ["queued", "running"].includes(entry.status),
+      )
+    )
+      throw new ApiError(
+        "state_conflict",
+        "내용이 바뀌었거나 만료되었어요.",
+        409,
+      );
+    if (
+      message.attachment_ids.some(
+        (id) =>
+          !state.chat.attachments.some(
+            (attachment) =>
+              attachment.id === id &&
+              attachment.status === "ready" &&
+              Date.parse(attachment.expires_at) > Date.now(),
+          ),
+      )
+    )
+      throw new ApiError(
+        "attachment_expired",
+        "사진이 만료되었어요. 다시 첨부해 주세요.",
+        410,
+      );
+    const id = randomUUID();
+    const created_at = new Date().toISOString();
+    state.chat.expiresAt = new Date(
+      Date.parse(created_at) + 3600000,
+    ).toISOString();
+    state.chat.runs.push({
+      id,
+      input_message_id: message.id,
+      created_at,
+      status: "queued",
+      progress: "",
+      version: 1,
+      error_code: null,
+    });
+    state.retryRequests.set(requestId, { messageId: message.id, runId: id });
+    return { data: { id } };
   }
   if (operation === "cancel") {
     const run = state.chat.runs.find((entry) => entry.id === input.id);

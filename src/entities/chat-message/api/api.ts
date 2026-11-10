@@ -39,6 +39,11 @@ export function postChat(input: {
 }) {
   return request(chatRoutes.messages, { ...input, visibility: "private" });
 }
+export function retryChat(input: { id: string; clientRequestId: string }) {
+  return request(chatRoutes.retryRun(input.id), {
+    clientRequestId: input.clientRequestId,
+  });
+}
 export function cancelChat(id: string) {
   return request(chatRoutes.cancelRun(id), {});
 }

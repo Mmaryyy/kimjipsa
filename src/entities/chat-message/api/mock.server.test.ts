@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { chatSchema, settingsSchema } from "../model/chat.schema";
+import { type Chat, chatSchema, settingsSchema } from "../model/chat.schema";
 import { mockChatCommand, mockChatPage } from "./mock.server";
 
 vi.mock("server-only", () => ({}));
@@ -197,4 +197,103 @@ it("BOT-08 SCN-BOT-6 단일 변경을 수정하면 질문 하나로 다시 확�
   const result = (await mockChatPage(null))?.messages.at(-1)?.text;
   expect(result).toContain("추가했어요");
   expect(result).not.toContain("할까요?");
+});
+
+describe("BOT-01 재시도 목업", () => {
+  it.each(["failed", "cancelled", "unknown"] as const)(
+    "%s 요청은 새 메시지 없이 한 번만 다시 전송해요",
+    async (status) => {
+      await mockChatCommand("send", {
+        sessionVersion: 1,
+        text: "우유 담아줘",
+        attachmentIds: [],
+      });
+      const chat = (await mockChatPage(null))!;
+      const run = chat.runs.at(-1)!;
+      run.status = status;
+      const input = { id: run.id, clientRequestId: crypto.randomUUID() };
+      const result = await mockChatCommand("retry", input);
+      expect(await mockChatCommand("retry", input)).toEqual(result);
+      const retried = (await mockChatPage(null))!;
+      expect(retried.messages).toHaveLength(chat.messages.length);
+      expect(retried.messages.at(-1)?.id).toBe(chat.messages.at(-1)?.id);
+      expect(
+        retried.runs.filter(
+          (entry) => entry.input_message_id === run.input_message_id,
+        ),
+      ).toEqual([
+        expect.objectContaining({
+          status: "queued",
+          input_message_id: run.input_message_id,
+        }),
+      ]);
+      await expect(
+        mockChatCommand("retry", {
+          ...input,
+          clientRequestId: crypto.randomUUID(),
+        }),
+      ).rejects.toThrow("만료");
+    },
+  );
+  it.each(["queued", "running", "completed"] as const)(
+    "%s 요청 재시도를 거절해요",
+    async (status) => {
+      const chat = (await mockChatPage(null))!;
+      chat.runs[0].status = status;
+      await expect(
+        mockChatCommand("retry", {
+          id: chat.runs[0].id,
+          clientRequestId: crypto.randomUUID(),
+        }),
+      ).rejects.toThrow("만료");
+    },
+  );
+  it("다른 구성원의 요청과 만료된 요청은 재시도하지 않아요", async () => {
+    const chat = (await mockChatPage(null))!;
+    chat.runs[0].status = "failed";
+    const input = { id: chat.runs[0].id, clientRequestId: crypto.randomUUID() };
+    context.perspective = 1;
+    await expect(mockChatCommand("retry", input)).rejects.toThrow("권한");
+    context.perspective = 0;
+    chat.proposals[0].status = "cancelled";
+    const state = context.values.get("chat:private:0") as { chat: Chat };
+    state.chat.expiresAt = new Date(Date.now() - 1).toISOString();
+    await expect(mockChatCommand("retry", input)).rejects.toMatchObject({
+      code: "chat_expired",
+      status: 410,
+    });
+    expect((await mockChatPage(null))?.messages).toHaveLength(0);
+  });
+});
+
+it("BOT-14 재시도는 만료를 연장하고 이전 내 메시지는 다시 보내지 않아요", async () => {
+  await mockChatCommand("send", {
+    sessionVersion: 1,
+    text: "첫 요청",
+    attachmentIds: [],
+  });
+  const chat = (await mockChatPage(null))!;
+  const run = chat.runs.at(-1)!;
+  run.status = "failed";
+  chat.proposals[0].status = "cancelled";
+  const state = context.values.get("chat:private:0") as { chat: Chat };
+  state.chat.expiresAt = new Date(Date.now() + 1000).toISOString();
+  await mockChatCommand("retry", {
+    id: run.id,
+    clientRequestId: crypto.randomUUID(),
+  });
+  expect(Date.parse(state.chat.expiresAt!)).toBeGreaterThan(
+    Date.now() + 3590000,
+  );
+  await mockChatCommand("send", {
+    sessionVersion: 1,
+    text: "다음 요청",
+    attachmentIds: [],
+  });
+  await expect(
+    mockChatCommand("retry", {
+      id: run.id,
+      clientRequestId: crypto.randomUUID(),
+    }),
+  ).rejects.toMatchObject({ code: "state_conflict", status: 409 });
 });

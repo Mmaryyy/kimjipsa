@@ -6,7 +6,7 @@ import {
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
-import { createBrowserSupabaseClient } from "@/shared/api";
+import { ApiError, createBrowserSupabaseClient } from "@/shared/api";
 import { isMockDataEnabled } from "@/shared/config";
 import {
   fetchChat,
@@ -14,6 +14,7 @@ import {
   saveSettings,
   writeMemory,
   cancelChat,
+  retryChat,
   applyReceipt,
   applyActions,
 } from "../api/api";
@@ -82,6 +83,14 @@ export function useChatActions() {
     await client.invalidateQueries({ queryKey: ["cart"] });
   };
   return {
+    retry: useMutation({
+      mutationFn: retryChat,
+      onSuccess: refresh,
+      onError: async (error) => {
+        if (error instanceof ApiError && error.code === "chat_expired")
+          await client.invalidateQueries({ queryKey: ["chat"] });
+      },
+    }),
     cancel: useMutation({ mutationFn: cancelChat, onSuccess: refresh }),
     actions: useMutation({ mutationFn: applyActions, onSuccess: refresh }),
     receipt: useMutation({ mutationFn: applyReceipt, onSuccess: refresh }),

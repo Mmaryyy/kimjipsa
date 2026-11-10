@@ -3,6 +3,7 @@ export {
   listChat,
   sendChat,
   cancelRun,
+  retryRun,
   confirmReceipt,
   getAiSettings,
   saveAiSettings,

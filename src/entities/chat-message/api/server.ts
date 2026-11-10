@@ -107,6 +107,10 @@ export async function confirmActions(id: string, raw: unknown) {
 export async function sendChat(raw: unknown) {
   return command("send", sendSchema.parse(raw));
 }
+export async function retryRun(id: string, raw: unknown) {
+  const input = z.object({ clientRequestId: z.uuid() }).parse(raw);
+  return command("retry", { id: z.uuid().parse(id), ...input });
+}
 export async function cancelRun(id: string) {
   return command("cancel", { id: z.uuid().parse(id) });
 }

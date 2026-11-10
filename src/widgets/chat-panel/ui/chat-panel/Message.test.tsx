@@ -27,6 +27,7 @@ const message: Chat["messages"][number] = {
 const run: Chat["runs"][number] = {
   id: "run",
   input_message_id: message.id,
+  created_at: "2026-11-04T03:00:00Z",
   status: "running",
   progress: "",
   version: 1,

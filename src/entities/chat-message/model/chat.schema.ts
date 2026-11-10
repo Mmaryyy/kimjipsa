@@ -152,6 +152,7 @@ export const chatSchema = z.object({
     z.object({
       id: z.uuid(),
       input_message_id: z.uuid(),
+      created_at: z.string(),
       status: z.enum(
         Object.keys(runStatusLabels) as [
           keyof typeof runStatusLabels,

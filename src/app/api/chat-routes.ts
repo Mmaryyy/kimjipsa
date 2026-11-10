@@ -5,6 +5,7 @@ import {
   listChat,
   sendChat,
   cancelRun,
+  retryRun,
   confirmReceipt,
   getAiSettings,
   saveAiSettings,
@@ -64,6 +65,11 @@ export function attachmentPOST(request: Request, context: IdContext) {
 export function attachmentGET(request: Request, context: IdContext) {
   return handleRoute(request, async () =>
     readAttachment((await context.params).id),
+  );
+}
+export function runRetryPOST(request: Request, context: IdContext) {
+  return handleRoute(request, async () =>
+    retryRun((await context.params).id, await readJson(request)),
   );
 }
 export function runCancelPOST(request: Request, context: IdContext) {
