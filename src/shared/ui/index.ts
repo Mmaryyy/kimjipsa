@@ -47,3 +47,5 @@ export {
 } from "./ai-elements/prompt-input";
 export { Loader } from "./ai-elements/loader";
 export { default as Badge } from "./badge";
+
+export { default as PullToAdd } from "./pull-to-add";

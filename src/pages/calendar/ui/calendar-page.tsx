@@ -19,6 +19,7 @@ import {
   ListSkeleton,
   TextButton,
   PageLayout,
+  PullToAdd,
 } from "@/shared/ui";
 import { EventEditorSheet } from "./event-editor-sheet";
 import EventForm from "./event-form";
@@ -163,80 +164,90 @@ function CalendarContent() {
     setSelectedId(null);
   }
   return (
-    <div data-od-id="calendar-main">
-      <EventList onOpen={setSelectedId} onAdd={() => setCreating(true)} />
-      <EventEditorSheet
-        dirty={dirty}
-        formId="new-event-form"
-        open={creating}
-        onOpenChange={(open) => {
-          if (!open) closeNew();
-        }}
-        title="새 일정"
-        odId="sheet-new-event"
-        leadingAction={(onOpenChange) => (
-          <TextButton
-            data-od-id="new-cancel"
-            onClick={() => onOpenChange(false)}
-          >
-            취소
-          </TextButton>
-        )}
-        action={
-          <TextButton data-od-id="new-save" type="submit" form="new-event-form">
-            추가
-          </TextButton>
-        }
-        description="제목과 날짜를 입력하고 공유 또는 개인 일정으로 저장해요."
-      >
-        {creating && (
-          <NewEvent
-            initialDate={initialDate}
-            onDirtyChange={setDirty}
-            onSaved={closeNew}
-          />
-        )}
-      </EventEditorSheet>
-      <EventEditorSheet
-        dirty={dirty}
-        formId={editing ? "edit-event-form" : undefined}
-        open={selectedId !== null}
-        onOpenChange={(open) => {
-          if (!open) closeDetail();
-        }}
-        title="일정"
-        odId="sheet-event-detail"
-        showCloseButton={!editing}
-        leadingAction={
-          editing
-            ? (onOpenChange) => (
-                <TextButton onClick={() => onOpenChange(false)}>
-                  취소
-                </TextButton>
-              )
-            : undefined
-        }
-        action={
-          editing ? (
-            <TextButton type="submit" form="edit-event-form">
-              저장
+    <PullToAdd
+      action="일정 등록하기"
+      onAdd={() => setCreating(true)}
+      disabled={creating || selectedId !== null}
+    >
+      <div data-od-id="calendar-main">
+        <EventList onOpen={setSelectedId} onAdd={() => setCreating(true)} />
+        <EventEditorSheet
+          dirty={dirty}
+          formId="new-event-form"
+          open={creating}
+          onOpenChange={(open) => {
+            if (!open) closeNew();
+          }}
+          title="새 일정"
+          odId="sheet-new-event"
+          leadingAction={(onOpenChange) => (
+            <TextButton
+              data-od-id="new-cancel"
+              onClick={() => onOpenChange(false)}
+            >
+              취소
             </TextButton>
-          ) : undefined
-        }
-        description="일정 내용을 확인하고 수정하거나 삭제해요."
-      >
-        {selectedId && (
-          <EventDetail
-            key={selectedId}
-            id={selectedId}
-            onClose={closeDetail}
-            editing={editing}
-            onEditingChange={setEditing}
-            onDirtyChange={setDirty}
-          />
-        )}
-      </EventEditorSheet>
-    </div>
+          )}
+          action={
+            <TextButton
+              data-od-id="new-save"
+              type="submit"
+              form="new-event-form"
+            >
+              추가
+            </TextButton>
+          }
+          description="제목과 날짜를 입력하고 공유 또는 개인 일정으로 저장해요."
+        >
+          {creating && (
+            <NewEvent
+              initialDate={initialDate}
+              onDirtyChange={setDirty}
+              onSaved={closeNew}
+            />
+          )}
+        </EventEditorSheet>
+        <EventEditorSheet
+          dirty={dirty}
+          formId={editing ? "edit-event-form" : undefined}
+          open={selectedId !== null}
+          onOpenChange={(open) => {
+            if (!open) closeDetail();
+          }}
+          title="일정"
+          odId="sheet-event-detail"
+          showCloseButton={!editing}
+          leadingAction={
+            editing
+              ? (onOpenChange) => (
+                  <TextButton onClick={() => onOpenChange(false)}>
+                    취소
+                  </TextButton>
+                )
+              : undefined
+          }
+          action={
+            editing ? (
+              <TextButton type="submit" form="edit-event-form">
+                저장
+              </TextButton>
+            ) : undefined
+          }
+          description="일정 내용을 확인하고 수정하거나 삭제해요."
+        >
+          {selectedId && (
+            <EventDetail
+              key={selectedId}
+              id={selectedId}
+              onClose={closeDetail}
+              editing={editing}
+              onEditingChange={setEditing}
+              onDirtyChange={setDirty}
+            />
+          )}
+        </EventEditorSheet>
+      </div>
+    </PullToAdd>
   );
 }
 

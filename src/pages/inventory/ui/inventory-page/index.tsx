@@ -18,6 +18,7 @@ import {
 import {
   PageHeader,
   PageLayout,
+  PullToAdd,
   TextButton,
   Button,
   Input,
@@ -352,122 +353,128 @@ const InventoryPage = () => {
     );
   }
   return (
-    <PageLayout
-      width="narrow"
-      odId="inventory-main"
-      className={cn([
-        "flex min-h-[calc(100dvh-var(--bottom-navigation-offset)-env(safe-area-inset-bottom))] flex-col pb-4",
-        "lg:min-h-[calc(100dvh-var(--sp-10))] lg:pb-0",
-      ])}
-      header={
-        <PageHeader
-          odId="inventory"
-          title="재고"
-          actions={
-            <>
-              <Button
-                variant="glass"
-                data-od-id="inv-add"
-                disabled={!meta.data || !items.data}
-                onClick={() => setEditor("new")}
-              >
-                등록
-              </Button>
-              <Button
-                variant="glass"
-                aria-label="재고 목록 설정"
-                onClick={() => setManage(true)}
-              >
-                설정
-              </Button>
-            </>
-          }
-        />
-      }
+    <PullToAdd
+      action="재고 등록하기"
+      onAdd={() => setEditor("new")}
+      disabled={!meta.data || !items.data || !!editor || manage || !!afterUsed}
     >
-      {content}
-      <Sheet
-        open={manage}
-        onOpenChange={setManage}
-        title="재고 관리"
-        description="가정에서 함께 쓰는 목록을 관리해요."
-        odId="inv-manage-sheet"
-        showCloseButton
-      >
-        <List>
-          {(
-            [
-              ["categories", "카테고리", "mg-categories"],
-              ["locations", "보관 장소", "mg-locations"],
-              ["units", "단위", "mg-units"],
-            ] satisfies [InventoryListKind, string, string][]
-          ).map(([kind, label, odId]) => (
-            <li key={kind}>
-              <Link
-                className="flex min-h-[var(--row-min)] items-center text-primary"
-                href={inventoryListPath(kind, "inventory")}
-                onNavigate={() => {
-                  markHistoryBack(inventoryRoutes.lists);
-                }}
-                data-od-id={odId}
-              >
-                {label} 관리
-              </Link>
-            </li>
-          ))}
-        </List>
-      </Sheet>
-      <Sheet
-        open={afterUsed !== null}
-        onOpenChange={(open) => {
-          if (!open) setAfterUsed(null);
-        }}
-        odId="sheet-after-used"
-        title={
-          afterUsed ? `${afterUsed.name} — 없음으로 바뀌었어요` : "다 썼어요"
+      <PageLayout
+        width="narrow"
+        odId="inventory-main"
+        className={cn([
+          "flex min-h-[calc(100dvh-var(--bottom-navigation-offset)-env(safe-area-inset-bottom))] flex-col pb-4",
+          "lg:min-h-[calc(100dvh-var(--sp-10))] lg:pb-0",
+        ])}
+        header={
+          <PageHeader
+            odId="inventory"
+            title="재고"
+            actions={
+              <>
+                <Button
+                  variant="glass"
+                  data-od-id="inv-add"
+                  disabled={!meta.data || !items.data}
+                  onClick={() => setEditor("new")}
+                >
+                  등록
+                </Button>
+                <Button
+                  variant="glass"
+                  aria-label="재고 목록 설정"
+                  onClick={() => setManage(true)}
+                >
+                  설정
+                </Button>
+              </>
+            }
+          />
         }
-        description="장바구니에 담아 둘까요?"
       >
-        <p className="py-3 text-center text-caption text-muted-foreground">
-          장바구니에 담아 둘까요?
-        </p>
-        {afterUsed && (
-          <div className="grid gap-2">
-            <CartAddButton
-              appearance="filled"
-              odId="after-add-cart"
-              onAdded={() => {
-                setAfterUsed(null);
-                notify("장바구니에 담았어요");
-              }}
-              item={{
-                name: afterUsed.name,
-                quantity: 1,
-                unit_id: afterUsed.unit_id,
-                category_id: afterUsed.category_id,
-                inventory_item_id: afterUsed.id,
-                memo: "",
-                link_url: "",
-              }}
-            />
-            <Button
-              variant="gray"
-              data-od-id="after-skip"
-              onClick={() => setAfterUsed(null)}
-            >
-              나중에
-            </Button>
-          </div>
-        )}
-      </Sheet>
-      <Toast
-        open={!!message}
-        onOpenChange={(open) => {
-          if (!open) setMessage("");
-        }}
-        message={message}
-      />
-    </PageLayout>
+        {content}
+        <Sheet
+          open={manage}
+          onOpenChange={setManage}
+          title="재고 관리"
+          description="가정에서 함께 쓰는 목록을 관리해요."
+          odId="inv-manage-sheet"
+          showCloseButton
+        >
+          <List>
+            {(
+              [
+                ["categories", "카테고리", "mg-categories"],
+                ["locations", "보관 장소", "mg-locations"],
+                ["units", "단위", "mg-units"],
+              ] satisfies [InventoryListKind, string, string][]
+            ).map(([kind, label, odId]) => (
+              <li key={kind}>
+                <Link
+                  className="flex min-h-[var(--row-min)] items-center text-primary"
+                  href={inventoryListPath(kind, "inventory")}
+                  onNavigate={() => {
+                    markHistoryBack(inventoryRoutes.lists);
+                  }}
+                  data-od-id={odId}
+                >
+                  {label} 관리
+                </Link>
+              </li>
+            ))}
+          </List>
+        </Sheet>
+        <Sheet
+          open={afterUsed !== null}
+          onOpenChange={(open) => {
+            if (!open) setAfterUsed(null);
+          }}
+          odId="sheet-after-used"
+          title={
+            afterUsed ? `${afterUsed.name} — 없음으로 바뀌었어요` : "다 썼어요"
+          }
+          description="장바구니에 담아 둘까요?"
+        >
+          <p className="py-3 text-center text-caption text-muted-foreground">
+            장바구니에 담아 둘까요?
+          </p>
+          {afterUsed && (
+            <div className="grid gap-2">
+              <CartAddButton
+                appearance="filled"
+                odId="after-add-cart"
+                onAdded={() => {
+                  setAfterUsed(null);
+                  notify("장바구니에 담았어요");
+                }}
+                item={{
+                  name: afterUsed.name,
+                  quantity: 1,
+                  unit_id: afterUsed.unit_id,
+                  category_id: afterUsed.category_id,
+                  inventory_item_id: afterUsed.id,
+                  memo: "",
+                  link_url: "",
+                }}
+              />
+              <Button
+                variant="gray"
+                data-od-id="after-skip"
+                onClick={() => setAfterUsed(null)}
+              >
+                나중에
+              </Button>
+            </div>
+          )}
+        </Sheet>
+        <Toast
+          open={!!message}
+          onOpenChange={(open) => {
+            if (!open) setMessage("");
+          }}
+          message={message}
+        />
+      </PageLayout>
+    </PullToAdd>
   );
 };
 export default InventoryPage;

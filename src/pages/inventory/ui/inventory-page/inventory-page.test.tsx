@@ -362,3 +362,41 @@ describe("INV-03 INV-15 SCN-INV-2 상태와 수량 캡슐", () => {
     client.clear();
   });
 });
+
+it("INV-01 SCN-INV-1 모바일 당기기는 기존 재고 등록을 열어요", () => {
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn(() => ({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })),
+  );
+
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  client.setQueryData(["inventory"], [milk]);
+  client.setQueryData(["inventory-meta"], inventoryMeta);
+  navigation.search = new URLSearchParams();
+  const { unmount } = render(
+    <QueryClientProvider client={client}>
+      <InventoryPage />
+    </QueryClientProvider>,
+  );
+  const surface = document.querySelector('[data-od-id="inventory-main"]')!;
+  fireEvent.touchStart(surface, { touches: [{ clientX: 0, clientY: 0 }] });
+  fireEvent.touchMove(surface, { touches: [{ clientX: 0, clientY: 40 }] });
+  expect(screen.getByText("당겨서 재고 등록하기")).toBeVisible();
+  const arrow = screen.getByText("당겨서 재고 등록하기").querySelector("svg")!;
+  expect(arrow).toHaveAttribute("aria-hidden", "true");
+  expect(arrow).not.toHaveClass("rotate-180");
+  fireEvent.touchMove(surface, { touches: [{ clientX: 0, clientY: 90 }] });
+  expect(screen.getByText("당겨서 재고 등록하기")).toBeVisible();
+  expect(arrow).toHaveClass("rotate-180");
+  fireEvent.touchEnd(surface, { touches: [] });
+
+  expect(screen.getByRole("dialog", { name: "새 품목" })).toBeVisible();
+  unmount();
+  client.clear();
+});

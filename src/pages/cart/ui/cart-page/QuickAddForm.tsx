@@ -1,13 +1,15 @@
+import type { Ref } from "react";
 import { LoaderCircle } from "lucide-react";
 import { CartDuplicateDialog } from "@/features/cart-add";
 import { Button, Input, ConfirmDialog } from "@/shared/ui";
 import type { useCartQuickAdd } from "../../model/use-cart-quick-add";
 interface Props {
+  inputRef: Ref<HTMLInputElement>;
   quickAdd: ReturnType<typeof useCartQuickAdd>;
   pending: boolean;
   offline: boolean;
 }
-const CartQuickAddForm = ({ quickAdd, pending, offline }: Props) => {
+const CartQuickAddForm = ({ inputRef, quickAdd, pending, offline }: Props) => {
   const {
     name,
     onNameChange,
@@ -31,6 +33,7 @@ const CartQuickAddForm = ({ quickAdd, pending, offline }: Props) => {
         }}
       >
         <Input
+          ref={inputRef}
           variant="glass"
           className="min-h-[var(--ctl-h)] flex-1"
           aria-label="항목 추가"

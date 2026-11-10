@@ -106,3 +106,31 @@ describe("CAL-01~05 SCN-CAL-1~3 일정 목록", () => {
     expect(screen.queryByText("수정하기")).not.toBeInTheDocument();
   });
 });
+
+it("CAL-01 SCN-CAL-1 모바일 당기기는 기존 새 일정 시트를 열어요", () => {
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn(() => ({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })),
+  );
+
+  render(<CalendarPage />);
+  const surface = document.querySelector('[data-od-id="calendar-main"]')!;
+  fireEvent.touchStart(surface, { touches: [{ clientX: 0, clientY: 0 }] });
+  fireEvent.touchMove(surface, { touches: [{ clientX: 0, clientY: 40 }] });
+  expect(screen.getByText("당겨서 일정 등록하기")).toBeVisible();
+  const arrow = screen.getByText("당겨서 일정 등록하기").querySelector("svg")!;
+  expect(arrow).toHaveAttribute("aria-hidden", "true");
+  expect(arrow).not.toHaveClass("rotate-180");
+  fireEvent.touchMove(surface, { touches: [{ clientX: 0, clientY: 90 }] });
+  expect(screen.getByText("당겨서 일정 등록하기")).toBeVisible();
+  expect(arrow).toHaveClass("rotate-180");
+  fireEvent.touchEnd(surface, { touches: [] });
+
+  expect(screen.getByRole("dialog", { name: "새 일정" })).toBeVisible();
+  cleanup();
+  vi.unstubAllGlobals();
+});

@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { useRef } from "react";
 import { groupCartItems, useCart } from "@/entities/cart-item";
 import { useInventoryMeta } from "@/entities/inventory-item";
 import { RestockSheet } from "@/features/cart-checkout";
@@ -13,6 +14,7 @@ import {
   ErrorState,
   PageHeader,
   PageLayout,
+  PullToAdd,
   Toast,
 } from "@/shared/ui";
 import { useCartPageActions } from "../../model/use-cart-page-actions";
@@ -25,6 +27,7 @@ import CartCategoryGroup from "./CategoryGroup";
 import CartSkeleton from "./CartSkeleton";
 
 const CartPage = () => {
+  const inputRef = useRef<HTMLInputElement>(null);
   const cart = useCart();
   const meta = useInventoryMeta();
   const actions = useCartPageActions(cart, Boolean(meta.data));
@@ -53,6 +56,7 @@ const CartPage = () => {
     content = (
       <>
         <CartQuickAddForm
+          inputRef={inputRef}
           quickAdd={quickAdd}
           pending={actions.pending}
           offline={cart.offline}
@@ -97,88 +101,99 @@ const CartPage = () => {
     );
   }
   return (
-    <PageLayout
-      width="narrow"
-      odId="cart-main"
-      className={cn([
-        "flex min-h-[calc(100dvh-var(--bottom-navigation-offset)-env(safe-area-inset-bottom))] flex-col",
-        "lg:min-h-[calc(100dvh-var(--sp-10))]",
-        actions.checked.length > 0 ? "pb-20" : "pb-4 lg:pb-0",
-      ])}
-      header={
-        <PageHeader
-          title="장바구니"
-          odId="cart"
-          subtitle={
-            cart.activity ||
-            (companions ? `${companions}과 함께 보는 중` : "함께 쓰는 장바구니")
-          }
-          actions={
-            <>
-              <Button variant="glass" asChild>
-                <Link
-                  href={inventoryListPath("categories", "cart")}
-                  onNavigate={() => {
-                    markHistoryBack(inventoryRoutes.lists);
-                  }}
-                  aria-label="장바구니 카테고리 설정"
-                >
-                  설정
-                </Link>
-              </Button>
-            </>
-          }
-        />
-      }
+    <PullToAdd
+      action="장바구니 담기"
+      disabled={actions.pending || quickAdd.add.pending}
+      onAdd={() => {
+        inputRef.current?.focus({ preventScroll: true });
+        inputRef.current?.scrollIntoView?.({ block: "nearest" });
+      }}
     >
-      {cart.offline && (
-        <Banner
-          variant="warning"
-          title="연결이 끊겼어요."
-          data-od-id="cart-offline-banner"
-        >
-          마지막으로 받은 목록을 보여 드려요. 연결되면 바로 최신 목록으로
-          맞출게요.
-        </Banner>
-      )}
-      {cart.isError && cart.data && !cart.offline && (
-        <ErrorState
-          message={cart.error.message}
-          onRetry={() => void cart.refetch()}
+      <PageLayout
+        width="narrow"
+        odId="cart-main"
+        className={cn([
+          "flex min-h-[calc(100dvh-var(--bottom-navigation-offset)-env(safe-area-inset-bottom))] flex-col",
+          "lg:min-h-[calc(100dvh-var(--sp-10))]",
+          actions.checked.length > 0 ? "pb-20" : "pb-4 lg:pb-0",
+        ])}
+        header={
+          <PageHeader
+            title="장바구니"
+            odId="cart"
+            subtitle={
+              cart.activity ||
+              (companions
+                ? `${companions}과 함께 보는 중`
+                : "함께 쓰는 장바구니")
+            }
+            actions={
+              <>
+                <Button variant="glass" asChild>
+                  <Link
+                    href={inventoryListPath("categories", "cart")}
+                    onNavigate={() => {
+                      markHistoryBack(inventoryRoutes.lists);
+                    }}
+                    aria-label="장바구니 카테고리 설정"
+                  >
+                    설정
+                  </Link>
+                </Button>
+              </>
+            }
+          />
+        }
+      >
+        {cart.offline && (
+          <Banner
+            variant="warning"
+            title="연결이 끊겼어요."
+            data-od-id="cart-offline-banner"
+          >
+            마지막으로 받은 목록을 보여 드려요. 연결되면 바로 최신 목록으로
+            맞출게요.
+          </Banner>
+        )}
+        {cart.isError && cart.data && !cart.offline && (
+          <ErrorState
+            message={cart.error.message}
+            onRetry={() => void cart.refetch()}
+          />
+        )}
+        {content}
+        {actions.checkout && (
+          <RestockSheet
+            items={actions.checkout}
+            disabled={cart.offline || actions.batchPending}
+            onClose={() => void actions.onCloseCheckout()}
+            onDone={actions.onCheckoutDone}
+          />
+        )}
+        {actions.editor && meta.data && (
+          <CartItemEditor
+            item={actions.editor}
+            meta={meta.data}
+            disabled={cart.offline}
+            onClose={() => actions.onEdit(null)}
+          />
+        )}
+        <ConfirmDialog
+          open={actions.clear !== null}
+          onOpenChange={actions.onClearOpenChange}
+          title={`체크한 항목 ${actions.clear?.ids.length ?? 0}개를 삭제할까요?`}
+          description="재고에는 반영되지 않아요."
+          pending={actions.busy}
+          onConfirm={actions.onConfirmClear}
         />
-      )}
-      {content}
-      {actions.checkout && (
-        <RestockSheet
-          items={actions.checkout}
-          disabled={cart.offline || actions.batchPending}
-          onClose={() => void actions.onCloseCheckout()}
-          onDone={actions.onCheckoutDone}
+        <Toast
+          open={!!actions.toastMessage}
+          onOpenChange={actions.onToastOpenChange}
+          message={actions.toastMessage}
+          action={actions.toastAction}
         />
-      )}
-      {actions.editor && meta.data && (
-        <CartItemEditor
-          item={actions.editor}
-          meta={meta.data}
-          disabled={cart.offline}
-          onClose={() => actions.onEdit(null)}
-        />
-      )}
-      <ConfirmDialog
-        open={actions.clear !== null}
-        onOpenChange={actions.onClearOpenChange}
-        title={`체크한 항목 ${actions.clear?.ids.length ?? 0}개를 삭제할까요?`}
-        description="재고에는 반영되지 않아요."
-        pending={actions.busy}
-        onConfirm={actions.onConfirmClear}
-      />
-      <Toast
-        open={!!actions.toastMessage}
-        onOpenChange={actions.onToastOpenChange}
-        message={actions.toastMessage}
-        action={actions.toastAction}
-      />
-    </PageLayout>
+      </PageLayout>
+    </PullToAdd>
   );
 };
 export default CartPage;

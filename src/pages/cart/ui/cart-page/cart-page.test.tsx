@@ -230,3 +230,35 @@ describe("CART-05 CART-14 SCN-CART-6 기본 품목 추가", () => {
     expect(state.add).not.toHaveBeenCalled();
   });
 });
+
+it("CART-01 모바일 당기기는 항목 추가 입력에 포커스해요", () => {
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn(() => ({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })),
+  );
+
+  render(
+    <ToastProvider>
+      <CartPage />
+    </ToastProvider>,
+  );
+  const surface = document.querySelector('[data-od-id="cart-main"]')!;
+  fireEvent.touchStart(surface, { touches: [{ clientX: 0, clientY: 0 }] });
+  fireEvent.touchMove(surface, { touches: [{ clientX: 0, clientY: 40 }] });
+  expect(screen.getByText("당겨서 장바구니 담기")).toBeVisible();
+  const arrow = screen.getByText("당겨서 장바구니 담기").querySelector("svg")!;
+  expect(arrow).toHaveAttribute("aria-hidden", "true");
+  expect(arrow).not.toHaveClass("rotate-180");
+  fireEvent.touchMove(surface, { touches: [{ clientX: 0, clientY: 90 }] });
+  expect(screen.getByText("당겨서 장바구니 담기")).toBeVisible();
+  expect(arrow).toHaveClass("rotate-180");
+  fireEvent.touchEnd(surface, { touches: [] });
+
+  expect(screen.getByRole("textbox", { name: "항목 추가" })).toHaveFocus();
+  cleanup();
+  vi.unstubAllGlobals();
+});
