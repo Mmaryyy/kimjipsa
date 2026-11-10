@@ -40,7 +40,7 @@ const ChatActionProposal = ({ proposal }: Props) => {
     <section aria-label="집사 변경 제안" className="space-y-3 py-2">
       {proposal.status === "cancelled" ? (
         <Text as="p" variant="body-sm">
-          취소했어요
+          요청 처리를 취소했어요.
         </Text>
       ) : (
         <>
@@ -89,6 +89,13 @@ const ChatActionProposal = ({ proposal }: Props) => {
             })}
           </ul>
         </>
+      )}
+      {proposal.status === "applied" && (
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" data-od-id="pending-confirm" disabled aria-pressed>
+            확인
+          </Button>
+        </div>
       )}
       {editable && (
         <div className="flex flex-wrap gap-2">

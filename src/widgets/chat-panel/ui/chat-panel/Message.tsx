@@ -4,19 +4,13 @@ import { Button, Message, MessageContent, Text } from "@/shared/ui";
 import ChatActionProposal from "./Proposal";
 import ChatAvatar from "./Avatar";
 import ChatPhoto from "./Photo";
-import ChatRun from "./Run";
+import ChatRun, { ChatRunCaption } from "./Run";
+import ChatTime from "./Time";
 import ReceiptCard from "./Receipt";
 import { cn } from "@/shared/lib";
 
-const timestamp = new Intl.DateTimeFormat("ko-KR", {
-  timeZone: "Asia/Seoul",
-  month: "numeric",
-  day: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-});
-
 interface Props {
+  name?: string;
   message: Chat["messages"][number];
   attachments: Map<string, Chat["attachments"][number]>;
   run?: Chat["runs"][number];
@@ -24,12 +18,16 @@ interface Props {
   proposal?: ActionProposal;
   now: number;
   cancelling: boolean;
+  retrying: boolean;
+  canRetry?: boolean;
+  onRetry: (id: string) => void;
   onCancel: (id: string) => void;
   choicesDisabled?: boolean;
   selectedChoice?: string;
   onChoice?: (label: string) => void;
 }
 const ChatMessage = ({
+  name = "집사",
   message,
   attachments,
   run,
@@ -37,6 +35,9 @@ const ChatMessage = ({
   proposal,
   now,
   cancelling,
+  retrying,
+  canRetry = false,
+  onRetry,
   onCancel,
   choicesDisabled = true,
   selectedChoice,
@@ -51,23 +52,23 @@ const ChatMessage = ({
         )}
       >
         {message.role === "assistant" && <ChatAvatar />}
-        <div
+        <span className="sr-only">
+          {message.role === "user" ? "나" : message.author}
+        </span>
+        <MessageContent
           className={cn(
-            "flex flex-wrap items-baseline gap-x-2 text-caption-sm font-semibold text-muted-foreground",
-            "group-[.is-user]:justify-end group-[.is-assistant]:col-start-2",
+            "group-[.is-assistant]:col-start-2",
+            message.role === "user" && "block flow-root",
           )}
         >
-          <span>{message.author}</span>
-          <time dateTime={message.created_at}>
-            {timestamp.format(new Date(message.created_at))}
-          </time>
-        </div>
-        <MessageContent className="group-[.is-assistant]:col-start-2">
           {message.text && (
             <Text
               as="p"
               variant="body-sm"
-              className="whitespace-pre-wrap break-words leading-[1.55]"
+              className={cn(
+                "whitespace-pre-wrap break-words leading-[1.55]",
+                message.role === "user" && "inline",
+              )}
             >
               {message.text}
             </Text>
@@ -131,24 +132,51 @@ const ChatMessage = ({
               })}
             </div>
           )}
+          {message.role === "user" ? (
+            <ChatRunCaption run={run} createdAt={message.created_at} />
+          ) : (
+            <ChatTime value={message.created_at} />
+          )}
         </MessageContent>
         {run && message.role === "user" && (
           <ChatRun
             run={run}
-            receipt={receipt}
-            proposal={proposal}
             cancelling={cancelling}
+            retrying={retrying}
+            canRetry={canRetry}
+            onRetry={onRetry}
             now={now}
             onCancel={onCancel}
           />
         )}
       </div>
     </Message>
+    {run?.status === "running" && message.role === "user" && (
+      <Message from="assistant">
+        <div className="grid min-w-0 grid-cols-[48px_minmax(0,1fr)] gap-x-2">
+          <ChatAvatar />
+          <MessageContent className="min-h-12 justify-center">
+            <span>
+              <span className="sr-only">집사가 답을 쓰는 중</span>
+              <span
+                aria-hidden="true"
+                className="flex gap-1 text-muted-foreground"
+              >
+                <span className="size-1.5 rounded-full bg-current motion-safe:animate-bounce" />
+                <span className="size-1.5 rounded-full bg-current motion-safe:animate-bounce [animation-delay:150ms]" />
+                <span className="size-1.5 rounded-full bg-current motion-safe:animate-bounce [animation-delay:300ms]" />
+              </span>
+            </span>
+          </MessageContent>
+        </div>
+      </Message>
+    )}
     {(proposal || receipt) && (
       <Message from="assistant">
         <div className="grid min-w-0 grid-cols-[48px_minmax(0,1fr)] gap-x-2">
           <ChatAvatar />
-          <MessageContent>
+          <span className="sr-only">김{name}</span>
+          <MessageContent className="col-start-2">
             {proposal && (
               <ChatActionProposal
                 key={proposal.id}
@@ -163,6 +191,7 @@ const ChatMessage = ({
                 now={now}
               />
             )}
+            <ChatTime value={run?.created_at ?? message.created_at} />
           </MessageContent>
         </div>
       </Message>

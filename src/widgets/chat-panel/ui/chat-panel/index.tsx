@@ -29,7 +29,7 @@ const ChatPanelConversation = () => {
     account.data?.membership?.familyId,
     account.data?.userId,
   );
-  const { cancel } = useChatActions();
+  const { cancel, retry } = useChatActions();
   const now = useChatClock();
   const chat =
     query.data &&
@@ -50,6 +50,23 @@ const ChatPanelConversation = () => {
       if (!choiceDisabled) reply.send.mutate(label);
     },
     [choiceDisabled, reply.send],
+  );
+  const retryLock = useRef(false);
+  const onRetry = useCallback(
+    (id: string) => {
+      if (retryLock.current) return;
+      retryLock.current = true;
+      cancel.reset();
+      retry.mutate(
+        { id, clientRequestId: crypto.randomUUID() },
+        {
+          onSettled: () => {
+            retryLock.current = false;
+          },
+        },
+      );
+    },
+    [cancel, retry],
   );
   const { fetchNextPage } = query;
   const onLoadOlder = useCallback(
@@ -72,10 +89,22 @@ const ChatPanelConversation = () => {
     onLoadOlder,
   });
   useChatViewport(viewportRef);
-  const runs = useMemo(
-    () => new Map(chat?.runs.map((run) => [run.input_message_id, run])),
-    [chat?.runs],
+  const latestUserMessage = chat?.messages.findLast(
+    (message) => message.role === "user",
   );
+  const runs = useMemo(() => {
+    const latest = new Map<string, NonNullable<typeof chat>["runs"][number]>();
+    for (const run of chat?.runs ?? []) {
+      const previous = latest.get(run.input_message_id);
+      if (
+        !previous ||
+        run.created_at > previous.created_at ||
+        (run.created_at === previous.created_at && run.id > previous.id)
+      )
+        latest.set(run.input_message_id, run);
+    }
+    return latest;
+  }, [chat?.runs]);
   const receipts = useMemo(
     () => new Map(chat?.receipts.map((receipt) => [receipt.run_id, receipt])),
     [chat?.receipts],
@@ -109,7 +138,19 @@ const ChatPanelConversation = () => {
         ?.focus({ preventScroll: true });
     }
   }, [composerDisabled, viewportRef]);
-  const onCancel = useCallback((id: string) => cancel.mutate(id), [cancel]);
+  const onCancel = useCallback(
+    (id: string) => {
+      retry.reset();
+      cancel.mutate(id);
+    },
+    [cancel, retry],
+  );
+  const actionError =
+    cancel.error && retry.error
+      ? cancel.submittedAt > retry.submittedAt
+        ? cancel.error
+        : retry.error
+      : (cancel.error ?? retry.error);
   const onRefetch = useCallback(() => {
     void query.refetch();
   }, [query]);
@@ -197,6 +238,7 @@ const ChatPanelConversation = () => {
                   return (
                     <ChatMessage
                       key={message.id}
+                      name={chat.name}
                       message={message}
                       attachments={attachments}
                       run={run}
@@ -204,6 +246,9 @@ const ChatPanelConversation = () => {
                       proposal={run ? proposals.get(run.id) : undefined}
                       now={now}
                       cancelling={cancel.isPending}
+                      retrying={retry.isPending}
+                      canRetry={message.id === latestUserMessage?.id}
+                      onRetry={onRetry}
                       onCancel={onCancel}
                       choicesDisabled={
                         choiceDisabled ||
@@ -223,9 +268,9 @@ const ChatPanelConversation = () => {
               </ChatMessages>
             )}
           </ol>
-          {cancel.error && (
+          {actionError && (
             <Text as="p" role="alert" className="py-3 text-error-text">
-              {cancel.error.message}
+              {actionError.message}
             </Text>
           )}
         </ConversationContent>

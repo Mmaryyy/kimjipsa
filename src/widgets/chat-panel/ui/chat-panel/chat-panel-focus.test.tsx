@@ -18,6 +18,15 @@ const state = vi.hoisted(() => ({
   loading: false,
   pending: false,
   messages: [] as Chat["messages"],
+  runs: [] as Chat["runs"],
+  retry: vi.fn(),
+  cancel: vi.fn(),
+  resetCancel: vi.fn(),
+  resetRetry: vi.fn(),
+  cancelError: null as Error | null,
+  retryError: null as Error | null,
+  cancelAt: 1,
+  retryAt: 2,
   sendChoice: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({
@@ -45,14 +54,27 @@ vi.mock("@/entities/chat-message", async (importOriginal) => ({
           name: "집사",
           workerOnline: true,
           messages: state.messages,
-          runs: [],
+          runs: state.runs,
           receipts: [],
           proposals: [],
           attachments: [],
         },
     fetchNextPage: vi.fn(),
   }),
-  useChatActions: () => ({ cancel: { mutate: vi.fn() } }),
+  useChatActions: () => ({
+    cancel: {
+      mutate: state.cancel,
+      reset: state.resetCancel,
+      error: state.cancelError,
+      submittedAt: state.cancelAt,
+    },
+    retry: {
+      mutate: state.retry,
+      reset: state.resetRetry,
+      error: state.retryError,
+      submittedAt: state.retryAt,
+    },
+  }),
 }));
 vi.mock("@/features/chat-send/model/use-chat-send", () => ({
   useChatSend: () => ({
@@ -92,6 +114,15 @@ beforeEach(() => {
   state.loading = false;
   state.pending = false;
   state.messages = [];
+  state.runs = [];
+  state.retry.mockReset();
+  state.cancel.mockReset();
+  state.resetCancel.mockReset();
+  state.resetRetry.mockReset();
+  state.cancelError = null;
+  state.retryError = null;
+  state.cancelAt = 1;
+  state.retryAt = 2;
   state.sendChoice.mockClear();
   vi.stubGlobal("matchMedia", (query: string) => ({
     matches: false,
@@ -221,4 +252,61 @@ it("BOT-07 입력창 전송 중에는 선택지도 비활성화해요", () => {
   expect(screen.getByRole("button", { name: "공유 일정" })).toBeDisabled();
   expect(screen.getByRole("button", { name: "개인 일정" })).toBeDisabled();
   expect(screen.getByRole("button", { name: "보내는 중" })).toBeDisabled();
+});
+
+it("BOT-01 최신 내 메시지와 최신 run만 재시도하며 중복 클릭을 막아요", () => {
+  state.messages = [
+    { ...question("old", 1), role: "user", choices: [], text: "이전 요청" },
+    { ...question("new", 2), role: "user", choices: [], text: "최근 요청" },
+    question("answer", 3),
+  ];
+  const run = (
+    id: string,
+    messageId: string,
+    created_at: string,
+  ): Chat["runs"][number] => ({
+    id,
+    input_message_id: messageId,
+    created_at,
+    status: "failed",
+    progress: "",
+    version: 1,
+    error_code: null,
+  });
+  state.runs = [
+    run("latest", "new", "2026-11-10T02:00:00Z"),
+    run("old-run", "old", "2026-11-10T01:00:00Z"),
+    run("stale", "new", "2026-11-10T01:00:00Z"),
+  ];
+  mount();
+  openPanel();
+  const retry = screen.getByRole("button", { name: "재시도" });
+  fireEvent.click(retry);
+  fireEvent.click(retry);
+  expect(state.retry).toHaveBeenCalledTimes(1);
+  expect(state.retry).toHaveBeenCalledWith(
+    { id: "latest", clientRequestId: expect.any(String) },
+    expect.any(Object),
+  );
+  expect(state.resetCancel).toHaveBeenCalledOnce();
+  const callbacks = state.retry.mock.calls[0][1];
+  callbacks.onSettled();
+  fireEvent.click(retry);
+  expect(state.retry).toHaveBeenCalledTimes(2);
+});
+
+it("BOT-01 취소와 재시도 중 마지막 실패 오류를 보여줘요", () => {
+  state.cancelError = new Error("이전 취소 오류");
+  state.retryError = new Error("대화가 만료되었어요");
+  const view = mount();
+  openPanel();
+  expect(screen.getByRole("alert")).toHaveTextContent("대화가 만료되었어요");
+  expect(screen.queryByText("이전 취소 오류")).not.toBeInTheDocument();
+  state.cancelAt = 3;
+  view.rerender(
+    <ChatNavigationProvider>
+      <Controls />
+    </ChatNavigationProvider>,
+  );
+  expect(screen.getByRole("alert")).toHaveTextContent("이전 취소 오류");
 });

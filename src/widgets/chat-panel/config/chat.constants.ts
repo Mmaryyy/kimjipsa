@@ -1,3 +1,5 @@
+export const chatCancelDelayMs = 30_000;
+
 export const chatFaqs = [
   {
     title: "어떤 일을 도와주나요?",

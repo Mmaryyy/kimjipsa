@@ -10,7 +10,7 @@ const ChatAvatar = () => {
       width={48}
       height={48}
       className={cn(
-        "row-span-2 size-12 shrink-0 rounded-full object-contain",
+        "size-12 shrink-0 rounded-full object-contain",
         character.avatarFramed && "bg-[var(--bot-avatar-bg)] p-1",
       )}
     />

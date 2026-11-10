@@ -2,9 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type * as EventEntity from "@/entities/event";
 import type * as InventoryEntity from "@/entities/inventory-item";
-import type { ActionProposal } from "@/entities/chat-message";
+import type { ActionProposal, Receipt } from "@/entities/chat-message";
 import ChatActionProposal from "./Proposal";
 import ChatHeader from "./Header";
+import ReceiptCard from "./Receipt";
 const mutate = vi.hoisted(() => vi.fn());
 vi.mock("@/features/account", () => ({
   useBotCharacter: () => ({ avatar: "/images/kimjipsa-avatar.png" }),
@@ -12,6 +13,7 @@ vi.mock("@/features/account", () => ({
 vi.mock("@/entities/chat-message", () => ({
   useChatActions: () => ({
     actions: { mutate, isPending: false, error: null },
+    receipt: { mutate, isPending: false, error: null },
   }),
 }));
 const proposal: ActionProposal = {
@@ -52,17 +54,31 @@ describe("BOT-08 변경 제안", () => {
     fireEvent.click(screen.getByRole("button", { name: "우유 삭제 되돌리기" }));
     expect(screen.getByRole("button", { name: "확인" })).toBeEnabled();
   });
-  it.each(["applied", "cancelled"] as const)(
-    "%s 메시지는 버튼 없이 남아요",
-    (status) => {
-      render(
-        <ChatActionProposal proposal={{ ...proposal, status }} now={now} />,
-      );
-      expect(screen.queryByRole("button")).not.toBeInTheDocument();
-      if (status === "cancelled")
-        expect(screen.getByText("취소했어요")).toBeInTheDocument();
-    },
-  );
+  it("SCN-BOT-6 반영 후 항목과 눌린 확인 버튼만 남아요", () => {
+    render(
+      <ChatActionProposal
+        proposal={{ ...proposal, status: "applied" }}
+        now={now}
+      />,
+    );
+    expect(screen.getByText("우유 삭제")).toBeInTheDocument();
+    expect(screen.getByText("약속 변경")).toBeInTheDocument();
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+    expect(
+      screen.getByRole("button", { name: "확인", pressed: true }),
+    ).toBeDisabled();
+  });
+  it("SCN-BOT-6 취소 후 요청 처리 취소 문구만 남아요", () => {
+    render(
+      <ChatActionProposal
+        proposal={{ ...proposal, status: "cancelled", actions: [] }}
+        now={now}
+      />,
+    );
+    expect(screen.getByText("요청 처리를 취소했어요.")).toBeInTheDocument();
+    expect(screen.queryByRole("list")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
   it("취소는 변경 항목을 전송하지 않아요", () => {
     render(<ChatActionProposal proposal={proposal} now={now} />);
     fireEvent.click(screen.getByRole("button", { name: "취소" }));
@@ -89,6 +105,7 @@ vi.mock("@/entities/event", async (original) => ({
 }));
 vi.mock("@/entities/inventory-item", async (original) => ({
   ...(await original<typeof InventoryEntity>()),
+  useInventory: () => ({ data: [] }),
   useInventoryMeta: () => ({
     data: { categories: [], locations: [], units: [] },
     isError: false,
@@ -144,4 +161,68 @@ it("BOT-08 SCN-BOT-6 단일 변경은 머리글 없이 질문과 세 버튼만 �
   expect(
     screen.getAllByRole("button").map((button) => button.textContent),
   ).toEqual(["확인", "수정", "취소"]);
+});
+
+const receipt: Receipt = {
+  id: "receipt",
+  run_id: "run",
+  kind: "receipt",
+  status: "draft",
+  version: 1,
+  expires_at: "2026-11-04T03:05:00Z",
+  items: [
+    {
+      name: "우유",
+      original_name: "우유",
+      quantity: 2,
+      selected: true,
+      unit_id: null,
+      inventory_item_id: null,
+      category_id: null,
+      location_id: null,
+      expires_on: null,
+      reason: "영수증 품목",
+    },
+  ],
+};
+describe("BOT-08 SCN-BOT-6 영수증 확인 응답", () => {
+  it("반영 후 만료 시각이 지나도 품목과 눌린 확인만 남아요", () => {
+    const { rerender } = render(<ReceiptCard receipt={receipt} now={now} />);
+    rerender(
+      <ReceiptCard
+        receipt={{ ...receipt, status: "applied" }}
+        now={now + 3600000}
+      />,
+    );
+    expect(screen.getByRole("textbox", { name: "품목 1 이름" })).toHaveValue(
+      "우유",
+    );
+    expect(screen.getByRole("textbox", { name: "품목 1 이름" })).toBeDisabled();
+    expect(screen.getByRole("spinbutton", { name: "품목 1 수량" })).toHaveValue(
+      2,
+    );
+    expect(screen.getByRole("checkbox")).toBeDisabled();
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+    expect(
+      screen.getByRole("button", { name: "확인", pressed: true }),
+    ).toBeDisabled();
+  });
+  it("취소 후 품목을 숨기고 요청 처리 취소 문구만 남아요", () => {
+    render(
+      <ReceiptCard
+        receipt={{ ...receipt, status: "cancelled", items: [] }}
+        now={now}
+      />,
+    );
+    expect(screen.getByText("요청 처리를 취소했어요.")).toBeInTheDocument();
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+  it("확인 전에는 기존 편집과 반영·취소 버튼을 유지해요", () => {
+    render(<ReceiptCard receipt={receipt} now={now} />);
+    expect(screen.getByRole("textbox", { name: "품목 1 이름" })).toBeEnabled();
+    expect(
+      screen.getAllByRole("button").map((button) => button.textContent),
+    ).toEqual(["재고에 반영하기", "취소하기"]);
+  });
 });

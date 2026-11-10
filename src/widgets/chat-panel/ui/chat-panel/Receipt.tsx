@@ -18,19 +18,19 @@ const ReceiptCard = ({ receipt, now }: Props) => {
   const { data: meta } = useInventoryMeta();
   const { receipt: mutation } = useChatActions();
   const expired = Date.parse(receipt.expires_at) <= now;
+  const applied = receipt.status === "applied";
+  const shownItems = applied ? receipt.items : items;
   const editable = receipt.status === "draft" && !expired;
   const update = (index: number, patch: Partial<ReceiptItem>) =>
     setItems((current) =>
       current.map((item, i) => (i === index ? { ...item, ...patch } : item)),
     );
-  if (!editable)
+  if (!editable && !applied)
     return (
       <Text as="p" variant="caption">
-        {receipt.status === "applied"
-          ? "재고에 반영했어요."
-          : receipt.status === "cancelled"
-            ? "취소했어요."
-            : "확인 기간이 끝났어요."}
+        {receipt.status === "cancelled"
+          ? "요청 처리를 취소했어요."
+          : "확인 기간이 끝났어요."}
       </Text>
     );
   return (
@@ -41,7 +41,7 @@ const ReceiptCard = ({ receipt, now }: Props) => {
       <Text as="h3" variant="label">
         {receipt.kind === "receipt" ? "영수증 품목 확인" : "재고 변경 확인"}
       </Text>
-      {items.map((item, index) => {
+      {shownItems.map((item, index) => {
         const candidates = inventory.filter(
           (candidate) =>
             compareItemNames(candidate.name, item.name) !== "different",
@@ -53,7 +53,7 @@ const ReceiptCard = ({ receipt, now }: Props) => {
         return (
           <fieldset
             key={index}
-            disabled={mutation.isPending}
+            disabled={!editable || mutation.isPending}
             className="min-w-0 space-y-2"
           >
             <legend className="text-label">품목 {index + 1}</legend>
@@ -181,44 +181,57 @@ const ReceiptCard = ({ receipt, now }: Props) => {
           </fieldset>
         );
       })}
-      <div className="flex gap-2">
-        <Button
-          size="sm"
-          className="text-body-sm"
-          disabled={
-            mutation.isPending ||
-            !items.some((item) => item.selected) ||
-            items.some(
-              (item) =>
-                item.selected &&
-                (!item.unit_id ||
-                  !item.name.trim() ||
-                  !Number.isFinite(item.quantity) ||
-                  item.quantity <= 0),
-            )
-          }
-          onClick={() =>
-            mutation.mutate({ id: receipt.id, version: receipt.version, items })
-          }
-        >
-          재고에 반영하기
-        </Button>
-        <Button
-          size="sm"
-          className="text-body-sm"
-          variant="gray"
-          disabled={mutation.isPending}
-          onClick={() =>
-            mutation.mutate({
-              id: receipt.id,
-              version: receipt.version,
-              cancel: true,
-            })
-          }
-        >
-          취소하기
-        </Button>
-      </div>
+      {applied && (
+        <div className="flex gap-2">
+          <Button size="sm" className="text-body-sm" disabled aria-pressed>
+            확인
+          </Button>
+        </div>
+      )}
+      {editable && (
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            className="text-body-sm"
+            disabled={
+              mutation.isPending ||
+              !items.some((item) => item.selected) ||
+              items.some(
+                (item) =>
+                  item.selected &&
+                  (!item.unit_id ||
+                    !item.name.trim() ||
+                    !Number.isFinite(item.quantity) ||
+                    item.quantity <= 0),
+              )
+            }
+            onClick={() =>
+              mutation.mutate({
+                id: receipt.id,
+                version: receipt.version,
+                items,
+              })
+            }
+          >
+            재고에 반영하기
+          </Button>
+          <Button
+            size="sm"
+            className="text-body-sm"
+            variant="gray"
+            disabled={mutation.isPending}
+            onClick={() =>
+              mutation.mutate({
+                id: receipt.id,
+                version: receipt.version,
+                cancel: true,
+              })
+            }
+          >
+            취소하기
+          </Button>
+        </div>
+      )}
       {mutation.error && (
         <Text as="p" variant="caption" role="alert" className="text-error-text">
           {mutation.error.message}

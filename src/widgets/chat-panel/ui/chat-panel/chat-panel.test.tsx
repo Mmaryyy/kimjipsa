@@ -33,8 +33,9 @@ it("BOT-03 인사·기능 목록은 기존 대화 맨 앞에 있고 FAQ는 로�
   const greeting = screen.getByText(
     "안녕하세요, 마리님. 김데비예요. 이런 일을 도와드릴 수 있어요.",
   );
-  expect(greeting.closest("li")?.nextElementSibling).toHaveTextContent(
-    "기존 대화",
+  expect(greeting.closest("li")?.previousElementSibling).toHaveAttribute(
+    "role",
+    "separator",
   );
   expect(within(greeting.closest("li")!).getAllByRole("listitem")).toHaveLength(
     3,
@@ -91,3 +92,66 @@ it("BOT-03 FAQ 뒤에 보낸 대화와 이전 대화를 불러와도 클릭 순�
 vi.mock("@/features/account", () => ({
   useBotCharacter: () => ({ avatar: "/images/kimjipsa-avatar.png" }),
 }));
+
+it("BOT-01 인사 위에 날짜를 표시하고 자정과 이전 대화 추가 시 중복하지 않아요", () => {
+  const conversation = (messages: Chat["messages"]) => (
+    <ol role="log">
+      <ChatMessages name="데비" displayName="마리" messages={messages}>
+        {(item) => <li>{item.text}</li>}
+      </ChatMessages>
+    </ol>
+  );
+  const view = render(conversation([]));
+  expect(screen.getAllByRole("separator")).toHaveLength(1);
+  expect(screen.getByText("김데비")).toHaveClass("sr-only");
+  const first = { ...message("첫 메시지"), created_at: "2026-11-10T14:59:00Z" };
+  view.rerender(
+    conversation([first, { ...first, id: "same", text: "같은 날" }]),
+  );
+  expect(screen.getAllByRole("separator")).toHaveLength(1);
+  expect(screen.getByRole("separator")).toHaveAccessibleName(
+    "2026년 11월 10일",
+  );
+  const next = {
+    ...message("자정 메시지"),
+    created_at: "2026-11-10T15:00:00Z",
+  };
+  view.rerender(conversation([first, next]));
+  expect(screen.getAllByRole("separator")).toHaveLength(2);
+  expect(
+    screen.getByRole("separator", { name: "2026년 11월 11일" }),
+  ).toBeInTheDocument();
+  view.rerender(
+    conversation([{ ...first, id: "older", text: "이전 대화" }, first, next]),
+  );
+  expect(screen.getAllByRole("separator")).toHaveLength(2);
+  expect(
+    screen.getByRole("separator", { name: "2026년 11월 10일" })
+      .nextElementSibling,
+  ).toHaveAttribute("data-od-id", "chat-greeting");
+  expect(screen.getByText("이전 대화").previousElementSibling).toHaveAttribute(
+    "data-od-id",
+    "chat-greeting",
+  );
+});
+
+it("BOT-01 메시지가 없으면 인사 위에 KST 오늘 날짜를 표시해요", () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-11-10T15:00:00Z"));
+  try {
+    render(
+      <ol>
+        <ChatMessages name="데비" displayName="마리" messages={[]}>
+          {(item) => <li>{item.text}</li>}
+        </ChatMessages>
+      </ol>,
+    );
+    expect(screen.getAllByRole("separator")).toHaveLength(1);
+    expect(
+      screen.getByRole("separator", { name: "2026년 11월 11일" })
+        .nextElementSibling,
+    ).toHaveAttribute("data-od-id", "chat-greeting");
+  } finally {
+    vi.useRealTimers();
+  }
+});
