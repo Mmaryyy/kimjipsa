@@ -10,7 +10,7 @@ vi.mock("@/features/account", () => ({
   useAccount: () => ({
     data: {
       userId: "me",
-      profile: { displayName: "민지", termsVersion: "beta-2026-10-30" },
+      profile: { displayName: "민지", termsVersion: "beta-2026-11-11" },
       membership: null,
     },
     isPending: false,

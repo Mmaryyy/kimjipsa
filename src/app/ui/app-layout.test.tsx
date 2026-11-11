@@ -40,7 +40,7 @@ vi.mock("./bottom-navigation", () => ({
 
 const readyAccount: Account = {
   userId: "user",
-  profile: { displayName: "지수", termsVersion: "beta-2026-10-30" },
+  profile: { displayName: "지수", termsVersion: "beta-2026-11-11" },
   membership: { familyId: "family", role: "admin" },
 };
 function accountResult(data?: Account, error?: Error) {

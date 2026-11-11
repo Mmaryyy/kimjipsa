@@ -1,9 +1,11 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
+import { captureException } from "@sentry/nextjs";
 import { ApiError } from "@/shared/api";
 import { handleRoute, throwDatabaseError } from "./route-handler";
 vi.mock("server-only", () => ({}));
+vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
 afterEach(() => vi.restoreAllMocks());
 describe("P10 서버 오류 로그", () => {
   it("예상하지 못한 오류만 안전한 한 줄로 남겨요", async () => {
@@ -28,6 +30,9 @@ describe("P10 서버 오류 로그", () => {
     );
     expect(response.status).toBe(500);
     expect(log).toHaveBeenCalledTimes(1);
+    expect(captureException).toHaveBeenCalledWith(expect.any(Error), {
+      tags: { route: "/api/invites/[id]" },
+    });
     const line = log.mock.calls[0]![0] as string;
     expect(JSON.parse(line)).toEqual({
       route: "/api/invites/[id]",

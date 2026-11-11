@@ -34,7 +34,7 @@ begin
   reset role;
   select terms_accepted_at into accepted_time from public.users where id = caller;
   if not exists(select 1 from public.users where id = caller
-    and terms_version = 'beta-2026-10-30'
+    and terms_version = 'beta-2026-11-11'
     and terms_accepted_at > original_time and privacy_accepted_at = terms_accepted_at) then
     raise exception 'SCN-ACC-1: consent was not renewed';
   end if;
@@ -61,7 +61,7 @@ begin
   perform public.complete_profile('기존회원', true, true);
   reset role;
   if not exists(select 1 from public.users where id = caller
-    and terms_version = 'beta-2026-10-30' and terms_accepted_at is not null
+    and terms_version = 'beta-2026-11-11' and terms_accepted_at is not null
     and privacy_accepted_at = terms_accepted_at) then
     raise exception 'SCN-ACC-1: legacy consent was not recorded';
   end if;

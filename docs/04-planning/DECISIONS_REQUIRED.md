@@ -15,8 +15,8 @@
 | DEC-009 | 데이터 모델 공백 | 중간 | 스키마 확정 | CONFIRMED (제안안 승인, 차후 수정 가능) |
 | DEC-010 | 판정 기준 모호 항목 | 낮음 | INV-16, CART-05, CART-12 | CONFIRMED |
 | DEC-011 | 영수증 이미지 저장 | 낮음(M3) | INV-17 | PENDING |
-| DEC-012 | AI 어댑터 구현 방식 | 낮음(M2) | 챗봇 | PENDING |
-| DEC-013 | 도메인·약관·모니터링·백업 | 중간 | 로그인 심사, 베타 | PENDING (P2 범위 결정, 나머지 대기) |
+| DEC-012 | AI 어댑터 구현 방식 | 낮음(M2) | 챗봇 | CONFIRMED (Hermes, ADR-0017) |
+| DEC-013 | 도메인·약관·모니터링·백업 | 중간 | 베타 | 도구·주기 CONFIRMED, 백업 보관 기간 PENDING·운영 적용 대기 |
 | DEC-014 | 재고 카테고리 아이콘 | 낮음(M2, P6) | INV-07 스키마·화면 | CONFIRMED |
 
 ---
@@ -227,7 +227,7 @@ CONFIRMED (2026-11-04 맥미니 구현 요청)
 ### Impact
 외부 비용, 로그인 심사, 출시 일정. 비용이 발생하므로 승인 필수.
 ### Status
-PENDING
+도구·주기 CONFIRMED (2026-11-11), 백업 보관 기간 PENDING·운영 적용 대기
 ### Decided so far
 P2 범위(사용자 결정, 2026-10-15, 권장안): 개발은 Vercel 기본 도메인(`*.vercel.app`)과 localhost로 하고, 약관·개인정보처리방침은 "초안" 표시가 붙은 최소 문구로 동의 화면을 만든다(법률 검토를 거친 문서가 아니다). 정식 문서는 베타 전(P13)에 정한다.
 
@@ -243,6 +243,27 @@ P10 베타 준비 범위(사용자 결정, 2026-10-30):
 - 오류 모니터링: 지금은 Vercel 기본 로그로 한다(새 의존성·외부 전송 없음). Sentry는 나중에 붙일 수 있게 TECH_STACK에 PROPOSED로 남긴다.
 - DB 백업: 지금은 구현하지 않는다. 선택지(GitHub Actions pg_dump, Supabase Pro, 수동 덤프)와 복구 절차 초안을 문서로만 남긴다.
 - CI: GitHub Actions에서 PR·push 때 typecheck·lint·lint:canary·test·format:check만 돌린다. 배포는 Vercel이 맡는다.
+
+
+P15 결정(사용자 2026-11-11): 오류 모니터링은 Sentry 무료 플랜, DB 백업은 맥미니 launchd에서 주 1회 `pg_dump`로 보관한다. P10의 Vercel 로그만 사용·백업 미구현 결정을 대체한다. [ADR-0021](../02-architecture/ADR/0021-mvp-monitoring-backup.md), [백업 운영 절차](BACKUP_PLAN.md) 참고.
+
+- Sentry SDK·개인정보 제외 필터·서버 및 브라우저 오류 연결을 구현했다. 운영 프로젝트 생성·DSN 설정·배포 후 실제 수신 확인은 미실행이다.
+- 주간 백업 스크립트·launchd 템플릿을 준비했다. 보관 주 수는 사용자 결정 전이므로 기본값 없이 필수 설정으로 남겼다. 맥미니 등록·실제 덤프·복구 연습은 미실행이다.
+- 약관·방침은 맥미니 연결·개인 대화 1시간·사진·기억·Sentry에 맞춰 `beta-2026-11-11`로 변경했다. 실제 모델 제공자·처리 지역·제공자별 보관 정책과 백업 보관 기간의 방침 확정은 운영자 확인이 남았다.
+
+## P15 미뤄 둔 지적·결정 대기
+
+| 지적 | 상태·근거 |
+| --- | --- |
+| r110-f8 | CLOSED — 2026-10-21 사용자 결정: 다가오는 일정 머리의 N개를 되살리지 않는다. |
+| r145-f5 | CLOSED — 현재 알림은 `notificationMessage`의 일정 문구만 표시하고 payload.actorName은 표시하지 않는다. 탈퇴 전 이름 재노출 방지 회귀 테스트 추가. |
+| r165-f4 | CLOSED — 수량 버튼의 overflow-hidden이 44px 모서리 터치를 자르는 문제를 공용 QuantityStepper에서 수정. 375·1280px에서 스와이프·수량 버튼 네 모서리 hit-test 통과. |
+| r193-f2 | CLOSED — `CartCheckedActions`는 fixed 배치이며 체크 0개일 때 inert·aria-hidden으로 숨겨 목록에 56px 행을 만들지 않는다. |
+| r013-f4 | CLOSED — P8 `20261028000000_account_withdrawal.sql`에서 개인 일정 삭제 후 공유 일정 owner_id를 ON DELETE SET NULL로 유지한다. 원격 적용 상태는 이번에 확인하지 않았다. |
+| r068-f7 | PENDING — 주말·공휴일 날짜 숫자 굵기 사용자 답변 대기. 기존 스타일 유지. |
+| r069-f2 | CLOSED — 2026-10-20 사용자 결정: 직접 구현 유지. 반복 규칙용 데이터 라이브러리는 필요할 때만 검토하고 드래그 이동·타임라인 등 새 요구가 생길 때 화면 라이브러리 재검토. |
+
+claude.ai 기획서·명세 원본 수정은 사용자 확인 대기다. HTML 복사본만 먼저 바꾸지 않는다. 최신 승인 변경은 REQUIREMENTS와 ROADMAP에 반영하며 원본 동기화 완료로 표시하지 않는다.
 
 ## DEC-014
 ### Topic

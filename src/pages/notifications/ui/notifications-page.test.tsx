@@ -54,6 +54,13 @@ beforeEach(() => {
   });
 });
 describe("CAL-09 알림 목록", () => {
+  it("SCN-CAL-5 탈퇴 전 저장된 이름을 알림에 다시 표시하지 않아요", () => {
+    render(<NotificationsPage />);
+    expect(
+      screen.getByText("‘치과 정기검진’ 일정이 변경되었어요."),
+    ).toBeVisible();
+    expect(screen.queryByText(/민호/)).not.toBeInTheDocument();
+  });
   it.each(["", "notifications=closed"])(
     "SCN-CAL-5 쿼리가 '%s'이면 알림 시트를 열지 않아요",
     (query) => {

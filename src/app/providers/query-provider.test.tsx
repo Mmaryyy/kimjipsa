@@ -124,7 +124,7 @@ function confirmSignedIn() {
   act(() => {
     client.setQueryData(["account"], {
       userId: "signed-in-user",
-      profile: { displayName: "지수", termsVersion: "beta-2026-10-30" },
+      profile: { displayName: "지수", termsVersion: "beta-2026-11-11" },
       membership: null,
     });
   });
@@ -233,7 +233,7 @@ describe("ACC-01 ACC-05 SCN-ACC-2 로그인 만료 안내", () => {
     window.history.replaceState(null, "", "/settings");
     accountRequest.mockResolvedValue({
       userId: "signed-in-user",
-      profile: { displayName: "지수", termsVersion: "beta-2026-10-30" },
+      profile: { displayName: "지수", termsVersion: "beta-2026-11-11" },
       membership: { familyId: "family", role: "admin" },
     });
     signOut.mockResolvedValue({ error: new Error("인증 오류") });
@@ -280,7 +280,7 @@ describe("ACC-01 ACC-05 SCN-ACC-2 로그인 만료 안내", () => {
     vi.stubGlobal("matchMedia", () => ({ matches: false }));
     accountRequest.mockResolvedValue({
       userId: "signed-in-user",
-      profile: { displayName: "지수", termsVersion: "beta-2026-10-30" },
+      profile: { displayName: "지수", termsVersion: "beta-2026-11-11" },
       membership: { familyId: "family", role: "admin" },
     });
     render(gatedApp());

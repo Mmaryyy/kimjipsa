@@ -200,7 +200,7 @@ const QuantityStepper = ({
               "bg-transparent p-0 text-[var(--icon-secondary)]",
               collapsible && [
                 "focus-visible:outline-offset-[calc(-1*var(--sp-2))] h-11 min-h-11 min-w-0",
-                "w-11 overflow-hidden text-primary",
+                "w-11 text-primary",
               ],
             ])}
             aria-label={`${label} 줄이기`}
@@ -243,7 +243,7 @@ const QuantityStepper = ({
               "bg-transparent p-0 text-[var(--icon-secondary)]",
               collapsible && [
                 "focus-visible:outline-offset-[calc(-1*var(--sp-2))] h-11 min-h-11 min-w-0",
-                "w-11 overflow-hidden text-primary",
+                "w-11 text-primary",
               ],
             ])}
             ref={increaseRef}

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>com.kimjipsa.database-backup</string>
+    <key>ProgramArguments</key>
+    <array>
+      <string>__PYTHON_PATH__</string>
+      <string>__BACKUP_SCRIPT_PATH__</string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+      <key>PGSERVICE</key>
+      <string>kimjipsa-backup</string>
+      <key>PGSERVICEFILE</key>
+      <string>__PG_SERVICE_FILE__</string>
+      <key>PGPASSFILE</key>
+      <string>__PG_PASS_FILE__</string>
+      <key>KIMJIPSA_PG_BIN</key>
+      <string>__PG_BIN_DIRECTORY__</string>
+      <key>KIMJIPSA_BACKUP_DIR</key>
+      <string>__BACKUP_DIRECTORY__</string>
+      <key>KIMJIPSA_BACKUP_RETENTION_WEEKS</key>
+      <string>4</string>
+    </dict>
+    <key>StartCalendarInterval</key>
+    <dict>
+      <key>Weekday</key>
+      <integer>0</integer>
+      <key>Hour</key>
+      <integer>3</integer>
+      <key>Minute</key>
+      <integer>0</integer>
+    </dict>
+    <key>StandardOutPath</key>
+    <string>__LOG_DIRECTORY__/backup.log</string>
+    <key>StandardErrorPath</key>
+    <string>__LOG_DIRECTORY__/backup-error.log</string>
+  </dict>
+</plist>

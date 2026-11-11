@@ -74,7 +74,12 @@ describe("ACC-02 SCN-ACC-1 약관 동의 팝업", () => {
       expect(
         within(sheet).getByRole("heading", { name: heading }),
       ).toBeVisible();
-      expect(within(sheet).queryByText(/초안/)).not.toBeInTheDocument();
+      expect(within(sheet).getByText(/2026-11-11부터 시행/)).toBeVisible();
+      if (name === "개인정보 처리방침") {
+        expect(
+          within(sheet).getByText(/영수증 인식 초안은 최대 7일 보관/),
+        ).toBeVisible();
+      }
       fireEvent.click(within(sheet).getByRole("button", { name: "닫기" }));
 
       await waitFor(() => {

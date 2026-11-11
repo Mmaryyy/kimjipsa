@@ -11,7 +11,7 @@ const { prepare, route, account } = vi.hoisted(() => ({
       userId: "user",
       profile: {
         displayName: "테스트",
-        termsVersion: "beta-2026-10-30" as string | null,
+        termsVersion: "beta-2026-11-11" as string | null,
       },
       membership: {},
     },
@@ -54,7 +54,7 @@ describe("ACC-12 CAL-07 P4.12 첫 화면 미리 불러오기", () => {
     vi.useFakeTimers();
     route.pathname = "/";
     prepare.mockReset();
-    account.data.profile.termsVersion = "beta-2026-10-30";
+    account.data.profile.termsVersion = "beta-2026-11-11";
     vi.stubGlobal(
       "matchMedia",
       vi.fn(() => ({ matches: false })),

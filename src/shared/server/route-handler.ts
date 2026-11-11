@@ -3,6 +3,8 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { ApiError } from "@/shared/api";
+import { captureException } from "@sentry/nextjs";
+import { sanitizeErrorRoute } from "@/shared/lib/error-monitoring";
 const databaseCodes = new WeakMap<Error, string>();
 
 export function throwDatabaseError(
@@ -31,30 +33,6 @@ export async function readJson(request: Request): Promise<unknown> {
     throw new ApiError("invalid_json", "입력 내용을 확인해 주세요.");
   }
 }
-const routeSegments = new Set([
-  "api",
-  "account",
-  "home-settings",
-  "notification-settings",
-  "profile",
-  "withdraw",
-  "cart",
-  "cron",
-  "notifications",
-  "dday-dismissals",
-  "event-categories",
-  "delete",
-  "events",
-  "dismiss",
-  "family",
-  "member-role",
-  "holidays",
-  "inventory-meta",
-  "inventory",
-  "invites",
-  "push",
-  "subscriptions",
-]);
 
 export async function handleRoute<T>(
   request: Request,
@@ -93,12 +71,8 @@ export async function handleRoute<T>(
       );
     if (failure.status >= 500) {
       // Never log raw errors, request bodies, headers or dynamic route values.
-      const route = new URL(request.url).pathname
-        .split("/")
-        .map((segment) =>
-          !segment || routeSegments.has(segment) ? segment : "[id]",
-        )
-        .join("/");
+      const route = sanitizeErrorRoute(request.url);
+      captureException(error, { tags: { route } });
       const code = ["database_error", "auth_unavailable"].includes(failure.code)
         ? failure.code
         : "server_error";

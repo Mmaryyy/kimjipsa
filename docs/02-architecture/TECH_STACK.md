@@ -53,9 +53,8 @@ PROPOSED 항목은 `docs/04-planning/DECISIONS_REQUIRED.md`의 결정 번호와 
 | 달력 스와이프 | `embla-carousel-react` 8.6.0 | CONFIRMED | 손가락을 따라 끌리는 월·주·일 넘김. 달력 자체는 직접 구현 유지 | 직접 구현, 캘린더 전체 라이브러리 | 의존성 1개 | ADR-0015 |
 | AI 호출 계층 | 직접 어댑터(Claude/Gemini 공식 SDK 또는 REST를 `AiProvider` 인터페이스로 감쌈) | PROPOSED | 지원이 두 곳뿐이라 얇은 어댑터로 충분(기획서 §09). 도구 호출·OCR 차이는 어댑터 안에서 흡수 | Vercel AI SDK | 제공자별 도구 호출 형식 차이를 직접 맞춰야 함 | DEC-012 |
 | 모델 인증 | Hermes 로컬 인증 저장소 | CONFIRMED | 사용자 지시, ADR-0017. 앱 키 등록·암호화 사용 중단 | 이전 AES-GCM(ADR-0016) | 앱·DB에 모델 키 전송 없음 | DEC-003 |
-| 오류 모니터링 | Vercel 기본 로그(Functions/Runtime Logs). 서버 오류를 개인정보 없이 한 형식으로 남긴다 | CONFIRMED | 사용자 결정 2026-10-30. 새 의존성·외부 전송 없음 | Sentry | 알림이 없고 무료 플랜은 보관 기간이 짧다 | DEC-013 |
-| 오류 모니터링 확장 | Sentry(`@sentry/nextjs`) 무료 플랜 | PROPOSED | 나중에 오류 알림·스택 묶기가 필요할 때. 붙일 때 결정할 것: DSN·인증 토큰(시크릿), `beforeSend`로 이메일·일정 내용 같은 개인정보 제거, 소스맵 업로드, 개인정보처리방침의 처리 위탁에 Sentry 추가 | Vercel 로그 유지 | 오류 정보가 외부 서비스로 전송됨 | DEC-013 |
-| DB 백업 | 미구현 (`docs/04-planning/BACKUP_PLAN.md`) | PENDING | 사용자 결정 2026-10-30: 지금은 문서로만 남긴다 | GitHub Actions pg_dump, Supabase Pro, 수동 덤프 | 백업이 없는 동안 데이터 손실 시 복구 불가 | DEC-013 |
+| 오류 모니터링 | Sentry 무료 플랜 (`@sentry/nextjs` 11.11.0) + 기존 Vercel 로그 | CONFIRMED | 사용자 결정 2026-11-11, ADR-0021. 오류 종류·코드 위치만 전송. 요청·사용자·대화·사진 원문 제외, tracing·replay·로그·소스맵 업로드 없음. 운영 DSN·수신 확인 대기 | Vercel 로그만 유지 | 외부 운영 설정 필요 | DEC-013 |
+| DB 백업 | 맥미니 launchd + 주 1회 pg_dump | CONFIRMED | 사용자 결정 2026-11-11, ADR-0021. 스크립트·템플릿 구현, 보관 기간 결정·맥미니 등록·실제 복구 확인 대기 | Supabase 유료 백업 | 맥미니 장애 시 같은 기기 백업도 손실 가능 | DEC-013 |
 | CI | GitHub Actions(PR·push): typecheck·lint·lint:canary·test·format:check | CONFIRMED | 사용자 결정 2026-10-30. 배포는 Vercel이 맡는다 | 없음 | Actions 무료 사용량 | DEC-013 |
 | 파일 저장소 | 미정 | PENDING | 영수증 이미지(M3, INV-17)를 저장할지 처리 후 폐기할지 미정 | Supabase Storage | 개인정보 | DEC-011 |
 
