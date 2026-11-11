@@ -22,7 +22,6 @@ import {
   occurrencesInRange,
   EventOccurrenceRow,
   EventListSkeleton,
-  EventRowsSkeleton,
   type CalendarView as View,
   type CalendarEvent,
   type EventCategory,
@@ -181,11 +180,7 @@ function CalendarDate({
           }[weekdayTone],
         )}
       >
-        {loading ? (
-          <Skeleton className="h-3 w-3" />
-        ) : (
-          format(day, "EEEEE", { locale: ko })
-        )}
+        {format(day, "EEEEE", { locale: ko })}
       </span>
       <span
         className={cn(
@@ -197,7 +192,7 @@ function CalendarDate({
           month !== undefined && "shrink-0 leading-none",
         )}
       >
-        {loading ? <Skeleton className="h-5 w-5" /> : format(day, "d")}
+        {format(day, "d")}
       </span>
       {month !== undefined && (
         <span
@@ -476,7 +471,9 @@ function WeekEvents({
   today,
   holidayNames,
   specialDays,
+  loading = false,
 }: {
+  loading?: boolean;
   specialDays: Record<string, SpecialDay[]>;
   holidayNames: Record<string, string>;
   days: Date[];
@@ -492,6 +489,9 @@ function WeekEvents({
         const date = format(day, "yyyy-MM-dd");
         const daily = occurrences.filter(
           (item) => item.startDate <= date && item.endDate >= date,
+        );
+        const hasEntries = Boolean(
+          daily.length || holidayNames[date] || specialDays[date]?.length,
         );
         return (
           <section
@@ -517,7 +517,9 @@ function WeekEvents({
               {holidayNames[date] && ` · ${holidayNames[date]}`}
               {date === today && " · 오늘"}
             </GroupLabel>
-            {daily.length || holidayNames[date] || specialDays[date]?.length ? (
+            {loading ? (
+              <Skeleton className="h-32" />
+            ) : hasEntries ? (
               <List>
                 {holidayNames[date] && (
                   <HolidayRow holiday={{ date, name: holidayNames[date] }} />
@@ -790,7 +792,7 @@ function CalendarPanel({
   const { start, end } = calendarRange(date, view);
   const days = eachDayOfInterval({ start, end });
   const occurrences = occurrencesInRange(
-    events,
+    loading ? [] : events,
     format(start, "yyyy-MM-dd"),
     format(end, "yyyy-MM-dd"),
   );
@@ -804,39 +806,10 @@ function CalendarPanel({
       : [];
   const selectedHoliday = holidayNames[date];
   if (home && view === "day") return null;
-  if (!home && (loading || holidaysPending) && view === "week") {
-    return (
-      <SkeletonSection label="이번 주 일정을 불러오고 있어요">
-        {days.map((day) => (
-          <div key={day.toISOString()}>
-            <GroupLabel as="h3">
-              {format(day, "M월 d일 EEEE", { locale: ko })}
-            </GroupLabel>
-            <EventRowsSkeleton rows={1} interactive />
-          </div>
-        ))}
-      </SkeletonSection>
-    );
-  }
   if (!home && (loading || holidaysPending) && view === "day") {
     return (
       <SkeletonSection label="하루 일정을 불러오고 있어요">
-        <ul className="mt-3">
-          {Array.from({ length: 15 }, (_, index) => (
-            <li
-              key={index}
-              className="flex min-h-12 items-start gap-3 py-[9px]"
-            >
-              <Text
-                variant="caption-sm"
-                className="w-13 shrink-0 pt-0.5 text-[var(--label-tertiary)]"
-              >
-                {String(index + 8).padStart(2, "0")}:00
-              </Text>
-              <Skeleton className="mt-1 h-4 w-32" />
-            </li>
-          ))}
-        </ul>
+        <Skeleton className="mt-3 h-80" />
       </SkeletonSection>
     );
   }
@@ -854,7 +827,7 @@ function CalendarPanel({
     );
   }
   if (view === "week" && !home) {
-    return (
+    const week = (
       <WeekEvents
         days={days}
         occurrences={occurrences}
@@ -864,7 +837,15 @@ function CalendarPanel({
         today={today}
         holidayNames={holidayNames}
         specialDays={specialDays}
+        loading={loading || holidaysPending}
       />
+    );
+    return loading || holidaysPending ? (
+      <SkeletonSection label="이번 주 일정을 불러오고 있어요">
+        {week}
+      </SkeletonSection>
+    ) : (
+      week
     );
   }
   return (
@@ -974,7 +955,7 @@ function CalendarContent({
   };
   const selectedHoliday = holidayNames[date];
   const occurrences = occurrencesInRange(
-    events,
+    loading ? [] : events,
     format(start, "yyyy-MM-dd"),
     format(end, "yyyy-MM-dd"),
   );
@@ -1081,11 +1062,23 @@ function CalendarContent({
         {(home || view === "month") &&
         (loading || (!home && holidaysPending)) ? (
           <EventListSkeleton
-            interactive={!home}
-            action={!home && <TextButton disabled>일정 등록</TextButton>}
+            action={
+              home ? (
+                <Link
+                  className="text-caption text-primary"
+                  href={eventRoutes.calendar}
+                >
+                  캘린더
+                </Link>
+              ) : (
+                <TextButton disabled>일정 등록</TextButton>
+              )
+            }
             title={
               home
-                ? "오늘 일정"
+                ? date === today
+                  ? "오늘 일정"
+                  : `${format(selected, "M월 d일")} 일정`
                 : format(selected, "M월 d일 EEEE", { locale: ko })
             }
           />

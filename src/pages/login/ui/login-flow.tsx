@@ -14,7 +14,6 @@ import {
   BrandLogo,
   Button,
   ErrorState,
-  ListSkeleton,
   OnboardingProgress,
 } from "@/shared/ui";
 
@@ -59,7 +58,7 @@ export function LoginFlow({
       />
     );
   if (account.isPending || destination)
-    return <ListSkeleton label="로그인 상태를 확인하고 있어요" />;
+    return <p role="status">로그인 상태를 확인하고 있어요</p>;
   return (
     <div
       className={onboardingStyles({ part: "page" })}

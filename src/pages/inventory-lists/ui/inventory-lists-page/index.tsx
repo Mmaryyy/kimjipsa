@@ -113,7 +113,11 @@ const InventoryListsPage = () => {
       />
     );
   else if (meta.isPending)
-    content = <ListSkeleton label="목록을 불러오고 있어요" />;
+    content = (
+      <section className="mt-4">
+        <ListSkeleton label="목록을 불러오고 있어요" />
+      </section>
+    );
   else
     content = (
       <section

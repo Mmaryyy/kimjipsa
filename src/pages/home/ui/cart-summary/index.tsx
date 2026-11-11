@@ -9,6 +9,7 @@ import {
   List,
   ListRow,
   Skeleton,
+  SkeletonSection,
   SectionHeader,
   Text,
 } from "@/shared/ui";
@@ -34,30 +35,9 @@ const CartSummary = ({ instant }: Props) => {
     );
   } else if (!cart.data || !meta.data) {
     content = (
-      <div
-        role="status"
-        aria-label="장바구니를 불러오고 있어요"
-        aria-busy="true"
-      >
-        <List aria-hidden="true">
-          <ListRow>
-            <div className="flex h-[var(--type-body-lh)] items-center">
-              <Skeleton className="h-4 w-32" />
-            </div>
-            <div className="flex h-[var(--type-caption-lh)] items-center">
-              <Skeleton className="h-3 w-56 max-w-full" />
-            </div>
-          </ListRow>
-          {[0, 1, 2].map((index) => (
-            <ListRow
-              key={index}
-              leading={<Skeleton className="h-3 w-18 shrink-0" />}
-            >
-              <Skeleton className="h-4 w-40 max-w-full" />
-            </ListRow>
-          ))}
-        </List>
-      </div>
+      <SkeletonSection label="장바구니를 불러오고 있어요">
+        <Skeleton />
+      </SkeletonSection>
     );
   } else {
     const summary = cartSummary(cart.data, meta.data, instant);

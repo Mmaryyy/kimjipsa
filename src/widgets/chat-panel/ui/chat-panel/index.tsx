@@ -8,6 +8,8 @@ import {
   ErrorState,
   Sheet,
   Skeleton,
+  SkeletonSection,
+  SkeletonStatus,
   Text,
 } from "@/shared/ui";
 import { ChatComposer, useChatSend } from "@/features/chat-send";
@@ -173,15 +175,11 @@ const ChatPanelConversation = () => {
           tabIndex={-1}
         >
           {(query.isPending || (!chat && !query.isError)) && (
-            <div
-              className="space-y-6 py-6"
-              role="status"
-              aria-label="대화를 불러오는 중"
-            >
-              <Skeleton className="h-16 w-3/4" />
-              <Skeleton className="ml-auto h-12 w-2/3" />
-              <Skeleton className="h-24 w-3/4" />
-            </div>
+            <SkeletonStatus>
+              <SkeletonSection label="대화를 불러오는 중">
+                <Skeleton className="my-6 h-64" />
+              </SkeletonSection>
+            </SkeletonStatus>
           )}
           {query.error && !query.isFetchNextPageError && (
             <ErrorState

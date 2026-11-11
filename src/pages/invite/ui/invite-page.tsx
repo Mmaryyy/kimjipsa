@@ -12,11 +12,22 @@ import {
   Button,
   EmptyState,
   ErrorState,
-  ListSkeleton,
+  Skeleton,
   PageHeader,
   PageLayout,
   Text,
 } from "@/shared/ui";
+const InviteSkeleton = ({ label }: { label: string }) => (
+  <PageLayout
+    width="narrow"
+    className="grid gap-5"
+    header={<PageHeader title="우리 집 초대" />}
+  >
+    <div role="status" aria-label={label} aria-busy="true">
+      <Skeleton />
+    </div>
+  </PageLayout>
+);
 const unavailableMessages = {
   used: "이미 사용된 초대 링크예요. 가정 관리자에게 새 링크를 요청해 주세요.",
   expired: "만료된 초대 링크예요. 가정 관리자에게 새 링크를 요청해 주세요.",
@@ -26,12 +37,7 @@ export function InvitePage({ token }: { token: string }) {
   const invite = useInvite(token);
   const account = useAccount();
   const { onAccept, pending, error } = useAcceptInvite(token);
-  if (pending)
-    return (
-      <PageLayout width="narrow">
-        <ListSkeleton label="합류하고 있어요" />
-      </PageLayout>
-    );
+  if (pending) return <InviteSkeleton label="합류하고 있어요" />;
   if (invite.isError || account.isError)
     return (
       <PageLayout width="narrow">
@@ -46,11 +52,7 @@ export function InvitePage({ token }: { token: string }) {
       </PageLayout>
     );
   if (invite.isPending || account.isPending)
-    return (
-      <PageLayout width="narrow">
-        <ListSkeleton label="초대를 확인하고 있어요" />
-      </PageLayout>
-    );
+    return <InviteSkeleton label="초대를 확인하고 있어요" />;
   if (invite.data.status !== "valid")
     return (
       <PageLayout width="narrow" header={<PageHeader title="초대 링크 안내" />}>

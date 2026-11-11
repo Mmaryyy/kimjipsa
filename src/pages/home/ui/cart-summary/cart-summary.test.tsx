@@ -163,7 +163,7 @@ describe("CART-02 CART-03 CART-04 홈 장바구니 요약", () => {
     state.cart = { isPending: true };
     const view = render(<CartSummary instant={instant} />);
     expect(
-      screen.getByRole("status", { name: "장바구니를 불러오고 있어요" }),
+      screen.getByRole("group", { name: "장바구니를 불러오고 있어요" }),
     ).toHaveAttribute("aria-busy", "true");
     state.cart = {
       isError: true,

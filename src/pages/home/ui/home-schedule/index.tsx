@@ -93,11 +93,7 @@ const HomeSchedule = () => {
           />
           {homeSettings.upcomingEnabled &&
             (loading || settings.isPending ? (
-              <EventListSkeleton
-                title="다가오는 일정"
-                grouped
-                rows={homeSettings.upcomingCount}
-              />
+              <EventListSkeleton title="다가오는 일정" />
             ) : (
               <UpcomingEvents
                 occurrences={upcomingOccurrences(

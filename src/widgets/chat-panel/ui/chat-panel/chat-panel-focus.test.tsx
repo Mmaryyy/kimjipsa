@@ -163,6 +163,9 @@ it("BOT-01 첫 조회 뒤 입력창에 포커스하되 사용자가 옮긴 포�
   state.loading = true;
   const view = mount();
   openPanel();
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "화면을 불러오고 있어요",
+  );
   expect(screen.getByLabelText("대화 내역")).toHaveFocus();
   state.loading = false;
   view.rerender(

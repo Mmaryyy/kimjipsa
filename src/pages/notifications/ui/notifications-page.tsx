@@ -36,26 +36,7 @@ function dateGroup(instant: string, now: Date) {
 function NotificationsSkeleton() {
   return (
     <SkeletonSection label="알림을 불러오고 있어요">
-      <GroupLabel>
-        <Skeleton className="h-3 w-10" />
-      </GroupLabel>
-      <List>
-        {Array.from({ length: 3 }, (_, index) => (
-          <ListRow key={index}>
-            <div className="flex min-h-[var(--ctl-h)] w-full items-center gap-1">
-              <Skeleton className="mx-1 size-2 shrink-0 rounded-full" />
-              <div className="flex min-w-0 flex-1 items-start justify-between">
-                <div className="flex h-[var(--type-label-lh)] min-w-0 flex-1 items-center">
-                  <Skeleton className="h-4 w-4/5" />
-                </div>
-                <div className="flex h-[var(--type-caption-lh)] flex-none items-center">
-                  <Skeleton className="h-3 w-9" />
-                </div>
-              </div>
-            </div>
-          </ListRow>
-        ))}
-      </List>
+      <Skeleton className="h-56" />
     </SkeletonSection>
   );
 }

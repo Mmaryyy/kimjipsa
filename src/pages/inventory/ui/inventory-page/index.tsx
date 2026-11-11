@@ -25,7 +25,6 @@ import {
   SegmentedControl,
   FilterTabs,
   List,
-  GroupLabel,
   Skeleton,
   SkeletonSection,
   EmptyState,
@@ -48,7 +47,12 @@ const InventorySkeleton = ({
   <SkeletonSection label="재고를 불러오고 있어요">
     <div aria-hidden="true">
       <div className="mt-2 grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3">
-        <Skeleton className="h-8 w-full" />
+        <Input
+          variant="glass"
+          icon={<Search aria-hidden className="size-4" />}
+          placeholder="품목 검색"
+          disabled
+        />
         <SegmentedControl
           label="묶어 보기"
           options={groups}
@@ -57,38 +61,8 @@ const InventorySkeleton = ({
           disabled
           className="w-full min-w-0"
         />
-        <div className="flex min-h-[calc(var(--ctl-h)+var(--sp-2)+var(--sp-1))] items-center gap-5 pt-2 pb-1">
-          <Skeleton className="h-4 w-7" />
-          <Skeleton className="h-4 w-12" />
-          <Skeleton className="h-4 w-12" />
-        </div>
       </div>
-      <div className="flex h-[calc(var(--type-caption-lh)+var(--sp-4))] items-center gap-4 pt-3 pb-1">
-        <Skeleton className="h-3 w-12" />
-        <Skeleton className="h-3 w-12" />
-        <Skeleton className="h-3 w-12" />
-      </div>
-      <GroupLabel className="flex h-[calc(var(--sp-5)+var(--sp-half)+var(--type-caption-lh))] items-center">
-        <Skeleton className="h-3 w-16" />
-      </GroupLabel>
-      <List>
-        {Array.from({ length: 3 }, (_, index) => (
-          <li
-            key={index}
-            className="flex min-h-[var(--row-min)] items-center gap-2 py-2"
-          >
-            <div className="min-w-0 flex-1">
-              <div className="flex h-[var(--type-body-lh)] items-center">
-                <Skeleton className="h-4 w-24" />
-              </div>
-              <div className="hidden h-[var(--type-caption-lh)] items-center min-[381px]:flex">
-                <Skeleton className="h-3 w-16" />
-              </div>
-            </div>
-            <Skeleton className="h-[var(--ctl-h-xs)] w-28" />
-          </li>
-        ))}
-      </List>
+      <Skeleton className="mt-5 h-56" />
     </div>
   </SkeletonSection>
 );

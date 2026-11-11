@@ -479,6 +479,8 @@ describe("CAL-07 P4.12 SCN-CAL-8 달력 섹션 로딩", () => {
       const navigation = screen.getByRole("navigation");
       for (const button of within(navigation).getAllByRole("button")) {
         expect(button.getAttribute("aria-label")).not.toContain("일정 0개");
+        expect(button.textContent).toMatch(/\d/);
+        expect(button.querySelector(".animate-skeleton-pulse")).toBeNull();
       }
     },
   );

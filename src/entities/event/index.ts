@@ -51,7 +51,7 @@ export {
   categoriesQueryOptions,
   dismissalsQueryOptions,
 } from "./model/use-events";
-export { EventListSkeleton, EventRowsSkeleton } from "./ui/event-list-skeleton";
+export { EventListSkeleton } from "./ui/event-list-skeleton";
 
 export {
   reminderOptions,

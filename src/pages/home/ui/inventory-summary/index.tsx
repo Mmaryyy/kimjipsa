@@ -31,7 +31,7 @@ const InventorySummary = () => {
       />
     );
   else if (inventory.isPending || meta.isPending)
-    content = <ListSkeleton label="확인할 재고를 불러오고 있어요" rows={3} />;
+    content = <ListSkeleton label="확인할 재고를 불러오고 있어요" />;
   else {
     const attention = inventory.data.filter(
       (item) =>

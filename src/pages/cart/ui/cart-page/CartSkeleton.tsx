@@ -1,12 +1,5 @@
 import { withFrequentCartDefaults } from "@/entities/cart-item";
-import {
-  Button,
-  GroupLabel,
-  Input,
-  List,
-  Skeleton,
-  SkeletonSection,
-} from "@/shared/ui";
+import { Button, Input, Skeleton, SkeletonSection } from "@/shared/ui";
 import CartFrequentItems from "./FrequentItems";
 
 const CartSkeleton = () => (
@@ -34,28 +27,7 @@ const CartSkeleton = () => (
         disabled
         onAdd={async () => false}
       />
-      <GroupLabel>
-        <span className="flex h-[var(--type-caption-lh)] items-center">
-          <Skeleton className="h-3 w-16" />
-        </span>
-      </GroupLabel>
-      <List>
-        {Array.from({ length: 3 }, (_, index) => (
-          <li key={index} className="flex min-h-11 items-start gap-3 py-2">
-            <Skeleton className="mt-1 size-5 flex-none rounded-full" />
-            <div className="min-w-0 flex-1">
-              <div className="flex min-h-7 items-center gap-x-2">
-                <div className="flex min-w-0 flex-1 items-center">
-                  <Skeleton className="h-4 w-32 max-w-full" />
-                </div>
-                <div className="-my-2 inline-flex h-11 shrink-0 items-center">
-                  <Skeleton className="h-4 w-11 rounded-full" />
-                </div>
-              </div>
-            </div>
-          </li>
-        ))}
-      </List>
+      <Skeleton className="mt-5" />
     </div>
   </SkeletonSection>
 );

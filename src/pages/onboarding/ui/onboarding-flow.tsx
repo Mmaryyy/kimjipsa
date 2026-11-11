@@ -16,7 +16,6 @@ import {
 import {
   onboardingStyles,
   ErrorState,
-  ListSkeleton,
   OnboardingProgress,
   Text,
   TextButton,
@@ -75,9 +74,9 @@ export function OnboardingFlow({ inviteToken }: { inviteToken?: string }) {
       />
     );
   if (account.isPending)
-    return <ListSkeleton label="우리 집 정보를 확인하고 있어요" />;
+    return <p role="status">우리 집 정보를 확인하고 있어요</p>;
   if (account.data.membership && !inviting && !needsConsent)
-    return <ListSkeleton label="오늘 화면으로 이동하고 있어요" />;
+    return <p role="status">오늘 화면으로 이동하고 있어요</p>;
   const actualStep = inviting
     ? 4
     : !account.data.userId

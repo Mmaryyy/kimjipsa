@@ -9,7 +9,8 @@ import {
   ErrorState,
   List,
   ListRow,
-  ListSkeleton,
+  Skeleton,
+  SkeletonSection,
   PageHeader,
   PageLayout,
   SectionHeader,
@@ -32,8 +33,21 @@ export function FamilyPage() {
     );
   if (family.isPending || account.isPending)
     return (
-      <PageLayout width="narrow">
-        <ListSkeleton label="가정과 구성원을 불러오고 있어요" />
+      <PageLayout
+        width="narrow"
+        className="grid gap-6"
+        header={<PageHeader title="우리 집" />}
+      >
+        <SkeletonSection label="가정과 구성원을 불러오고 있어요">
+          <section>
+            <SectionHeader title="함께 쓰는 사람" />
+            <Skeleton />
+          </section>
+          <section>
+            <SectionHeader title="내 표시 이름" />
+            <Skeleton />
+          </section>
+        </SkeletonSection>
       </PageLayout>
     );
   if (!family.data)

@@ -3,7 +3,13 @@ import { useEffect, useRef, useSyncExternalStore } from "react";
 import { tz } from "@date-fns/tz";
 import { format } from "date-fns";
 import { invitePath } from "@/shared/config";
-import { Button, ListSkeleton, Text, TextButton } from "@/shared/ui";
+import {
+  Button,
+  Skeleton,
+  SkeletonSection,
+  Text,
+  TextButton,
+} from "@/shared/ui";
 import { useInviteShare } from "../model/use-family";
 const subscribe = () => () => {};
 const getOrigin = () => window.location.origin;
@@ -47,7 +53,11 @@ export function InviteShare({
           {pending ? "초대 링크를 만들고 있어요" : "새 초대 링크 만들기"}
         </TextButton>
       )}
-      {pending && <ListSkeleton rows={1} label="초대 링크를 만들고 있어요" />}
+      {pending && (
+        <SkeletonSection label="초대 링크를 만들고 있어요">
+          <Skeleton />
+        </SkeletonSection>
+      )}
       {error && (
         <Text as="p" role="alert" className="text-error-text">
           {error.message} 새 초대 링크 만들기로 다시 시도해 주세요.

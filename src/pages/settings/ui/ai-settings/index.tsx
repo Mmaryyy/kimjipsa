@@ -32,6 +32,7 @@ import {
   TextButton,
 } from "@/shared/ui";
 import SettingsRow from "../settings-row";
+import AiSettingsSkeleton from "./Skeleton";
 
 const subscribeOnline = (notify: () => void) => {
   window.addEventListener("online", notify);
@@ -446,15 +447,7 @@ const AiSettings = () => {
         </Button>
       </section>
     );
-  if (!query.data)
-    return (
-      <section>
-        <GroupLabel>AI 집사</GroupLabel>
-        <Text as="p" role="status">
-          설정을 불러오는 중…
-        </Text>
-      </section>
-    );
+  if (!query.data) return <AiSettingsSkeleton />;
   return (
     <>
       <AiSettingsForm

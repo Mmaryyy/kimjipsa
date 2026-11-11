@@ -10,11 +10,14 @@ import {
   EmptyState,
   ErrorState,
   List,
-  ListSkeleton,
   PageHeader,
   PageLayout,
 } from "@/shared/ui";
-import { RestockForm, type RestockResults } from "@/features/cart-checkout";
+import {
+  RestockForm,
+  RestockSkeleton,
+  type RestockResults,
+} from "@/features/cart-checkout";
 const RestockPage = () => {
   const cart = useCart();
   const inventory = useInventory();
@@ -80,7 +83,7 @@ const RestockPage = () => {
       />
     );
   else if (!cart.data || !inventory.data || !meta.data)
-    content = <ListSkeleton label="구매한 품목을 불러오고 있어요" />;
+    content = <RestockSkeleton />;
   else if (!items.length)
     content = (
       <EmptyState

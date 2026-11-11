@@ -2,7 +2,8 @@
 import { useState } from "react";
 import type { CartItem } from "@/entities/cart-item";
 import { useInventory, useInventoryMeta } from "@/entities/inventory-item";
-import { ConfirmDialog, ErrorState, ListSkeleton, Sheet } from "@/shared/ui";
+import { ConfirmDialog, ErrorState, Sheet } from "@/shared/ui";
+import RestockSkeleton from "../restock-page/Skeleton";
 import RestockForm, { type RestockResults } from "../restock-page/Form";
 interface Props {
   items: CartItem[];
@@ -27,8 +28,7 @@ const RestockSheet = ({ items, disabled, onClose, onDone }: Props) => {
         }}
       />
     );
-  else if (!inventory.data || !meta.data)
-    content = <ListSkeleton label="구매한 품목을 불러오고 있어요" />;
+  else if (!inventory.data || !meta.data) content = <RestockSkeleton />;
   else
     content = (
       <RestockForm

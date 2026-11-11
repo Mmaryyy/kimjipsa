@@ -16,13 +16,13 @@ import {
 import {
   EmptyState,
   ErrorState,
-  ListSkeleton,
   TextButton,
   PageLayout,
   PullToAdd,
 } from "@/shared/ui";
 import { EventEditorSheet } from "./event-editor-sheet";
 import EventForm from "./event-form";
+import EventFormSkeleton from "./event-form/Skeleton";
 import EventDetail from "./event-detail";
 function EventList({
   onOpen,
@@ -91,7 +91,7 @@ function EventList({
         onAdd={onAdd}
       />
       {loading ? (
-        <EventListSkeleton title="D-day" dday interactive />
+        <EventListSkeleton title="D-day" dday />
       ) : (
         <DdayOverview
           events={events.data ?? []}
@@ -124,8 +124,7 @@ function NewEvent({
         }}
       />
     );
-  if (categories.isPending)
-    return <ListSkeleton label="카테고리를 불러오고 있어요" />;
+  if (categories.isPending) return <EventFormSkeleton />;
   if (!categories.data.length)
     return (
       <EmptyState message="카테고리가 없어요. 가정 설정에서 추가해 주세요." />

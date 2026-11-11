@@ -40,7 +40,7 @@ export function Skeleton({ className, ...props }: ComponentProps<"span">) {
     <span
       aria-hidden="true"
       className={cn(
-        "inline-block rounded-[var(--sp-half)] bg-[var(--fill-quaternary)]",
+        "block h-44 w-full rounded-[var(--r-dialog)] bg-[var(--fill-quaternary)]",
         "animate-skeleton-pulse motion-reduce:animate-none",
         className,
       )}

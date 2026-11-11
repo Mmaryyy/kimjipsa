@@ -44,7 +44,17 @@ const FrequentItemsPage = () => {
       />
     );
   } else if (!cart.data || !meta.data) {
-    content = <ListSkeleton label="자주 사는 품목을 불러오고 있어요" />;
+    content = (
+      <section className="mt-4">
+        <Text as="p" variant="caption" className="mb-3 text-muted-foreground">
+          구매 기록으로 고른 품목이에요. 이름은 바꿀 수 없고, 담을 때 수량은
+          1이에요.
+        </Text>
+        <GroupLabel>장바구니에 보이는 품목</GroupLabel>
+        <ListSkeleton label="자주 사는 품목을 불러오고 있어요" />
+        <GroupLabel>그 밖의 후보</GroupLabel>
+      </section>
+    );
   } else {
     const items = cart.data.frequentSettings ?? [];
     const visibleNames = new Set(

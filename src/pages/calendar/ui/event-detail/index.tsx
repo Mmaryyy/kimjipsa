@@ -15,12 +15,18 @@ import {
   ConfirmDialog,
   EmptyState,
   ErrorState,
-  ListSkeleton,
+  Skeleton,
+  SkeletonSection,
   Text,
   CategoryDot,
 } from "@/shared/ui";
 import { useEventEditor } from "../../model/use-event-editor";
 import EventForm from "../event-form";
+const EventDetailSkeleton = () => (
+  <SkeletonSection label="일정을 불러오고 있어요">
+    <Skeleton className="h-80" />
+  </SkeletonSection>
+);
 const EventDetail = ({
   id,
   onClose,
@@ -50,7 +56,7 @@ const EventDetail = ({
         }}
       />
     );
-  if (event.isPending) return <ListSkeleton label="일정을 불러오고 있어요" />;
+  if (event.isPending) return <EventDetailSkeleton />;
   if (!event.data?.details)
     return <EmptyState message="일정을 찾을 수 없거나 내용을 볼 수 없어요." />;
   const details = event.data.details;
@@ -63,8 +69,7 @@ const EventDetail = ({
         }}
       />
     );
-  if (categories.isPending)
-    return <ListSkeleton label="카테고리를 불러오고 있어요" />;
+  if (categories.isPending) return <EventDetailSkeleton />;
   if (categories.data.length === 0)
     return (
       <EmptyState message="카테고리가 없어요. 가정 설정에서 추가해 주세요." />

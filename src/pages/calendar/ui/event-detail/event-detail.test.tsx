@@ -143,7 +143,7 @@ describe("CAL-12 SCN-CAL-7 상세와 삭제 확인", () => {
   it("상세 로딩을 표시해요", () => {
     useEvent.mockReturnValue({ isPending: true, isError: false });
     renderDetail();
-    expect(screen.getByRole("status")).toHaveAccessibleName(
+    expect(screen.getByRole("group")).toHaveAccessibleName(
       "일정을 불러오고 있어요",
     );
   });
