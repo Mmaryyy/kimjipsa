@@ -13,7 +13,10 @@ describe("BOT-07/08 INV-11 CART-11 worker contract", () => {
         "Return kind=reply, awaitingAnswer=false, choices:[]",
     );
     expect(instructions).toContain(
-      "briefly explain available tasks: schedules, inventory and shopping lists",
+      'text "지원하지 않는 기능이에요. 저는 <supported tasks>을/를 도와드릴 수 있어요."',
+    );
+    expect(instructions).toContain(
+      "these supported tasks in Korean: 일정 등록·수정·삭제·조회, 재고 확인과 수량 변경, 장바구니 담기·체크·삭제.",
     );
     expect(instructions).toContain(
       "For an explicit web search request return kind=search",

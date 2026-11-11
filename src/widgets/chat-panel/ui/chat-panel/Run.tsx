@@ -29,7 +29,7 @@ export const ChatRunCaption = ({
   run?: Run;
   createdAt: string;
 }) => (
-  <span className="float-right mt-1 ml-2 inline-block whitespace-nowrap text-caption-sm text-muted-foreground">
+  <span className="mt-1 block text-right whitespace-nowrap text-caption-sm text-muted-foreground">
     {run && states[run.status] && (
       <span aria-label="요청 진행 상태">{states[run.status]} · </span>
     )}

@@ -67,7 +67,7 @@ export const bannerStyles = cva(
 export const buttonStyles = cva(
   [
     "inline-flex shrink-0 cursor-pointer items-center justify-center gap-1 rounded-sm px-3",
-    "whitespace-nowrap [word-break:keep-all] active:opacity-70 disabled:cursor-default",
+    "whitespace-nowrap [word-break:keep-all] active:opacity-70 disabled:cursor-default disabled:opacity-50",
     "disabled:[&_svg]:text-[var(--icon-tertiary)] kj-hit text-label",
   ],
   {
