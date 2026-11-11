@@ -16,6 +16,11 @@ describe("DEC-013 오류 모니터링 개인정보 제외", () => {
       extra: { attachment: secret },
       contexts: { private: { value: secret } },
       tags: { title: secret },
+      sdk: {
+        name: "sentry.javascript.nextjs",
+        version: "11.11.0",
+        settings: { infer_ip: "auto" },
+      },
       exception: {
         values: [
           {
@@ -42,6 +47,7 @@ describe("DEC-013 오류 모니터링 개인정보 제외", () => {
       /private@|secret-token|개인 일정/,
     );
     expect(result.tags?.environment).toBeUndefined();
+    expect(result.sdk?.settings).toEqual({ infer_ip: "never" });
     expect(result.exception?.values?.[0]).toMatchObject({
       type: "Error",
       value: "Application error",

@@ -84,6 +84,12 @@ export function sanitizeErrorEvent(
     event_id: event.event_id,
     timestamp: event.timestamp,
     platform: event.platform,
+    // sdk 를 빼면 Sentry 서버가 접속 IP로 위치를 추정해요.
+    sdk: event.sdk && {
+      name: event.sdk.name,
+      version: event.sdk.version,
+      settings: { infer_ip: "never" },
+    },
     level: "error",
     tags: {
       route: sanitizeErrorRoute(
