@@ -314,6 +314,13 @@ async function runConnected(config: GatewayConfig) {
           signal.throwIfAborted();
           if (images.length && ["add", "actions"].includes(result.kind))
             throw new Error("confirmation_required");
+          if (
+            context.kind === "chat" &&
+            images.length === 0 &&
+            result.actions.length > 0 &&
+            ["actions", "add", "proposal"].includes(result.kind)
+          )
+            result.kind = "action_proposal";
           await cloud("/api/agent/complete", { ...input, ...result });
           log("job_completed");
         } catch (error) {

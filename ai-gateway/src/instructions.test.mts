@@ -3,6 +3,22 @@ import { describe, expect, it } from "vitest";
 import { householdInstructions } from "./instructions.mts";
 const instructions = householdInstructions.replace(/\s+/g, " ");
 describe("BOT-07/08 INV-11 CART-11 worker contract", () => {
+  it("BOT-09 SCN-BOT-8 범위 밖 질문은 되묻지 않고 가능 기능을 안내해요", () => {
+    expect(instructions).toContain(
+      "For questions unrelated to household management (stocks, news, general knowledge, etc.) " +
+        'without an explicit web search request such as "검색해줘"',
+    );
+    expect(instructions).toContain(
+      "do not answer the topic, ask clarification questions, or search. " +
+        "Return kind=reply, awaitingAnswer=false, choices:[]",
+    );
+    expect(instructions).toContain(
+      "briefly explain available tasks: schedules, inventory and shopping lists",
+    );
+    expect(instructions).toContain(
+      "For an explicit web search request return kind=search",
+    );
+  });
   it("requires one confirmation for all mutations, including direct requests", () => {
     expect(instructions).toContain(
       "For ALL mutations return kind=action_proposal",
