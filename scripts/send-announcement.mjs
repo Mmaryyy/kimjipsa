@@ -1,5 +1,5 @@
 // 운영 공지를 푸시를 켠 모든 기기에 보낸다. 앱 안 알림 목록에는 남지 않는다.
-// 사용: yarn announce [--file announce.md] [--url /] [--at "2026-11-13 09:00"] [--send]
+// 사용: yarn announce [--file announce.md] [--url /] [--at "2026-11-13 09:00[:30]"] [--send]
 //       yarn announce --title "제목" --body "내용" ... (--title·--body 가 파일 값보다 우선)
 // --send 없이 실행하면 받을 기기 수만 보여 주고 보내지 않는다. --at 은 KST이며 그 시각까지 기다린다.
 import { readFile } from "node:fs/promises";
@@ -46,9 +46,14 @@ if (!values.url.startsWith("/") || values.url.startsWith("//"))
 
 let sendAt = Date.now();
 if (values.at) {
-  const match = values.at.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})$/);
-  if (!match) fail('--at 은 "YYYY-MM-DD HH:mm"(KST) 형식이에요.');
-  sendAt = Date.parse(`${match[1]}T${match[2]}:00+09:00`);
+  const match = values.at.match(
+    /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})(:\d{2})?$/,
+  );
+  if (!match)
+    fail(
+      '--at 은 "YYYY-MM-DD HH:mm" 또는 "YYYY-MM-DD HH:mm:ss"(KST) 형식이에요.',
+    );
+  sendAt = Date.parse(`${match[1]}T${match[2]}${match[3] ?? ":00"}+09:00`);
   if (Number.isNaN(sendAt)) fail("--at 날짜를 읽을 수 없어요.");
   if (sendAt <= Date.now()) fail("--at 이 이미 지난 시각이에요.");
 }
