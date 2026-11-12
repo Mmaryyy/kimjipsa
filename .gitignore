@@ -13,3 +13,6 @@ test-results/
 .playwright-mcp/
 .DS_Store
 supabase/.temp/
+
+# 운영 공지 초안 (yarn announce, docs/04-planning/ANNOUNCEMENT.md)
+/announce.md

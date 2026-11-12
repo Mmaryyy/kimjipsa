@@ -39,6 +39,7 @@
 | `04-planning/`     | `ROADMAP.md`              | 단계, 선후 관계, 선행 결정, 완료 조건                                                           |
 |                    | `DECISIONS_REQUIRED.md`   | 사용자 결정이 필요한 사항(DEC-001~)                                                             |
 |                    | `BACKUP_PLAN.md`          | 맥미니 주간 DB 백업·설치·복구 절차(운영 적용 대기, DEC-013)                                                     |
+|                    | `ANNOUNCEMENT.md`         | 운영 공지 푸시 보내는 법(`yarn announce`, 파일·예약 발송)                                        |
 
 AI 스킬은 저장소 루트 `.agents/skills/`에 있습니다(`.claude/skills`는 심볼릭 링크).
 

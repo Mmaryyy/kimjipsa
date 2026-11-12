@@ -12,12 +12,15 @@ self.addEventListener("push", (event) => {
     /* Show a safe fallback. */
   }
   event.waitUntil(
-    self.registration.showNotification("일정 알림", {
-      body:
-        typeof payload.body === "string" ? payload.body : "새 알림이 있어요.",
-      tag: payload.id,
-      data: { url: payload.url },
-    }),
+    self.registration.showNotification(
+      typeof payload.title === "string" ? payload.title : "일정 알림",
+      {
+        body:
+          typeof payload.body === "string" ? payload.body : "새 알림이 있어요.",
+        tag: payload.id,
+        data: { url: payload.url },
+      },
+    ),
   );
 });
 self.addEventListener("notificationclick", (event) => {
