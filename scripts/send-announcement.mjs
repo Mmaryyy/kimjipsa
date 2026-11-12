@@ -84,7 +84,21 @@ const preview = await loadSubscriptions();
 const users = new Set(preview.map((row) => row.user_id)).size;
 console.log(`제목: ${title}\n내용: ${body}\n열 경로: ${values.url}`);
 console.log(`받을 기기 ${preview.length}대 (사용자 ${users}명)`);
-console.log(`발송 시각: ${values.at ? kst(sendAt) : "즉시"}`);
+// 날짜 실수(오늘 대신 내일 등)가 바로 보이게 남은 시간을 같이 찍는다.
+function remaining(ms) {
+  const minutes = Math.ceil(ms / 60_000);
+  const days = Math.floor(minutes / 1440);
+  const hours = Math.floor((minutes % 1440) / 60);
+  const parts = [
+    days && `${days}일`,
+    hours && `${hours}시간`,
+    minutes % 60 && `${minutes % 60}분`,
+  ].filter(Boolean);
+  return parts.join(" ") || "1분 안";
+}
+console.log(
+  `발송 시각: ${values.at ? `${kst(sendAt)} (지금부터 ${remaining(sendAt - Date.now())} 뒤)` : "즉시"}`,
+);
 if (!values.send) {
   console.log("미리보기만 했어요. 보내려면 --send 를 붙여 주세요.");
   process.exit(0);
