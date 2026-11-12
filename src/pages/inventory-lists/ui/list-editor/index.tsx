@@ -12,13 +12,13 @@ import {
   type InventoryListKind,
 } from "@/entities/inventory-item";
 import {
-  Sheet,
+  FormSheet,
   TextButton,
   FormFieldRow,
   Input,
   Switch,
   Text,
-  ConfirmDialog,
+  useConfirm,
 } from "@/shared/ui";
 interface Props {
   kind: InventoryListKind;
@@ -41,8 +41,7 @@ const InventoryListEditor = ({
         (entry.icon_kind === "lucide" ? entry.icon_value : null))
       : null,
   );
-  const [deleting, setDeleting] = useState(false);
-  const [closing, setClosing] = useState(false);
+  const confirm = useConfirm();
   const {
     register,
     control,
@@ -85,49 +84,42 @@ const InventoryListEditor = ({
       });
     }
   });
-  const close = () => {
-    if (pending) return;
-    if (isDirty) setClosing(true);
-    else onClose();
-  };
-  const remove = async () => {
-    try {
-      await actions.meta.mutateAsync({ action: "delete", kind, id: entry?.id });
-      onNotify("목록에서 삭제했어요.");
-      onClose();
-    } catch (error) {
-      setDeleting(false);
-      setError("root", {
-        message: error instanceof Error ? error.message : "삭제하지 못했어요.",
-      });
-    }
-  };
+
+  const remove = () =>
+    confirm({
+      targetName: entry?.name ?? "",
+      title: "목록을 삭제할까요?",
+      description:
+        kind === "units"
+          ? "사용 중인 단위는 품목의 단위를 먼저 바꿔야 해요."
+          : kind === "categories"
+            ? "품목은 기타 카테고리로 옮겨져요."
+            : "품목은 유지되며 보관 장소만 비워져요.",
+      onConfirm: async () => {
+        await actions.meta.mutateAsync({
+          action: "delete",
+          kind,
+          id: entry?.id,
+        });
+        onNotify("목록에서 삭제했어요.");
+        onClose();
+      },
+    });
   return (
-    <>
-      <Sheet
-        open
-        onOpenChange={(open) => {
-          if (!open) close();
-        }}
-        title={entry ? "목록 수정" : "목록 추가"}
-        description="가정에서 함께 사용하는 목록이에요."
-        odId="lists-sheet"
-        leadingAction={() => (
-          <TextButton disabled={pending} onClick={close}>
-            취소
-          </TextButton>
-        )}
-        action={
-          <TextButton
-            data-od-id="lists-save"
-            disabled={pending}
-            onClick={() => void save()}
-          >
-            저장
-          </TextButton>
-        }
-      >
-        <form onSubmit={save}>
+    <FormSheet
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      title={entry ? "목록 수정" : "목록 추가"}
+      description="가정에서 함께 사용하는 목록이에요."
+      odId="lists-sheet"
+      dirty={isDirty}
+      pending={pending}
+      submitOdId="lists-save"
+    >
+      {(formId) => (
+        <form id={formId} onSubmit={save}>
           <FormFieldRow
             label="이름"
             htmlFor="lists-name"
@@ -232,44 +224,14 @@ const InventoryListEditor = ({
               tone="danger"
               data-od-id="lists-delete"
               disabled={pending}
-              onClick={() => setDeleting(true)}
+              onClick={() => void remove()}
             >
               삭제
             </TextButton>
           )}
         </form>
-      </Sheet>
-      <ConfirmDialog
-        open={deleting}
-        onOpenChange={setDeleting}
-        targetName={entry?.name ?? ""}
-        title="목록을 삭제할까요?"
-        description={
-          kind === "units"
-            ? "사용 중인 단위는 품목의 단위를 먼저 바꿔야 해요."
-            : kind === "categories"
-              ? "품목은 기타 카테고리로 옮겨져요."
-              : "품목은 유지되며 보관 장소만 비워져요."
-        }
-        pending={pending}
-        onConfirm={() => void remove()}
-      />
-      <ConfirmDialog
-        open={closing}
-        onOpenChange={setClosing}
-        targetName={name || "목록"}
-        title="변경 내용을 저장할까요?"
-        description="저장하지 않은 변경 내용이 있어요."
-        confirmLabel="저장"
-        cancelLabel="계속 편집"
-        destructive={false}
-        secondaryAction={{ label: "저장 안 함", onClick: onClose }}
-        onConfirm={() => {
-          setClosing(false);
-          void save();
-        }}
-      />
-    </>
+      )}
+    </FormSheet>
   );
 };
 export default InventoryListEditor;

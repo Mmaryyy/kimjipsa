@@ -1,26 +1,14 @@
 import type { Ref } from "react";
 import { LoaderCircle } from "lucide-react";
-import { CartDuplicateDialog } from "@/features/cart-add";
-import { Button, Input, ConfirmDialog } from "@/shared/ui";
+import { Button, Input } from "@/shared/ui";
 import type { useCartQuickAdd } from "../../model/use-cart-quick-add";
 interface Props {
   inputRef: Ref<HTMLInputElement>;
   quickAdd: ReturnType<typeof useCartQuickAdd>;
   pending: boolean;
-  offline: boolean;
 }
-const CartQuickAddForm = ({ inputRef, quickAdd, pending, offline }: Props) => {
-  const {
-    name,
-    onNameChange,
-    add,
-    unknownUnit,
-    unitError,
-    resolvingUnit,
-    onQuickAdd,
-    onResolveUnit,
-    onUnitOpenChange,
-  } = quickAdd;
+const CartQuickAddForm = ({ inputRef, quickAdd, pending }: Props) => {
+  const { name, onNameChange, add, onQuickAdd } = quickAdd;
   return (
     <>
       <form
@@ -67,42 +55,11 @@ const CartQuickAddForm = ({ inputRef, quickAdd, pending, offline }: Props) => {
       <p id="cart-add-status" role="status" className="sr-only">
         {add.pending ? "카테고리를 확인하고 장바구니에 담고 있어요." : ""}
       </p>
-      {add.error && !add.duplicate && (
+      {add.error && (
         <p role="alert" className="mt-2 text-caption text-error-text">
           {add.error}
         </p>
       )}
-      <ConfirmDialog
-        open={unknownUnit !== null}
-        onOpenChange={onUnitOpenChange}
-        title={`'${unknownUnit?.name ?? ""}' 단위를 추가할까요?`}
-        description="추가하지 않으면 기본 단위 ‘개’로 담아요."
-        confirmLabel="단위 추가"
-        cancelLabel="취소"
-        secondaryAction={{
-          label: "개로 담기",
-          onClick: () => void onResolveUnit(false),
-        }}
-        destructive={false}
-        pending={resolvingUnit || pending}
-        onConfirm={() => void onResolveUnit(true)}
-      >
-        {unitError && (
-          <p role="alert" className="text-caption text-error-text">
-            {unitError}
-          </p>
-        )}
-      </ConfirmDialog>
-      <CartDuplicateDialog
-        duplicate={add.duplicate}
-        pending={add.pending}
-        disabled={offline}
-        error={add.error}
-        onChoose={(input, choice) =>
-          void add.onAdd(input, choice, add.duplicate?.autoCategory)
-        }
-        onClose={() => add.setDuplicate(null)}
-      />
     </>
   );
 };

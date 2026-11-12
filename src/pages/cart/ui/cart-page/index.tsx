@@ -9,7 +9,6 @@ import { inventoryListPath, inventoryRoutes } from "@/shared/config";
 import {
   Banner,
   Button,
-  ConfirmDialog,
   EmptyState,
   ErrorState,
   PageHeader,
@@ -59,7 +58,6 @@ const CartPage = () => {
           inputRef={inputRef}
           quickAdd={quickAdd}
           pending={actions.pending}
-          offline={cart.offline}
         />
         <CartFrequentItems
           frequent={frequent}
@@ -178,14 +176,7 @@ const CartPage = () => {
             onClose={() => actions.onEdit(null)}
           />
         )}
-        <ConfirmDialog
-          open={actions.clear !== null}
-          onOpenChange={actions.onClearOpenChange}
-          title={`체크한 항목 ${actions.clear?.ids.length ?? 0}개를 삭제할까요?`}
-          description="재고에는 반영되지 않아요."
-          pending={actions.busy}
-          onConfirm={actions.onConfirmClear}
-        />
+
         <Toast
           open={!!actions.toastMessage}
           onOpenChange={actions.onToastOpenChange}

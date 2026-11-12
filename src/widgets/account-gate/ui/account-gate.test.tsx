@@ -1,7 +1,17 @@
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { ConfirmTestProvider as ConfirmProvider } from "@/shared/ui/confirm-test-provider";
+import type { ReactElement } from "react";
+import {
+  act,
+  cleanup,
+  render as renderWithoutConfirm,
+  screen,
+} from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AccountGate } from "./account-gate";
+
+const render = (ui: ReactElement) =>
+  renderWithoutConfirm(ui, { wrapper: ConfirmProvider });
 
 const { prepare, route, account } = vi.hoisted(() => ({
   prepare: vi.fn(),

@@ -1,16 +1,21 @@
+import { ConfirmTestProvider as ConfirmProvider } from "@/shared/ui/confirm-test-provider";
+import type { ReactElement } from "react";
 import { eventCategoryColors } from "@/entities/event";
 import type * as EventModule from "@/entities/event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   cleanup,
   fireEvent,
-  render,
+  render as renderWithoutConfirm,
   screen,
   waitFor,
   within,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import EventDetail from "./";
+
+const render = (ui: ReactElement) =>
+  renderWithoutConfirm(ui, { wrapper: ConfirmProvider });
 const { useEvent, useEventCategories, deleteEvent } = vi.hoisted(() => ({
   useEvent: vi.fn(),
   useEventCategories: vi.fn(),
@@ -139,6 +144,50 @@ describe("CAL-12 SCN-CAL-7 상세와 삭제 확인", () => {
     await waitFor(() =>
       expect(deleteEvent).toHaveBeenCalledWith("event", undefined),
     );
+  });
+  it.each(["single", "following"] as const)(
+    "CAL-14 SCN-CAL-7 반복 일정 삭제 범위 %s를 유지해요",
+    async (scope) => {
+      useEvent.mockReturnValue({
+        ...useEvent(),
+        data: { ...useEvent().data, recurrence: "weekly" },
+      });
+      renderDetail();
+      fireEvent.click(screen.getByRole("button", { name: "일정 삭제" }));
+      const dialog = within(screen.getByRole("alertdialog"));
+      fireEvent.click(
+        dialog.getByRole("button", {
+          name: scope === "single" ? "이 일정만" : "이후 모든 일정",
+        }),
+      );
+      await waitFor(() =>
+        expect(deleteEvent).toHaveBeenCalledWith("event", scope),
+      );
+    },
+  );
+  it("CAL-12 SCN-CAL-7 삭제 실패는 확인창 안에서 다시 시도할 수 있어요", async () => {
+    deleteEvent.mockRejectedValueOnce(new Error("삭제 실패"));
+    renderDetail();
+    fireEvent.click(screen.getByRole("button", { name: "일정 삭제" }));
+    fireEvent.click(
+      within(screen.getByRole("alertdialog")).getByRole("button", {
+        name: "삭제하기",
+      }),
+    );
+    await waitFor(() =>
+      expect(
+        within(screen.getByRole("alertdialog")).getByRole("alert"),
+      ).toHaveTextContent("삭제 실패"),
+    );
+    fireEvent.click(
+      within(screen.getByRole("alertdialog")).getByRole("button", {
+        name: "삭제하기",
+      }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
+    );
+    expect(deleteEvent).toHaveBeenCalledTimes(2);
   });
   it("상세 로딩을 표시해요", () => {
     useEvent.mockReturnValue({ isPending: true, isError: false });

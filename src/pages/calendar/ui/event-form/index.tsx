@@ -1,6 +1,6 @@
 "use client";
 import { useMediaQuery } from "@/shared/lib";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, type FormEvent } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -12,7 +12,7 @@ import {
 } from "@/entities/event";
 import {
   Button,
-  ConfirmDialog,
+  useConfirm,
   CategoryDot,
   FormFieldRow,
   GroupLabel,
@@ -68,8 +68,7 @@ const EventForm = ({
   initialDate?: string;
   onDirtyChange?: (dirty: boolean) => void;
 }) => {
-  const [pendingInput, setPendingInput] = useState<EventInput | null>(null);
-  const [savingScope, setSavingScope] = useState(false);
+  const confirm = useConfirm();
   const coarse = useMediaQuery("(pointer: coarse)");
   const { onSave } = useEventEditor(event?.id, onSaved);
   const {
@@ -129,22 +128,29 @@ const EventForm = ({
   );
   const onSubmit = useCallback(
     async (input: EventInput) => {
-      if (event?.recurrence) setPendingInput(input);
-      else await persist(input);
-    },
-    [event?.recurrence, persist],
-  );
-  const onScopeSave = useCallback(
-    async (scope: "single" | "following") => {
-      if (!pendingInput || savingScope) return;
-      setSavingScope(true);
-      try {
-        if (await persist({ ...pendingInput, scope })) setPendingInput(null);
-      } finally {
-        setSavingScope(false);
+      if (!event?.recurrence) {
+        await persist(input);
+        return;
       }
+      await confirm({
+        title: "어떤 일정을 수정할까요?",
+        description:
+          input.visibility !== event.visibility
+            ? "공개 범위 변경은 시리즈 전체에 적용돼요."
+            : "변경할 반복 일정의 범위를 선택해 주세요.",
+        destructive: false,
+        confirmLabel: "이후 모든 일정",
+        onConfirm: () => onSave({ ...input, scope: "following" }),
+        secondaryAction:
+          input.recurrence === event.recurrence && input.kind === "event"
+            ? {
+                label: "이 일정만",
+                onClick: () => onSave({ ...input, scope: "single" }),
+              }
+            : undefined,
+      });
     },
-    [pendingInput, savingScope, persist],
+    [event, persist, confirm, onSave],
   );
   const onFormSubmit = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
@@ -408,36 +414,6 @@ const EventForm = ({
           {isSubmitting ? "저장하고 있어요" : "저장하기"}
         </Button>
       )}
-      <ConfirmDialog
-        open={pendingInput !== null}
-        onOpenChange={(open) => {
-          if (!open && !savingScope) setPendingInput(null);
-        }}
-        title="어떤 일정을 수정할까요?"
-        description={
-          errors.root?.message ??
-          (pendingInput?.visibility !== event?.visibility
-            ? "공개 범위 변경은 시리즈 전체에 적용돼요."
-            : "변경할 반복 일정의 범위를 선택해 주세요.")
-        }
-        destructive={false}
-        pending={savingScope}
-        confirmLabel="이후 모든 일정"
-        onConfirm={() => {
-          void onScopeSave("following");
-        }}
-        secondaryAction={
-          pendingInput?.recurrence === event?.recurrence &&
-          pendingInput?.kind === "event"
-            ? {
-                label: "이 일정만",
-                onClick: () => {
-                  void onScopeSave("single");
-                },
-              }
-            : undefined
-        }
-      />
     </form>
   );
 };

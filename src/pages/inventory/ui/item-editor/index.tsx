@@ -12,13 +12,13 @@ import {
   type InventoryMeta,
 } from "@/entities/inventory-item";
 import {
-  Sheet,
+  FormSheet,
   TextButton,
   Input,
   FormFieldRow,
   GroupLabel,
   SegmentedControl,
-  ConfirmDialog,
+  useConfirm,
   Text,
   Button,
 } from "@/shared/ui";
@@ -45,8 +45,7 @@ const InventoryItemEditor = ({
   const actions = useInventoryActions();
   const [editing, setEditing] = useState(!item);
   const [mergeId, setMergeId] = useState<string | null>(null);
-  const [closing, setClosing] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const confirm = useConfirm();
   const [separateName, setSeparateName] = useState<string | null>(null);
   const defaults: InventoryInput = item ?? {
     name: initialName,
@@ -88,11 +87,7 @@ const InventoryItemEditor = ({
       : candidates.find((candidate) => candidate.id === mergeId);
   const needsDecision = similar.length > 0 && separateName !== name;
   const pending = actions.save.isPending || actions.change.isPending;
-  const close = () => {
-    if (pending) return;
-    if (isDirty) setClosing(true);
-    else onClose();
-  };
+
   const save = handleSubmit(async (input) => {
     if (needsDecision) {
       setError("name", {
@@ -146,19 +141,18 @@ const InventoryItemEditor = ({
       });
     }
   });
-  const remove = async () => {
-    if (!item) return;
-    try {
-      await actions.save.mutateAsync({ action: "delete", id: item.id });
-      onNotify("품목을 삭제했어요.");
-      onClose();
-    } catch (error) {
-      setDeleting(false);
-      setError("root", {
-        message: error instanceof Error ? error.message : "삭제하지 못했어요.",
-      });
-    }
-  };
+  const remove = () =>
+    confirm({
+      targetName: item?.name ?? "",
+      title: "품목을 삭제할까요?",
+      description: "삭제한 품목은 되돌릴 수 없어요.",
+      onConfirm: async () => {
+        if (!item) return;
+        await actions.save.mutateAsync({ action: "delete", id: item.id });
+        onNotify("품목을 삭제했어요.");
+        onClose();
+      },
+    });
   const usedUp = async () => {
     if (!item) return;
     try {
@@ -192,312 +186,279 @@ const InventoryItemEditor = ({
     },
   ] as const;
   return (
-    <>
-      <Sheet
-        open
-        onOpenChange={(open) => {
-          if (!open) close();
-        }}
-        title={item ? (editing ? "품목 수정" : "품목") : "새 품목"}
-        description={
-          editing
-            ? "품목 이름과 관리 방법을 입력해 주세요."
-            : "등록한 품목의 정보예요."
-        }
-        odId={item ? "sheet-item-detail" : "sheet-new-item"}
-        leadingAction={
-          editing
-            ? () => (
-                <TextButton
-                  disabled={pending}
-                  data-od-id={item ? undefined : "new-item-cancel"}
-                  onClick={close}
-                >
-                  취소
-                </TextButton>
-              )
-            : undefined
-        }
-        action={
-          <TextButton
-            disabled={pending}
-            data-od-id={item ? "item-done" : "new-item-save"}
-            onClick={() => (editing ? void save() : onClose())}
-          >
-            {pending ? "저장 중" : item ? "완료" : "추가"}
-          </TextButton>
-        }
-      >
-        {item && !editing ? (
-          <InventoryItemDetails
-            item={item}
-            meta={meta}
-            pending={pending}
-            onEdit={() => setEditing(true)}
-            onUsedUp={() => void usedUp()}
-            onDelete={() => setDeleting(true)}
-          />
-        ) : (
-          <form onSubmit={save} className="grid gap-1">
-            <FormFieldRow
-              label="품목 이름"
-              htmlFor="inventory-name"
-              invalid={!!errors.name}
-              error={errors.name?.message}
-            >
-              {(props) => (
-                <Input
-                  {...props}
-                  {...register("name")}
-                  data-od-id="n-name"
-                  autoComplete="off"
-                  list="inventory-names"
-                />
-              )}
-            </FormFieldRow>
-            <datalist id="inventory-names">
-              {similar.map((candidate) => (
-                <option key={candidate.id} value={candidate.name} />
-              ))}
-            </datalist>
-            {needsDecision && (
-              <div
-                data-od-id="n-similar"
-                className="my-3 bg-muted p-3 text-body-sm"
-              >
-                <p>
-                  {exact.length > 0 ? "같은" : "비슷한"} 이름의 품목이 있어요.
-                  기존 품목에 더할까요?
-                </p>
-                {candidates.length > 1 && (
-                  <select
-                    aria-label="더할 품목 선택"
-                    value={mergeTarget?.id ?? ""}
-                    onChange={(event) => setMergeId(event.target.value)}
-                  >
-                    <option value="">품목 선택</option>
-                    {candidates.map((candidate) => (
-                      <option key={candidate.id} value={candidate.id}>
-                        {candidate.name} ·{" "}
-                        {meta.locations.find(
-                          (entry) => entry.id === candidate.location_id,
-                        )?.name ?? "보관 장소 없음"}{" "}
-                        · {candidate.quantity}
-                        {meta.units.find(
-                          (entry) => entry.id === candidate.unit_id,
-                        )?.name ?? ""}
-                      </option>
-                    ))}
-                  </select>
-                )}
-                {mergeTarget && <p>‘{mergeTarget.name}’에 더해요.</p>}
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    disabled={pending || !mergeTarget}
-                    data-od-id="similar-merge"
-                    aria-disabled={!mergeTarget}
-                    onClick={() => void merge()}
-                  >
-                    기존 품목에 더하기
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="gray"
-                    data-od-id="similar-new"
-                    onClick={() => setSeparateName(name)}
-                  >
-                    새로 등록
-                  </Button>
-                </div>
-              </div>
-            )}
-            <GroupLabel>관리 방식</GroupLabel>
-            <Controller
-              control={control}
-              name="mode"
-              render={({ field }) => (
-                <SegmentedControl
-                  odId="n-mode"
-                  label="관리 방식"
-                  options={[
-                    { value: "quantity", label: "정확한 수량" },
-                    { value: "status", label: "상태로만" },
-                  ]}
-                  value={field.value}
-                  onValueChange={field.onChange}
-                />
-              )}
+    <FormSheet
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      title={item ? (editing ? "품목 수정" : "품목") : "새 품목"}
+      description={
+        editing
+          ? "품목 이름과 관리 방법을 입력해 주세요."
+          : "등록한 품목의 정보예요."
+      }
+      odId={item ? "sheet-item-detail" : "sheet-new-item"}
+      dirty={isDirty}
+      pending={pending}
+      editable={editing}
+      cancelOdId={item ? undefined : "new-item-cancel"}
+      submitOdId={item ? "item-done" : "new-item-save"}
+      submitLabel={pending ? "저장 중" : item ? "완료" : "추가"}
+      action={
+        <TextButton disabled={pending} data-od-id="item-done" onClick={onClose}>
+          완료
+        </TextButton>
+      }
+    >
+      {(formId) => (
+        <>
+          {item && !editing ? (
+            <InventoryItemDetails
+              item={item}
+              meta={meta}
+              pending={pending}
+              onEdit={() => setEditing(true)}
+              onUsedUp={() => void usedUp()}
+              onDelete={() => void remove()}
             />
-            {mode === "quantity" ? (
-              <>
-                <FormFieldRow
-                  label="수량"
-                  htmlFor="inventory-quantity"
-                  invalid={!!errors.quantity}
-                  error={errors.quantity?.message}
+          ) : (
+            <form id={formId} onSubmit={save} className="grid gap-1">
+              <FormFieldRow
+                label="품목 이름"
+                htmlFor="inventory-name"
+                invalid={!!errors.name}
+                error={errors.name?.message}
+              >
+                {(props) => (
+                  <Input
+                    {...props}
+                    {...register("name")}
+                    data-od-id="n-name"
+                    autoComplete="off"
+                    list="inventory-names"
+                  />
+                )}
+              </FormFieldRow>
+              <datalist id="inventory-names">
+                {similar.map((candidate) => (
+                  <option key={candidate.id} value={candidate.name} />
+                ))}
+              </datalist>
+              {needsDecision && (
+                <div
+                  data-od-id="n-similar"
+                  className="my-3 bg-muted p-3 text-body-sm"
                 >
-                  {(props) => (
-                    <Input
-                      {...props}
-                      type="number"
-                      min="0"
-                      step="any"
-                      {...register("quantity", { valueAsNumber: true })}
-                    />
+                  <p>
+                    {exact.length > 0 ? "같은" : "비슷한"} 이름의 품목이 있어요.
+                    기존 품목에 더할까요?
+                  </p>
+                  {candidates.length > 1 && (
+                    <select
+                      aria-label="더할 품목 선택"
+                      value={mergeTarget?.id ?? ""}
+                      onChange={(event) => setMergeId(event.target.value)}
+                    >
+                      <option value="">품목 선택</option>
+                      {candidates.map((candidate) => (
+                        <option key={candidate.id} value={candidate.id}>
+                          {candidate.name} ·{" "}
+                          {meta.locations.find(
+                            (entry) => entry.id === candidate.location_id,
+                          )?.name ?? "보관 장소 없음"}{" "}
+                          · {candidate.quantity}
+                          {meta.units.find(
+                            (entry) => entry.id === candidate.unit_id,
+                          )?.name ?? ""}
+                        </option>
+                      ))}
+                    </select>
                   )}
-                </FormFieldRow>
-                <FormFieldRow
-                  label="최소 수량"
-                  htmlFor="inventory-min"
-                  invalid={!!errors.min_quantity}
-                  error={errors.min_quantity?.message}
-                >
-                  {(props) => (
-                    <Input
-                      {...props}
-                      type="number"
-                      min="0"
-                      step="any"
-                      {...register("min_quantity", {
-                        setValueAs: (value: string) =>
-                          value === "" ? null : Number(value),
-                      })}
-                      placeholder="선택"
-                    />
-                  )}
-                </FormFieldRow>
-              </>
-            ) : (
+                  {mergeTarget && <p>‘{mergeTarget.name}’에 더해요.</p>}
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      disabled={pending || !mergeTarget}
+                      data-od-id="similar-merge"
+                      aria-disabled={!mergeTarget}
+                      onClick={() => void merge()}
+                    >
+                      기존 품목에 더하기
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="gray"
+                      data-od-id="similar-new"
+                      onClick={() => setSeparateName(name)}
+                    >
+                      새로 등록
+                    </Button>
+                  </div>
+                </div>
+              )}
+              <GroupLabel>관리 방식</GroupLabel>
               <Controller
                 control={control}
-                name="status"
+                name="mode"
                 render={({ field }) => (
                   <SegmentedControl
-                    label="상태"
-                    options={inventoryStatusOptions}
+                    odId="n-mode"
+                    label="관리 방식"
+                    options={[
+                      { value: "quantity", label: "정확한 수량" },
+                      { value: "status", label: "상태로만" },
+                    ]}
                     value={field.value}
                     onValueChange={field.onChange}
                   />
                 )}
               />
-            )}
-            {options
-              .filter(
-                (option) => option.field !== "unit_id" || mode === "quantity",
-              )
-              .map(({ field, label, entries, odId }) => (
-                <FormFieldRow
-                  key={field}
-                  label={label}
-                  htmlFor={`inventory-${field}`}
-                  invalid={!!errors[field]}
-                  error={errors[field]?.message}
-                >
-                  {(props) => (
-                    <select
-                      {...props}
-                      data-od-id={odId}
-                      {...register(field, {
-                        setValueAs: (value: string) => value || null,
-                      })}
-                    >
-                      <option value="">선택 안 함</option>
-                      {entries.map((entry) => (
-                        <option
-                          key={entry.id}
-                          value={entry.id}
-                          disabled={field === "location_id" && !entry.enabled}
-                        >
-                          {entry.name}
-                        </option>
-                      ))}
-                    </select>
+              {mode === "quantity" ? (
+                <>
+                  <FormFieldRow
+                    label="수량"
+                    htmlFor="inventory-quantity"
+                    invalid={!!errors.quantity}
+                    error={errors.quantity?.message}
+                  >
+                    {(props) => (
+                      <Input
+                        {...props}
+                        type="number"
+                        min="0"
+                        step="any"
+                        {...register("quantity", { valueAsNumber: true })}
+                      />
+                    )}
+                  </FormFieldRow>
+                  <FormFieldRow
+                    label="최소 수량"
+                    htmlFor="inventory-min"
+                    invalid={!!errors.min_quantity}
+                    error={errors.min_quantity?.message}
+                  >
+                    {(props) => (
+                      <Input
+                        {...props}
+                        type="number"
+                        min="0"
+                        step="any"
+                        {...register("min_quantity", {
+                          setValueAs: (value: string) =>
+                            value === "" ? null : Number(value),
+                        })}
+                        placeholder="선택"
+                      />
+                    )}
+                  </FormFieldRow>
+                </>
+              ) : (
+                <Controller
+                  control={control}
+                  name="status"
+                  render={({ field }) => (
+                    <SegmentedControl
+                      label="상태"
+                      options={inventoryStatusOptions}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    />
                   )}
-                </FormFieldRow>
-              ))}
-            <FormFieldRow
-              label="유통기한"
-              htmlFor="inventory-expiry"
-              invalid={!!errors.expires_on}
-              error={errors.expires_on?.message}
-            >
-              {(props) => (
-                <DateTimeInput
-                  controlProps={props}
-                  label="유통기한"
-                  dateOnly
-                  singleDate
-                  pickerOdId="n-expiry"
-                  range={{
-                    startDate: expiry ?? "",
-                    endDate: expiry ?? "",
-                    startTime: "",
-                    endTime: "",
-                  }}
-                  dateInputProps={{
-                    "data-od-id": "n-expiry",
-                    value: expiry ?? "",
-                    onChange: (event) =>
-                      setValue("expires_on", event.target.value || null, {
-                        shouldDirty: true,
-                      }),
-                  }}
-                  onConfirm={(range) =>
-                    setValue("expires_on", range.startDate || null, {
-                      shouldDirty: true,
-                    })
-                  }
                 />
               )}
-            </FormFieldRow>
-            {expiry && (
-              <TextButton
-                onClick={() =>
-                  setValue("expires_on", null, { shouldDirty: true })
-                }
+              {options
+                .filter(
+                  (option) => option.field !== "unit_id" || mode === "quantity",
+                )
+                .map(({ field, label, entries, odId }) => (
+                  <FormFieldRow
+                    key={field}
+                    label={label}
+                    htmlFor={`inventory-${field}`}
+                    invalid={!!errors[field]}
+                    error={errors[field]?.message}
+                  >
+                    {(props) => (
+                      <select
+                        {...props}
+                        data-od-id={odId}
+                        {...register(field, {
+                          setValueAs: (value: string) => value || null,
+                        })}
+                      >
+                        <option value="">선택 안 함</option>
+                        {entries.map((entry) => (
+                          <option
+                            key={entry.id}
+                            value={entry.id}
+                            disabled={field === "location_id" && !entry.enabled}
+                          >
+                            {entry.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </FormFieldRow>
+                ))}
+              <FormFieldRow
+                label="유통기한"
+                htmlFor="inventory-expiry"
+                invalid={!!errors.expires_on}
+                error={errors.expires_on?.message}
               >
-                유통기한 지우기
-              </TextButton>
-            )}
-          </form>
-        )}
-        {errors.root && (
-          <Text
-            as="p"
-            role="alert"
-            variant="caption"
-            className="text-destructive"
-          >
-            {errors.root.message}
-          </Text>
-        )}
-      </Sheet>
-      <ConfirmDialog
-        open={deleting}
-        onOpenChange={setDeleting}
-        targetName={item?.name ?? ""}
-        title="품목을 삭제할까요?"
-        description="삭제한 품목은 되돌릴 수 없어요."
-        pending={pending}
-        onConfirm={() => void remove()}
-      />
-      <ConfirmDialog
-        open={closing}
-        onOpenChange={setClosing}
-        targetName={name || "새 품목"}
-        title="변경 내용을 저장할까요?"
-        description="저장하지 않은 변경 내용이 있어요."
-        confirmLabel="저장"
-        cancelLabel="계속 편집"
-        destructive={false}
-        secondaryAction={{ label: "저장 안 함", onClick: onClose }}
-        onConfirm={() => {
-          setClosing(false);
-          void save();
-        }}
-      />
-    </>
+                {(props) => (
+                  <DateTimeInput
+                    controlProps={props}
+                    label="유통기한"
+                    dateOnly
+                    singleDate
+                    pickerOdId="n-expiry"
+                    range={{
+                      startDate: expiry ?? "",
+                      endDate: expiry ?? "",
+                      startTime: "",
+                      endTime: "",
+                    }}
+                    dateInputProps={{
+                      "data-od-id": "n-expiry",
+                      value: expiry ?? "",
+                      onChange: (event) =>
+                        setValue("expires_on", event.target.value || null, {
+                          shouldDirty: true,
+                        }),
+                    }}
+                    onConfirm={(range) =>
+                      setValue("expires_on", range.startDate || null, {
+                        shouldDirty: true,
+                      })
+                    }
+                  />
+                )}
+              </FormFieldRow>
+              {expiry && (
+                <TextButton
+                  onClick={() =>
+                    setValue("expires_on", null, { shouldDirty: true })
+                  }
+                >
+                  유통기한 지우기
+                </TextButton>
+              )}
+            </form>
+          )}
+          {errors.root && (
+            <Text
+              as="p"
+              role="alert"
+              variant="caption"
+              className="text-destructive"
+            >
+              {errors.root.message}
+            </Text>
+          )}
+        </>
+      )}
+    </FormSheet>
   );
 };
 export default InventoryItemEditor;

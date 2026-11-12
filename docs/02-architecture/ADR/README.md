@@ -50,3 +50,5 @@
 - [0019. AI Elements 대화 화면](0019-ai-elements-chat.md) — CONFIRMED (2026-11-04)
 
 - [0020. 카테고리 직접 색 선택](0020-react-colorful-color-picker.md) — CONFIRMED (2026-11-09)
+
+- [0022. 폼 시트 컴포넌트와 전역 확인창](0022-form-sheet-and-global-confirm.md) — CONFIRMED (2026-11-12)

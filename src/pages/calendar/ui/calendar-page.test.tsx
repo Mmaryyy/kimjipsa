@@ -1,3 +1,5 @@
+import { ConfirmTestProvider as ConfirmProvider } from "@/shared/ui/confirm-test-provider";
+import type { ReactElement } from "react";
 vi.mock("@/widgets/calendar-view/ui/calendar-carousel", () => ({
   CalendarCarousel: ({
     date,
@@ -11,9 +13,17 @@ vi.mock("@/entities/holiday", () => ({
   useHolidays: () => ({ names: {}, isPending: false }),
 }));
 import type * as EventModule from "@/entities/event";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render as renderWithoutConfirm,
+  screen,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CalendarPage } from "./calendar-page";
+
+const render = (ui: ReactElement) =>
+  renderWithoutConfirm(ui, { wrapper: ConfirmProvider });
 const { useEvents, useEventCategories } = vi.hoisted(() => ({
   useEvents: vi.fn(),
   useEventCategories: vi.fn(),

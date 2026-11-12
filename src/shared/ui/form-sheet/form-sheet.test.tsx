@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -7,7 +8,8 @@ import {
   within,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { EventEditorSheet } from "./event-editor-sheet";
+import { FormSheet } from "@/shared/ui";
+import { ConfirmTestProvider as ConfirmProvider } from "../confirm-test-provider";
 import { DateTimeSheet } from "@/shared/ui/date-time-input";
 
 function Editor() {
@@ -15,38 +17,37 @@ function Editor() {
   const [dirty, setDirty] = useState(false);
   const [wheel, setWheel] = useState(false);
   return (
-    <EventEditorSheet
-      open={open}
-      onOpenChange={setOpen}
-      dirty={dirty}
-      showCloseButton
-      title="새 일정"
-      description="일정 입력"
-      leadingAction={(onOpenChange) => (
-        <button onClick={() => onOpenChange(false)}>취소</button>
-      )}
-    >
-      <input aria-label="제목" onChange={() => setDirty(true)} />
-      <button id="dates" onClick={() => setWheel(true)}>
-        날짜 선택
-      </button>
-      {wheel && (
-        <DateTimeSheet
-          range={{
-            startDate: "2026-10-21",
-            endDate: "2026-10-21",
-            startTime: "09:00",
-            endTime: "10:00",
-          }}
-          initialTab="end"
-          dateOnly={false}
-          singleDate={false}
-          onConfirm={() => setWheel(false)}
-          onOpenChange={setWheel}
-          onRestoreFocus={() => document.getElementById("dates")?.focus()}
-        />
-      )}
-    </EventEditorSheet>
+    <ConfirmProvider>
+      <FormSheet
+        open={open}
+        onOpenChange={setOpen}
+        dirty={dirty}
+        showCloseButton
+        title="새 일정"
+        description="일정 입력"
+      >
+        <input aria-label="제목" onChange={() => setDirty(true)} />
+        <button id="dates" onClick={() => setWheel(true)}>
+          날짜 선택
+        </button>
+        {wheel && (
+          <DateTimeSheet
+            range={{
+              startDate: "2026-10-21",
+              endDate: "2026-10-21",
+              startTime: "09:00",
+              endTime: "10:00",
+            }}
+            initialTab="end"
+            dateOnly={false}
+            singleDate={false}
+            onConfirm={() => setWheel(false)}
+            onOpenChange={setWheel}
+            onRestoreFocus={() => document.getElementById("dates")?.focus()}
+          />
+        )}
+      </FormSheet>
+    </ConfirmProvider>
   );
 }
 function pointer(coarse: boolean) {
@@ -89,6 +90,7 @@ describe("CAL-01 CAL-02 SCN-CAL-1 P5.5 일정 폼 오버레이", () => {
       fireEvent.click(screen.getByRole("button", { name: "취소" }));
       expect(screen.getByRole("alertdialog")).toBeVisible();
       fireEvent.click(screen.getByRole("button", { name: "계속 편집" }));
+      await act(async () => {});
       expect(screen.getByLabelText("제목")).toHaveValue("약속");
       fireEvent.click(screen.getByRole("button", { name: "취소" }));
       fireEvent.click(
@@ -159,4 +161,24 @@ describe("CAL-01 CAL-02 SCN-CAL-1 P5.5 일정 폼 오버레이", () => {
       screen.queryByRole("dialog", { name: "날짜와 시간 선택" }),
     ).not.toBeInTheDocument();
   });
+  it.each([true, false])(
+    "뒤로가기는 dirty %s 폼 위 날짜 시트만 닫아요",
+    async (dirty) => {
+      pointer(true);
+      render(<Editor />);
+      if (dirty)
+        fireEvent.change(screen.getByLabelText("제목"), {
+          target: { value: "약속" },
+        });
+      fireEvent.click(screen.getByRole("button", { name: "날짜 선택" }));
+      act(() => window.dispatchEvent(new PopStateEvent("popstate")));
+      await waitFor(() =>
+        expect(
+          screen.queryByRole("dialog", { name: "날짜와 시간 선택" }),
+        ).not.toBeInTheDocument(),
+      );
+      expect(screen.getByRole("dialog", { name: "새 일정" })).toBeVisible();
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    },
+  );
 });

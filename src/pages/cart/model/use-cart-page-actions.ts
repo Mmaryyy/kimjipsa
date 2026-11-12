@@ -5,6 +5,7 @@ import {
   useState,
   type ComponentProps,
 } from "react";
+import { useConfirm, useConfirmDisabled } from "@/shared/ui";
 import type { RestockSheet } from "@/features/cart-checkout";
 import {
   useCartActions,
@@ -23,10 +24,7 @@ export function useCartPageActions(
   const [checkout, setCheckout] = useState<CartItem[] | null>(null);
   const [batchPending, setBatchPending] = useState(false);
   const [editor, setEditor] = useState<CartItem | null>(null);
-  const [clear, setClear] = useState<{
-    action: "clear-checked";
-    ids: string[];
-  } | null>(null);
+  const confirm = useConfirm();
   const [checkoutChecks, setCheckoutChecks] = useState<string[]>([]);
   const [restockUndo, setRestockUndo] = useState<{
     token: string;
@@ -43,6 +41,7 @@ export function useCartPageActions(
   const checked = items.filter((item) => item.is_checked);
   const pending = cart.offline || !cart.data || !metaReady || batchPending;
   const busy = pending || action.isPending || action.pendingIds.length > 0;
+  const confirmDisabled = useConfirmDisabled(busy);
   useEffect(() => {
     if (!openedRow) return;
     const close = () => setOpenedRow(null);
@@ -85,7 +84,6 @@ export function useCartPageActions(
           targets.filter((item) => !item.is_checked).map((item) => item.id),
         );
         setCheckout(targets.map((item) => ({ ...item, is_checked: true })));
-        setClear(null);
       } catch (error) {
         const reason =
           error instanceof Error ? error.message : "다시 시도해 주세요.";
@@ -109,7 +107,6 @@ export function useCartPageActions(
           setRemoved(deleted);
           setMessage(`${deleted.name} 지웠어요`);
         }
-        setClear(null);
       } catch (reason) {
         setMessage(
           reason instanceof Error ? reason.message : "변경하지 못했어요.",
@@ -207,15 +204,19 @@ export function useCartPageActions(
     },
     [cart.syncedAt],
   );
-  const onClearOpenChange = useCallback((open: boolean) => {
-    if (!open) setClear(null);
-  }, []);
   const onClear = useCallback(() => {
-    setClear({ action: "clear-checked", ids: checked.map((item) => item.id) });
-  }, [checked]);
-  const onConfirmClear = useCallback(() => {
-    if (clear) void onWrite(clear);
-  }, [clear, onWrite]);
+    if (busy) return;
+    void confirm({
+      disabled: confirmDisabled,
+      title: `체크한 항목 ${checked.length}개를 삭제할까요?`,
+      description: "재고에는 반영되지 않아요.",
+      onConfirm: () =>
+        action.mutateAsync({
+          action: "clear-checked",
+          ids: checked.map((item) => item.id),
+        }),
+    });
+  }, [busy, checked, confirm, action, confirmDisabled]);
   return {
     items,
     checked,
@@ -232,10 +233,7 @@ export function useCartPageActions(
     onWrite,
     onCloseCheckout,
     onCheckoutDone,
-    clear,
     onClear,
-    onClearOpenChange,
-    onConfirmClear,
     toastMessage,
     toastAction,
     onToastOpenChange,

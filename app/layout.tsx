@@ -2,6 +2,7 @@ import "@/app/styles/globals.css";
 
 import type { Metadata, Viewport } from "next";
 import {
+  ConfirmProvider,
   QueryProvider,
   ServiceWorkerRegistration,
   ThemeColorSync,
@@ -77,7 +78,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body suppressHydrationWarning>
         <ToastProvider>
           <QueryProvider>
-            <AppLayout>{children}</AppLayout>
+            <ConfirmProvider>
+              <AppLayout>{children}</AppLayout>
+            </ConfirmProvider>
             <ServiceWorkerRegistration />
           </QueryProvider>
         </ToastProvider>

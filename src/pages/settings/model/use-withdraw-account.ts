@@ -16,7 +16,7 @@ export function useWithdrawAccount() {
       router.replace(accountRoutes.login);
     },
   });
-  const onWithdraw = useCallback(() => mutation.mutate(), [mutation]);
+  const onWithdraw = useCallback(() => mutation.mutateAsync(), [mutation]);
 
   return {
     onWithdraw,

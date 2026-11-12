@@ -23,7 +23,7 @@ export function useEventEditor(id: string | undefined, onSaved: () => void) {
   });
   const onDelete = useCallback(
     (scope?: "single" | "following") => {
-      if (id) remove.mutate(scope);
+      if (id) return remove.mutateAsync(scope);
     },
     [id, remove],
   );

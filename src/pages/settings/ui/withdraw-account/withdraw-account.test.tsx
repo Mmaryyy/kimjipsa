@@ -1,6 +1,17 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { ConfirmTestProvider as ConfirmProvider } from "@/shared/ui/confirm-test-provider";
+import type { ReactElement } from "react";
+import {
+  fireEvent,
+  render as renderWithoutConfirm,
+  screen,
+  within,
+  waitFor,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import WithdrawAccount from ".";
+
+const render = (ui: ReactElement) =>
+  renderWithoutConfirm(ui, { wrapper: ConfirmProvider });
 
 const state = vi.hoisted(() => ({
   onWithdraw: vi.fn(),
@@ -54,11 +65,22 @@ describe("ACC-15 SCN-ACC-6 탈퇴 확인", () => {
     expect(screen.getByRole("button", { name: "취소하기" })).toBeDisabled();
   });
 
-  it("실패 이유를 확인창에 보여 주고 다시 시도할 수 있어요", () => {
-    state.error = new Error("연결을 확인하고 다시 시도해 주세요.");
+  it("실패 이유를 확인창에 보여 주고 다시 시도할 수 있어요", async () => {
+    state.onWithdraw.mockRejectedValueOnce(
+      new Error("연결을 확인하고 다시 시도해 주세요."),
+    );
     render(<WithdrawAccount />);
     fireEvent.click(screen.getByRole("button", { name: "탈퇴하기" }));
-    expect(screen.getByRole("alert")).toHaveTextContent(state.error.message);
+    fireEvent.click(
+      within(screen.getByRole("alertdialog")).getByRole("button", {
+        name: "탈퇴하기",
+      }),
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "연결을 확인하고 다시 시도해 주세요.",
+      ),
+    );
     expect(
       within(screen.getByRole("alertdialog")).getByRole("button", {
         name: "탈퇴하기",

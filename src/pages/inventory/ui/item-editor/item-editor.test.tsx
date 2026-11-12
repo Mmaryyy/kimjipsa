@@ -1,5 +1,12 @@
+import { ConfirmTestProvider as ConfirmProvider } from "@/shared/ui/confirm-test-provider";
+import type { ReactElement } from "react";
 import { readFileSync } from "node:fs";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render as renderWithoutConfirm,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 const fixture: unknown = JSON.parse(
@@ -10,6 +17,9 @@ const defaults: unknown = JSON.parse(
 );
 import type { InventoryItem, InventoryMeta } from "@/entities/inventory-item";
 import InventoryItemEditor from ".";
+
+const render = (ui: ReactElement) =>
+  renderWithoutConfirm(ui, { wrapper: ConfirmProvider });
 const { save } = vi.hoisted(() => ({ save: vi.fn() }));
 vi.mock("@/entities/inventory-item", async (original) => ({
   ...(await original<object>()),

@@ -89,7 +89,7 @@ const InventoryPage = () => {
     setQuery(urlQuery);
   }, [urlQuery]);
   useEffect(() => {
-    if (composing || query === urlQuery) return;
+    if (editor !== null || composing || query === urlQuery) return;
     const timer = setTimeout(() => {
       const next = new URLSearchParams(search?.toString());
       if (query) next.set("q", query);
@@ -98,7 +98,7 @@ const InventoryPage = () => {
       router.replace(`${inventoryRoutes.inventory}?${next}`, { scroll: false });
     }, 250);
     return () => clearTimeout(timer);
-  }, [query, urlQuery, composing, router, search]);
+  }, [query, urlQuery, composing, router, search, editor]);
   const updateSearch = (changes: Record<string, string>) => {
     const next = new URLSearchParams(search?.toString());
     for (const [key, value] of Object.entries(changes)) {

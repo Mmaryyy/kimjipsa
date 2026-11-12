@@ -16,11 +16,10 @@ import {
 import {
   EmptyState,
   ErrorState,
-  TextButton,
+  FormSheet,
   PageLayout,
   PullToAdd,
 } from "@/shared/ui";
-import { EventEditorSheet } from "./event-editor-sheet";
 import EventForm from "./event-form";
 import EventFormSkeleton from "./event-form/Skeleton";
 import EventDetail from "./event-detail";
@@ -108,10 +107,12 @@ function EventList({
 function NewEvent({
   onSaved,
   initialDate,
+  formId,
   onDirtyChange,
 }: {
   onSaved: () => void;
   initialDate?: string;
+  formId: string;
   onDirtyChange: (dirty: boolean) => void;
 }) {
   const categories = useEventCategories();
@@ -132,7 +133,7 @@ function NewEvent({
   return (
     <EventForm
       onDirtyChange={onDirtyChange}
-      formId="new-event-form"
+      formId={formId}
       initialDate={initialDate}
       categories={categories.data}
       onSaved={onSaved}
@@ -147,104 +148,79 @@ function CalendarContent() {
     .string()
     .regex(/^[0-9a-f-]{36}(~\d{4}-\d{2}-\d{2})?$/i)
     .safeParse(params?.get("event"));
-  const [selectedId, setSelectedId] = useState<string | null>(
-    parsedEvent.success ? parsedEvent.data : null,
-  );
-  const [creating, setCreating] = useState(params?.get("create") === "1");
+  const [sheet, setSheet] = useState<{
+    mode: "closed" | "new" | "view" | "edit";
+    id: string | null;
+  }>({
+    mode: parsedEvent.success
+      ? "view"
+      : params?.get("create") === "1"
+        ? "new"
+        : "closed",
+    id: parsedEvent.success ? parsedEvent.data : null,
+  });
   const [dirty, setDirty] = useState(false);
-  const [editing, setEditing] = useState(false);
-  function closeNew() {
+  const close = () => {
     setDirty(false);
-    setCreating(false);
-  }
-  function closeDetail() {
-    setDirty(false);
-    setEditing(false);
-    setSelectedId(null);
-  }
+    setSheet({ mode: "closed", id: null });
+  };
+  const openNew = () => setSheet({ mode: "new", id: null });
   return (
     <PullToAdd
       action="일정 등록하기"
-      onAdd={() => setCreating(true)}
-      disabled={creating || selectedId !== null}
+      onAdd={openNew}
+      disabled={sheet.mode !== "closed"}
     >
       <div data-od-id="calendar-main">
-        <EventList onOpen={setSelectedId} onAdd={() => setCreating(true)} />
-        <EventEditorSheet
+        <EventList
+          onOpen={(id) => setSheet({ mode: "view", id })}
+          onAdd={openNew}
+        />
+        <FormSheet
           dirty={dirty}
-          formId="new-event-form"
-          open={creating}
+          open={sheet.mode !== "closed"}
           onOpenChange={(open) => {
-            if (!open) closeNew();
+            if (!open) close();
           }}
-          title="새 일정"
-          odId="sheet-new-event"
-          leadingAction={(onOpenChange) => (
-            <TextButton
-              data-od-id="new-cancel"
-              onClick={() => onOpenChange(false)}
-            >
-              취소
-            </TextButton>
-          )}
-          action={
-            <TextButton
-              data-od-id="new-save"
-              type="submit"
-              form="new-event-form"
-            >
-              추가
-            </TextButton>
+          title={sheet.mode === "new" ? "새 일정" : "일정"}
+          odId={sheet.mode === "new" ? "sheet-new-event" : "sheet-event-detail"}
+          editable={sheet.mode !== "view"}
+          showCloseButton={sheet.mode === "view"}
+          submitLabel={sheet.mode === "new" ? "추가" : "저장"}
+          submitOdId={sheet.mode === "new" ? "new-save" : undefined}
+          cancelOdId={sheet.mode === "new" ? "new-cancel" : undefined}
+          description={
+            sheet.mode === "new"
+              ? "제목과 날짜를 입력하고 공유 또는 개인 일정으로 저장해요."
+              : "일정 내용을 확인하고 수정하거나 삭제해요."
           }
-          description="제목과 날짜를 입력하고 공유 또는 개인 일정으로 저장해요."
         >
-          {creating && (
-            <NewEvent
-              initialDate={initialDate}
-              onDirtyChange={setDirty}
-              onSaved={closeNew}
-            />
-          )}
-        </EventEditorSheet>
-        <EventEditorSheet
-          dirty={dirty}
-          formId={editing ? "edit-event-form" : undefined}
-          open={selectedId !== null}
-          onOpenChange={(open) => {
-            if (!open) closeDetail();
-          }}
-          title="일정"
-          odId="sheet-event-detail"
-          showCloseButton={!editing}
-          leadingAction={
-            editing
-              ? (onOpenChange) => (
-                  <TextButton onClick={() => onOpenChange(false)}>
-                    취소
-                  </TextButton>
-                )
-              : undefined
+          {(formId) =>
+            sheet.mode === "new" ? (
+              <NewEvent
+                formId={formId}
+                initialDate={initialDate}
+                onDirtyChange={setDirty}
+                onSaved={close}
+              />
+            ) : sheet.id ? (
+              <EventDetail
+                key={sheet.id}
+                id={sheet.id}
+                formId={formId}
+                onClose={close}
+                editing={sheet.mode === "edit"}
+                onEditingChange={(editing) =>
+                  setSheet((current) => ({
+                    ...current,
+                    mode: editing ? "edit" : "view",
+                  }))
+                }
+                onDirtyChange={setDirty}
+              />
+            ) : null
           }
-          action={
-            editing ? (
-              <TextButton type="submit" form="edit-event-form">
-                저장
-              </TextButton>
-            ) : undefined
-          }
-          description="일정 내용을 확인하고 수정하거나 삭제해요."
-        >
-          {selectedId && (
-            <EventDetail
-              key={selectedId}
-              id={selectedId}
-              onClose={closeDetail}
-              editing={editing}
-              onEditingChange={setEditing}
-              onDirtyChange={setDirty}
-            />
-          )}
-        </EventEditorSheet>
+        </FormSheet>
       </div>
     </PullToAdd>
   );

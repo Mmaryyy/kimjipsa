@@ -24,7 +24,7 @@ import {
   ErrorState,
   ListSkeleton,
   Text,
-  ConfirmDialog,
+  useConfirm,
   Toast,
 } from "@/shared/ui";
 import { useHistoryBack } from "@/shared/lib";
@@ -92,18 +92,24 @@ const InventoryListsPage = () => {
     }
   };
   const [editor, setEditor] = useState<InventoryMetaEntry | "new" | null>(null);
-  const [resetting, setResetting] = useState(false);
+  const confirm = useConfirm();
   const [message, setMessage] = useState("");
-  const reset = async () => {
-    try {
-      await actions.meta.mutateAsync({ action: "reset", kind });
-      setResetting(false);
-      setMessage("기본 목록으로 되돌렸어요.");
-    } catch (error) {
-      setResetting(false);
-      setMessage(error instanceof Error ? error.message : "되돌리지 못했어요.");
-    }
-  };
+  const reset = () =>
+    confirm({
+      targetName: listLabels[kind],
+      title: "기본 목록으로 되돌릴까요?",
+      description:
+        kind === "units"
+          ? "직접 추가하거나 바꾼 단위는 사라져요. 품목에 쓰인 단위는 그대로 남아요."
+          : kind === "categories"
+            ? "직접 추가한 카테고리의 품목만 기타로 옮겨요. 기본 카테고리 연결은 유지돼요."
+            : "숨긴 장소도 다시 보여요. 품목의 보관 장소는 그대로 유지돼요.",
+      confirmLabel: "되돌리기",
+      onConfirm: async () => {
+        await actions.meta.mutateAsync({ action: "reset", kind });
+        setMessage("기본 목록으로 되돌렸어요.");
+      },
+    });
   let content;
   if (meta.isError)
     content = (
@@ -193,7 +199,7 @@ const InventoryListsPage = () => {
             size="sm"
             className="text-muted-foreground"
             data-od-id="lists-reset"
-            onClick={() => setResetting(true)}
+            onClick={() => void reset()}
           >
             기본 목록으로 되돌리기
           </TextButton>
@@ -249,23 +255,7 @@ const InventoryListsPage = () => {
       }
     >
       {content}
-      <ConfirmDialog
-        open={resetting}
-        onOpenChange={setResetting}
-        targetName={listLabels[kind]}
-        title="기본 목록으로 되돌릴까요?"
-        description={
-          kind === "units"
-            ? "직접 추가하거나 바꾼 단위는 사라져요. 품목에 쓰인 단위는 그대로 남아요."
-            : kind === "categories"
-              ? "직접 추가한 카테고리의 품목만 기타로 옮겨요. " +
-                "기본 카테고리 연결은 유지돼요."
-              : "숨긴 장소도 다시 보여요. 품목의 보관 장소는 그대로 유지돼요."
-        }
-        confirmLabel="되돌리기"
-        pending={actions.meta.isPending}
-        onConfirm={() => void reset()}
-      />
+
       <Toast
         open={!!message}
         onOpenChange={(open) => {

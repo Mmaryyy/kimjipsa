@@ -1,9 +1,11 @@
+import { ConfirmTestProvider as ConfirmProvider } from "@/shared/ui/confirm-test-provider";
+import type { ReactElement } from "react";
 import type { AnchorHTMLAttributes, ComponentProps } from "react";
 import type * as DndModule from "@dnd-kit/core";
 import {
   cleanup,
   fireEvent,
-  render,
+  render as renderWithoutConfirm,
   screen,
   waitFor,
 } from "@testing-library/react";
@@ -12,6 +14,9 @@ import { markHistoryBack } from "@/shared/lib";
 import { inventoryRoutes } from "@/shared/config";
 import { ToastProvider } from "@/shared/ui";
 import InventoryListsPage from ".";
+
+const render = (ui: ReactElement) =>
+  renderWithoutConfirm(ui, { wrapper: ConfirmProvider });
 vi.mock("@dnd-kit/core", async (original) => ({
   ...(await original<typeof DndModule>()),
   DndContext: ({

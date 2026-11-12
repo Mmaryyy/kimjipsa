@@ -107,6 +107,8 @@ AppLayout ─ 모바일: 본문 + 하단 탭(유리 캡슐) / lg 이상: 왼쪽 
 
 - **시트 (CONFIRMED, 사용자 결정 2026-10-22, r119-f1):** 모바일 판정은 일정 시트와 같은 `(pointer: coarse)`를 쓴다. 공용 `Sheet`가 이 조건에서 Vaul `Drawer` 래퍼를 사용하며, 알림 목록·약관·계정 설정·카테고리·일정 상세·날짜와 시간 선택을 포함한 모든 하단 시트에 손잡이와 아래로 끌어 닫기를 제공한다. 스크롤이 맨 위일 때 드래그로 닫고 하단 안전 영역을 반영한다. 데스크톱 표시는 기존대로 유지하며 `ConfirmDialog`는 제외한다.
 - **시트 닫기 (CONFIRMED, 사용자 결정 2026-10-22, r127-f1):** 닫힘 콜백은 `onOpenChange(false)` 하나로 통일한다(버튼·바깥 누르기·아래로 스와이프·ESC·뒤로 가기). `showCloseButton`은 기본 `false`이며, 켠 곳의 데스크톱 Sheet에만 머리 오른쪽 끝에 같은 크기·색의 X 버튼(접근성 이름 “닫기”)을 표시한다. 모바일 Drawer는 이 값과 관계없이 X 버튼을 표시하지 않으며 끌기·바깥 누르기·뒤로 가기로 닫는다. 제목은 머리 가운데에 두고, 폼의 취소·완료 같은 동작은 닫기 버튼과 구분해 `leadingAction`(왼쪽, 닫힘 콜백 제공)과 `action`(오른쪽) 슬롯으로 둔다. 일정 폼의 취소와 닫힘 요청은 변경 사항 확인을 거친다.
+- **폼 시트 (CONFIRMED, ADR-0022):** 등록·수정은 선언형 `FormSheet`로 감싼다. 머리 왼쪽 취소·오른쪽 제출은 `cancelLabel`·`submitLabel`로 지정하고, 자식 렌더 함수가 받는 `formId`를 폼에 연결한다. 화면에서 문자열 id를 짝맞추지 않는다. `dirty` 상태의 닫기는 ‘변경 사항 저장할까요?’와 저장·저장 안 함·계속 편집으로 통일한다. 저장은 폼 검증을 거치며 실패하면 입력을 유지한다. 기기 뒤로 가기도 이 닫기 경로를 따른다. 같은 시트의 상세 보기는 `editable={false}`로 동작 버튼을 숨긴다. 보기 전용·선택 전용 시트는 `Sheet`를 유지한다.
+- **확인창 (CONFIRMED, ADR-0022):** 화면마다 `ConfirmDialog` 상태를 만들지 않고 `useConfirm()`이 돌려주는 `confirm(options)`를 호출한다. 확인은 `true`, 취소·ESC·보조 동작은 `false`로 끝난다. 오래 걸리는 확인·보조 동작은 Promise를 반환해 전역 호스트 안에서 중복 누름·닫기를 막고 오류를 표시한다. `onConfirm`의 오류를 삼키지 않는다. 확인창은 열린 시트 위에서 포커스를 가두고 닫힌 뒤 호출 버튼으로 돌린다. 바깥 누르기는 확인창을 닫지 않는다.
 - **일정 폼 입력 (CONFIRMED, 사용자 결정 2026-10-21, P5.5):** 변경 사항이 있으면 취소·ESC·드래그 모두 닫기 확인을 거친다. 날짜·시간 휠은 부모 Drawer 위의 중첩 Drawer로 열고, 휠 조작은 닫기 드래그에서 제외한다. 선택한 쪽에 포커스를 준 뒤 닫을 때 연 행으로 돌려보낸다. 포인터로 연 터치 탭·행에는 포커스 테두리를 숨기고, 키보드 기기의 포커스 표시는 유지한다. 데스크톱 폼은 기존 가운데 Sheet와 직접 입력을 유지한다.
 
 ## 4. 주요 화면 패턴
@@ -158,7 +160,8 @@ AppLayout ─ 모바일: 본문 + 하단 탭(유리 캡슐) / lg 이상: 왼쪽 
 | 페이지 폭·머리·하단 바 자리 | `PageLayout` | `src/shared/ui/page-layout/index.tsx` |
 | 페이지·섹션 머리 | `PageHeader`, `SectionHeader` | `src/shared/ui/page-header.tsx`, `src/shared/ui/section-header.tsx` |
 | 글자·유리·아이콘 버튼 | `Button`, `TextButton` | `src/shared/ui/button.tsx`, `src/shared/ui/text-button.tsx` |
-| 대상 이름을 보여 주는 확인창 | `ConfirmDialog` | `src/shared/ui/confirm-dialog.tsx` |
+| 폼 시트 | `FormSheet` | `src/shared/ui/form-sheet/index.tsx` |
+| 대상 이름을 보여 주는 확인창 | `useConfirm()` + 앱의 `ConfirmProvider` | `src/shared/ui`, `src/app/providers` |
 | 중립 캡슐 배지 | `Badge` | `src/shared/ui/badge/index.tsx` |
 | 상태 배지 | `StatusBadge`, `InventoryBadges` | `src/shared/ui/status-badge.tsx`, `src/entities/inventory-item/ui/inventory-badges/index.tsx` |
 | 빈 값·로딩·오류 | `EmptyState`, `ListSkeleton`, `SkeletonSection`, `ErrorState` | `src/shared/ui/empty-state.tsx`, `src/shared/ui/list-skeleton.tsx`, `src/shared/ui/skeleton.tsx`, `src/shared/ui/error-state.tsx` |

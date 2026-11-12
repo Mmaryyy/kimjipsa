@@ -1,8 +1,10 @@
+import { ConfirmTestProvider as ConfirmProvider } from "@/shared/ui/confirm-test-provider";
+import type { ReactElement } from "react";
 import { readFileSync } from "node:fs";
 import {
   cleanup,
   fireEvent,
-  render,
+  render as renderWithoutConfirm,
   screen,
   waitFor,
 } from "@testing-library/react";
@@ -16,6 +18,9 @@ vi.mock("@/entities/cart-item", async (original) => ({
   useCartActions: () => ({ mutateAsync: state.save, isPending: false }),
 }));
 import CartItemEditor from ".";
+
+const render = (ui: ReactElement) =>
+  renderWithoutConfirm(ui, { wrapper: ConfirmProvider });
 const meta = JSON.parse(
   readFileSync("mocks/inventory-meta.json", "utf8"),
 ) as InventoryMeta;

@@ -1,7 +1,9 @@
+import { ConfirmTestProvider as ConfirmProvider } from "@/shared/ui/confirm-test-provider";
+import type { ReactElement } from "react";
 import {
   cleanup,
   fireEvent,
-  render,
+  render as renderWithoutConfirm,
   screen,
   waitFor,
 } from "@testing-library/react";
@@ -12,6 +14,9 @@ import {
   type EventCategory,
 } from "@/entities/event";
 import EventForm from "./";
+
+const render = (ui: ReactElement) =>
+  renderWithoutConfirm(ui, { wrapper: ConfirmProvider });
 const { onSave } = vi.hoisted(() => ({
   onSave: vi.fn().mockResolvedValue("saved"),
 }));

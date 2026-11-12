@@ -36,7 +36,7 @@ vi.mock("@/shared/ui", () => ({
   PageHeader: ({ navigation }: { navigation: ReactNode }) => navigation,
   Button: () => null,
   TextButton: () => null,
-  Sheet: () => null,
+  FormSheet: () => null,
 }));
 
 describe("ACC-13 r227-f1 일정 카테고리 뒤로 가기", () => {

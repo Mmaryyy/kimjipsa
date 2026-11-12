@@ -1,11 +1,21 @@
+import { ConfirmTestProvider as ConfirmProvider } from "@/shared/ui/confirm-test-provider";
+import type { ReactElement } from "react";
 /* eslint-disable tokens/no-color-literals -- 직접 선택 저장값을 검증해요. */
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render as renderWithoutConfirm,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { eventCategoryColors } from "@/entities/event";
 import { readableTextColor } from "@/shared/lib";
 import EventCategoryForm from "./";
 import type * as EventModule from "@/entities/event";
 import type { EventCategory } from "@/entities/event";
+
+const render = (ui: ReactElement) =>
+  renderWithoutConfirm(ui, { wrapper: ConfirmProvider });
 const { onSave, savedColors } = vi.hoisted(() => ({
   savedColors: { data: ["#ab1234"], isPending: false, isError: false },
   onSave: vi.fn().mockResolvedValue(undefined),
@@ -41,7 +51,9 @@ const category: EventCategory = {
   sortOrder: 0,
 };
 const submit = () =>
-  fireEvent.submit(document.getElementById("category-form")!);
+  fireEvent.submit(
+    screen.getByRole("textbox", { name: "이름" }).closest("form")!,
+  );
 beforeEach(() => {
   vi.clearAllMocks();
   savedColors.data = ["#ab1234"];

@@ -8,15 +8,7 @@ import {
   type CartInput,
 } from "@/entities/cart-item";
 import type { InventoryMeta } from "@/entities/inventory-item";
-import {
-  Button,
-  ConfirmDialog,
-  FormFieldRow,
-  Input,
-  Sheet,
-  TextButton,
-  Switch,
-} from "@/shared/ui";
+import { FormFieldRow, Input, FormSheet, Switch } from "@/shared/ui";
 interface Props {
   item: CartInput & { id?: string; hidden?: boolean };
   frequent?: boolean;
@@ -39,7 +31,6 @@ const CartItemEditor = ({
   const action = useCartActions();
   const [hidden, setHidden] = useState(item.hidden ?? false);
   const changed = isDirty || hidden !== (item.hidden ?? false);
-  const [discard, setDiscard] = useState(false);
   const [error, setError] = useState("");
   const save = form.handleSubmit(async (input) => {
     if (disabled) return;
@@ -63,35 +54,25 @@ const CartItemEditor = ({
       setError(reason instanceof Error ? reason.message : "저장하지 못했어요.");
     }
   });
-  const close = () => {
-    if (action.isPending) return;
-    if (changed) setDiscard(true);
-    else onClose();
-  };
+
   return (
-    <>
-      <Sheet
-        open
-        onOpenChange={(open) => {
-          if (!open) close();
-        }}
-        title={frequent ? item.name : "항목 수정"}
-        description={
-          frequent
-            ? "칩으로 담으면 수량 1로 추가해요."
-            : "장바구니 품목을 수정해요."
-        }
-        leadingAction={() => <TextButton onClick={close}>취소</TextButton>}
-        action={
-          <TextButton
-            disabled={disabled || action.isPending}
-            onClick={() => void save()}
-          >
-            저장
-          </TextButton>
-        }
-      >
-        <form onSubmit={save}>
+    <FormSheet
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      title={frequent ? item.name : "항목 수정"}
+      description={
+        frequent
+          ? "칩으로 담으면 수량 1로 추가해요."
+          : "장바구니 품목을 수정해요."
+      }
+      dirty={changed}
+      pending={action.isPending}
+      submitDisabled={disabled}
+    >
+      {(formId) => (
+        <form id={formId} onSubmit={save}>
           {(
             [
               ["name", "이름"],
@@ -171,29 +152,9 @@ const CartItemEditor = ({
               {error}
             </p>
           )}
-          <Button
-            type="submit"
-            className="sr-only"
-            disabled={disabled || action.isPending}
-          >
-            저장
-          </Button>
         </form>
-      </Sheet>
-      <ConfirmDialog
-        open={discard}
-        onOpenChange={setDiscard}
-        targetName={item.name}
-        title="변경 사항을 저장할까요?"
-        description={error || "저장하지 않으면 바꾼 내용이 사라져요."}
-        cancelLabel="계속 편집"
-        confirmLabel="저장"
-        destructive={false}
-        pending={action.isPending || disabled}
-        onConfirm={() => void save()}
-        secondaryAction={{ label: "저장 안 함", onClick: onClose }}
-      />
-    </>
+      )}
+    </FormSheet>
   );
 };
 export default CartItemEditor;

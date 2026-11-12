@@ -1,7 +1,7 @@
 "use client";
 import type { CategoryColor } from "@/shared/lib";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -13,7 +13,7 @@ import {
 } from "@/entities/event";
 import {
   CategoryDot,
-  ConfirmDialog,
+  useConfirm,
   FormFieldRow,
   GroupLabel,
   Text,
@@ -23,17 +23,24 @@ import EventCategoryColorPicker from "./ColorPicker";
 import { useCategoryEditor } from "../../model/use-category-editor";
 interface Props {
   category?: EventCategory;
+  formId?: string;
+  onDirtyChange?: (dirty: boolean) => void;
   onSaved: () => void;
 }
 
-const EventCategoryForm = ({ category, onSaved }: Props) => {
+const EventCategoryForm = ({
+  category,
+  onSaved,
+  formId,
+  onDirtyChange,
+}: Props) => {
   const categories = useEventCategories();
   const nextOrder =
     Math.max(
       -1,
       ...(categories.data ?? []).map((category) => category.sortOrder),
     ) + 1;
-  const [confirming, setConfirming] = useState(false);
+  const confirm = useConfirm();
   const { onSave, onDelete, deleting, deleteError } = useCategoryEditor(
     category?.id,
     onSaved,
@@ -44,7 +51,7 @@ const EventCategoryForm = ({ category, onSaved }: Props) => {
     handleSubmit,
     setError,
     setValue,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<Omit<EventCategoryInput, "sortOrder">>({
     resolver: zodResolver(eventCategorySchema.omit({ sortOrder: true })),
     defaultValues: category ?? {
@@ -52,6 +59,9 @@ const EventCategoryForm = ({ category, onSaved }: Props) => {
       color: Object.keys(eventCategoryColors)[0] as EventCategoryInput["color"],
     },
   });
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
   const onSubmit = useCallback(
     async (input: Omit<EventCategoryInput, "sortOrder">) => {
       try {
@@ -79,7 +89,7 @@ const EventCategoryForm = ({ category, onSaved }: Props) => {
   const busy = isSubmitting || deleting;
   return (
     <form
-      id="category-form"
+      id={formId}
       onSubmit={(event) => {
         if (busy) {
           event.preventDefault();
@@ -136,7 +146,14 @@ const EventCategoryForm = ({ category, onSaved }: Props) => {
           className="mt-5 justify-self-start"
           data-od-id="lists-delete"
           tone="danger"
-          onClick={() => setConfirming(true)}
+          onClick={() =>
+            void confirm({
+              targetName: category.name,
+              title: "카테고리를 삭제할까요?",
+              description: "이 카테고리의 일정은 기타로 옮겨져요.",
+              onConfirm: onDelete,
+            })
+          }
           disabled={busy}
         >
           삭제
@@ -147,19 +164,6 @@ const EventCategoryForm = ({ category, onSaved }: Props) => {
           {deleteError.message}
         </Text>
       )}
-      <ConfirmDialog
-        open={confirming}
-        onOpenChange={(open) => {
-          if (!deleting) setConfirming(open);
-        }}
-        targetName={category?.name ?? ""}
-        title="카테고리를 삭제할까요?"
-        description={
-          deleteError?.message ?? "이 카테고리의 일정은 기타로 옮겨져요."
-        }
-        onConfirm={onDelete}
-        pending={deleting}
-      />
     </form>
   );
 };

@@ -29,6 +29,9 @@ React 컴포넌트를 만들거나 고치고, 이름을 정할 때 읽는다. �
 - 공식 이름과 다른, 의미가 있는 합성 컴포넌트는 허용한다. 예: 확인 문구와 버튼 구성이 정해진 `ConfirmDialog`. 이미 만든 `ConfirmDialog`, `FilterTabs`, `StatusBadge`, `TextButton`은 그대로 두고, 새로 만들 때는 같은 역할을 공식 이름의 prop·variant로 풀 수 있는지 먼저 본다.
 - 디자인 도구·프로토타입 용어(`LargeTitle`, `Segmented`)는 이름으로 쓰지 않는다. 처음 보는 사람도 목적과 쓰임을 짐작할 수 있는 이름(`PageHeader`, `SegmentedControl`)을 쓴다.
 
+- `FormSheet`는 폼 제출 연결·변경 중 닫기 확인·뒤로 가기를 맡는 공용 합성 컴포넌트다. 도메인 이름을 붙인 시트 래퍼를 새로 만들지 않는다. 보기·선택만 하는 창은 `Sheet`를 쓴다(ADR-0022).
+- 확인 요청 훅 이름은 `useConfirm`, 앱 호스트는 `ConfirmProvider`다. 화면에서는 `useConfirm()`으로 요청하고 `ConfirmDialog`는 호스트의 표시 컴포넌트로만 사용한다. 폼·선택 시트는 전역 호스트로 옮기지 않는다.
+
 ## 3. 시맨틱 HTML과 접근성
 
 HTML 요소는 콘텐츠의 의미와 상호작용 목적에 맞게 고른다.

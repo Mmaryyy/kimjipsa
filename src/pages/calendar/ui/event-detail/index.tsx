@@ -1,5 +1,4 @@
 "use client";
-import { useState } from "react";
 import {
   useEvent,
   useEventCategories,
@@ -12,7 +11,7 @@ import { getOptionLabel } from "@/shared/lib";
 import {
   Button,
   TextButton,
-  ConfirmDialog,
+  useConfirm,
   EmptyState,
   ErrorState,
   Skeleton,
@@ -29,12 +28,14 @@ const EventDetailSkeleton = () => (
 );
 const EventDetail = ({
   id,
+  formId,
   onClose,
   editing,
   onEditingChange,
   onDirtyChange,
 }: {
   id: string;
+  formId?: string;
   onClose: () => void;
   editing: boolean;
   onEditingChange: (editing: boolean) => void;
@@ -42,8 +43,8 @@ const EventDetail = ({
 }) => {
   const event = useEvent(id);
   const categories = useEventCategories();
-  const [confirming, setConfirming] = useState(false);
-  const { onDelete, deleting, deleteError } = useEventEditor(
+  const confirm = useConfirm();
+  const { onDelete, deleteError } = useEventEditor(
     event.data?.id ?? id,
     onClose,
   );
@@ -77,7 +78,7 @@ const EventDetail = ({
   if (editing && event.data.canEdit)
     return (
       <EventForm
-        formId="edit-event-form"
+        formId={formId}
         onDirtyChange={onDirtyChange}
         key={id}
         event={event.data}
@@ -151,7 +152,21 @@ const EventDetail = ({
           <TextButton
             data-od-id="detail-delete"
             tone="danger"
-            onClick={() => setConfirming(true)}
+            onClick={() =>
+              void confirm({
+                targetName: details.title,
+                title: "일정을 삭제할까요?",
+                description: deleteDescription,
+                confirmLabel: event.data?.recurrence
+                  ? "이후 모든 일정"
+                  : "삭제하기",
+                onConfirm: () =>
+                  onDelete(event.data?.recurrence ? "following" : undefined),
+                secondaryAction: event.data?.recurrence
+                  ? { label: "이 일정만", onClick: () => onDelete("single") }
+                  : undefined,
+              })
+            }
           >
             일정 삭제
           </TextButton>
@@ -162,25 +177,6 @@ const EventDetail = ({
           {deleteError.message}
         </Text>
       )}
-      <ConfirmDialog
-        open={confirming}
-        onOpenChange={(open) => {
-          if (!deleting) setConfirming(open);
-        }}
-        targetName={details.title}
-        title="일정을 삭제할까요?"
-        description={deleteError?.message ?? deleteDescription}
-        confirmLabel={event.data.recurrence ? "이후 모든 일정" : "삭제하기"}
-        secondaryAction={
-          event.data.recurrence
-            ? { label: "이 일정만", onClick: () => onDelete("single") }
-            : undefined
-        }
-        onConfirm={() =>
-          onDelete(event.data?.recurrence ? "following" : undefined)
-        }
-        pending={deleting}
-      />
     </article>
   );
 };

@@ -11,8 +11,7 @@ import {
   ListSkeleton,
   PageHeader,
   PageLayout,
-  Sheet,
-  TextButton,
+  FormSheet,
 } from "@/shared/ui";
 import { eventRoutes, settingsPath } from "@/shared/config";
 import { useHistoryBack } from "@/shared/lib";
@@ -49,6 +48,11 @@ export function EventCategoriesPage() {
   const [editing, setEditing] = useState<EventCategory | null | undefined>(
     undefined,
   );
+  const [dirty, setDirty] = useState(false);
+  const close = () => {
+    setDirty(false);
+    setEditing(undefined);
+  };
   return (
     <PageLayout
       width="narrow"
@@ -87,35 +91,29 @@ export function EventCategoriesPage() {
       >
         <CategoryList onEdit={setEditing} />
       </section>
-      <Sheet
+      <FormSheet
         open={editing !== undefined}
         onOpenChange={(open) => {
-          if (!open) setEditing(undefined);
+          if (!open) close();
         }}
         odId="lists-sheet"
-        leadingAction={(onOpenChange) => (
-          <TextButton onClick={() => onOpenChange(false)}>취소</TextButton>
-        )}
+        dirty={dirty}
+        submitOdId="lists-save"
         title={editing ? "카테고리 수정" : "새 카테고리"}
-        action={
-          <TextButton
-            data-od-id="lists-save"
-            type="submit"
-            form="category-form"
-          >
-            저장
-          </TextButton>
-        }
         description="가정에서 함께 쓸 일정 카테고리 이름과 색을 정해요."
       >
-        {editing !== undefined && (
-          <EventCategoryForm
-            key={editing?.id ?? "new"}
-            category={editing ?? undefined}
-            onSaved={() => setEditing(undefined)}
-          />
-        )}
-      </Sheet>
+        {(formId) =>
+          editing !== undefined && (
+            <EventCategoryForm
+              key={editing?.id ?? "new"}
+              formId={formId}
+              onDirtyChange={setDirty}
+              category={editing ?? undefined}
+              onSaved={close}
+            />
+          )
+        }
+      </FormSheet>
     </PageLayout>
   );
 }

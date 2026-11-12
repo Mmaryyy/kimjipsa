@@ -1,9 +1,11 @@
+import { ConfirmTestProvider as ConfirmProvider } from "@/shared/ui/confirm-test-provider";
+import type { ReactElement } from "react";
 import { AuthSessionMissingError } from "@supabase/supabase-js";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   act,
   fireEvent,
-  render,
+  render as renderWithoutConfirm,
   screen,
   waitFor,
 } from "@testing-library/react";
@@ -11,6 +13,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setThemeMode } from "@/shared/lib";
 import type * as SharedApi from "@/shared/api";
 import AppearanceSettingsPage from ".";
+
+const render = (ui: ReactElement) =>
+  renderWithoutConfirm(ui, { wrapper: ConfirmProvider });
 
 vi.mock("../notification-settings", () => ({ default: () => <div /> }));
 vi.mock("../home-settings", () => ({ default: () => <div /> }));

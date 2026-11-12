@@ -1,5 +1,12 @@
+import { ConfirmTestProvider as ConfirmProvider } from "@/shared/ui/confirm-test-provider";
+import type { ReactElement } from "react";
 import { readFileSync } from "node:fs";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render as renderWithoutConfirm,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type * as CartItemModule from "@/entities/cart-item";
 import type { CartItem } from "@/entities/cart-item";
@@ -11,6 +18,9 @@ vi.mock("@/entities/cart-item", async (importOriginal) => ({
   useCartActions: () => ({ mutateAsync: state.submit, isPending: false }),
 }));
 import RestockForm from "./Form";
+
+const render = (ui: ReactElement) =>
+  renderWithoutConfirm(ui, { wrapper: ConfirmProvider });
 const meta = JSON.parse(
   readFileSync("mocks/inventory-meta.json", "utf8"),
 ) as InventoryMeta;

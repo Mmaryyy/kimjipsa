@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/shared/lib";
 import { Sheet, TextButton } from "@/shared/ui";
 import { WheelPicker, WheelPickerWrapper } from "@/shared/ui/wheel-picker";
@@ -20,6 +20,7 @@ import {
   minuteOptions,
   periodOptions,
 } from "./date-time.constants";
+import { FormSheetBackContext } from "../form-sheet";
 import { dateTimeTabStyles } from "./date-time-sheet.variants";
 
 type DateTimeSheetProps = {
@@ -43,6 +44,15 @@ export function DateTimeSheet({
   onOpenChange,
   onRestoreFocus,
 }: DateTimeSheetProps) {
+  const parentBackRef = useContext(FormSheetBackContext);
+  useEffect(() => {
+    if (!parentBackRef) return;
+    const close = () => onOpenChange(false);
+    parentBackRef.current = close;
+    return () => {
+      if (parentBackRef.current === close) parentBackRef.current = null;
+    };
+  }, [parentBackRef, onOpenChange]);
   const [draft, setDraft] = useState(() => initialWheelRange(range, dateOnly));
   const selectedTabRef = useRef<HTMLButtonElement>(null);
   const [tab, setTab] = useState(initialTab);

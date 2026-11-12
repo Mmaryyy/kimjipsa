@@ -1,8 +1,10 @@
+import { ConfirmTestProvider as ConfirmProvider } from "@/shared/ui/confirm-test-provider";
+import type { ReactElement } from "react";
 import { readFileSync } from "node:fs";
 import {
   cleanup,
   fireEvent,
-  render,
+  render as renderWithoutConfirm,
   screen,
   waitFor,
   within,
@@ -13,6 +15,9 @@ import type * as CartEntity from "@/entities/cart-item";
 import type { InventoryMeta } from "@/entities/inventory-item";
 import { ToastProvider } from "@/shared/ui";
 import CartPage from ".";
+
+const render = (ui: ReactElement) =>
+  renderWithoutConfirm(ui, { wrapper: ConfirmProvider });
 const state = vi.hoisted(() => ({
   items: [] as CartItem[],
   write: vi.fn(),
@@ -42,7 +47,6 @@ vi.mock("@/entities/inventory-item", () => ({
 }));
 vi.mock("@/features/cart-add", () => ({
   useCartAdd: () => ({ pending: false }),
-  CartDuplicateDialog: () => null,
 }));
 afterEach(cleanup);
 beforeEach(() => {
@@ -208,7 +212,7 @@ describe("CART-03 CART-07 CART-13 CART-14 제자리 처리", () => {
     fireEvent.click(screen.getByRole("button", { name: "취소" }));
     expect(
       await screen.findByRole("alertdialog", {
-        name: /변경 사항을 저장할까요\?/,
+        name: /변경 사항.*저장할까요\?/,
       }),
     ).toBeVisible();
     expect(state.write).not.toHaveBeenCalled();

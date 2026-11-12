@@ -6,7 +6,7 @@
 
 | 종류 | 둘 곳 | 이 프로젝트의 예 |
 | --- | --- | --- |
-| Local State | 컴포넌트 안(`useState`, `useReducer`) | 다이얼로그 열림, 입력 중인 검색어, 체크 중인 행 선택 |
+| Local State | 컴포넌트 안(`useState`, `useReducer`) | 시트 열림, 입력 중인 검색어, 체크 중인 행 선택. 확인창은 예외로 전역 호스트(`useConfirm`, ADR-0022) |
 | Global Client State | entity/widget `model/`에 필요할 때만 작은 스토어 | 챗봇 창 열림/최소화(최소화 여부는 서버에도 사용자별로 기억 BOT-01), 마지막 읽기 전용 상태 표시 |
 | Server State | TanStack Query 캐시 + Supabase Realtime | 일정, 재고, 장바구니, 대화, 설정, 멤버 |
 | URL State | 쿼리 문자열·경로 | 달력 뷰(월/주/일)와 기준 날짜, 재고 필터(보관 장소·카테고리), 검색어 |

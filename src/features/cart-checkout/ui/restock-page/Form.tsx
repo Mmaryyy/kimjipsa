@@ -11,7 +11,7 @@ import {
 import type { InventoryItem, InventoryMeta } from "@/entities/inventory-item";
 import { compareItemNames, normalizeItemName } from "@/shared/lib";
 import { cartRoutes } from "@/shared/config";
-import { Button, ConfirmDialog } from "@/shared/ui";
+import { Button, useConfirm, useConfirmDisabled } from "@/shared/ui";
 import RestockItem, { type RestockFormValues } from "./Item";
 export type RestockResults = (NonNullable<
   CartWriteResult["results"]
@@ -75,7 +75,17 @@ const RestockForm = ({
     onPendingChange?.(action.isPending);
   }, [action.isPending, onPendingChange]);
   const [error, setError] = useState("");
-  const [skip, setSkip] = useState(false);
+  const confirm = useConfirm();
+  const confirmDisabled = useConfirmDisabled(disabled || action.isPending);
+  const confirmClose = () =>
+    confirm({
+      disabled: confirmDisabled,
+      title: "반영하지 않고 닫을까요?",
+      description: "재고는 바뀌지 않고, 담은 항목은 장바구니에 그대로 남아요.",
+      destructive: false,
+      confirmLabel: "닫기",
+      onConfirm: () => (onClose ? onClose() : router.push(cartRoutes.cart)),
+    });
   const submit = form.handleSubmit(async (values) => {
     const entries = values.entries.map((entry, index) => {
       const leader = values.entries[leaders[index]!]!;
@@ -160,21 +170,12 @@ const RestockForm = ({
             variant="gray"
             data-od-id="restock-skip"
             disabled={action.isPending}
-            onClick={() => setSkip(true)}
+            onClick={() => void confirmClose()}
           >
             반영 없이 닫기
           </Button>
         </div>
       </form>
-      <ConfirmDialog
-        open={skip}
-        onOpenChange={setSkip}
-        title="반영하지 않고 닫을까요?"
-        description="재고는 바뀌지 않고, 담은 항목은 장바구니에 그대로 남아요."
-        destructive={false}
-        confirmLabel="닫기"
-        onConfirm={() => (onClose ? onClose() : router.push(cartRoutes.cart))}
-      />
     </>
   );
 };

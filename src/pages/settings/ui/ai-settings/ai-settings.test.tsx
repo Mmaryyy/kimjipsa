@@ -1,14 +1,19 @@
+import { ConfirmTestProvider as ConfirmProvider } from "@/shared/ui/confirm-test-provider";
+import type { ReactElement } from "react";
 import { beforeEach, expect, it, vi } from "vitest";
 import {
   act,
   fireEvent,
-  render,
+  render as renderWithoutConfirm,
   screen,
   waitFor,
   within,
 } from "@testing-library/react";
 import AiSettings from ".";
 import { ToastProvider } from "@/shared/ui";
+
+const render = (ui: ReactElement) =>
+  renderWithoutConfirm(ui, { wrapper: ConfirmProvider });
 
 const { saveType, save, memory, settings, connection, account } = vi.hoisted(
   () => ({
@@ -38,6 +43,7 @@ vi.mock("@/entities/chat-message", () => ({
     save: { mutateAsync: save, isPending: connection.pending },
     memory: {
       mutate: memory,
+      mutateAsync: memory,
       reset: vi.fn(),
       isPending: connection.memoryPending,
       error: connection.memoryError,
@@ -155,7 +161,7 @@ it("BOT-13 새 기억은 목록 아래 버튼으로 시트를 열어 등록해�
   act(() => memory.mock.calls[0][1].onSuccess());
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
-it("BOT-13 개별 삭제와 전체 초기화는 확인해야 실행해요", () => {
+it("BOT-13 개별 삭제와 전체 초기화는 확인해야 실행해요", async () => {
   render(
     <ToastProvider>
       <AiSettings />
@@ -170,11 +176,12 @@ it("BOT-13 개별 삭제와 전체 초기화는 확인해야 실행해요", () =
   fireEvent.click(screen.getByRole("button", { name: "기억 삭제하기" }));
   confirm = within(screen.getByRole("alertdialog"));
   fireEvent.click(confirm.getByRole("button", { name: "삭제하기" }));
-  expect(memory).toHaveBeenCalledWith(
-    { action: "delete-memory", id: "memory", version: 1 },
-    expect.objectContaining({ onSuccess: expect.any(Function) }),
-  );
-  act(() => memory.mock.calls[0][1].onSuccess());
+  expect(memory).toHaveBeenCalledWith({
+    action: "delete-memory",
+    id: "memory",
+    version: 1,
+  });
+  await act(async () => {});
   fireEvent.click(screen.getByRole("button", { name: "기억 전체 초기화" }));
   expect(memory).toHaveBeenCalledTimes(1);
   fireEvent.click(
@@ -182,10 +189,7 @@ it("BOT-13 개별 삭제와 전체 초기화는 확인해야 실행해요", () =
       name: "삭제하기",
     }),
   );
-  expect(memory).toHaveBeenLastCalledWith(
-    { action: "reset-memories" },
-    expect.objectContaining({ onSuccess: expect.any(Function) }),
-  );
+  expect(memory).toHaveBeenLastCalledWith({ action: "reset-memories" });
 });
 it("BOT-13 저장 오류를 시트에 표시하고 오프라인과 대기 중에는 변경을 막아요", () => {
   const { rerender } = render(

@@ -14,7 +14,7 @@ import {
 import { accountRoutes, currentTermsVersion } from "@/shared/config";
 import {
   Button,
-  ConfirmDialog,
+  useConfirm,
   ErrorState,
   Text,
   onboardingStyles,
@@ -22,7 +22,7 @@ import {
 
 function ConsentExitActions() {
   const signOut = useSignOut();
-  const [confirmWithdrawal, setConfirmWithdrawal] = useState(false);
+  const confirm = useConfirm();
   const withdrawal = useMutation({ mutationFn: withdrawAccount });
   const pending = signOut.pending || withdrawal.isPending;
   return (
@@ -39,29 +39,18 @@ function ConsentExitActions() {
         disabled={pending}
         onClick={() => {
           withdrawal.reset();
-          setConfirmWithdrawal(true);
+          void confirm({
+            title: "김집사에서 탈퇴할까요?",
+            description:
+              "내 계정·개인 일정·알림과 안 쓴 초대 링크가 삭제돼요. 공유 항목은 가정에 남고, 마지막 구성원이면 가정 데이터도 삭제돼요. 삭제한 내용은 되돌릴 수 없어요.",
+            confirmLabel: "탈퇴하기",
+            onConfirm: () => withdrawal.mutateAsync(),
+          });
         }}
       >
         탈퇴하기
       </Button>
       {signOut.error && <p role="alert">{signOut.error}</p>}
-      <ConfirmDialog
-        open={confirmWithdrawal}
-        onOpenChange={(open) => {
-          if (!withdrawal.isPending) setConfirmWithdrawal(open);
-        }}
-        title="김집사에서 탈퇴할까요?"
-        description="내 계정·개인 일정·알림과 안 쓴 초대 링크가 삭제돼요. 공유 항목은 가정에 남고, 마지막 구성원이면 가정 데이터도 삭제돼요. 삭제한 내용은 되돌릴 수 없어요."
-        confirmLabel="탈퇴하기"
-        pending={withdrawal.isPending}
-        onConfirm={() => withdrawal.mutate()}
-      >
-        {withdrawal.error && (
-          <p role="alert" className="text-error-text">
-            {withdrawal.error.message}
-          </p>
-        )}
-      </ConfirmDialog>
     </div>
   );
 }

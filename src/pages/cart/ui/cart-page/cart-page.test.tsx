@@ -1,7 +1,9 @@
+import { ConfirmTestProvider as ConfirmProvider } from "@/shared/ui/confirm-test-provider";
+import type { ReactElement } from "react";
 import {
   cleanup,
   fireEvent,
-  render,
+  render as renderWithoutConfirm,
   screen,
   waitFor,
 } from "@testing-library/react";
@@ -9,6 +11,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import CartPage from ".";
 import type * as CartEntity from "@/entities/cart-item";
 import { ToastProvider } from "@/shared/ui";
+
+const render = (ui: ReactElement) =>
+  renderWithoutConfirm(ui, { wrapper: ConfirmProvider });
 const state = vi.hoisted(() => ({
   units: [
     {
@@ -50,7 +55,6 @@ vi.mock("@/entities/inventory-item", () => ({
 }));
 vi.mock("@/features/cart-add", () => ({
   useCartAdd: () => ({ onAdd: state.add, pending: false }),
-  CartDuplicateDialog: () => null,
 }));
 afterEach(cleanup);
 beforeEach(() => {

@@ -30,7 +30,8 @@ import {
   ListGroupLabel,
   SectionHeader,
   CategoryDot,
-  ConfirmDialog,
+  useConfirm,
+  FormSheet,
   Sheet,
   Toast,
   EmptyState,
@@ -235,7 +236,9 @@ function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
   const [quantity, setQuantity] = useState(2);
   const [stepperOpen, setStepperOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [confirmOpen, setConfirmOpen] = useState(false);
+  const confirm = useConfirm();
+  const [formOpen, setFormOpen] = useState(false);
+  const [dirty, setDirty] = useState(false);
   const [removed, setRemoved] = useState(false);
   const [toastOpen, setToastOpen] = useState(false);
   const [toastSequence, setToastSequence] = useState(0);
@@ -244,6 +247,19 @@ function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
     setToastSequence((sequence) => sequence + 1);
     setToastOpen(true);
   };
+
+  const remove = () =>
+    confirm({
+      theme,
+      targetName: "견본 항목",
+      title: "항목을 삭제할까요?",
+      description:
+        "카탈로그의 견본 항목이 사라져요. 알림에서 되돌릴 수 있어요.",
+      onConfirm: () => {
+        setRemoved(true);
+        showToast();
+      },
+    });
 
   return (
     <section
@@ -384,11 +400,7 @@ function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
               />
             }
             trailing={
-              <TextButton
-                size="sm"
-                tone="danger"
-                onClick={() => setConfirmOpen(true)}
-              >
+              <TextButton size="sm" tone="danger" onClick={() => void remove()}>
                 삭제하기
               </TextButton>
             }
@@ -434,20 +446,38 @@ function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
           </FormFieldRow>
           <EmptyState message="아직 항목이 없어요" />
         </Sheet>
-        <ConfirmDialog
-          open={confirmOpen}
-          onOpenChange={setConfirmOpen}
-          theme={theme}
-          targetName="견본 항목"
-          title="항목을 삭제할까요?"
-          description="카탈로그의 견본 항목이 사라져요. 알림에서 되돌릴 수 있어요."
-          trigger={<Button variant="danger">확인창 열기</Button>}
-          onConfirm={() => {
-            setRemoved(true);
-            setConfirmOpen(false);
-            showToast();
+        <Button variant="danger" onClick={() => void remove()}>
+          확인창 열기
+        </Button>
+        <Button onClick={() => setFormOpen(true)}>폼 시트 열기</Button>
+        <FormSheet
+          open={formOpen}
+          onOpenChange={(open) => {
+            setFormOpen(open);
+            if (!open) setDirty(false);
           }}
-        />
+          dirty={dirty}
+          theme={theme}
+          title="견본 폼"
+          description="공용 폼 시트 견본이에요."
+        >
+          {(formId) => (
+            <form
+              id={formId}
+              onSubmit={(event) => {
+                event.preventDefault();
+                setDirty(false);
+                setFormOpen(false);
+              }}
+            >
+              <FormFieldRow label="이름" htmlFor={`${fieldId}-form-sheet`}>
+                {(controlProps) => (
+                  <input {...controlProps} onChange={() => setDirty(true)} />
+                )}
+              </FormFieldRow>
+            </form>
+          )}
+        </FormSheet>
         <Button onClick={showToast}>알림 띄우기</Button>
       </div>
       <Toast

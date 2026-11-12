@@ -1,9 +1,11 @@
+import { ConfirmTestProvider as ConfirmProvider } from "@/shared/ui/confirm-test-provider";
+import type { ReactElement } from "react";
 import { useState } from "react";
 import { readFileSync } from "node:fs";
 import {
   act,
   fireEvent,
-  render,
+  render as renderWithoutConfirm,
   screen,
   waitFor,
   within,
@@ -24,6 +26,9 @@ const inventoryItems: unknown = JSON.parse(
 );
 import InventoryItemRow from "./ItemRow";
 import InventoryPage from ".";
+
+const render = (ui: ReactElement) =>
+  renderWithoutConfirm(ui, { wrapper: ConfirmProvider });
 
 const navigation = vi.hoisted(() => ({
   search: new URLSearchParams(),
@@ -397,6 +402,39 @@ it("INV-01 SCN-INV-1 모바일 당기기는 기존 재고 등록을 열어요", 
   fireEvent.touchEnd(surface, { touches: [] });
 
   expect(screen.getByRole("dialog", { name: "새 품목" })).toBeVisible();
+  unmount();
+  client.clear();
+});
+
+it("검색 직후 연 등록 시트가 닫힐 때까지 검색 URL 갱신을 미뤄요", async () => {
+  navigation.search = new URLSearchParams();
+  navigation.replace.mockReset();
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+  });
+  client.setQueryData(["inventory"], [milk]);
+  client.setQueryData(["inventory-meta"], inventoryMeta);
+  const { unmount } = render(
+    <QueryClientProvider client={client}>
+      <InventoryPage />
+    </QueryClientProvider>,
+  );
+  const search = screen.getByRole("searchbox", { name: "품목 검색" });
+  fireEvent.compositionStart(search);
+  fireEvent.change(search, { target: { value: "없는 두부" } });
+  fireEvent.compositionEnd(search);
+  fireEvent.click(screen.getByRole("button", { name: "새 품목으로 추가" }));
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 300));
+  });
+  expect(navigation.replace).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "취소" }));
+  await waitFor(() =>
+    expect(navigation.replace).toHaveBeenCalledWith(
+      "/inventory?q=%EC%97%86%EB%8A%94+%EB%91%90%EB%B6%80",
+      { scroll: false },
+    ),
+  );
   unmount();
   client.clear();
 });

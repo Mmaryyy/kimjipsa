@@ -1,11 +1,14 @@
 "use client";
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/shared/lib";
 
 import { AlertDialog } from "radix-ui";
 import { Button } from "./button";
 import type { OverlayProps } from "./overlay.types";
 type ConfirmDialogProps = OverlayProps & {
+  onCloseAutoFocus?: ComponentProps<
+    typeof AlertDialog.Content
+  >["onCloseAutoFocus"];
   children?: ReactNode;
   targetName?: string;
   confirmLabel?: string;
@@ -31,6 +34,7 @@ export function ConfirmDialog({
   trigger,
   theme,
   children,
+  onCloseAutoFocus,
 }: ConfirmDialogProps) {
   return (
     <AlertDialog.Root open={open} onOpenChange={onOpenChange}>
@@ -39,6 +43,10 @@ export function ConfirmDialog({
         {/* Above every sheet (z-81, date sheet z-83) so a confirm opened from a sheet dims it too. */}
         <AlertDialog.Overlay className="kj-overlay z-84" />
         <AlertDialog.Content
+          onCloseAutoFocus={onCloseAutoFocus}
+          onEscapeKeyDown={(event) => {
+            if (pending) event.preventDefault();
+          }}
           className={cn([
             "fixed top-1/2 left-1/2 z-85 w-[min(calc(var(--sp-10)*7.5),calc(100%-var(--sp-6)*2))]",
             "surface-edge rounded-[var(--r-dialog)] border border-[var(--glass-border)]",

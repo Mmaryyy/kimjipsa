@@ -2,7 +2,7 @@
 import { useState } from "react";
 import type { CartItem } from "@/entities/cart-item";
 import { useInventory, useInventoryMeta } from "@/entities/inventory-item";
-import { ConfirmDialog, ErrorState, Sheet } from "@/shared/ui";
+import { useConfirm, useConfirmDisabled, ErrorState, Sheet } from "@/shared/ui";
 import RestockSkeleton from "../restock-page/Skeleton";
 import RestockForm, { type RestockResults } from "../restock-page/Form";
 interface Props {
@@ -15,7 +15,17 @@ const RestockSheet = ({ items, disabled, onClose, onDone }: Props) => {
   const inventory = useInventory();
   const meta = useInventoryMeta();
   const [busy, setBusy] = useState(false);
-  const [closing, setClosing] = useState(false);
+  const confirm = useConfirm();
+  const confirmDisabled = useConfirmDisabled(busy || disabled);
+  const confirmClose = () =>
+    confirm({
+      disabled: confirmDisabled,
+      title: "반영하지 않고 닫을까요?",
+      description: "재고는 바뀌지 않고, 담은 항목은 장바구니에 그대로 남아요.",
+      destructive: false,
+      confirmLabel: "닫기",
+      onConfirm: onClose,
+    });
   const error = inventory.error ?? meta.error;
   let content;
   if (error && (!inventory.data || !meta.data))
@@ -50,7 +60,7 @@ const RestockSheet = ({ items, disabled, onClose, onDone }: Props) => {
         odId="restock-main"
         showCloseButton
         onOpenChange={(open) => {
-          if (!open && !busy) setClosing(true);
+          if (!open && !busy) void confirmClose();
         }}
       >
         {disabled && (
@@ -58,16 +68,6 @@ const RestockSheet = ({ items, disabled, onClose, onDone }: Props) => {
         )}
         {content}
       </Sheet>
-      <ConfirmDialog
-        open={closing}
-        onOpenChange={setClosing}
-        title="반영하지 않고 닫을까요?"
-        description="재고는 바뀌지 않고, 담은 항목은 장바구니에 그대로 남아요."
-        destructive={false}
-        confirmLabel="닫기"
-        pending={busy}
-        onConfirm={onClose}
-      />
     </>
   );
 };

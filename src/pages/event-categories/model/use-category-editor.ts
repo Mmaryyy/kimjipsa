@@ -28,7 +28,7 @@ export function useCategoryEditor(id: string | undefined, onSaved: () => void) {
     onSuccess,
   });
   const onDelete = useCallback(() => {
-    if (id) remove.mutate();
+    if (id) return remove.mutateAsync();
   }, [id, remove]);
   return {
     onSave: save.mutateAsync,

@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   cartInputSchema,
   parseCartQuickInput,
@@ -8,6 +8,7 @@ import {
   useInventoryActions,
   type useInventoryMeta,
 } from "@/entities/inventory-item";
+import { useConfirm } from "@/shared/ui";
 import { useCartAdd } from "@/features/cart-add";
 
 export function useCartQuickAdd(
@@ -16,12 +17,7 @@ export function useCartQuickAdd(
   onMessage: (message: string) => void,
 ) {
   const inventoryActions = useInventoryActions();
-  const [unknownUnit, setUnknownUnit] = useState<{
-    item: CartInput;
-    name: string;
-  } | null>(null);
-  const [unitError, setUnitError] = useState("");
-  const [resolvingUnit, setResolvingUnit] = useState(false);
+  const confirm = useConfirm();
   const [name, setName] = useState("");
   const onAdded = useCallback(
     (message: string) => {
@@ -31,43 +27,55 @@ export function useCartQuickAdd(
     [onMessage],
   );
   const add = useCartAdd(onAdded, true);
-  const onQuickAdd = useCallback(() => {
-    const { unknownUnit: unitName, ...parsed } = parseCartQuickInput(
-      name,
-      meta.data?.units ?? [],
-    );
-    const item: CartInput = {
-      ...parsed,
-      category_id:
-        meta.data?.categories.find((entry) => entry.name === "기타")?.id ??
-        null,
-      memo: "",
-      link_url: "",
-      inventory_item_id: null,
-    };
-    const validation = cartInputSchema.safeParse(item);
-    if (!validation.success) {
-      onMessage(
-        validation.error.issues[0]?.message ?? "입력 내용을 확인해 주세요.",
+  const choosing = useRef(false);
+  const onQuickAdd = useCallback(async () => {
+    if (pending || add.pending || choosing.current) return;
+    choosing.current = true;
+    try {
+      const { unknownUnit: unitName, ...parsed } = parseCartQuickInput(
+        name,
+        meta.data?.units ?? [],
       );
-      return;
-    }
-    const disabledUnit = meta.data?.units.find(
-      (unit) => unit.id === item.unit_id && !unit.enabled,
-    );
-    if (unitName || disabledUnit) {
-      setUnitError("");
-      setUnknownUnit({ item, name: unitName ?? disabledUnit!.name });
-    } else void add.onAdd(item);
-  }, [name, meta.data, add, onMessage]);
-  const onResolveUnit = useCallback(
-    async (create: boolean) => {
-      if (!unknownUnit || pending || resolvingUnit) return;
-      setResolvingUnit(true);
-      setUnitError("");
-      try {
-        let unitId = unknownUnit.item.unit_id;
-        if (create) {
+      const item: CartInput = {
+        ...parsed,
+        category_id:
+          meta.data?.categories.find((entry) => entry.name === "기타")?.id ??
+          null,
+        memo: "",
+        link_url: "",
+        inventory_item_id: null,
+      };
+      const validation = cartInputSchema.safeParse(item);
+      if (!validation.success) {
+        onMessage(
+          validation.error.issues[0]?.message ?? "입력 내용을 확인해 주세요.",
+        );
+        return;
+      }
+      const disabledUnit = meta.data?.units.find(
+        (unit) => unit.id === item.unit_id && !unit.enabled,
+      );
+      if (!unitName && !disabledUnit) {
+        await add.onAdd(item);
+        return;
+      }
+      const unknownUnit = { item, name: unitName ?? disabledUnit!.name };
+      let resolved = false;
+      let unitId = item.unit_id;
+      await confirm({
+        disabled: () => !navigator.onLine,
+        title: `'${unknownUnit.name}' 단위를 추가할까요?`,
+        description: "추가하지 않으면 기본 단위 ‘개’로 담아요.",
+        confirmLabel: "단위 추가",
+        cancelLabel: "취소",
+        destructive: false,
+        secondaryAction: {
+          label: "개로 담기",
+          onClick: () => {
+            resolved = true;
+          },
+        },
+        onConfirm: async () => {
           const current = await meta.refetch();
           if (!current.data || current.isError)
             throw new Error("단위를 불러오지 못했어요. 다시 시도해 주세요.");
@@ -104,35 +112,19 @@ export function useCartQuickAdd(
             });
           }
           unitId = unit.id;
-        }
-        setUnknownUnit(null);
-        await add.onAdd({ ...unknownUnit.item, unit_id: unitId });
-      } catch (error) {
-        setUnitError(
-          error instanceof Error ? error.message : "단위를 추가하지 못했어요.",
-        );
-      } finally {
-        setResolvingUnit(false);
-      }
-    },
-    [unknownUnit, pending, resolvingUnit, meta, inventoryActions.meta, add],
-  );
+          resolved = true;
+        },
+      });
+      if (resolved) await add.onAdd({ ...item, unit_id: unitId });
+    } finally {
+      choosing.current = false;
+    }
+  }, [name, meta, add, onMessage, pending, inventoryActions.meta, confirm]);
 
-  const onUnitOpenChange = useCallback(
-    (open: boolean) => {
-      if (!open && !resolvingUnit) setUnknownUnit(null);
-    },
-    [resolvingUnit],
-  );
   return {
     name,
     onNameChange: setName,
     add,
-    unknownUnit,
-    unitError,
-    resolvingUnit,
     onQuickAdd,
-    onResolveUnit,
-    onUnitOpenChange,
   };
 }
