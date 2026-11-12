@@ -38,7 +38,6 @@ const MemberRoleSettings = ({
 
   return (
     <Sheet
-      showCloseButton
       open={open}
       onOpenChange={(nextOpen) => {
         if (mutation.isPending) return;

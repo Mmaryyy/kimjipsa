@@ -5,12 +5,14 @@ import { Button, TextButton, Toast } from "@/shared/ui";
 import { useCartAdd } from "../../model/use-cart-add";
 interface Props {
   item: CartInput;
+  label?: string;
   odId?: string;
   onAdded?: () => void;
   appearance?: "text" | "filled";
 }
 const CartAddButton = ({
   item,
+  label = "담기",
   odId = "item-to-cart",
   onAdded,
   appearance = "text",
@@ -25,20 +27,22 @@ const CartAddButton = ({
   const actionButton =
     appearance === "filled" ? (
       <Button
-        variant="gray"
+        variant="primary"
+        aria-label={`${item.name} 장바구니에 담기`}
         data-od-id={odId}
         disabled={disabled}
         onClick={() => void add.onAdd(item)}
       >
-        장바구니에 담기
+        {label}
       </Button>
     ) : (
       <TextButton
+        aria-label={`${item.name} 장바구니에 담기`}
         data-od-id={odId}
         disabled={disabled}
         onClick={() => void add.onAdd(item)}
       >
-        장바구니에 담기
+        {label}
       </TextButton>
     );
   return (
@@ -46,7 +50,7 @@ const CartAddButton = ({
       {actionButton}
 
       {add.error && (
-        <p role="alert" className="text-caption text-error-text">
+        <p role="alert" className="col-span-full text-caption text-error-text">
           {add.error}
         </p>
       )}

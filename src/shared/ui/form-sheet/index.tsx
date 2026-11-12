@@ -1,30 +1,16 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useId,
-  useRef,
-  type RefObject,
-} from "react";
+import { useCallback, useId, useRef, useState } from "react";
 import { Sheet } from "../sheet";
 import { TextButton } from "../text-button";
-import {
-  ConfirmOpenContext,
-  useConfirm,
-  useConfirmDisabled,
-} from "../confirm-context";
+import { useConfirm, useConfirmDisabled } from "../confirm-context";
 import type { SheetProps } from "../overlay.types";
 import type { ReactNode } from "react";
 
-export const FormSheetBackContext = createContext<RefObject<
-  (() => void) | null
-> | null>(null);
-
-type FormSheetProps = Omit<SheetProps, "children" | "leadingAction"> & {
-  children: ReactNode | ((formId: string) => ReactNode);
+type FormSheetProps = Omit<SheetProps, "children"> & {
+  children: ReactNode | ((formId: string, onSaved: () => void) => ReactNode);
+  onSaved?: () => void;
+  onCancel?: () => void;
   formId?: string;
   dirty: boolean;
   submitLabel?: string;
@@ -38,6 +24,8 @@ type FormSheetProps = Omit<SheetProps, "children" | "leadingAction"> & {
 
 export function FormSheet({
   dirty,
+  onSaved,
+  onCancel,
   formId: providedFormId,
   onOpenChange,
   children,
@@ -49,22 +37,21 @@ export function FormSheet({
   submitOdId,
   cancelOdId,
   action,
+  leadingAction,
   ...props
 }: FormSheetProps) {
   const generatedId = useId();
   const formId = providedFormId ?? generatedId;
   const confirm = useConfirm();
-  const isConfirmOpen = useContext(ConfirmOpenContext);
-  const childBack = useRef<(() => void) | null>(null);
   const saveDisabled = useConfirmDisabled(submitDisabled || pending);
   const confirming = useRef(false);
-  const historyId = useId();
-  const historyEffect = useRef({ version: 0 });
+  const [cancelAfterSave, setCancelAfterSave] = useState(false);
   const onChange = useCallback(
-    async (open: boolean) => {
+    async (open: boolean, cancel = false) => {
       if (pending || confirming.current) return;
       if (open || !dirty) {
-        onOpenChange(open);
+        if (!open && cancel && onCancel) onCancel();
+        else onOpenChange(open);
         return;
       }
       confirming.current = true;
@@ -90,85 +77,60 @@ export function FormSheet({
         },
       });
       confirming.current = false;
-      if (discard) onOpenChange(false);
-      else if (save) {
+      if (discard) {
+        if (cancel && onCancel) onCancel();
+        else onOpenChange(false);
+      } else if (save) {
+        setCancelAfterSave(cancel);
         requestAnimationFrame(() => {
           const form = document.getElementById(formId);
           if (form instanceof HTMLFormElement) form.requestSubmit();
         });
       }
     },
-    [dirty, pending, onOpenChange, confirm, formId, saveDisabled],
+    [dirty, pending, onOpenChange, onCancel, confirm, formId, saveDisabled],
   );
-  const changeRef = useRef(onChange);
-  useEffect(() => {
-    changeRef.current = onChange;
-  }, [onChange]);
-  useEffect(() => {
-    if (!props.open) return;
-    const lifecycle = historyEffect.current;
-    const version = ++lifecycle.version;
-    const state = { ...window.history.state, formSheet: historyId };
-    if (window.history.state?.formSheet !== historyId)
-      window.history.pushState(state, "");
-    const onBack = () => {
-      // 닫기 확인 동안 현재 경로와 폼을 유지한다.
-      window.history.pushState(state, "");
-      if (isConfirmOpen()) return;
-      if (childBack.current) {
-        childBack.current();
-        return;
-      }
-      void changeRef.current(false);
-    };
-    window.addEventListener("popstate", onBack);
-    return () => {
-      window.removeEventListener("popstate", onBack);
-      // Strict Mode의 효과 재설정에서는 살아 있는 시트 기록을 지우지 않는다.
-      queueMicrotask(() => {
-        if (
-          lifecycle.version === version &&
-          window.history.state?.formSheet === historyId
-        )
-          window.history.back();
-      });
-    };
-  }, [props.open, historyId, isConfirmOpen]);
+  const completeSave = () => {
+    if (cancelAfterSave && onCancel) onCancel();
+    else onSaved?.();
+    setCancelAfterSave(false);
+  };
   return (
-    <FormSheetBackContext.Provider value={childBack}>
-      <Sheet
-        {...props}
-        onOpenChange={(open) => void onChange(open)}
-        leadingAction={
-          editable
-            ? (change) => (
-                <TextButton
-                  disabled={pending}
-                  data-od-id={cancelOdId}
-                  onClick={() => change(false)}
-                >
-                  {cancelLabel}
-                </TextButton>
-              )
-            : undefined
-        }
-        action={
-          editable ? (
-            <TextButton
-              type="submit"
-              form={formId}
-              disabled={pending || submitDisabled}
-              data-od-id={submitOdId}
-            >
-              {submitLabel}
-            </TextButton>
-          ) : (
-            action
-          )
-        }
-      >
-        {typeof children === "function" ? children(formId) : children}
-      </Sheet>
-    </FormSheetBackContext.Provider>
+    <Sheet
+      {...props}
+      onOpenChange={(open) => void onChange(open)}
+      leadingAction={
+        editable
+          ? () => (
+              <TextButton
+                disabled={pending}
+                data-od-id={cancelOdId}
+                onClick={() => void onChange(false, true)}
+              >
+                {cancelLabel}
+              </TextButton>
+            )
+          : leadingAction
+      }
+      action={
+        editable ? (
+          <TextButton
+            key="submit"
+            type="submit"
+            form={formId}
+            disabled={pending || submitDisabled}
+            data-od-id={submitOdId}
+          >
+            {submitLabel}
+          </TextButton>
+        ) : (
+          action
+        )
+      }
+    >
+      {typeof children === "function"
+        ? children(formId, completeSave)
+        : children}
+    </Sheet>
   );
 }

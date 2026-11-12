@@ -3,22 +3,16 @@
 import {
   useWatch,
   type Control,
-  type UseFormRegister,
   type UseFormSetValue,
   type FieldErrors,
 } from "react-hook-form";
 import type { EventInput } from "@/entities/event";
 import { FormFieldRow } from "@/shared/ui";
-import {
-  DateTimeInput,
-  moveRangeStart,
-  type DateTimeRange,
-} from "@/shared/ui/date-time-input";
+import { DateTimeInput, type DateTimeRange } from "@/shared/ui/date-time-input";
 import type { EventFormInput } from "../model/event-form.schema";
 
 type DateFieldsProps = {
   control: Control<EventFormInput, unknown, EventInput>;
-  register: UseFormRegister<EventFormInput>;
   setValue: UseFormSetValue<EventFormInput>;
   errors: FieldErrors<EventFormInput>;
   dateOnly: boolean;
@@ -27,7 +21,6 @@ type DateFieldsProps = {
 
 export function EventDateFields({
   control,
-  register,
   setValue,
   errors,
   dateOnly,
@@ -50,12 +43,6 @@ export function EventDateFields({
     }
   }
 
-  function onStartChange(date: string, time: string) {
-    const next = moveRangeStart(range, date, time);
-    setValue("endDate", next.endDate, { shouldDirty: true });
-    setValue("endTime", next.endTime, { shouldDirty: true });
-  }
-
   return (
     <>
       {(["start", "end"] as const).map((prefix) => {
@@ -64,8 +51,6 @@ export function EventDateFields({
         const timeField = prefix === "start" ? "startTime" : "endTime";
         const label = prefix === "start" ? "시작" : "종료";
         const error = errors[dateField]?.message ?? errors[timeField]?.message;
-        const dateInput = register(dateField);
-        const timeInput = register(timeField);
         return (
           <FormFieldRow
             key={prefix}
@@ -84,25 +69,6 @@ export function EventDateFields({
                 controlProps={props}
                 pickerOdId={`f-${prefix}-picker`}
                 onConfirm={applyRange}
-                dateInputProps={{
-                  ...dateInput,
-                  "data-od-id": `f-${prefix}-date`,
-                  onChange: (event) => {
-                    if (prefix === "start" && event.target.value)
-                      onStartChange(event.target.value, range.startTime);
-                    void dateInput.onChange(event);
-                  },
-                }}
-                timeInputProps={{
-                  ...timeInput,
-                  "aria-invalid": Boolean(errors[timeField]) || undefined,
-                  "data-od-id": `f-${prefix}-time`,
-                  onChange: (event) => {
-                    if (prefix === "start")
-                      onStartChange(range.startDate, event.target.value);
-                    void timeInput.onChange(event);
-                  },
-                }}
               />
             )}
           </FormFieldRow>

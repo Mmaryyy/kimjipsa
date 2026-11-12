@@ -149,7 +149,7 @@ function CalendarContent() {
     .regex(/^[0-9a-f-]{36}(~\d{4}-\d{2}-\d{2})?$/i)
     .safeParse(params?.get("event"));
   const [sheet, setSheet] = useState<{
-    mode: "closed" | "new" | "view" | "edit";
+    mode: "closed" | "new" | "view";
     id: string | null;
   }>({
     mode: parsedEvent.success
@@ -178,49 +178,31 @@ function CalendarContent() {
         />
         <FormSheet
           dirty={dirty}
-          open={sheet.mode !== "closed"}
+          open={sheet.mode === "new"}
           onOpenChange={(open) => {
             if (!open) close();
           }}
-          title={sheet.mode === "new" ? "새 일정" : "일정"}
-          odId={sheet.mode === "new" ? "sheet-new-event" : "sheet-event-detail"}
-          editable={sheet.mode !== "view"}
-          showCloseButton={sheet.mode === "view"}
-          submitLabel={sheet.mode === "new" ? "추가" : "저장"}
-          submitOdId={sheet.mode === "new" ? "new-save" : undefined}
-          cancelOdId={sheet.mode === "new" ? "new-cancel" : undefined}
-          description={
-            sheet.mode === "new"
-              ? "제목과 날짜를 입력하고 공유 또는 개인 일정으로 저장해요."
-              : "일정 내용을 확인하고 수정하거나 삭제해요."
-          }
+          title="새 일정"
+          odId="sheet-new-event"
+          submitLabel="추가"
+          submitOdId="new-save"
+          cancelOdId="new-cancel"
+          description="제목과 날짜를 입력하고 공유 또는 개인 일정으로 저장해요."
         >
           {(formId) =>
-            sheet.mode === "new" ? (
+            sheet.mode === "new" && (
               <NewEvent
                 formId={formId}
                 initialDate={initialDate}
                 onDirtyChange={setDirty}
                 onSaved={close}
               />
-            ) : sheet.id ? (
-              <EventDetail
-                key={sheet.id}
-                id={sheet.id}
-                formId={formId}
-                onClose={close}
-                editing={sheet.mode === "edit"}
-                onEditingChange={(editing) =>
-                  setSheet((current) => ({
-                    ...current,
-                    mode: editing ? "edit" : "view",
-                  }))
-                }
-                onDirtyChange={setDirty}
-              />
-            ) : null
+            )
           }
         </FormSheet>
+        {sheet.id && sheet.mode === "view" && (
+          <EventDetail key={sheet.id} id={sheet.id} onClose={close} />
+        )}
       </div>
     </PullToAdd>
   );

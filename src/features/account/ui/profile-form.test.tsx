@@ -80,7 +80,10 @@ describe("ACC-02 SCN-ACC-1 약관 동의 팝업", () => {
           within(sheet).getByText(/영수증 인식 초안은 최대 7일 보관/),
         ).toBeVisible();
       }
-      fireEvent.click(within(sheet).getByRole("button", { name: "닫기" }));
+      expect(
+        within(sheet).queryByRole("button", { name: "닫기" }),
+      ).not.toBeInTheDocument();
+      fireEvent.keyDown(sheet, { key: "Escape" });
 
       await waitFor(() => {
         expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -262,4 +265,38 @@ it("ACC-02 SCN-ACC-1 재동의는 기존 이름을 유지하고 두 항목을 �
       expect.anything(),
     ),
   );
+});
+
+it("ACC-02 SCN-ACC-1 P15.1b 재동의는 체크·이탈 동작·큰 계속 버튼 순서예요", () => {
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <ProfileForm
+        displayName="살림이"
+        reconsent
+        consentExitActions={
+          <div>
+            <p>동의하지 않으면 서비스를 이용할 수 없어요.</p>
+            <button type="button">로그아웃</button>
+            <button type="button">탈퇴하기</button>
+          </div>
+        }
+      />
+    </QueryClientProvider>,
+  );
+  const nodes = [
+    screen.getByRole("checkbox", { name: "개인정보 처리방침 동의 (필수)" }),
+    screen.getByText("동의하지 않으면 서비스를 이용할 수 없어요."),
+    screen.getByRole("button", { name: "로그아웃" }),
+    screen.getByRole("button", { name: "탈퇴하기" }),
+    screen.getByRole("button", { name: "동의하고 계속" }),
+  ];
+  nodes
+    .slice(1)
+    .forEach((node, index) =>
+      expect(
+        nodes[index].compareDocumentPosition(node) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy(),
+    );
+  expect(nodes.at(-1)).toHaveClass("min-h-[var(--ctl-h-lg)]");
 });

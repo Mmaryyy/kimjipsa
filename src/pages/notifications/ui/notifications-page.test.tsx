@@ -88,18 +88,14 @@ describe("CAL-09 알림 목록", () => {
       else expect(row).not.toHaveAccessibleName(/안 읽음:/);
     },
   );
-  it.each(["닫기", "Escape"])(
+  it.each(["Escape"])(
     "SCN-CAL-5 %s로 닫으면 다른 쿼리는 유지해요",
     async (action) => {
       useSearchParams.mockReturnValue(
         new URLSearchParams("notifications=open&view=week"),
       );
       const { rerender } = render(<NotificationsPage />);
-      if (action === "닫기") {
-        fireEvent.click(screen.getByRole("button", { name: "닫기" }));
-      } else {
-        fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
-      }
+      fireEvent.keyDown(screen.getByRole("dialog"), { key: action });
       await waitFor(() =>
         expect(replace).toHaveBeenCalledWith("/?view=week", { scroll: false }),
       );
@@ -111,7 +107,7 @@ describe("CAL-09 알림 목록", () => {
   it("SCN-CAL-5 홈에서 연 시트는 닫을 때 이전 기록으로 돌아가요", () => {
     window.history.replaceState({ notificationsOpened: true }, "");
     render(<NotificationsPage />);
-    fireEvent.click(screen.getByRole("button", { name: "닫기" }));
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
     expect(back).toHaveBeenCalledOnce();
     expect(replace).not.toHaveBeenCalled();
   });

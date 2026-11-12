@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useState } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import {
   Controller,
   useForm,
@@ -31,7 +31,6 @@ function LegalDocumentSheet({ kind }: { kind: LegalDocumentKind }) {
   const label = kind === "terms" ? "이용약관 보기" : "개인정보 처리방침 보기";
   return (
     <Sheet
-      showCloseButton
       open={open}
       onOpenChange={setOpen}
       title={legalDocumentTitles[kind]}
@@ -147,12 +146,14 @@ export function ProfileForm({
   onboarding = false,
   autoFocus = false,
   reconsent = false,
+  consentExitActions,
 }: {
   displayName?: string;
   onSaved?: () => void;
   onboarding?: boolean;
   autoFocus?: boolean;
   reconsent?: boolean;
+  consentExitActions?: ReactNode;
 }) {
   const hasProfile = displayName !== undefined;
   const { onSubmit, saved } = useProfileForm(onSaved);
@@ -208,7 +209,16 @@ export function ProfileForm({
     <form
       onSubmit={handleSubmit(onSave)}
       noValidate
-      className={onboarding ? onboardingStyles({ part: "form" }) : "grid gap-5"}
+      className={
+        onboarding
+          ? onboardingStyles({
+              part: "form",
+              className: reconsent
+                ? "[&>button[type=submit]]:mt-0!"
+                : undefined,
+            })
+          : "grid gap-5"
+      }
       aria-busy={isSubmitting}
     >
       <FormFieldRow
@@ -265,7 +275,9 @@ export function ProfileForm({
           동의해야 계속할 수 있어요
         </Text>
       )}
+      {reconsent && consentExitActions}
       <Button
+        size={reconsent ? "block" : undefined}
         data-od-id={!hasProfile || onboarding ? "ob-terms-next" : undefined}
         type="submit"
         disabled={isSubmitting || consentMissing}

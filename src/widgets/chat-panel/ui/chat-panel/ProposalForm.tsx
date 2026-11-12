@@ -161,7 +161,6 @@ const ProposalFields = ({
   };
   const dateControl = (end = false) => {
     const dateKey = event ? (end ? "endDate" : "startDate") : "expires_on";
-    const timeKey = end ? "endTime" : "startTime";
     const label = event ? (end ? "종료" : "시작") : "유통기한";
     return (
       <div className="space-y-1" key={dateKey}>
@@ -175,15 +174,6 @@ const ProposalFields = ({
           dateOnly={!event || fields.isAllDay === true}
           singleDate={!event}
           controlProps={{ id: `${inputId}-${dateKey}` }}
-          dateInputProps={{
-            "aria-label": `${label} 날짜`,
-            value: range[end ? "endDate" : "startDate"],
-            onChange: (e) => update(dateKey, e.target.value || null),
-          }}
-          timeInputProps={{
-            value: range[end ? "endTime" : "startTime"],
-            onChange: (e) => update(timeKey, e.target.value || null),
-          }}
           onConfirm={(next) =>
             onChange(
               event

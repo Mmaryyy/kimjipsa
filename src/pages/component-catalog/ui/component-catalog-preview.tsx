@@ -159,9 +159,9 @@ function AppearanceSamples({ onAction }: { onAction: () => void }) {
         </TextButton>
         <TextButton onClick={onAction}>모두 보기</TextButton>
         <TextButton size="sm" tone="danger" onClick={onAction}>
-          삭제하기
+          삭제
         </TextButton>
-        <TextButton disabled>수정하기</TextButton>
+        <TextButton disabled>수정</TextButton>
       </div>
       <p className="text-caption text-muted-foreground">
         icon-sm · 원형 32px · 아이콘 16px · 누름 영역 44px
@@ -401,7 +401,7 @@ function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
             }
             trailing={
               <TextButton size="sm" tone="danger" onClick={() => void remove()}>
-                삭제하기
+                삭제
               </TextButton>
             }
           >
@@ -423,28 +423,36 @@ function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
       <SectionHeader title="시트와 확인창" />
       <div className="flex flex-wrap items-center gap-4 py-4">
         <Sheet
-          showCloseButton
           open={sheetOpen}
           onOpenChange={setSheetOpen}
           theme={theme}
           title="견본 시트"
           description="공용 입력 행을 담은 견본이에요"
           trigger={<Button>시트 열기</Button>}
-          leadingAction={(onOpenChange) => (
-            <TextButton onClick={() => onOpenChange(false)}>취소</TextButton>
+          leadingAction={() => (
+            <TextButton
+              tone="danger"
+              aria-label="견본 삭제"
+              onClick={() => void remove()}
+            >
+              삭제
+            </TextButton>
           )}
           action={
-            <TextButton onClick={() => setSheetOpen(false)}>
-              완료하기
+            <TextButton
+              aria-label="견본 수정"
+              onClick={() => {
+                setSheetOpen(false);
+                setFormOpen(true);
+              }}
+            >
+              수정
             </TextButton>
           }
         >
-          <FormFieldRow label="이름" htmlFor={`${fieldId}-sheet`}>
-            {(controlProps) => (
-              <input {...controlProps} placeholder="이름을 입력해 주세요" />
-            )}
-          </FormFieldRow>
-          <EmptyState message="아직 항목이 없어요" />
+          <Text as="p" className="py-4">
+            보기 시트에서 수정하면 취소·저장 머리의 폼이 열려요.
+          </Text>
         </Sheet>
         <Button variant="danger" onClick={() => void remove()}>
           확인창 열기

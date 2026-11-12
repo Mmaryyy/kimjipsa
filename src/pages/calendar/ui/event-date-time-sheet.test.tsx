@@ -1,8 +1,19 @@
 import { useState } from "react";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 import { DateTimeSheet } from "@/shared/ui/date-time-input";
 import type { DateTimeRange } from "@/shared/ui/date-time-input";
+
+afterEach(async () => {
+  cleanup();
+  await new Promise((resolve) => setTimeout(resolve, 20));
+});
 
 const range = {
   startDate: "2026-10-21",

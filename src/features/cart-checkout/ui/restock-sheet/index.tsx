@@ -58,7 +58,6 @@ const RestockSheet = ({ items, disabled, onClose, onDone }: Props) => {
         title="재고 반영"
         description="수량과 보관 장소, 유통기한을 확인해 주세요."
         odId="restock-main"
-        showCloseButton
         onOpenChange={(open) => {
           if (!open && !busy) void confirmClose();
         }}

@@ -214,7 +214,12 @@ const InventoryListsPage = () => {
                 ...meta.data[kind].map((entry) => entry.sort_order),
               ) + 1
             }
-            entry={editor === "new" ? undefined : editor}
+            entry={
+              editor === "new"
+                ? undefined
+                : (meta.data[kind].find((entry) => entry.id === editor.id) ??
+                  editor)
+            }
             onClose={() => setEditor(null)}
             onNotify={setMessage}
           />

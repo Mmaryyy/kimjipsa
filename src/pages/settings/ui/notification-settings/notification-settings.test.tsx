@@ -31,6 +31,28 @@ vi.mock("@/entities/user", async (original) => ({
     isPending: mutation.isPending,
   }),
 }));
+async function chooseTime(hourSteps = 0, minuteSteps = 0, confirm = true) {
+  fireEvent.click(screen.getByRole("button", { name: /^아침 요약,/ }));
+  const hour = await screen.findByRole("spinbutton", { name: "시" });
+  for (let i = 0; i < Math.abs(hourSteps); i++)
+    fireEvent.keyDown(hour, { key: hourSteps > 0 ? "ArrowDown" : "ArrowUp" });
+  const minute = screen.getByRole("spinbutton", { name: "분" });
+  for (let i = 0; i < Math.abs(minuteSteps); i++)
+    fireEvent.keyDown(minute, {
+      key: minuteSteps > 0 ? "ArrowDown" : "ArrowUp",
+    });
+  fireEvent.click(
+    screen.getByRole("button", { name: confirm ? "확인" : "취소" }),
+  );
+  await waitFor(() =>
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+  );
+  // 시트 history.back 정리가 다음 선택기를 닫지 않도록 기다린다.
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  });
+}
+
 describe("ACC-11 SCN-ACC-5 알림 설정 저장", () => {
   beforeEach(() => {
     checkPush.mockReset();
@@ -52,8 +74,8 @@ describe("ACC-11 SCN-ACC-5 알림 설정 저장", () => {
       fireEvent.blur(input);
     });
     expect(save).not.toHaveBeenCalled();
-    fireEvent.change(input, { target: { value: "08:30" } });
-    fireEvent.change(input, { target: { value: "10:00" } });
+    await chooseTime(-2, 30, false);
+    await chooseTime();
     await act(async () => {
       fireEvent.blur(input);
     });
@@ -76,8 +98,7 @@ describe("ACC-11 SCN-ACC-5 알림 설정 저장", () => {
       </ToastProvider>,
     );
     const input = screen.getByLabelText("아침 요약");
-    fireEvent.change(input, { target: { value: "08:30" } });
-    fireEvent.blur(input);
+    await chooseTime(-2, 30);
     await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
     await act(async () => {
       fireEvent.blur(input);
@@ -126,23 +147,22 @@ describe("ACC-11 SCN-ACC-5 알림 설정 저장", () => {
     expect(screen.getByRole("switch")).toHaveAttribute("aria-checked", "true");
     expect(save).not.toHaveBeenCalled();
   });
-  it("시각은 blur에 저장하고 실패하면 직전 성공 값으로 복구해요", async () => {
+  it("시각은 휠 확인에 저장하고 실패하면 직전 성공 값으로 복구해요", async () => {
     render(
       <ToastProvider>
         <NotificationSettings />
       </ToastProvider>,
     );
     const input = screen.getByLabelText("아침 요약");
-    fireEvent.change(input, { target: { value: "08:30" } });
+    await chooseTime(-2, 30, false);
     expect(save).not.toHaveBeenCalled();
-    fireEvent.blur(input);
+    await chooseTime(-2, 30);
     await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
     await screen.findByText("알림 설정을 저장했어요");
     save.mockRejectedValueOnce(new Error("저장 실패"));
-    fireEvent.change(input, { target: { value: "09:45" } });
-    fireEvent.blur(input);
+    await chooseTime(1, 15);
     expect(await screen.findByText("저장 실패")).toBeInTheDocument();
-    expect(input).toHaveValue("08:30");
+    expect(input).toHaveTextContent("오전 8:30");
   });
   it("스위치 저장 실패도 마지막 성공 값으로 되돌려요", async () => {
     render(
@@ -159,16 +179,14 @@ describe("ACC-11 SCN-ACC-5 알림 설정 저장", () => {
     await screen.findByText("저장 실패");
     expect(toggle).toHaveAttribute("aria-checked", "false");
   });
-  it("잘못된 시각은 오류를 보여 주고 저장하지 않아요", async () => {
+  it("휠 선택을 취소하면 저장하지 않아요", async () => {
     render(
       <ToastProvider>
         <NotificationSettings />
       </ToastProvider>,
     );
-    const input = screen.getByLabelText("아침 요약");
-    fireEvent.change(input, { target: { value: "" } });
-    fireEvent.blur(input);
-    await waitFor(() => expect(input).toHaveAttribute("aria-invalid", "true"));
+    await chooseTime(1, 15, false);
+    expect(screen.getByLabelText("아침 요약")).toHaveTextContent("오전 10:00");
     expect(save).not.toHaveBeenCalled();
   });
   it("저장 중에도 입력과 포커스를 유지해요", async () => {

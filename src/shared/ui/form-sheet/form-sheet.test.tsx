@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   act,
+  cleanup,
   fireEvent,
   render,
   screen,
@@ -22,7 +23,6 @@ function Editor() {
         open={open}
         onOpenChange={setOpen}
         dirty={dirty}
-        showCloseButton
         title="새 일정"
         description="일정 입력"
       >
@@ -62,7 +62,14 @@ function pointer(coarse: boolean) {
     })),
   );
 }
-afterEach(() => vi.unstubAllGlobals());
+afterEach(async () => {
+  // 닫힌 시트의 비동기 뒤로가기가 다음 사례에 도착하지 않게 기록을 먼저 비운다.
+  window.history.replaceState(null, "");
+  cleanup();
+  // 비동기 history.back 정리가 다음 시나리오의 시트에 섞이지 않게 기다린다.
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  vi.unstubAllGlobals();
+});
 describe("CAL-01 CAL-02 SCN-CAL-1 P5.5 일정 폼 오버레이", () => {
   it.each([true, false])(
     "터치 여부 %s에 맞게 열고 변경 없는 취소는 바로 닫아요",
@@ -107,8 +114,9 @@ describe("CAL-01 CAL-02 SCN-CAL-1 P5.5 일정 폼 오버레이", () => {
     [true, "ESC"],
     [true, "바깥"],
     [true, "취소"],
-    [false, "X"],
+    [false, "취소"],
     [false, "ESC"],
+    [false, "바깥"],
   ] as const)(
     "터치 여부 %s에서 %s로 닫기도 변경 사항 확인을 거쳐요",
     async (coarse, action) => {
@@ -133,7 +141,7 @@ describe("CAL-01 CAL-02 SCN-CAL-1 P5.5 일정 폼 오버레이", () => {
         fireEvent.pointerUp(overlay!, { button: 0 });
         fireEvent.click(overlay!, { button: 0 });
       } else {
-        const name = action === "X" ? "닫기" : "취소";
+        const name = "취소";
         fireEvent.click(screen.getByRole("button", { name }));
       }
       expect(screen.getByRole("alertdialog")).toBeVisible();
@@ -171,7 +179,7 @@ describe("CAL-01 CAL-02 SCN-CAL-1 P5.5 일정 폼 오버레이", () => {
           target: { value: "약속" },
         });
       fireEvent.click(screen.getByRole("button", { name: "날짜 선택" }));
-      act(() => window.dispatchEvent(new PopStateEvent("popstate")));
+      act(() => window.history.back());
       await waitFor(() =>
         expect(
           screen.queryByRole("dialog", { name: "날짜와 시간 선택" }),
@@ -182,3 +190,56 @@ describe("CAL-01 CAL-02 SCN-CAL-1 P5.5 일정 폼 오버레이", () => {
     },
   );
 });
+
+it.each(["저장 안 함", "저장"])(
+  "ACC-13 P15.1b 취소 확인에서 %s 뒤에는 보기로 돌아가요",
+  async (choice) => {
+    pointer(false);
+    const close = vi.fn();
+    const save = vi.fn();
+    function ViewEditor() {
+      const [editing, setEditing] = useState(true);
+      return (
+        <ConfirmProvider>
+          <FormSheet
+            open
+            title="목록"
+            description="목록 수정"
+            dirty={editing}
+            editable={editing}
+            onOpenChange={close}
+            onSaved={close}
+            onCancel={() => setEditing(false)}
+          >
+            {(formId, onSaved) =>
+              editing ? (
+                <form
+                  id={formId}
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    save();
+                    onSaved();
+                  }}
+                >
+                  <input aria-label="이름" defaultValue="변경한 목록" />
+                </form>
+              ) : (
+                <p>목록 보기</p>
+              )
+            }
+          </FormSheet>
+        </ConfirmProvider>
+      );
+    }
+    render(<ViewEditor />);
+    fireEvent.click(screen.getByRole("button", { name: "취소" }));
+    fireEvent.click(
+      within(screen.getByRole("alertdialog")).getByRole("button", {
+        name: choice,
+      }),
+    );
+    await waitFor(() => expect(screen.getByText("목록 보기")).toBeVisible());
+    expect(close).not.toHaveBeenCalled();
+    expect(save).toHaveBeenCalledTimes(choice === "저장" ? 1 : 0);
+  },
+);

@@ -55,7 +55,7 @@ describe("INV-07 SCN-INV-7 삭제 확인", () => {
     fireEvent.click(screen.getByRole("button", { name: "취소하기" }));
     expect(save).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "품목 삭제" }));
-    fireEvent.click(screen.getByRole("button", { name: "삭제하기" }));
+    fireEvent.click(screen.getByRole("button", { name: "삭제" }));
     await waitFor(() =>
       expect(save).toHaveBeenCalledWith({ action: "delete", id: milk.id }),
     );
@@ -105,4 +105,60 @@ describe("INV-10 INV-16 완전 일치 우선", () => {
       }),
     );
   });
+});
+
+it("INV-01 P15.1b 보기에서 수정하면 삭제를 숨기고 취소·저장을 보여 줘요", async () => {
+  editor(milk);
+  fireEvent.click(screen.getByRole("button", { name: "품목 수정" }));
+  expect(
+    screen.queryByRole("button", { name: "품목 삭제" }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "취소" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "저장" })).toBeVisible();
+  fireEvent.change(screen.getByLabelText("품목 이름"), {
+    target: { value: "저지방 우유" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "저장" }));
+  await waitFor(() =>
+    expect(save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "save",
+        id: milk.id,
+        item: expect.objectContaining({ name: "저지방 우유" }),
+      }),
+    ),
+  );
+});
+
+it.each([true, false])(
+  "INV-04 CART-06 P15.1b 담기 표시 %s에서 하단 버튼 순서와 채움을 지켜요",
+  (canAdd) => {
+    editor({ ...milk, quantity: canAdd ? 0 : 999 });
+    const used = screen.getByRole("button", { name: "다 썼어요" });
+    const add = screen.queryByRole("button", {
+      name: `${milk.name} 장바구니에 담기`,
+    });
+    expect(used.parentElement).toHaveClass(
+      canAdd ? "grid-cols-2" : "grid-cols-1",
+    );
+    if (canAdd) {
+      expect(used).toHaveClass("bg-muted");
+      expect(add).toHaveClass("bg-primary");
+      expect(add).toHaveTextContent("담기");
+      expect(
+        used.compareDocumentPosition(add!) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    } else {
+      expect(used).toHaveClass("bg-primary");
+      expect(add).not.toBeInTheDocument();
+    }
+  },
+);
+
+it("INV-01 P15.1b 수정 취소는 품목 보기로 돌아가요", () => {
+  editor(milk);
+  fireEvent.click(screen.getByRole("button", { name: "품목 수정" }));
+  fireEvent.click(screen.getByRole("button", { name: "취소" }));
+  expect(screen.getByRole("button", { name: "품목 수정" })).toBeVisible();
+  expect(screen.queryByLabelText("품목 이름")).not.toBeInTheDocument();
 });

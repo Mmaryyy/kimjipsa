@@ -2,7 +2,12 @@ import type { UseFormReturn } from "react-hook-form";
 import type { RestockEntry, CartItem } from "@/entities/cart-item";
 import type { InventoryItem, InventoryMeta } from "@/entities/inventory-item";
 import { DateTimeInput } from "@/shared/ui/date-time-input";
-import { FormFieldRow, QuantityStepper, StatusBadge } from "@/shared/ui";
+import {
+  FormFieldRow,
+  QuantityStepper,
+  StatusBadge,
+  TextButton,
+} from "@/shared/ui";
 export type RestockFormValues = { entries: RestockEntry[] };
 interface Props {
   item: CartItem;
@@ -192,14 +197,6 @@ const RestockItem = ({
                 startTime: "",
                 endTime: "",
               }}
-              dateInputProps={{
-                value: expiry,
-                onChange: (event) =>
-                  form.setValue(
-                    `entries.${index}.expires_on`,
-                    event.target.value || null,
-                  ),
-              }}
               onConfirm={(range) =>
                 form.setValue(
                   `entries.${index}.expires_on`,
@@ -209,6 +206,18 @@ const RestockItem = ({
             />
           )}
         </FormFieldRow>
+      )}
+      {!grouped && expiry && (
+        <TextButton
+          aria-label={`${item.name} 유통기한 지우기`}
+          onClick={() =>
+            form.setValue(`entries.${index}.expires_on`, null, {
+              shouldDirty: true,
+            })
+          }
+        >
+          유통기한 지우기
+        </TextButton>
       )}
     </fieldset>
   );

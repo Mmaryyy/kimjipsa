@@ -59,6 +59,7 @@ const InventoryItemEditor = ({
     expires_on: null,
   };
   const {
+    reset,
     register,
     control,
     handleSubmit,
@@ -88,31 +89,34 @@ const InventoryItemEditor = ({
   const needsDecision = similar.length > 0 && separateName !== name;
   const pending = actions.save.isPending || actions.change.isPending;
 
-  const save = handleSubmit(async (input) => {
-    if (needsDecision) {
-      setError("name", {
-        message: "기존 품목에 더할지 새로 등록할지 골라 주세요.",
-      });
-      return;
-    }
-    if (item && !isDirty) {
-      onClose();
-      return;
-    }
-    try {
-      await actions.save.mutateAsync({
-        action: "save",
-        id: item?.id,
-        item: input,
-      });
-      onNotify("품목을 저장했어요.");
-      onClose();
-    } catch (error) {
-      setError("root", {
-        message: error instanceof Error ? error.message : "저장하지 못했어요.",
-      });
-    }
-  });
+  const save = (onSaved: () => void) =>
+    handleSubmit(async (input) => {
+      if (needsDecision) {
+        setError("name", {
+          message: "기존 품목에 더할지 새로 등록할지 골라 주세요.",
+        });
+        return;
+      }
+      if (item && !isDirty) {
+        onSaved();
+        return;
+      }
+      try {
+        await actions.save.mutateAsync({
+          action: "save",
+          id: item?.id,
+          item: input,
+        });
+        reset(input);
+        onNotify("품목을 저장했어요.");
+        onSaved();
+      } catch (error) {
+        setError("root", {
+          message:
+            error instanceof Error ? error.message : "저장하지 못했어요.",
+        });
+      }
+    });
   const merge = handleSubmit(async (input) => {
     const target = mergeTarget;
     if (!target || target.mode !== "quantity" || input.mode !== "quantity") {
@@ -187,6 +191,15 @@ const InventoryItemEditor = ({
   ] as const;
   return (
     <FormSheet
+      onSaved={onClose}
+      onCancel={
+        item
+          ? () => {
+              reset();
+              setEditing(false);
+            }
+          : undefined
+      }
       open
       onOpenChange={(open) => {
         if (!open) onClose();
@@ -203,26 +216,40 @@ const InventoryItemEditor = ({
       editable={editing}
       cancelOdId={item ? undefined : "new-item-cancel"}
       submitOdId={item ? "item-done" : "new-item-save"}
-      submitLabel={pending ? "저장 중" : item ? "완료" : "추가"}
+      submitLabel={pending ? "저장 중" : item ? "저장" : "추가"}
+      leadingAction={() => (
+        <TextButton
+          tone="danger"
+          aria-label="품목 삭제"
+          data-od-id="item-delete"
+          disabled={pending}
+          onClick={() => void remove()}
+        >
+          삭제
+        </TextButton>
+      )}
       action={
-        <TextButton disabled={pending} data-od-id="item-done" onClick={onClose}>
-          완료
+        <TextButton
+          disabled={pending}
+          aria-label="품목 수정"
+          data-od-id="item-edit"
+          onClick={() => setEditing(true)}
+        >
+          수정
         </TextButton>
       }
     >
-      {(formId) => (
+      {(formId, onSaved) => (
         <>
           {item && !editing ? (
             <InventoryItemDetails
               item={item}
               meta={meta}
               pending={pending}
-              onEdit={() => setEditing(true)}
               onUsedUp={() => void usedUp()}
-              onDelete={() => void remove()}
             />
           ) : (
-            <form id={formId} onSubmit={save} className="grid gap-1">
+            <form id={formId} onSubmit={save(onSaved)} className="grid gap-1">
               <FormFieldRow
                 label="품목 이름"
                 htmlFor="inventory-name"
@@ -418,14 +445,6 @@ const InventoryItemEditor = ({
                       endDate: expiry ?? "",
                       startTime: "",
                       endTime: "",
-                    }}
-                    dateInputProps={{
-                      "data-od-id": "n-expiry",
-                      value: expiry ?? "",
-                      onChange: (event) =>
-                        setValue("expires_on", event.target.value || null, {
-                          shouldDirty: true,
-                        }),
                     }}
                     onConfirm={(range) =>
                       setValue("expires_on", range.startDate || null, {

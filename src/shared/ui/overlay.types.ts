@@ -13,10 +13,10 @@ export type OverlayProps = {
 export type SheetProps = OverlayProps & {
   children: ReactNode;
   presentation?: "sheet" | "panel";
+  historyManaged?: boolean;
   onEscapeKeyDown?: ComponentProps<typeof Dialog.Content>["onEscapeKeyDown"];
   action?: ReactNode;
   leadingAction?: (onOpenChange: OverlayProps["onOpenChange"]) => ReactNode;
-  showCloseButton?: boolean;
   odId?: string;
   className?: string;
   hideHeader?: boolean;

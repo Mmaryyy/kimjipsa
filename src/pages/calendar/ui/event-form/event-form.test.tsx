@@ -132,9 +132,12 @@ describe("CAL-06 CAL-16 SCN-CAL-9~10 D-day 등록", () => {
     fireEvent.change(screen.getByLabelText("축하 문구 (선택)"), {
       target: { value: "축하해요" },
     });
-    fireEvent.change(screen.getByLabelText("시작", { exact: true }), {
-      target: { value: "2020-10-11" },
-    });
+    fireEvent.click(screen.getByRole("button", { name: /^시작,/ }));
+    const year = await screen.findByRole("spinbutton", { name: "연도" });
+    for (let i = 0; i < 6; i++) fireEvent.keyDown(year, { key: "ArrowUp" });
+    const day = screen.getByRole("spinbutton", { name: "일" });
+    for (let i = 0; i < 5; i++) fireEvent.keyDown(day, { key: "ArrowUp" });
+    fireEvent.click(screen.getByRole("button", { name: "확인" }));
     expect(
       screen.queryByLabelText("종료", { exact: true }),
     ).not.toBeInTheDocument();
@@ -191,30 +194,30 @@ describe("CAL-01 CAL-02 SCN-CAL-1 P5.5 입력 방식", () => {
     );
   }
 
-  it("fine에서는 좁은 화면도 날짜와 시각을 직접 입력해요", () => {
+  it("fine에서도 파란 값 버튼으로 휠을 열고 키보드로 확정해요", async () => {
     mockPointer(false);
     render(
       <EventForm event={event} categories={categories} onSaved={() => {}} />,
     );
-    expect(screen.getByLabelText("시작", { exact: true })).toHaveAttribute(
-      "type",
-      "date",
-    );
-    expect(screen.getByLabelText("시작 시각")).toHaveAttribute("type", "time");
-  });
-
-  it("직접 입력에서도 시작 시각을 옮기면 종료가 기존 길이를 유지해요", () => {
-    mockPointer(false);
-    render(
-      <EventForm event={event} categories={categories} onSaved={() => {}} />,
-    );
-    fireEvent.change(screen.getByLabelText("시작 시각"), {
-      target: { value: "23:30" },
+    const trigger = screen.getByRole("button", {
+      name: "시작, 2026년 10월 16일, 오전 9:00",
     });
-    expect(screen.getByLabelText("종료 시각 (선택)")).toHaveValue("00:30");
-    expect(screen.getByLabelText("종료", { exact: true })).toHaveValue(
-      "2026-10-17",
-    );
+    expect(trigger).toHaveTextContent("2026. 10. 16.오전 9:00");
+    expect(trigger).toHaveClass("text-primary");
+    expect(
+      document.querySelector("input[type=date], input[type=time]"),
+    ).toBeNull();
+    fireEvent.click(trigger);
+    const hour = await screen.findByRole("spinbutton", { name: "시" });
+    fireEvent.keyDown(hour, { key: "ArrowDown" });
+    fireEvent.click(screen.getByRole("button", { name: "확인" }));
+    expect(trigger).toHaveAccessibleName("시작, 2026년 10월 16일, 오전 10:00");
+    expect(
+      screen.getByRole("button", {
+        name: "종료, 2026년 10월 16일, 오전 11:00",
+      }),
+    ).toBeVisible();
+    await waitFor(() => expect(trigger).toHaveFocus());
   });
 
   it("coarse에서는 폭과 관계없이 시트 여는 버튼을 보여요", () => {
@@ -234,11 +237,16 @@ describe("CAL-01 CAL-02 SCN-CAL-1 P5.5 입력 방식", () => {
     vi.setSystemTime(new Date("2026-10-21T23:30:00+09:00"));
     try {
       render(<EventForm categories={categories} onSaved={() => {}} />);
-      expect(screen.getByLabelText("시작", { exact: true })).toHaveValue(
-        "2026-10-22",
-      );
-      expect(screen.getByLabelText("시작 시각")).toHaveValue("00:00");
-      expect(screen.getByLabelText("종료 시각 (선택)")).toHaveValue("01:00");
+      expect(
+        screen.getByRole("button", {
+          name: "시작, 2026년 10월 22일, 오전 12:00",
+        }),
+      ).toBeVisible();
+      expect(
+        screen.getByRole("button", {
+          name: "종료, 2026년 10월 22일, 오전 1:00",
+        }),
+      ).toBeVisible();
       expect(
         screen.getByRole("switch", { name: "시간 미정" }),
       ).not.toBeChecked();
@@ -302,4 +310,29 @@ describe("CAL-01 CAL-02 SCN-CAL-1 P5.5 입력 방식", () => {
     fireEvent.click(screen.getByRole("switch", { name: "종일" }));
     expect(screen.getByRole("switch", { name: "시간 미정" })).not.toBeChecked();
   });
+});
+
+it("CAL-01 SCN-CAL-1 P15.1b 분류·제목·시간·반복·알림·장소·메모 순서와 제목 포커스를 유지해요", () => {
+  render(<EventForm categories={categories} onSaved={() => {}} />);
+  const fields = [
+    "카테고리",
+    "개인 일정",
+    "일정 종류",
+    "제목",
+    "시작",
+    "반복",
+    "알림",
+    "장소",
+    "메모",
+  ];
+  const nodes = fields.map((label) =>
+    screen.getByLabelText(label, { exact: true }),
+  );
+  nodes.slice(1).forEach((node, index) => {
+    expect(
+      nodes[index].compareDocumentPosition(node) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+  expect(screen.getByLabelText("제목")).toHaveFocus();
 });

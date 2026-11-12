@@ -25,7 +25,7 @@ export function ConfirmDialog({
   title,
   targetName,
   description,
-  confirmLabel = "삭제하기",
+  confirmLabel = "삭제",
   onConfirm,
   pending = false,
   destructive = true,
@@ -62,7 +62,14 @@ export function ConfirmDialog({
             {description}
           </AlertDialog.Description>
           {children}
-          <div className="mt-4 grid grid-cols-2 gap-2">
+          <div
+            className={cn(
+              "mt-4 grid gap-2",
+              secondaryAction
+                ? "grid-cols-3 [&_button]:px-1 [&_button]:text-caption"
+                : "grid-cols-2",
+            )}
+          >
             <AlertDialog.Cancel asChild>
               <Button variant="gray" disabled={pending}>
                 {cancelLabel}
@@ -78,7 +85,6 @@ export function ConfirmDialog({
               </Button>
             )}
             <Button
-              className={secondaryAction ? "col-span-2" : undefined}
               variant={destructive ? "danger" : "primary"}
               disabled={pending}
               onClick={onConfirm}

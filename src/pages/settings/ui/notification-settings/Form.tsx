@@ -153,14 +153,6 @@ const NotificationSettingsForm = ({ settings }: Props) => {
                     startTime: field.value,
                     endTime: field.value,
                   }}
-                  timeInputProps={{
-                    ...field,
-                    "data-od-id": "s-morning-time",
-                    onBlur: () => {
-                      field.onBlur();
-                      void handleSubmit(onSubmit)();
-                    },
-                  }}
                   onConfirm={(range) => {
                     field.onChange(range.startTime);
                     field.onBlur();

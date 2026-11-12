@@ -29,6 +29,9 @@ vi.mock("next/link", () => ({
 vi.mock("@/entities/event", () => ({
   useEventCategories: () => ({ isPending: true }),
 }));
+vi.mock("../model/use-category-editor", () => ({
+  useCategoryEditor: () => ({ onDelete: vi.fn(), deleting: false }),
+}));
 vi.mock("./sortable-category-list", () => ({ default: () => null }));
 vi.mock("./event-category-form", () => ({ default: () => null }));
 vi.mock("@/shared/ui", () => ({
@@ -37,6 +40,7 @@ vi.mock("@/shared/ui", () => ({
   Button: () => null,
   TextButton: () => null,
   FormSheet: () => null,
+  useConfirm: () => vi.fn(),
 }));
 
 describe("ACC-13 r227-f1 일정 카테고리 뒤로 가기", () => {

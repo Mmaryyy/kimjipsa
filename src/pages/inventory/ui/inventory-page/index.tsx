@@ -311,7 +311,11 @@ const InventoryPage = () => {
         </div>
         {editor && (
           <InventoryItemEditor
-            item={editor === "new" ? undefined : editor}
+            item={
+              editor === "new"
+                ? undefined
+                : (items.data.find((item) => item.id === editor.id) ?? editor)
+            }
             initialName={query}
             items={items.data}
             meta={meta.data}
@@ -367,12 +371,12 @@ const InventoryPage = () => {
       >
         {content}
         <Sheet
+          historyManaged
           open={manage}
           onOpenChange={setManage}
           title="재고 관리"
           description="가정에서 함께 쓰는 목록을 관리해요."
           odId="inv-manage-sheet"
-          showCloseButton
         >
           <List>
             {(
@@ -412,7 +416,14 @@ const InventoryPage = () => {
             장바구니에 담아 둘까요?
           </p>
           {afterUsed && (
-            <div className="grid gap-2">
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant="gray"
+                data-od-id="after-skip"
+                onClick={() => setAfterUsed(null)}
+              >
+                나중에
+              </Button>
               <CartAddButton
                 appearance="filled"
                 odId="after-add-cart"
@@ -430,13 +441,6 @@ const InventoryPage = () => {
                   link_url: "",
                 }}
               />
-              <Button
-                variant="gray"
-                data-od-id="after-skip"
-                onClick={() => setAfterUsed(null)}
-              >
-                나중에
-              </Button>
             </div>
           )}
         </Sheet>

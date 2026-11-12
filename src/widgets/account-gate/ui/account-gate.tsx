@@ -26,7 +26,7 @@ function ConsentExitActions() {
   const withdrawal = useMutation({ mutationFn: withdrawAccount });
   const pending = signOut.pending || withdrawal.isPending;
   return (
-    <div className="mt-4 grid gap-3">
+    <div className="mt-auto mb-10 grid gap-3 pt-4">
       <Text as="p" variant="caption" className="text-muted-foreground">
         동의하지 않으면 서비스를 이용할 수 없어요. 로그아웃하거나 탈퇴할 수
         있어요.
@@ -172,10 +172,10 @@ export function AccountGate({
             </Text>
             <ProfileForm
               reconsent
+              consentExitActions={<ConsentExitActions />}
               onboarding
               displayName={account.data.profile.displayName}
             />
-            <ConsentExitActions />
           </section>
         </div>
       </main>

@@ -11,14 +11,7 @@ import {
   type EventCategory,
   type EventCategoryInput,
 } from "@/entities/event";
-import {
-  CategoryDot,
-  useConfirm,
-  FormFieldRow,
-  GroupLabel,
-  Text,
-  TextButton,
-} from "@/shared/ui";
+import { CategoryDot, FormFieldRow, GroupLabel, Text } from "@/shared/ui";
 import EventCategoryColorPicker from "./ColorPicker";
 import { useCategoryEditor } from "../../model/use-category-editor";
 interface Props {
@@ -40,11 +33,7 @@ const EventCategoryForm = ({
       -1,
       ...(categories.data ?? []).map((category) => category.sortOrder),
     ) + 1;
-  const confirm = useConfirm();
-  const { onSave, onDelete, deleting, deleteError } = useCategoryEditor(
-    category?.id,
-    onSaved,
-  );
+  const { onSave } = useCategoryEditor(category?.id, onSaved);
   const {
     register,
     control,
@@ -86,7 +75,7 @@ const EventCategoryForm = ({
     },
     [setValue],
   );
-  const busy = isSubmitting || deleting;
+  const busy = isSubmitting;
   return (
     <form
       id={formId}
@@ -139,29 +128,6 @@ const EventCategoryForm = ({
       {errors.root && (
         <Text as="p" role="alert" className="text-error-text">
           {errors.root.message}
-        </Text>
-      )}
-      {category && category.name !== "기타" && (
-        <TextButton
-          className="mt-5 justify-self-start"
-          data-od-id="lists-delete"
-          tone="danger"
-          onClick={() =>
-            void confirm({
-              targetName: category.name,
-              title: "카테고리를 삭제할까요?",
-              description: "이 카테고리의 일정은 기타로 옮겨져요.",
-              onConfirm: onDelete,
-            })
-          }
-          disabled={busy}
-        >
-          삭제
-        </TextButton>
-      )}
-      {deleteError && (
-        <Text as="p" role="alert" className="text-error-text">
-          {deleteError.message}
         </Text>
       )}
     </form>

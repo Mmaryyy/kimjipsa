@@ -1,5 +1,5 @@
 import { ConfirmTestProvider as ConfirmProvider } from "@/shared/ui/confirm-test-provider";
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 import {
   act,
   cleanup,
@@ -33,7 +33,12 @@ vi.mock("@/features/account", () => ({
   useAccount: () => account,
   useSignOut: () => ({ onSignOut: vi.fn(), pending: false, error: null }),
   withdrawAccount: vi.fn(),
-  ProfileForm: () => <p>동의 폼</p>,
+  ProfileForm: ({ consentExitActions }: { consentExitActions?: ReactNode }) => (
+    <>
+      <p>동의 폼</p>
+      {consentExitActions}
+    </>
+  ),
 }));
 vi.mock("next/navigation", () => ({
   usePathname: () => route.pathname,

@@ -17,7 +17,6 @@ const ProfileSettings = ({ profile, loginProvider }: Props) => {
     <section data-od-id="set-profile">
       <GroupLabel>내 정보</GroupLabel>
       <Sheet
-        showCloseButton
         open={editingName}
         onOpenChange={setEditingName}
         title="표시 이름 수정"

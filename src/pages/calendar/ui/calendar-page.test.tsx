@@ -113,7 +113,9 @@ describe("CAL-01~05 SCN-CAL-1~3 일정 목록", () => {
     expect(
       screen.queryByRole("button", { name: /개인 일정/ }),
     ).not.toBeInTheDocument();
-    expect(screen.queryByText("수정하기")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "일정 수정" }),
+    ).not.toBeInTheDocument();
   });
 });
 

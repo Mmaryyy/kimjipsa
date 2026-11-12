@@ -47,13 +47,7 @@ function renderDetail() {
         new QueryClient({ defaultOptions: { queries: { retry: false } } })
       }
     >
-      <EventDetail
-        id="event"
-        onClose={vi.fn()}
-        editing={false}
-        onEditingChange={vi.fn()}
-        onDirtyChange={vi.fn()}
-      />
+      <EventDetail id="event" onClose={vi.fn()} />
     </QueryClientProvider>,
   );
 }
@@ -140,7 +134,7 @@ describe("CAL-12 SCN-CAL-7 상세와 삭제 확인", () => {
     renderDetail();
     fireEvent.click(screen.getByRole("button", { name: "일정 삭제" }));
     const dialog = screen.getByRole("alertdialog");
-    fireEvent.click(within(dialog).getByRole("button", { name: "삭제하기" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "삭제" }));
     await waitFor(() =>
       expect(deleteEvent).toHaveBeenCalledWith("event", undefined),
     );
@@ -171,7 +165,7 @@ describe("CAL-12 SCN-CAL-7 상세와 삭제 확인", () => {
     fireEvent.click(screen.getByRole("button", { name: "일정 삭제" }));
     fireEvent.click(
       within(screen.getByRole("alertdialog")).getByRole("button", {
-        name: "삭제하기",
+        name: "삭제",
       }),
     );
     await waitFor(() =>
@@ -181,13 +175,67 @@ describe("CAL-12 SCN-CAL-7 상세와 삭제 확인", () => {
     );
     fireEvent.click(
       within(screen.getByRole("alertdialog")).getByRole("button", {
-        name: "삭제하기",
+        name: "삭제",
       }),
     );
     await waitFor(() =>
       expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
     );
     expect(deleteEvent).toHaveBeenCalledTimes(2);
+  });
+  it("CAL-02 P15.1b 보기에서 수정하면 취소·저장 머리와 폼이 열려요", () => {
+    renderDetail();
+    fireEvent.click(screen.getByRole("button", { name: "일정 수정" }));
+    expect(screen.getByLabelText("제목")).toHaveValue("병원 예약");
+    expect(screen.getByRole("button", { name: "취소" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "저장" })).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "일정 삭제" }),
+    ).not.toBeInTheDocument();
+  });
+  it("CAL-02 P15.1b 수정 취소는 일정 보기로 돌아가요", () => {
+    renderDetail();
+    fireEvent.click(screen.getByRole("button", { name: "일정 수정" }));
+    fireEvent.click(screen.getByRole("button", { name: "취소" }));
+    expect(screen.getByRole("button", { name: "일정 수정" })).toBeVisible();
+    expect(screen.queryByLabelText("제목")).not.toBeInTheDocument();
+  });
+  it("CAL-04 P15.1b 수정 권한이 없으면 머리 동작을 숨겨요", () => {
+    useEvent.mockReturnValue({
+      ...useEvent(),
+      data: { ...useEvent().data, canEdit: false },
+    });
+    renderDetail();
+    expect(
+      screen.queryByRole("button", { name: "일정 수정" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "일정 삭제" }),
+    ).not.toBeInTheDocument();
+  });
+  it("CAL-12 P15.1b 상세는 분류·제목·일시·반복·알림·장소·메모 순서예요", () => {
+    renderDetail();
+    const nodes = [
+      screen.getByText("공유 일정"),
+      screen.getByText("병원"),
+      screen.getByRole("heading", { name: "병원 예약" }),
+      screen.getByText(/2026-10-16/),
+      screen.getByText("반복"),
+      screen.getByText("알림"),
+      screen.getByText("장소"),
+      screen.getByText("메모"),
+    ];
+    nodes
+      .slice(1)
+      .forEach((node, index) =>
+        expect(
+          nodes[index].compareDocumentPosition(node) &
+            Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy(),
+      );
+    expect(
+      screen.queryByRole("button", { name: "닫기" }),
+    ).not.toBeInTheDocument();
   });
   it("상세 로딩을 표시해요", () => {
     useEvent.mockReturnValue({ isPending: true, isError: false });

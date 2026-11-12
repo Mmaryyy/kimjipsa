@@ -169,7 +169,7 @@ describe("CART-03 CART-07 CART-13 CART-14 제자리 처리", () => {
       fireEvent.click(screen.getByRole("button", { name: "삭제" }));
       fireEvent.click(
         within(screen.getByRole("alertdialog")).getByRole("button", {
-          name: "삭제하기",
+          name: "삭제",
         }),
       );
       await waitFor(() =>

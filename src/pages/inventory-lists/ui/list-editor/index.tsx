@@ -35,6 +35,7 @@ const InventoryListEditor = ({
   onNotify,
 }: Props) => {
   const actions = useInventoryActions();
+  const [editing, setEditing] = useState(!entry);
   const [defaultIcon] = useState(() =>
     entry
       ? (inventoryDefaultIcons[entry.name] ??
@@ -43,6 +44,7 @@ const InventoryListEditor = ({
   );
   const confirm = useConfirm();
   const {
+    reset,
     register,
     control,
     setValue,
@@ -64,26 +66,29 @@ const InventoryListEditor = ({
   const enabled = useWatch({ control, name: "enabled" });
   const name = useWatch({ control, name: "name" });
   const pending = actions.meta.isPending;
-  const save = handleSubmit(async (input) => {
-    if (entry && !isDirty) {
-      onClose();
-      return;
-    }
-    try {
-      await actions.meta.mutateAsync({
-        action: "save",
-        kind,
-        id: entry?.id,
-        entry: input,
-      });
-      onNotify("목록을 저장했어요.");
-      onClose();
-    } catch (error) {
-      setError("root", {
-        message: error instanceof Error ? error.message : "저장하지 못했어요.",
-      });
-    }
-  });
+  const save = (onSaved: () => void) =>
+    handleSubmit(async (input) => {
+      if (entry && !isDirty) {
+        onSaved();
+        return;
+      }
+      try {
+        await actions.meta.mutateAsync({
+          action: "save",
+          kind,
+          id: entry?.id,
+          entry: input,
+        });
+        reset(input);
+        onNotify("목록을 저장했어요.");
+        onSaved();
+      } catch (error) {
+        setError("root", {
+          message:
+            error instanceof Error ? error.message : "저장하지 못했어요.",
+        });
+      }
+    });
 
   const remove = () =>
     confirm({
@@ -107,130 +112,176 @@ const InventoryListEditor = ({
     });
   return (
     <FormSheet
+      onSaved={onClose}
+      onCancel={
+        entry
+          ? () => {
+              reset();
+              setEditing(false);
+            }
+          : undefined
+      }
       open
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
-      title={entry ? "목록 수정" : "목록 추가"}
+      title={entry ? (editing ? "목록 수정" : "목록") : "목록 추가"}
+      editable={editing}
+      leadingAction={() =>
+        entry &&
+        !(kind === "categories" && entry.name === "기타") && (
+          <TextButton
+            tone="danger"
+            aria-label="목록 삭제"
+            data-od-id="lists-delete"
+            disabled={pending}
+            onClick={() => void remove()}
+          >
+            삭제
+          </TextButton>
+        )
+      }
+      action={
+        <TextButton
+          aria-label="목록 수정"
+          disabled={pending}
+          onClick={() => setEditing(true)}
+        >
+          수정
+        </TextButton>
+      }
       description="가정에서 함께 사용하는 목록이에요."
       odId="lists-sheet"
       dirty={isDirty}
       pending={pending}
       submitOdId="lists-save"
     >
-      {(formId) => (
-        <form id={formId} onSubmit={save}>
-          <FormFieldRow
-            label="이름"
-            htmlFor="lists-name"
-            invalid={!!errors.name}
-            error={errors.name?.message}
-          >
-            {(props) => (
-              <Input {...props} {...register("name")} data-od-id="lists-name" />
+      {(formId, onSaved) =>
+        !editing && entry ? (
+          <div className="grid gap-3 py-4">
+            <Text as="h2" variant="title">
+              {entry.name}
+            </Text>
+            {kind === "categories" && (
+              <InventoryCategoryIcon category={entry} />
             )}
-          </FormFieldRow>
-          {kind === "categories" && (
+            {kind === "locations" && (
+              <Text>사용 · {entry.enabled ? "켬" : "끔"}</Text>
+            )}
+          </div>
+        ) : (
+          <form id={formId} onSubmit={save(onSaved)}>
             <FormFieldRow
-              label="아이콘"
-              htmlFor="lists-icon"
-              invalid={!!errors.icon_value}
-              error={errors.icon_value?.message}
+              label="이름"
+              htmlFor="lists-name"
+              invalid={!!errors.name}
+              error={errors.name?.message}
             >
               {(props) => (
-                <div className="flex items-center gap-2">
-                  <InventoryCategoryIcon
-                    category={{
-                      name,
-                      icon_kind: iconKind,
-                      icon_value: iconValue,
-                    }}
-                  />
-                  <Input
-                    {...props}
-                    data-od-id="lists-icon"
-                    placeholder="이모지나 글자 하나"
-                    value={iconKind === "text" ? iconValue : ""}
-                    onChange={(event) => {
-                      setValue(
-                        "icon_kind",
-                        event.target.value
-                          ? "text"
-                          : defaultIcon
-                            ? "lucide"
-                            : null,
-                        {
-                          shouldDirty: true,
-                        },
-                      );
-                      setValue(
-                        "icon_value",
-                        event.target.value || defaultIcon || "",
-                        {
-                          shouldDirty: true,
-                        },
-                      );
-                    }}
-                  />
-                  {defaultIcon && (
-                    <TextButton
-                      onClick={() => {
-                        setValue("icon_kind", "lucide", { shouldDirty: true });
-                        setValue("icon_value", defaultIcon, {
-                          shouldDirty: true,
-                        });
-                      }}
-                    >
-                      기본 아이콘
-                    </TextButton>
-                  )}
-                </div>
+                <Input
+                  {...props}
+                  {...register("name")}
+                  data-od-id="lists-name"
+                />
               )}
             </FormFieldRow>
-          )}
-          {kind === "locations" && (
-            <>
-              <FormFieldRow label="사용" htmlFor="lists-on">
+            {kind === "categories" && (
+              <FormFieldRow
+                label="아이콘"
+                htmlFor="lists-icon"
+                invalid={!!errors.icon_value}
+                error={errors.icon_value?.message}
+              >
                 {(props) => (
-                  <Switch
-                    {...props}
-                    checked={enabled}
-                    onCheckedChange={(value) =>
-                      setValue("enabled", value, { shouldDirty: true })
-                    }
-                    data-od-id="lists-on"
-                  />
+                  <div className="flex items-center gap-2">
+                    <InventoryCategoryIcon
+                      category={{
+                        name,
+                        icon_kind: iconKind,
+                        icon_value: iconValue,
+                      }}
+                    />
+                    <Input
+                      {...props}
+                      data-od-id="lists-icon"
+                      placeholder="이모지나 글자 하나"
+                      value={iconKind === "text" ? iconValue : ""}
+                      onChange={(event) => {
+                        setValue(
+                          "icon_kind",
+                          event.target.value
+                            ? "text"
+                            : defaultIcon
+                              ? "lucide"
+                              : null,
+                          {
+                            shouldDirty: true,
+                          },
+                        );
+                        setValue(
+                          "icon_value",
+                          event.target.value || defaultIcon || "",
+                          {
+                            shouldDirty: true,
+                          },
+                        );
+                      }}
+                    />
+                    {defaultIcon && (
+                      <TextButton
+                        onClick={() => {
+                          setValue("icon_kind", "lucide", {
+                            shouldDirty: true,
+                          });
+                          setValue("icon_value", defaultIcon, {
+                            shouldDirty: true,
+                          });
+                        }}
+                      >
+                        기본 아이콘
+                      </TextButton>
+                    )}
+                  </div>
                 )}
               </FormFieldRow>
-              <Text as="p" variant="caption" className="text-muted-foreground">
-                끄면 보관 장소 선택지와 필터에서 숨겨져요. 품목은 전체 목록에
-                그대로 남아요.
+            )}
+            {kind === "locations" && (
+              <>
+                <FormFieldRow label="사용" htmlFor="lists-on">
+                  {(props) => (
+                    <Switch
+                      {...props}
+                      checked={enabled}
+                      onCheckedChange={(value) =>
+                        setValue("enabled", value, { shouldDirty: true })
+                      }
+                      data-od-id="lists-on"
+                    />
+                  )}
+                </FormFieldRow>
+                <Text
+                  as="p"
+                  variant="caption"
+                  className="text-muted-foreground"
+                >
+                  끄면 보관 장소 선택지와 필터에서 숨겨져요. 품목은 전체 목록에
+                  그대로 남아요.
+                </Text>
+              </>
+            )}
+            {errors.root && (
+              <Text
+                as="p"
+                variant="caption"
+                role="alert"
+                className="text-destructive"
+              >
+                {errors.root.message}
               </Text>
-            </>
-          )}
-          {errors.root && (
-            <Text
-              as="p"
-              variant="caption"
-              role="alert"
-              className="text-destructive"
-            >
-              {errors.root.message}
-            </Text>
-          )}
-          {entry && !(kind === "categories" && entry.name === "기타") && (
-            <TextButton
-              className="mt-5"
-              tone="danger"
-              data-od-id="lists-delete"
-              disabled={pending}
-              onClick={() => void remove()}
-            >
-              삭제
-            </TextButton>
-          )}
-        </form>
-      )}
+            )}
+          </form>
+        )
+      }
     </FormSheet>
   );
 };

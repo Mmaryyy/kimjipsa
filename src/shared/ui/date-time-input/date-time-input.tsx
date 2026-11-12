@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useRef, useState, type ComponentProps } from "react";
-import { cn, useMediaQuery } from "@/shared/lib";
+import { cn } from "@/shared/lib";
 import {
   dateLabel,
   timeLabel,
@@ -15,7 +15,6 @@ const DateTimeSheet = dynamic(
   { loading: () => null },
 );
 
-type NativeInputProps = ComponentProps<"input"> & { "data-od-id"?: string };
 type DateTimeInputProps = {
   range: DateTimeRange;
   label: string;
@@ -27,8 +26,6 @@ type DateTimeInputProps = {
     ComponentProps<"input">,
     "id" | "aria-invalid" | "aria-describedby"
   >;
-  dateInputProps?: NativeInputProps;
-  timeInputProps?: NativeInputProps;
   pickerOdId?: string;
   onConfirm: (range: DateTimeRange) => void;
 };
@@ -41,12 +38,9 @@ export function DateTimeInput({
   singleDate = false,
   timeOnly = false,
   controlProps,
-  dateInputProps,
-  timeInputProps,
   pickerOdId,
   onConfirm,
 }: DateTimeInputProps) {
-  const coarse = useMediaQuery("(pointer: coarse)");
   const [session, setSession] = useState<DateTimeRange | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const date = initialTab === "start" ? range.startDate : range.endDate;
@@ -59,29 +53,6 @@ export function DateTimeInput({
     .filter(Boolean)
     .join(", ");
 
-  if (!coarse) {
-    return (
-      <div
-        className={cn(
-          "flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2 [&_input[type=date]]:min-w-0",
-          "[&_input[type=date]]:w-32 [&_input[type=time]]:min-w-0 [&_input[type=time]]:w-35",
-        )}
-      >
-        {!timeOnly && (
-          <input {...controlProps} {...dateInputProps} type="date" />
-        )}
-        {!dateOnly && (
-          <input
-            {...controlProps}
-            id={timeOnly ? controlProps.id : `${controlProps.id}-time`}
-            aria-label={`${label} 시각${initialTab === "end" ? " (선택)" : ""}`}
-            {...timeInputProps}
-            type="time"
-          />
-        )}
-      </div>
-    );
-  }
   return (
     <>
       <button

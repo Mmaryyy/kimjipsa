@@ -145,7 +145,6 @@ export function Drawer({
                   }
                   action={action}
                   leadingAction={leadingAction}
-                  showCloseButton={false}
                   onOpenChange={onChange}
                 />
               )}

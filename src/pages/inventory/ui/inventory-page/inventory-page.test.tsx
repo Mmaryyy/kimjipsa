@@ -4,6 +4,7 @@ import { useState } from "react";
 import { readFileSync } from "node:fs";
 import {
   act,
+  cleanup,
   fireEvent,
   render as renderWithoutConfirm,
   screen,
@@ -69,7 +70,11 @@ const InventoryRowExample = () => {
     </ul>
   );
 };
-afterEach(() => vi.unstubAllGlobals());
+afterEach(async () => {
+  cleanup();
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  vi.unstubAllGlobals();
+});
 
 describe("INV-15 SCN-INV-2 재고 행 직접 입력", () => {
   it("직접 입력도 기존 조정 요청으로 즉시 반영하고 실패하면 되돌려요", async () => {
@@ -436,5 +441,32 @@ it("검색 직후 연 등록 시트가 닫힐 때까지 검색 URL 갱신을 미
     ),
   );
   unmount();
+  client.clear();
+});
+
+it("ACC-13 P15.1b 재고 관리에서 목록으로 이동할 때 빈 시트 기록을 남기지 않아요", async () => {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+  });
+  client.setQueryData(["inventory"], []);
+  client.setQueryData(["inventory-meta"], inventoryMeta);
+  navigation.search = new URLSearchParams();
+  const push = vi.spyOn(window.history, "pushState");
+  const { unmount } = render(
+    <QueryClientProvider client={client}>
+      <InventoryPage />
+    </QueryClientProvider>,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "재고 목록 설정" }));
+  expect(screen.getByRole("dialog", { name: "재고 관리" })).toBeVisible();
+  expect(screen.getByRole("link", { name: "카테고리 관리" })).toHaveAttribute(
+    "href",
+    "/settings/lists?kind=categories&from=inventory",
+  );
+  expect(push).not.toHaveBeenCalled();
+  unmount();
+  await act(async () => {});
+  expect(push).not.toHaveBeenCalled();
+  push.mockRestore();
   client.clear();
 });

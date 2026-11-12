@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { cn } from "@/shared/lib";
 import { Sheet, TextButton } from "@/shared/ui";
 import { WheelPicker, WheelPickerWrapper } from "@/shared/ui/wheel-picker";
@@ -20,7 +20,6 @@ import {
   minuteOptions,
   periodOptions,
 } from "./date-time.constants";
-import { FormSheetBackContext } from "../form-sheet";
 import { dateTimeTabStyles } from "./date-time-sheet.variants";
 
 type DateTimeSheetProps = {
@@ -44,15 +43,6 @@ export function DateTimeSheet({
   onOpenChange,
   onRestoreFocus,
 }: DateTimeSheetProps) {
-  const parentBackRef = useContext(FormSheetBackContext);
-  useEffect(() => {
-    if (!parentBackRef) return;
-    const close = () => onOpenChange(false);
-    parentBackRef.current = close;
-    return () => {
-      if (parentBackRef.current === close) parentBackRef.current = null;
-    };
-  }, [parentBackRef, onOpenChange]);
   const [draft, setDraft] = useState(() => initialWheelRange(range, dateOnly));
   const selectedTabRef = useRef<HTMLButtonElement>(null);
   const [tab, setTab] = useState(initialTab);
@@ -90,10 +80,26 @@ export function DateTimeSheet({
       onOpenChange={onOpenChange}
       title={timeOnly ? "시각 선택" : "날짜와 시간 선택"}
       description="휠을 위아래로 움직여 선택해 주세요. 확인을 누르면 적용돼요."
-      hideHeader
+      leadingAction={() => (
+        <TextButton
+          data-od-id="wheel-cancel"
+          onClick={() => onOpenChange(false)}
+        >
+          취소
+        </TextButton>
+      )}
+      action={
+        <TextButton
+          data-od-id="wheel-confirm"
+          disabled={Boolean(error)}
+          onClick={() => onConfirm(draft)}
+        >
+          확인
+        </TextButton>
+      }
       overlayClassName="z-82"
       odId="sheet-event-date-time"
-      className="z-83 rounded-t-[var(--sp-6)] overflow-hidden pt-4 md:top-auto md:bottom-0 md:translate-y-0"
+      className="z-83 rounded-t-[var(--sp-6)] overflow-hidden"
       onOpenAutoFocus={(event) => {
         event.preventDefault();
         selectedTabRef.current?.focus({ preventScroll: true });
@@ -204,21 +210,6 @@ export function DateTimeSheet({
           {error}
         </p>
       )}
-      <div className="flex justify-end gap-8 pt-2">
-        <TextButton
-          data-od-id="wheel-cancel"
-          onClick={() => onOpenChange(false)}
-        >
-          취소
-        </TextButton>
-        <TextButton
-          data-od-id="wheel-confirm"
-          disabled={Boolean(error)}
-          onClick={() => onConfirm(draft)}
-        >
-          확인
-        </TextButton>
-      </div>
     </Sheet>
   );
 }

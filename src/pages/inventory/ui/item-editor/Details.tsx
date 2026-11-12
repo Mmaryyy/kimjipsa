@@ -5,23 +5,14 @@ import {
   type InventoryItem,
   type InventoryMeta,
 } from "@/entities/inventory-item";
-import { Button, List, ListRow, TextButton, Text } from "@/shared/ui";
+import { Button, List, ListRow, Text } from "@/shared/ui";
 interface Props {
   item: InventoryItem;
   meta: InventoryMeta;
   pending: boolean;
-  onEdit: () => void;
   onUsedUp: () => void;
-  onDelete: () => void;
 }
-const InventoryItemDetails = ({
-  item,
-  meta,
-  pending,
-  onEdit,
-  onUsedUp,
-  onDelete,
-}: Props) => {
+const InventoryItemDetails = ({ item, meta, pending, onUsedUp }: Props) => {
   const unit =
     meta.units.find((entry) => entry.id === item.unit_id)?.name ?? "";
   const description = [
@@ -43,6 +34,7 @@ const InventoryItemDetails = ({
           },
         ]
       : [{ label: "관리 방식", value: "상태로만" }];
+  const canAdd = inventoryState(item) !== "enough";
   return (
     <>
       <div className="py-4">
@@ -67,14 +59,28 @@ const InventoryItemDetails = ({
           </ListRow>
         ))}
       </List>
-      <TextButton onClick={onEdit} data-od-id="item-edit">
-        품목 수정
-      </TextButton>
-      <div className="mt-5 grid gap-3">
-        <Button data-od-id="item-used-up" disabled={pending} onClick={onUsedUp}>
-          다 썼어요
-        </Button>
-        {inventoryState(item) !== "enough" && (
+      <div
+        className={`mt-5 grid gap-3 ${canAdd ? "grid-cols-2" : "grid-cols-1"}`}
+      >
+        {canAdd ? (
+          <Button
+            variant="gray"
+            data-od-id="item-used-up"
+            disabled={pending}
+            onClick={onUsedUp}
+          >
+            다 썼어요
+          </Button>
+        ) : (
+          <Button
+            data-od-id="item-used-up"
+            disabled={pending}
+            onClick={onUsedUp}
+          >
+            다 썼어요
+          </Button>
+        )}
+        {canAdd && (
           <CartAddButton
             appearance="filled"
             item={{
@@ -88,14 +94,6 @@ const InventoryItemDetails = ({
             }}
           />
         )}
-        <TextButton
-          tone="danger"
-          data-od-id="item-delete"
-          disabled={pending}
-          onClick={onDelete}
-        >
-          품목 삭제
-        </TextButton>
       </div>
     </>
   );

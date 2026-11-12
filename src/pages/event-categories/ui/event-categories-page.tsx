@@ -12,11 +12,16 @@ import {
   PageHeader,
   PageLayout,
   FormSheet,
+  TextButton,
+  Text,
+  CategoryDot,
+  useConfirm,
 } from "@/shared/ui";
 import { eventRoutes, settingsPath } from "@/shared/config";
 import { useHistoryBack } from "@/shared/lib";
 import SortableCategoryList from "./sortable-category-list";
 import EventCategoryForm from "./event-category-form";
+import { useCategoryEditor } from "../model/use-category-editor";
 
 function CategoryList({
   onEdit,
@@ -45,14 +50,23 @@ export function EventCategoriesPage() {
   const searchParams = useSearchParams();
   const { onNavigate } = useHistoryBack(eventRoutes.categories);
   const fromCalendar = searchParams?.get("from") === "calendar";
-  const [editing, setEditing] = useState<EventCategory | null | undefined>(
+  const [selected, setEditing] = useState<EventCategory | null | undefined>(
     undefined,
   );
+  const categories = useEventCategories();
+  const editing = selected
+    ? (categories.data?.find((category) => category.id === selected.id) ??
+      selected)
+    : selected;
   const [dirty, setDirty] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const confirm = useConfirm();
   const close = () => {
+    setEditMode(false);
     setDirty(false);
     setEditing(undefined);
   };
+  const { onDelete, deleting } = useCategoryEditor(editing?.id, close);
   return (
     <PageLayout
       width="narrow"
@@ -65,7 +79,10 @@ export function EventCategoriesPage() {
             <Button
               variant="glass"
               data-od-id="lists-add"
-              onClick={() => setEditing(null)}
+              onClick={() => {
+                setEditMode(true);
+                setEditing(null);
+              }}
             >
               추가
             </Button>
@@ -92,6 +109,15 @@ export function EventCategoriesPage() {
         <CategoryList onEdit={setEditing} />
       </section>
       <FormSheet
+        onSaved={close}
+        onCancel={
+          editing
+            ? () => {
+                setDirty(false);
+                setEditMode(false);
+              }
+            : undefined
+        }
         open={editing !== undefined}
         onOpenChange={(open) => {
           if (!open) close();
@@ -99,19 +125,62 @@ export function EventCategoriesPage() {
         odId="lists-sheet"
         dirty={dirty}
         submitOdId="lists-save"
-        title={editing ? "카테고리 수정" : "새 카테고리"}
+        title={
+          editing ? (editMode ? "카테고리 수정" : "카테고리") : "새 카테고리"
+        }
+        editable={editMode}
+        pending={deleting}
+        leadingAction={() =>
+          editing &&
+          editing.name !== "기타" && (
+            <TextButton
+              tone="danger"
+              aria-label="카테고리 삭제"
+              data-od-id="lists-delete"
+              disabled={deleting}
+              onClick={() =>
+                void confirm({
+                  targetName: editing.name,
+                  title: "카테고리를 삭제할까요?",
+                  description: "이 카테고리의 일정은 기타로 옮겨져요.",
+                  onConfirm: onDelete,
+                })
+              }
+            >
+              삭제
+            </TextButton>
+          )
+        }
+        action={
+          editing && (
+            <TextButton
+              aria-label="카테고리 수정"
+              onClick={() => setEditMode(true)}
+            >
+              수정
+            </TextButton>
+          )
+        }
         description="가정에서 함께 쓸 일정 카테고리 이름과 색을 정해요."
       >
-        {(formId) =>
-          editing !== undefined && (
+        {(formId, onSaved) =>
+          editing !== undefined &&
+          (!editMode && editing ? (
+            <div className="flex items-center gap-2 py-4">
+              <CategoryDot color={editing.color} />
+              <Text as="h2" variant="title">
+                {editing.name}
+              </Text>
+            </div>
+          ) : (
             <EventCategoryForm
               key={editing?.id ?? "new"}
               formId={formId}
               onDirtyChange={setDirty}
               category={editing ?? undefined}
-              onSaved={close}
+              onSaved={onSaved}
             />
-          )
+          ))
         }
       </FormSheet>
     </PageLayout>

@@ -169,3 +169,8 @@ JSX 줄 수를 줄이려고 별도 컴포넌트로 나누지 않는다. 컴포�
 - MDN HTML Elements: https://developer.mozilla.org/en-US/docs/Web/HTML/Element
 - WAI-ARIA Authoring Practices: https://www.w3.org/WAI/ARIA/apg/
 - Google TypeScript Style Guide: https://google.github.io/styleguide/tsguide.html (참고용. 프로젝트 문서와 Next.js 필수 요구가 우선)
+
+
+## 시트 동작 이름 (P15.1b)
+
+시트 머리는 기기와 관계없이 보조·제목·주요 순서다. 보기의 삭제는 `TextButton tone="danger"`, 수정은 `TextButton`으로 두고 편집은 `FormSheet`의 취소·저장을 쓴다. 별도 닫기 X는 두지 않는다. 맥락이 분명한 버튼은 삭제·수정·담기로 표시하고 `aria-label`에는 일정·품목·장바구니 등 대상을 남긴다. 하단 버튼은 한 줄 grid, 약관 재동의 버튼은 세로 배치다(`DESIGN_SYSTEM.md` §3).

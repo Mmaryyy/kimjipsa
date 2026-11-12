@@ -77,7 +77,7 @@ const SortableListRow = <T extends SortableItem>({
         className="min-h-11 min-w-0 flex-1 justify-start gap-3 text-foreground font-normal"
         onClick={() => onEdit(item)}
         disabled={disabled}
-        aria-label={`${item.name} 수정하기`}
+        aria-label={`${item.name} 보기`}
       >
         {renderItem(item)}
       </TextButton>

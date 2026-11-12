@@ -126,7 +126,7 @@ describe("CART-04 카테고리 관리 순서 변경", () => {
       </ToastProvider>,
     );
     expect(
-      screen.getByRole("button", { name: "식품 수정하기" }),
+      screen.getByRole("button", { name: "식품 보기" }),
     ).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "순서 바꾸기" })).toHaveLength(
       2,

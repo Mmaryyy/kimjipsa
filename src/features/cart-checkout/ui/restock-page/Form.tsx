@@ -158,14 +158,7 @@ const RestockForm = ({
             {error}
           </p>
         )}
-        <div className="mt-6 grid gap-2">
-          <Button
-            type="submit"
-            data-od-id="restock-apply"
-            disabled={disabled || action.isPending}
-          >
-            {action.isPending ? "반영하고 있어요" : "재고에 반영"}
-          </Button>
+        <div className="mt-6 grid grid-cols-2 gap-2">
           <Button
             variant="gray"
             data-od-id="restock-skip"
@@ -173,6 +166,13 @@ const RestockForm = ({
             onClick={() => void confirmClose()}
           >
             반영 없이 닫기
+          </Button>
+          <Button
+            type="submit"
+            data-od-id="restock-apply"
+            disabled={disabled || action.isPending}
+          >
+            {action.isPending ? "반영하고 있어요" : "재고에 반영"}
           </Button>
         </div>
       </form>

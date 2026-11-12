@@ -41,7 +41,33 @@ describe("CAL-12 SCN-CAL-7 ConfirmDialog 확인 UI", () => {
   it("확인하면 확인 콜백을 호출해요", () => {
     const onConfirm = vi.fn();
     render(<DialogExample onConfirm={onConfirm} />);
-    fireEvent.click(screen.getByRole("button", { name: "삭제하기" }));
+    fireEvent.click(screen.getByRole("button", { name: "삭제" }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
+});
+
+it("CAL-12 P15.1b 확인창은 취소·보조·확인 순서의 한 줄 버튼을 제공해요", () => {
+  render(
+    <ConfirmDialog
+      open
+      onOpenChange={vi.fn()}
+      title="변경"
+      description="확인"
+      destructive={false}
+      confirmLabel="저장"
+      cancelLabel="계속 편집"
+      onConfirm={vi.fn()}
+      secondaryAction={{ label: "저장 안 함", onClick: vi.fn() }}
+    />,
+  );
+  const buttons = screen.getAllByRole("button");
+  expect(buttons.map((button) => button.textContent)).toEqual([
+    "계속 편집",
+    "저장 안 함",
+    "저장",
+  ]);
+  expect(buttons[0].parentElement).toHaveClass("grid-cols-3");
+  expect(buttons[0]).toHaveClass("bg-muted");
+  expect(buttons[1]).toHaveClass("bg-muted");
+  expect(buttons[2]).toHaveClass("bg-primary");
 });

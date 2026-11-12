@@ -74,19 +74,23 @@ const AiSettingsForm = ({ settings, onSaved }: Props) => {
     Settings["memories"][number] | "new" | null
   >(null);
   const [memoryText, setMemoryText] = useState("");
+  const [editingMemory, setEditingMemory] = useState(false);
   const confirm = useConfirm();
   const opener = useRef<HTMLButtonElement | null>(null);
   const memoryDisabled = !online || memory.isPending;
   const confirmDisabled = useConfirmDisabled(memoryDisabled);
-  const selectedMemory = editor && editor !== "new" ? editor : null;
+  const selectedMemory =
+    editor && editor !== "new"
+      ? (settings.memories.find((memory) => memory.id === editor.id) ?? editor)
+      : null;
   const changed = memoryText.trim() !== (selectedMemory?.text ?? "");
   const closeEditor = () => {
     setEditor(null);
   };
-  const saveMemory = () => {
+  const saveMemory = (onSaved: () => void) => {
     if (memoryDisabled || !memoryText.trim()) return;
     if (!changed) {
-      closeEditor();
+      onSaved();
       return;
     }
     memory.mutate(
@@ -98,7 +102,7 @@ const AiSettingsForm = ({ settings, onSaved }: Props) => {
         }),
         text: memoryText.trim(),
       },
-      { onSuccess: closeEditor },
+      { onSuccess: onSaved },
     );
   };
   const admin = account.data?.membership?.role === "admin";
@@ -269,6 +273,7 @@ const AiSettingsForm = ({ settings, onSaved }: Props) => {
                   opener.current = event.currentTarget;
                   memory.reset();
                   setMemoryText(item.text);
+                  setEditingMemory(false);
                   setEditor(item);
                 }}
               >
@@ -288,6 +293,7 @@ const AiSettingsForm = ({ settings, onSaved }: Props) => {
             opener.current = event.currentTarget;
             memory.reset();
             setMemoryText("");
+            setEditingMemory(true);
             setEditor("new");
           }}
         >
@@ -319,6 +325,15 @@ const AiSettingsForm = ({ settings, onSaved }: Props) => {
         )}
       </section>
       <FormSheet
+        onSaved={closeEditor}
+        onCancel={
+          selectedMemory
+            ? () => {
+                setMemoryText(selectedMemory.text);
+                setEditingMemory(false);
+              }
+            : undefined
+        }
         open={editor !== null}
         onOpenChange={(open) => {
           if (!open) closeEditor();
@@ -326,67 +341,97 @@ const AiSettingsForm = ({ settings, onSaved }: Props) => {
         dirty={changed}
         pending={memory.isPending}
         submitDisabled={memoryDisabled || !memoryText.trim()}
-        title={selectedMemory ? "가족 기억 수정" : "새 기억 추가"}
+        editable={editingMemory}
+        leadingAction={() =>
+          selectedMemory && (
+            <TextButton
+              tone="danger"
+              aria-label="기억 삭제"
+              className="justify-start justify-self-start"
+              disabled={memoryDisabled}
+              onClick={() =>
+                void confirm({
+                  disabled: confirmDisabled,
+                  title: "가족 기억을 지울까요?",
+                  description: "삭제한 기억은 되돌릴 수 없어요.",
+                  targetName: selectedMemory.text,
+                  onConfirm: async () => {
+                    await memory.mutateAsync({
+                      action: "delete-memory",
+                      id: selectedMemory.id,
+                      version: selectedMemory.version,
+                    });
+                    closeEditor();
+                  },
+                })
+              }
+            >
+              삭제
+            </TextButton>
+          )
+        }
+        action={
+          selectedMemory && (
+            <TextButton
+              aria-label="기억 수정"
+              disabled={memoryDisabled}
+              onClick={() => {
+                setMemoryText(selectedMemory.text);
+                setEditingMemory(true);
+              }}
+            >
+              수정
+            </TextButton>
+          )
+        }
+        title={
+          selectedMemory
+            ? editingMemory
+              ? "가족 기억 수정"
+              : "가족 기억"
+            : "새 기억 추가"
+        }
         description="가족의 선호나 습관을 저장해요."
         onCloseAutoFocus={(event) => {
           event.preventDefault();
           opener.current?.focus();
         }}
       >
-        {(formId) => (
-          <form
-            id={formId}
-            className="grid gap-4 py-4"
-            aria-busy={memory.isPending}
-            onSubmit={(event) => {
-              event.preventDefault();
-              saveMemory();
-            }}
-          >
-            <Textarea
-              id="family-memory-text"
-              aria-label="기억 내용"
-              rows={3}
-              className="resize-none overflow-y-auto bg-transparent px-0"
-              value={memoryText}
-              disabled={memoryDisabled}
-              maxLength={2000}
-              required
-              placeholder="가족의 선호나 습관"
-              onChange={(event) => setMemoryText(event.target.value)}
-            />
-            {selectedMemory && (
-              <TextButton
-                tone="danger"
-                className="justify-start justify-self-start"
+        {(formId, onSaved) =>
+          !editingMemory && selectedMemory ? (
+            <Text as="p" className="whitespace-pre-wrap break-words py-4">
+              {selectedMemory.text}
+            </Text>
+          ) : (
+            <form
+              id={formId}
+              className="grid gap-4 py-4"
+              aria-busy={memory.isPending}
+              onSubmit={(event) => {
+                event.preventDefault();
+                saveMemory(onSaved);
+              }}
+            >
+              <Textarea
+                id="family-memory-text"
+                aria-label="기억 내용"
+                rows={3}
+                className="resize-none overflow-y-auto bg-transparent px-0"
+                value={memoryText}
                 disabled={memoryDisabled}
-                onClick={() =>
-                  void confirm({
-                    disabled: confirmDisabled,
-                    title: "가족 기억을 지울까요?",
-                    description: "삭제한 기억은 되돌릴 수 없어요.",
-                    targetName: selectedMemory.text,
-                    onConfirm: async () => {
-                      await memory.mutateAsync({
-                        action: "delete-memory",
-                        id: selectedMemory.id,
-                        version: selectedMemory.version,
-                      });
-                      closeEditor();
-                    },
-                  })
-                }
-              >
-                기억 삭제하기
-              </TextButton>
-            )}
-            {memory.error && (
-              <Text as="p" role="alert" className="text-error-text">
-                {memory.error.message}
-              </Text>
-            )}
-          </form>
-        )}
+                maxLength={2000}
+                required
+                placeholder="가족의 선호나 습관"
+                onChange={(event) => setMemoryText(event.target.value)}
+              />
+              {memory.error && (
+                <Text as="p" role="alert" className="text-error-text">
+                  {memory.error.message}
+                </Text>
+              )}
+            </form>
+          )
+        }
       </FormSheet>
     </>
   );

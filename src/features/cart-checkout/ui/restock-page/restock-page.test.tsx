@@ -101,3 +101,29 @@ describe("CART-07 CART-08 SCN-CART-4 같은 이름 새 품목", () => {
     expect(state.submit).not.toHaveBeenCalled();
   });
 });
+
+it("CART-08 SCN-CART-4 P15.1b 선택한 유통기한을 비우면 null로 반영해요", async () => {
+  render(
+    <RestockForm
+      items={[items[0]!]}
+      inventory={[]}
+      meta={meta}
+      disabled={false}
+      onDone={vi.fn()}
+    />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: /새 두부 유통기한/ }));
+  fireEvent.click(await screen.findByRole("button", { name: "확인" }));
+  fireEvent.click(
+    await screen.findByRole("button", { name: "새 두부 유통기한 지우기" }),
+  );
+  expect(
+    screen.queryByRole("button", { name: "새 두부 유통기한 지우기" }),
+  ).not.toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText("보관 장소"), {
+    target: { value: meta.locations.find((location) => location.enabled)!.id },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "재고에 반영" }));
+  await waitFor(() => expect(state.submit).toHaveBeenCalledOnce());
+  expect(state.submit.mock.calls[0]![0].entries[0].expires_on).toBeNull();
+});

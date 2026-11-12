@@ -113,11 +113,17 @@ it("BOT-13 기억 목록을 누르면 시트에서 바뀐 내용만 저장해요
   );
   expect(screen.queryByLabelText("기억 내용")).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "우유는 저지방" }));
+  expect(screen.getByRole("dialog", { name: "가족 기억" })).toHaveTextContent(
+    "우유는 저지방",
+  );
+  expect(screen.queryByLabelText("기억 내용")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "기억 수정" }));
   const sheet = within(screen.getByRole("dialog", { name: "가족 기억 수정" }));
   expect(sheet.getByLabelText("기억 내용")).toHaveValue("우유는 저지방");
   fireEvent.click(sheet.getByRole("button", { name: "저장" }));
   expect(memory).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole("button", { name: "우유는 저지방" }));
+  fireEvent.click(screen.getByRole("button", { name: "기억 수정" }));
   fireEvent.change(screen.getByLabelText("기억 내용"), {
     target: { value: "우유는 일반" },
   });
@@ -168,14 +174,14 @@ it("BOT-13 개별 삭제와 전체 초기화는 확인해야 실행해요", asyn
     </ToastProvider>,
   );
   fireEvent.click(screen.getByRole("button", { name: "우유는 저지방" }));
-  fireEvent.click(screen.getByRole("button", { name: "기억 삭제하기" }));
+  fireEvent.click(screen.getByRole("button", { name: "기억 삭제" }));
   expect(memory).not.toHaveBeenCalled();
   let confirm = within(screen.getByRole("alertdialog"));
   fireEvent.click(confirm.getByRole("button", { name: "취소하기" }));
   expect(memory).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole("button", { name: "기억 삭제하기" }));
+  fireEvent.click(screen.getByRole("button", { name: "기억 삭제" }));
   confirm = within(screen.getByRole("alertdialog"));
-  fireEvent.click(confirm.getByRole("button", { name: "삭제하기" }));
+  fireEvent.click(confirm.getByRole("button", { name: "삭제" }));
   expect(memory).toHaveBeenCalledWith({
     action: "delete-memory",
     id: "memory",
@@ -186,7 +192,7 @@ it("BOT-13 개별 삭제와 전체 초기화는 확인해야 실행해요", asyn
   expect(memory).toHaveBeenCalledTimes(1);
   fireEvent.click(
     within(screen.getByRole("alertdialog")).getByRole("button", {
-      name: "삭제하기",
+      name: "삭제",
     }),
   );
   expect(memory).toHaveBeenLastCalledWith({ action: "reset-memories" });
@@ -287,4 +293,19 @@ it("BOT-18 구성원도 타입을 바꾸고 같은 기본값은 저장하지 않
     expect.objectContaining({ onSuccess: expect.any(Function) }),
   );
   expect(save).not.toHaveBeenCalled();
+});
+
+it("BOT-13 P15.1b 수정 취소로 보기로 돌아오고 다시 수정할 수 있어요", () => {
+  render(
+    <ToastProvider>
+      <AiSettings />
+    </ToastProvider>,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "우유는 저지방" }));
+  fireEvent.click(screen.getByRole("button", { name: "기억 수정" }));
+  fireEvent.click(screen.getByRole("button", { name: "취소" }));
+  expect(screen.getByRole("button", { name: "기억 수정" })).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "기억 수정" }));
+  expect(screen.getByLabelText("기억 내용")).toHaveValue("우유는 저지방");
+  expect(memory).not.toHaveBeenCalled();
 });
