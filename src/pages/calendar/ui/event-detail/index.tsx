@@ -12,7 +12,6 @@ import { getOptionLabel } from "@/shared/lib";
 import {
   FormSheet,
   TextButton,
-  useConfirm,
   EmptyState,
   ErrorState,
   Skeleton,
@@ -20,35 +19,27 @@ import {
   Text,
   CategoryDot,
 } from "@/shared/ui";
-import { useEventEditor } from "../../model/use-event-editor";
+import { useEventDelete } from "../../model/use-event-delete";
 import EventForm from "../event-form";
 const EventDetailSkeleton = () => (
   <SkeletonSection label="일정을 불러오고 있어요">
     <Skeleton className="h-80" />
   </SkeletonSection>
 );
-const EventDetail = ({ id, onClose }: { id: string; onClose: () => void }) => {
-  const [editing, setEditing] = useState(false);
+const EventDetail = ({
+  id,
+  onClose,
+  initialAction,
+}: {
+  id: string;
+  onClose: () => void;
+  initialAction?: "edit";
+}) => {
+  const [editing, setEditing] = useState(initialAction === "edit");
   const event = useEvent(id);
   const categories = useEventCategories();
-  const confirm = useConfirm();
-  const { onDelete, deleteError } = useEventEditor(
-    event.data?.id ?? id,
-    onClose,
-  );
+  const { remove, deleteError } = useEventDelete(event.data, onClose);
   const [dirty, setDirty] = useState(false);
-  const remove = () =>
-    confirm({
-      targetName: event.data?.details?.title,
-      title: "일정을 삭제할까요?",
-      description: "삭제한 일정은 되돌릴 수 없어요.",
-      confirmLabel: event.data?.recurrence ? "이후 모든 일정" : "삭제",
-      onConfirm: () =>
-        onDelete(event.data?.recurrence ? "following" : undefined),
-      secondaryAction: event.data?.recurrence
-        ? { label: "이 일정만", onClick: () => onDelete("single") }
-        : undefined,
-    });
   const content = (formId: string, onSaved: () => void) => {
     if (event.isError)
       return (
@@ -173,10 +164,14 @@ const EventDetail = ({ id, onClose }: { id: string; onClose: () => void }) => {
   return (
     <FormSheet
       onSaved={onClose}
-      onCancel={() => {
-        setDirty(false);
-        setEditing(false);
-      }}
+      onCancel={
+        initialAction === "edit"
+          ? onClose
+          : () => {
+              setDirty(false);
+              setEditing(false);
+            }
+      }
       open
       title="일정"
       description="일정 내용을 확인하고 수정하거나 삭제해요."

@@ -1,5 +1,5 @@
 "use client";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { useSearchParams } from "next/navigation";
 import { useFamily } from "@/features/family";
@@ -9,6 +9,7 @@ import {
   EventListSkeleton,
   calendarDdayLimit,
   useEvents,
+  useEvent,
   useEventCategories,
   eventDateInput,
   useCalendarClock,
@@ -19,7 +20,9 @@ import {
   FormSheet,
   PageLayout,
   PullToAdd,
+  Toast,
 } from "@/shared/ui";
+import { useEventDelete } from "../model/use-event-delete";
 import EventForm from "./event-form";
 import EventFormSkeleton from "./event-form/Skeleton";
 import EventDetail from "./event-detail";
@@ -27,7 +30,7 @@ function EventList({
   onOpen,
   onAdd,
 }: {
-  onOpen: (id: string) => void;
+  onOpen: (id: string, action?: "edit" | "delete") => void;
   onAdd: () => void;
 }) {
   const instant = useCalendarClock();
@@ -140,6 +143,37 @@ function NewEvent({
     />
   );
 }
+function EventDeleteConfirmation({
+  id,
+  onClose,
+  onFailure,
+}: {
+  id: string;
+  onClose: () => void;
+  onFailure: (message: string) => void;
+}) {
+  const event = useEvent(id);
+  const { remove } = useEventDelete(event.data, onClose);
+  const started = useRef(false);
+  useEffect(() => {
+    if (started.current || event.isPending) return;
+    started.current = true;
+    if (event.isError || !event.data?.canEdit || !event.data.details) {
+      onFailure(
+        event.isError
+          ? event.error.message
+          : "일정을 찾을 수 없거나 삭제할 수 없어요.",
+      );
+      onClose();
+      return;
+    }
+    void remove().then((confirmed) => {
+      if (!confirmed) onClose();
+    });
+  });
+  return null;
+}
+
 function CalendarContent() {
   const params = useSearchParams();
   const parsedDate = z.iso.date().safeParse(params?.get("date"));
@@ -149,17 +183,22 @@ function CalendarContent() {
     .regex(/^[0-9a-f-]{36}(~\d{4}-\d{2}-\d{2})?$/i)
     .safeParse(params?.get("event"));
   const [sheet, setSheet] = useState<{
-    mode: "closed" | "new" | "view";
+    mode: "closed" | "new" | "view" | "delete";
     id: string | null;
+    action?: "edit";
   }>({
     mode: parsedEvent.success
-      ? "view"
+      ? params?.get("action") === "delete"
+        ? "delete"
+        : "view"
       : params?.get("create") === "1"
         ? "new"
         : "closed",
     id: parsedEvent.success ? parsedEvent.data : null,
+    action: params?.get("action") === "edit" ? "edit" : undefined,
   });
   const [dirty, setDirty] = useState(false);
+  const [message, setMessage] = useState("");
   const close = () => {
     setDirty(false);
     setSheet({ mode: "closed", id: null });
@@ -172,8 +211,23 @@ function CalendarContent() {
       disabled={sheet.mode !== "closed"}
     >
       <div data-od-id="calendar-main">
+        {message && (
+          <Toast
+            open
+            message={message}
+            onOpenChange={(open) => {
+              if (!open) setMessage("");
+            }}
+          />
+        )}
         <EventList
-          onOpen={(id) => setSheet({ mode: "view", id })}
+          onOpen={(id, action) =>
+            setSheet({
+              mode: action === "delete" ? "delete" : "view",
+              id,
+              action: action === "edit" ? "edit" : undefined,
+            })
+          }
           onAdd={openNew}
         />
         <FormSheet
@@ -200,8 +254,21 @@ function CalendarContent() {
             )
           }
         </FormSheet>
+        {sheet.id && sheet.mode === "delete" && (
+          <EventDeleteConfirmation
+            key={sheet.id}
+            id={sheet.id}
+            onClose={close}
+            onFailure={setMessage}
+          />
+        )}
         {sheet.id && sheet.mode === "view" && (
-          <EventDetail key={sheet.id} id={sheet.id} onClose={close} />
+          <EventDetail
+            key={`${sheet.id}-${sheet.action}`}
+            id={sheet.id}
+            initialAction={sheet.action}
+            onClose={close}
+          />
         )}
       </div>
     </PullToAdd>

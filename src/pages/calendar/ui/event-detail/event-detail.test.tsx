@@ -40,14 +40,14 @@ vi.mock("@/features/account", () => ({
   useAccount: () => ({ data: { userId: "me" } }),
 }));
 const refetch = vi.fn();
-function renderDetail() {
+function renderDetail(initialAction?: "edit", onClose = vi.fn()) {
   return render(
     <QueryClientProvider
       client={
         new QueryClient({ defaultOptions: { queries: { retry: false } } })
       }
     >
-      <EventDetail id="event" onClose={vi.fn()} />
+      <EventDetail id="event" initialAction={initialAction} onClose={onClose} />
     </QueryClientProvider>,
   );
 }
@@ -183,6 +183,11 @@ describe("CAL-12 SCN-CAL-7 상세와 삭제 확인", () => {
     );
     expect(deleteEvent).toHaveBeenCalledTimes(2);
   });
+  it("CAL-05 P15.1c 밀기 수정은 폼으로 바로 열려요", () => {
+    renderDetail("edit");
+    expect(screen.getByLabelText("제목")).toHaveValue("병원 예약");
+    expect(screen.getByRole("button", { name: "저장" })).toBeVisible();
+  });
   it("CAL-02 P15.1b 보기에서 수정하면 취소·저장 머리와 폼이 열려요", () => {
     renderDetail();
     fireEvent.click(screen.getByRole("button", { name: "일정 수정" }));
@@ -236,6 +241,12 @@ describe("CAL-12 SCN-CAL-7 상세와 삭제 확인", () => {
     expect(
       screen.queryByRole("button", { name: "닫기" }),
     ).not.toBeInTheDocument();
+  });
+  it("CAL-04 밀기로 바로 연 수정 취소는 시트를 닫아요", () => {
+    const onClose = vi.fn();
+    renderDetail("edit", onClose);
+    fireEvent.click(screen.getByRole("button", { name: "취소" }));
+    expect(onClose).toHaveBeenCalledOnce();
   });
   it("상세 로딩을 표시해요", () => {
     useEvent.mockReturnValue({ isPending: true, isError: false });

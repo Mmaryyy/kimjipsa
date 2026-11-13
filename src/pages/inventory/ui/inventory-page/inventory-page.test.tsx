@@ -1,5 +1,5 @@
 import { ConfirmTestProvider as ConfirmProvider } from "@/shared/ui/confirm-test-provider";
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { useState } from "react";
 import { readFileSync } from "node:fs";
 import {
@@ -25,11 +25,20 @@ const inventoryMeta: unknown = JSON.parse(
 const inventoryItems: unknown = JSON.parse(
   readFileSync("mocks/inventory-items.json", "utf8"),
 );
+import { Toast as ToastPrimitive } from "radix-ui";
 import InventoryItemRow from "./ItemRow";
 import InventoryPage from ".";
 
+const TestProvider = ({ children }: { children: ReactNode }) => (
+  <ConfirmProvider>
+    <ToastPrimitive.Provider>
+      {children}
+      <ToastPrimitive.Viewport />
+    </ToastPrimitive.Provider>
+  </ConfirmProvider>
+);
 const render = (ui: ReactElement) =>
-  renderWithoutConfirm(ui, { wrapper: ConfirmProvider });
+  renderWithoutConfirm(ui, { wrapper: TestProvider });
 
 const navigation = vi.hoisted(() => ({
   search: new URLSearchParams(),
@@ -59,6 +68,9 @@ const InventoryRowExample = () => {
           pending={actions.pendingIds.includes(item.id)}
           groupBy="locations"
           onOpen={vi.fn()}
+          onEdit={vi.fn()}
+          onUsedUp={vi.fn()}
+          onDelete={vi.fn()}
           onStatus={vi.fn()}
           onAdjust={(delta) => {
             void actions
@@ -470,3 +482,122 @@ it("ACC-13 P15.1b 재고 관리에서 목록으로 이동할 때 빈 시트 기�
   push.mockRestore();
   client.clear();
 });
+
+it.each(["수정", "다 씀", "삭제"])(
+  "INV-01 INV-04 INV-07 P15.1c 재고 행 %s를 연결해요",
+  (action) => {
+    const onEdit = vi.fn();
+    const onUsedUp = vi.fn();
+    const onDelete = vi.fn();
+    render(
+      <InventoryItemRow
+        item={milk}
+        meta={inventoryMeta as InventoryMeta}
+        groupBy="locations"
+        pending={false}
+        controlOpen={false}
+        onControlOpenChange={vi.fn()}
+        onOpen={vi.fn()}
+        onAdjust={vi.fn()}
+        onStatus={vi.fn()}
+        onEdit={onEdit}
+        onUsedUp={onUsedUp}
+        onDelete={onDelete}
+      />,
+    );
+    fireEvent.keyDown(screen.getByRole("listitem"), { key: "ArrowLeft" });
+    const button = screen.getByRole("button", {
+      name: `${milk.name} ${action}`,
+    });
+    expect(button.textContent).toBe("");
+    fireEvent.click(button);
+    const expected =
+      action === "수정" ? onEdit : action === "다 씀" ? onUsedUp : onDelete;
+    expect(expected).toHaveBeenCalledOnce();
+  },
+);
+
+it.each([
+  ["quantity", "다 씀", "우유", "를"],
+  ["status", "다 씀", "고추장", "을"],
+  ["quantity", "삭제", "우유", "를"],
+] as const)(
+  "INV-04 INV-07 SCN-INV-3 SCN-INV-7 %s 밀기 %s는 확인창만 열어요",
+  async (mode, action, name, particle) => {
+    navigation.search = new URLSearchParams();
+    const item = { ...milk, mode, name };
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+    });
+    client.setQueryData(["inventory"], [item]);
+    client.setQueryData(["inventory-meta"], inventoryMeta);
+    const fetch = vi.fn((url: string, options?: RequestInit) => {
+      void options;
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            ok: true,
+            data:
+              url === "/api/cart"
+                ? { items: [], history: [], familyId: null }
+                : [item],
+          }),
+        ),
+      );
+    });
+    vi.stubGlobal("fetch", fetch);
+    const { unmount } = render(
+      <QueryClientProvider client={client}>
+        <InventoryPage />
+      </QueryClientProvider>,
+    );
+    const open = () => {
+      fireEvent.keyDown(document.querySelector('[data-od-id="inv-list"] li')!, {
+        key: "ArrowLeft",
+      });
+      fireEvent.click(
+        screen.getByRole("button", { name: `${item.name} ${action}` }),
+      );
+    };
+    open();
+    expect(
+      screen.queryByRole("dialog", { hidden: true }),
+    ).not.toBeInTheDocument();
+    const dialog = screen.getByRole("alertdialog");
+    if (action === "다 씀") {
+      expect(dialog).toHaveAccessibleName(`‘${name}’${particle} 다 쓰셨나요?`);
+      expect(dialog).not.toHaveAccessibleDescription();
+      expect(dialog.querySelector("p")).toBeEmptyDOMElement();
+    }
+    fireEvent.click(screen.getByRole("button", { name: "취소하기" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
+    );
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(fetch).not.toHaveBeenCalled();
+    open();
+    fireEvent.click(
+      within(screen.getByRole("alertdialog")).getByRole("button", {
+        name: action === "다 씀" ? "다 썼어요" : "삭제",
+      }),
+    );
+    await waitFor(() => expect(fetch).toHaveBeenCalled());
+    expect(JSON.parse(fetch.mock.calls[0]![1]!.body as string)).toEqual({
+      action: action === "다 씀" ? "used-up" : "delete",
+      id: milk.id,
+    });
+    await waitFor(() =>
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
+    );
+    if (action === "다 씀")
+      expect(screen.getByRole("dialog")).toHaveTextContent(
+        "장바구니에 담아 둘까요?",
+      );
+    else expect(screen.getByText("품목을 삭제했어요.")).toBeInTheDocument();
+    expect(
+      document.querySelector('[data-od-id="sheet-item-detail"]'),
+    ).toBeNull();
+    unmount();
+    client.clear();
+  },
+);

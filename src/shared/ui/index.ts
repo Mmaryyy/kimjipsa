@@ -59,3 +59,5 @@ export {
   type ConfirmOptions,
 } from "./confirm-context";
 export { FormSheet } from "./form-sheet";
+
+export { default as SwipeActionRow } from "./swipe-action-row";

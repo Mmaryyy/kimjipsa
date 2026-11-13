@@ -262,3 +262,30 @@ describe("CAL-07 SCN-CAL-8 스와이프 선택", () => {
     expect(container.firstChild).toHaveClass("touch-pan-y", "touch-pinch-zoom");
   });
 });
+
+it("CAL-07 P15.1c 행 밀기는 달력 날짜를 넘기지 않아요", () => {
+  render(
+    <CalendarCarousel
+      date="2026-11-13"
+      view="week"
+      onDateChange={vi.fn()}
+      renderPanel={() => (
+        <div data-swipe-row>
+          <button>일정 행</button>
+        </div>
+      )}
+    />,
+  );
+  const watchDrag = options.mock.calls.at(-1)![0].watchDrag as (
+    _api: unknown,
+    event: MouseEvent,
+  ) => boolean;
+  const event = new MouseEvent("mousedown", { bubbles: true });
+  Object.defineProperty(event, "target", {
+    value: screen.getByRole("button", { name: "일정 행" }),
+  });
+  expect(watchDrag(api, event)).toBe(false);
+  expect(watchDrag(api, new MouseEvent("mousedown", { clientX: 200 }))).toBe(
+    true,
+  );
+});

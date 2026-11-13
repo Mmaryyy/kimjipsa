@@ -33,7 +33,9 @@ const SwipeExample = ({
   onCheck = vi.fn(),
   onEdit = vi.fn(),
   onQuantityChange = vi.fn(),
+  link = "",
 }: {
+  link?: string;
   onDelete: () => void;
   pending?: boolean;
   checked?: boolean;
@@ -45,7 +47,7 @@ const SwipeExample = ({
   const [open, setOpen] = useState(false);
   return (
     <CartItemRow
-      item={{ ...item, is_checked: checked }}
+      item={{ ...item, is_checked: checked, link_url: link }}
       index={0}
       unit="모"
       checkedBy="나"
@@ -286,4 +288,15 @@ describe("CART-03 저장 진행 표시", () => {
       "opacity-70",
     );
   });
+});
+
+it("CART-08 열린 행에서도 쇼핑몰 링크는 누를 수 있어요", () => {
+  render(<SwipeExample onDelete={vi.fn()} link="https://example.com/shop" />);
+  const row = screen.getByRole("listitem");
+  fireEvent.keyDown(row, { key: "ArrowLeft" });
+  const link = screen.getByRole("link", { name: "쇼핑몰 링크" });
+  expect(link.closest("[inert]")).toBeNull();
+  expect(link).toHaveAttribute("href", "https://example.com/shop");
+  expect(screen.getByRole("checkbox")).toBeDisabled();
+  expect(screen.getByRole("button", { name: "두부" })).toBeDisabled();
 });

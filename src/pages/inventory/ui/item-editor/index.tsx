@@ -6,7 +6,6 @@ import { compareItemNames } from "@/shared/lib";
 import {
   inventoryInputSchema,
   inventoryStatusOptions,
-  useInventoryActions,
   type InventoryItem,
   type InventoryInput,
   type InventoryMeta,
@@ -18,14 +17,15 @@ import {
   FormFieldRow,
   GroupLabel,
   SegmentedControl,
-  useConfirm,
   Text,
   Button,
 } from "@/shared/ui";
+import { useItemActions } from "../../model/use-item-actions";
 import InventoryItemDetails from "./Details";
 import { DateTimeInput } from "@/shared/ui/date-time-input";
 interface Props {
   item?: InventoryItem;
+  initialAction?: "edit";
   initialName?: string;
   items: InventoryItem[];
   meta: InventoryMeta;
@@ -35,6 +35,7 @@ interface Props {
 }
 const InventoryItemEditor = ({
   item,
+  initialAction,
   initialName = "",
   items,
   meta,
@@ -42,10 +43,13 @@ const InventoryItemEditor = ({
   onNotify,
   onUsedUp,
 }: Props) => {
-  const actions = useInventoryActions();
-  const [editing, setEditing] = useState(!item);
+  const { actions, remove, usedUp } = useItemActions({
+    onClose,
+    onNotify,
+    onUsedUp,
+  });
+  const [editing, setEditing] = useState(!item || initialAction === "edit");
   const [mergeId, setMergeId] = useState<string | null>(null);
-  const confirm = useConfirm();
   const [separateName, setSeparateName] = useState<string | null>(null);
   const defaults: InventoryInput = item ?? {
     name: initialName,
@@ -145,27 +149,10 @@ const InventoryItemEditor = ({
       });
     }
   });
-  const remove = () =>
-    confirm({
-      targetName: item?.name ?? "",
-      title: "품목을 삭제할까요?",
-      description: "삭제한 품목은 되돌릴 수 없어요.",
-      onConfirm: async () => {
-        if (!item) return;
-        await actions.save.mutateAsync({ action: "delete", id: item.id });
-        onNotify("품목을 삭제했어요.");
-        onClose();
-      },
-    });
-  const usedUp = async () => {
+  const markUsedUp = async () => {
     if (!item) return;
     try {
-      await actions.onChange({ action: "used-up", id: item.id });
-      if (onUsedUp) onUsedUp(item);
-      else {
-        onNotify("다 쓴 품목으로 바꿨어요.");
-        onClose();
-      }
+      await usedUp(item);
     } catch (error) {
       setError("root", {
         message: error instanceof Error ? error.message : "변경하지 못했어요.",
@@ -193,7 +180,7 @@ const InventoryItemEditor = ({
     <FormSheet
       onSaved={onClose}
       onCancel={
-        item
+        item && initialAction !== "edit"
           ? () => {
               reset();
               setEditing(false);
@@ -223,7 +210,7 @@ const InventoryItemEditor = ({
           aria-label="품목 삭제"
           data-od-id="item-delete"
           disabled={pending}
-          onClick={() => void remove()}
+          onClick={() => item && void remove(item)}
         >
           삭제
         </TextButton>
@@ -246,7 +233,7 @@ const InventoryItemEditor = ({
               item={item}
               meta={meta}
               pending={pending}
-              onUsedUp={() => void usedUp()}
+              onUsedUp={() => void markUsedUp()}
             />
           ) : (
             <form id={formId} onSubmit={save(onSaved)} className="grid gap-1">

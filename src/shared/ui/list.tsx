@@ -1,13 +1,15 @@
-import type { ComponentProps, ReactNode } from "react";
+import type { ComponentProps, HTMLAttributes, ReactNode } from "react";
 import { cn } from "@/shared/lib";
 import { GroupLabel } from "./group-label";
 import { Text } from "./text";
-type ListRowProps = ComponentProps<"li"> & {
+type ListRowProps = HTMLAttributes<HTMLElement> & {
+  as?: "li" | "div";
   leading?: ReactNode;
   trailing?: ReactNode;
   description?: string;
 };
 export function ListRow({
+  as: Component = "li",
   leading,
   trailing,
   description,
@@ -16,7 +18,7 @@ export function ListRow({
   ...props
 }: ListRowProps) {
   return (
-    <li
+    <Component
       className={cn(
         "flex min-h-[var(--row-min)] items-center gap-3 py-2 [overflow-wrap:anywhere]",
         className,
@@ -33,7 +35,7 @@ export function ListRow({
         )}
       </div>
       {trailing && <div className="max-w-13/20 flex-none">{trailing}</div>}
-    </li>
+    </Component>
   );
 }
 

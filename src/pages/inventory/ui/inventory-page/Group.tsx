@@ -13,7 +13,7 @@ interface Props {
   pendingIds: string[];
   expandedItemId: string | null;
   onExpandItem: (id: string | null) => void;
-  onOpen: (item: InventoryItem) => void;
+  onOpen: (item: InventoryItem, action?: "edit" | "used-up" | "delete") => void;
   onAdjust: (item: InventoryItem, delta: number) => void;
   onStatus: (item: InventoryItem, status: InventoryItem["status"]) => void;
 }
@@ -38,6 +38,9 @@ const InventoryGroup = ({
       onControlOpenChange={(open) => onExpandItem(open ? item.id : null)}
       pending={pendingIds.includes(item.id)}
       onOpen={() => onOpen(item)}
+      onEdit={() => onOpen(item, "edit")}
+      onUsedUp={() => onOpen(item, "used-up")}
+      onDelete={() => onOpen(item, "delete")}
       onAdjust={(delta) => onAdjust(item, delta)}
       onStatus={(status) => onStatus(item, status)}
     />

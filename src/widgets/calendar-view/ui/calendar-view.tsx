@@ -62,7 +62,7 @@ type CalendarProps = {
   defaultView?: View;
   home?: boolean;
   ownerNames?: Record<string, string>;
-  onOpen?: (id: string) => void;
+  onOpen?: (id: string, action?: "edit" | "delete") => void;
   onAdd?: () => void;
 };
 
@@ -384,7 +384,7 @@ function DayEvents({
   occurrences: EventOccurrence[];
   categories: EventCategory[];
   ownerNames?: Record<string, string>;
-  onOpen?: (id: string) => void;
+  onOpen?: (id: string, action?: "edit" | "delete") => void;
   onAdd?: () => void;
 }) {
   const daily = occurrences.filter(
@@ -480,7 +480,7 @@ function WeekEvents({
   occurrences: EventOccurrence[];
   categories: EventCategory[];
   ownerNames?: Record<string, string>;
-  onOpen?: (id: string) => void;
+  onOpen?: (id: string, action?: "edit" | "delete") => void;
   today: string;
 }) {
   return (
@@ -564,7 +564,7 @@ function TimelineEvent({
   occurrence: EventOccurrence;
   categories: EventCategory[];
   ownerNames?: Record<string, string>;
-  onOpen?: (id: string) => void;
+  onOpen?: (id: string, action?: "edit" | "delete") => void;
   showTime: boolean;
   date: string;
 }) {
@@ -657,7 +657,7 @@ function DayTimeline({
   occurrences: EventOccurrence[];
   categories: EventCategory[];
   ownerNames?: Record<string, string>;
-  onOpen?: (id: string) => void;
+  onOpen?: (id: string, action?: "edit" | "delete") => void;
   date: string;
 }) {
   const timeOf = ({ event, dday }: EventOccurrence) =>

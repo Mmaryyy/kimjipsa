@@ -9,7 +9,6 @@ import { inventoryRoutes, inventoryListPath } from "@/shared/config";
 import {
   useInventory,
   useInventoryMeta,
-  useInventoryActions,
   inventoryState,
   inventoryExpiring,
   type InventoryItem,
@@ -33,6 +32,7 @@ import {
   Toast,
   StatusBadge,
 } from "@/shared/ui";
+import { useItemActions } from "../../model/use-item-actions";
 import InventoryGroup from "./Group";
 import InventoryItemEditor from "../item-editor";
 const groups = [
@@ -69,12 +69,12 @@ const InventorySkeleton = ({
 const InventoryPage = () => {
   const items = useInventory();
   const meta = useInventoryMeta();
-  const actions = useInventoryActions();
   const router = useRouter();
   const search = useSearchParams();
   const [afterUsed, setAfterUsed] = useState<InventoryItem | null>(null);
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [manage, setManage] = useState(false);
+  const [initialAction, setInitialAction] = useState<"edit" | undefined>();
   const [editor, setEditor] = useState<InventoryItem | "new" | null>(null);
   const [message, setMessage] = useState("");
   const groupBy =
@@ -110,6 +110,26 @@ const InventoryPage = () => {
     });
   };
   const notify = (value: string) => setMessage(value);
+  const { actions, remove, confirmUsedUp } = useItemActions({
+    onClose: () => setEditor(null),
+    onNotify: notify,
+    onUsedUp: setAfterUsed,
+  });
+  const openItem = (
+    item: InventoryItem,
+    action?: "edit" | "used-up" | "delete",
+  ) => {
+    if (action === "delete") {
+      void remove(item);
+      return;
+    }
+    if (action === "used-up") {
+      void confirmUsedUp(item);
+      return;
+    }
+    setInitialAction(action);
+    setEditor(item);
+  };
   const changeStatus = async (
     item: InventoryItem,
     status: InventoryItem["status"],
@@ -302,7 +322,7 @@ const InventoryPage = () => {
                   pendingIds={actions.pendingIds}
                   expandedItemId={expandedItemId}
                   onExpandItem={setExpandedItemId}
-                  onOpen={setEditor}
+                  onOpen={openItem}
                   onAdjust={(item, delta) => void adjust(item, delta)}
                   onStatus={(item, status) => void changeStatus(item, status)}
                 />
@@ -311,6 +331,8 @@ const InventoryPage = () => {
         </div>
         {editor && (
           <InventoryItemEditor
+            key={editor === "new" ? "new" : `${editor.id}-${initialAction}`}
+            initialAction={editor === "new" ? undefined : initialAction}
             item={
               editor === "new"
                 ? undefined

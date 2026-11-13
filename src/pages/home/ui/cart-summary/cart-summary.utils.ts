@@ -3,6 +3,7 @@ import { formatDistance } from "date-fns";
 import { ko } from "date-fns/locale";
 import { groupCartItems, type CartData } from "@/entities/cart-item";
 import type { InventoryMeta } from "@/entities/inventory-item";
+import { objectParticle } from "@/shared/lib";
 
 export function cartSummary(
   data: CartData,
@@ -34,9 +35,7 @@ export function cartSummary(
             addSuffix: true,
             in: tz("Asia/Seoul"),
           })}에`;
-    const last = latest.name.charCodeAt(latest.name.length - 1);
-    const particle =
-      last >= 0xac00 && last <= 0xd7a3 && (last - 0xac00) % 28 ? "을" : "를";
+    const particle = objectParticle(latest.name);
     activity = `${actor} ${elapsed} ${latest.name}${particle} 담았어요`;
   }
   const groups = groupCartItems(

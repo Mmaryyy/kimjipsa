@@ -20,32 +20,44 @@ import InventoryItemEditor from ".";
 
 const render = (ui: ReactElement) =>
   renderWithoutConfirm(ui, { wrapper: ConfirmProvider });
-const { save } = vi.hoisted(() => ({ save: vi.fn() }));
+const { save, change } = vi.hoisted(() => ({ save: vi.fn(), change: vi.fn() }));
 vi.mock("@/entities/inventory-item", async (original) => ({
   ...(await original<object>()),
   useInventoryActions: () => ({
     save: { isPending: false, mutateAsync: save },
     change: { isPending: false },
+    onChange: change,
   }),
 }));
 // These tests exercise the editor; the date wheel has its own integration coverage.
 vi.mock("@/shared/ui/date-time-input", () => ({ DateTimeInput: () => null }));
 const milk = (fixture as InventoryItem[])[0]!;
-function editor(item?: InventoryItem, items = [milk]) {
+function editor(
+  item?: InventoryItem,
+  items = [milk],
+  initialAction?: "edit",
+  onUsedUp?: (item: InventoryItem) => void,
+  onClose = vi.fn(),
+) {
   const client = new QueryClient();
   return render(
     <QueryClientProvider client={client}>
       <InventoryItemEditor
         item={item}
+        initialAction={initialAction}
+        onUsedUp={onUsedUp}
         items={items}
         meta={defaults as InventoryMeta}
-        onClose={vi.fn()}
+        onClose={onClose}
         onNotify={vi.fn()}
       />
     </QueryClientProvider>,
   );
 }
-beforeEach(() => save.mockReset().mockResolvedValue(milk.id));
+beforeEach(() => {
+  save.mockReset().mockResolvedValue(milk.id);
+  change.mockReset().mockResolvedValue(undefined);
+});
 describe("INV-07 SCN-INV-7 삭제 확인", () => {
   it("상세는 읽기 화면이고 삭제 취소 시 남으며 확인할 때만 지워요", async () => {
     editor(milk);
@@ -161,4 +173,24 @@ it("INV-01 P15.1b 수정 취소는 품목 보기로 돌아가요", () => {
   fireEvent.click(screen.getByRole("button", { name: "취소" }));
   expect(screen.getByRole("button", { name: "품목 수정" })).toBeVisible();
   expect(screen.queryByLabelText("품목 이름")).not.toBeInTheDocument();
+});
+
+it("INV-01 P15.1c 밀기 수정은 품목 폼으로 바로 열려요", () => {
+  editor(milk, [milk], "edit");
+  expect(screen.getByLabelText("품목 이름")).toHaveValue(milk.name);
+});
+it("INV-04 SCN-INV-3 상세 다 썼어요 버튼은 확인 없이 기존 흐름을 열어요", async () => {
+  const onUsedUp = vi.fn();
+  editor(milk, [milk], undefined, onUsedUp);
+  fireEvent.click(screen.getByRole("button", { name: "다 썼어요" }));
+  await waitFor(() => expect(onUsedUp).toHaveBeenCalledWith(milk));
+  expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  expect(change).toHaveBeenCalledWith({ action: "used-up", id: milk.id });
+});
+
+it("INV-01 밀기로 바로 연 수정 취소는 시트를 닫아요", () => {
+  const onClose = vi.fn();
+  editor(milk, [milk], "edit", undefined, onClose);
+  fireEvent.click(screen.getByRole("button", { name: "취소" }));
+  expect(onClose).toHaveBeenCalledOnce();
 });

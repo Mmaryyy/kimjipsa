@@ -35,3 +35,5 @@ export {
 export { categoryColorSchema } from "./category-color.schema";
 
 export { usePullToAdd } from "./use-pull-to-add";
+
+export { objectParticle } from "./object-particle.utils";

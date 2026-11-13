@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import type { CalendarEvent } from "../api/type";
 import { EventOccurrenceRow } from "./event-occurrence-row";
 import { nextDday } from "../lib/dday.utils";
@@ -215,3 +215,51 @@ it("CAL-02 CAL-13 SCN-CAL-8 내일로 묶은 진행 중 일정은 종일과 종�
   expect(screen.queryByText(/2026-10-16 ~ 2026-10-18/)).not.toBeInTheDocument();
   expect(screen.queryByText("10:30")).not.toBeInTheDocument();
 });
+
+it.each(["edit", "delete"] as const)(
+  "CAL-05 P15.1c %s 동작은 해당 일정으로 연결해요",
+  (action) => {
+    const onOpen = vi.fn();
+    render(
+      <EventOccurrenceRow
+        occurrence={{
+          event,
+          startDate: event.startDate,
+          endDate: event.endDate,
+          dday: null,
+        }}
+        categories={[]}
+        onOpen={onOpen}
+      />,
+    );
+    fireEvent.keyDown(screen.getByRole("listitem"), { key: "ArrowLeft" });
+    const name = action === "edit" ? "여행 수정" : "여행 삭제";
+    fireEvent.click(screen.getByRole("button", { name }));
+    expect(onOpen).toHaveBeenCalledWith(event.id, action);
+  },
+);
+it.each(["masked", "readonly", "dday"])(
+  "CAL-04 P15.1c %s 행은 밀리지 않아요",
+  (kind) => {
+    const rowEvent = {
+      ...event,
+      canEdit: kind === "dday",
+      details: kind === "masked" ? null : event.details,
+    };
+    render(
+      <EventOccurrenceRow
+        occurrence={{
+          event: rowEvent,
+          startDate: event.startDate,
+          endDate: event.endDate,
+          dday: null,
+        }}
+        categories={[]}
+        showDdayDate={kind === "dday"}
+      />,
+    );
+    fireEvent.keyDown(screen.getByRole("listitem"), { key: "ArrowLeft" });
+    expect(screen.queryByLabelText("여행 수정")).toBeNull();
+    expect(screen.queryByLabelText("여행 삭제")).toBeNull();
+  },
+);

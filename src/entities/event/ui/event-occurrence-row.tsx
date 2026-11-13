@@ -1,4 +1,11 @@
-import { CategoryDot, ListRow, Text, TextButton } from "@/shared/ui";
+import {
+  Button,
+  SwipeActionRow,
+  CategoryDot,
+  ListRow,
+  Text,
+  TextButton,
+} from "@/shared/ui";
 import {
   ddayBadgeStyles,
   ddayLabelStyles,
@@ -8,7 +15,7 @@ import { eventVisibility } from "../model/event.constants";
 import type { EventCategory } from "../api/type";
 import type { EventOccurrence } from "../lib/event-occurrences.utils";
 import Link from "next/link";
-import { LockKeyhole } from "lucide-react";
+import { LockKeyhole, Pencil, Trash2 } from "lucide-react";
 import { eventRoutes } from "@/shared/config";
 import { format } from "date-fns";
 import { kstDate } from "../lib/dday.utils";
@@ -27,7 +34,7 @@ export function EventOccurrenceRow({
   occurrence: EventOccurrence;
   categories: EventCategory[];
   ownerNames?: Record<string, string>;
-  onOpen?: (id: string) => void;
+  onOpen?: (id: string, action?: "edit" | "delete") => void;
   showDdayDate?: boolean;
   showDdayCountdown?: boolean;
   date?: string;
@@ -101,8 +108,10 @@ export function EventOccurrenceRow({
       .filter(Boolean)
       .join(" · ");
   }
-  return (
+  const swipeEnabled = event.canEdit && !!event.details && !showDdayDate;
+  const content = () => (
     <ListRow
+      as={swipeEnabled ? "div" : "li"}
       className={!event.details ? "text-muted-foreground" : undefined}
       leading={
         <>
@@ -142,5 +151,48 @@ export function EventOccurrenceRow({
     >
       {title}
     </ListRow>
+  );
+  if (!swipeEnabled) return content();
+  const actionContent = (action: "edit" | "delete") => {
+    const label = `${titleText} ${action === "edit" ? "수정" : "삭제"}`;
+    const icon =
+      action === "edit" ? <Pencil aria-hidden /> : <Trash2 aria-hidden />;
+    return onOpen ? (
+      <span>{icon}</span>
+    ) : (
+      <Link
+        aria-label={label}
+        href={`${eventRoutes.calendar}?event=${event.id}&action=${action}`}
+      >
+        {icon}
+      </Link>
+    );
+  };
+  const actions = [
+    <Button
+      key="edit"
+      size="icon-sm"
+      variant="gray"
+      asChild={!onOpen}
+      aria-label={`${titleText} 수정`}
+      onClick={onOpen ? () => onOpen(event.id, "edit") : undefined}
+    >
+      {actionContent("edit")}
+    </Button>,
+    <Button
+      key="delete"
+      size="icon-sm"
+      variant="danger"
+      asChild={!onOpen}
+      aria-label={`${titleText} 삭제`}
+      onClick={onOpen ? () => onOpen(event.id, "delete") : undefined}
+    >
+      {actionContent("delete")}
+    </Button>,
+  ];
+  return (
+    <SwipeActionRow label={`${titleText} 동작`} actions={actions}>
+      {content}
+    </SwipeActionRow>
   );
 }

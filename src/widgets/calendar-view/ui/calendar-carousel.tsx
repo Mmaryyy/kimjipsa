@@ -28,6 +28,11 @@ export function CalendarCarousel({
   const [viewportRef, api] = useEmblaCarousel({
     startIndex: 1,
     watchDrag: (_api, event) => {
+      if (
+        event.target instanceof Element &&
+        event.target.closest("[data-swipe-row]")
+      )
+        return false;
       const point = "touches" in event ? event.touches[0] : event;
       drag.current = { start: point.clientX, end: point.clientX };
       return true;

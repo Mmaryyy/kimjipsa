@@ -1,10 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type ComponentProps,
-} from "react";
+import { useCallback, useMemo, useState, type ComponentProps } from "react";
 import { useConfirm, useConfirmDisabled } from "@/shared/ui";
 import type { RestockSheet } from "@/features/cart-checkout";
 import {
@@ -42,30 +36,6 @@ export function useCartPageActions(
   const pending = cart.offline || !cart.data || !metaReady || batchPending;
   const busy = pending || action.isPending || action.pendingIds.length > 0;
   const confirmDisabled = useConfirmDisabled(busy);
-  useEffect(() => {
-    if (!openedRow) return;
-    const close = () => setOpenedRow(null);
-    const outside = (event: PointerEvent) => {
-      if (
-        !(event.target instanceof Element) ||
-        event.target
-          .closest("[data-cart-row]")
-          ?.getAttribute("data-cart-row") !== openedRow
-      )
-        close();
-    };
-    const escape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") close();
-    };
-    document.addEventListener("pointerdown", outside);
-    document.addEventListener("scroll", close, true);
-    document.addEventListener("keydown", escape);
-    return () => {
-      document.removeEventListener("pointerdown", outside);
-      document.removeEventListener("scroll", close, true);
-      document.removeEventListener("keydown", escape);
-    };
-  }, [openedRow]);
   const onProcessItems = useCallback(
     async (targets: CartItem[]) => {
       if (busy || !targets.length) return;
