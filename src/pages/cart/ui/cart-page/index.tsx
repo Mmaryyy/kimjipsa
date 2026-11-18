@@ -120,7 +120,6 @@ const CartPage = () => {
           <PageHeader
             title="장바구니"
             odId="cart"
-            subtitle={cart.activity || undefined}
             actions={
               <>
                 <Button variant="glass" asChild>
@@ -136,7 +135,27 @@ const CartPage = () => {
                 </Button>
               </>
             }
-          />
+          >
+            {/* Slot keeps its height so the list never shifts when the bar appears. */}
+            <div
+              className="mt-2 h-0.5 overflow-hidden rounded-full"
+              data-od-id="cart-sync-bar"
+              role={cart.remoteSyncing ? "progressbar" : undefined}
+              aria-label={
+                cart.remoteSyncing ? "장바구니 변경 받는 중" : undefined
+              }
+              aria-hidden={cart.remoteSyncing ? undefined : true}
+            >
+              <div
+                className={cn([
+                  "h-full bg-primary transition-opacity duration-200",
+                  cart.remoteSyncing
+                    ? "animate-pulse motion-reduce:animate-none"
+                    : "opacity-0",
+                ])}
+              />
+            </div>
+          </PageHeader>
         }
       >
         <ShoppingNavigation current={cartRoutes.cart} />

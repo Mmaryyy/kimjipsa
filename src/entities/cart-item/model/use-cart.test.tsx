@@ -132,7 +132,11 @@ describe("CART-02 CART-14 SCN-CART-1 연결과 삭제 구독", () => {
       checked_by: "partner",
       checked_at: "2026-11-05T01:00:00Z",
     };
-    state.fetch.mockResolvedValue(updated);
+    expect(result.current.remoteSyncing).toBe(false);
+    let release!: (data: CartData) => void;
+    state.fetch.mockImplementation(
+      () => new Promise<CartData>((resolve) => (release = resolve)),
+    );
     act(() =>
       state.subscriptions
         .find(
@@ -141,12 +145,15 @@ describe("CART-02 CART-14 SCN-CART-1 연결과 삭제 구독", () => {
         )!
         .callback(),
     );
+    expect(result.current.remoteSyncing).toBe(true);
+    await act(async () => release(updated));
     await waitFor(() =>
       expect(result.current.data?.items[0]).toMatchObject({
         checked_by: "partner",
         checked_at: "2026-11-05T01:00:00Z",
       }),
     );
+    expect(result.current.remoteSyncing).toBe(false);
     unmount();
     client.clear();
   });

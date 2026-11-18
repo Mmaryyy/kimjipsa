@@ -29,6 +29,8 @@ export function useCart() {
   );
   const [connected, setConnected] = useState(true);
   const [syncedAt, setSyncedAt] = useState(0);
+  // Only realtime-triggered refetches show the bar; polling stays silent.
+  const [remoteChangeAt, setRemoteChangeAt] = useState(0);
   const query = useQuery({
     queryKey: cartKey,
     queryFn: fetchCart,
@@ -54,12 +56,15 @@ export function useCart() {
   useEffect(() => {
     if (isMockDataEnabled() || !familyId) return;
     const supabase = createBrowserSupabaseClient();
-    const invalidate = () => {
+    const refresh = (showBar: boolean) => {
+      const mutating = client.isMutating({ mutationKey }) > 0;
+      if (showBar && !mutating) setRemoteChangeAt(Date.now());
       void client.invalidateQueries({
         queryKey: cartKey,
-        refetchType: client.isMutating({ mutationKey }) ? "none" : "active",
+        refetchType: mutating ? "none" : "active",
       });
     };
+    const invalidate = () => refresh(true);
     const invalidateMeta = () => {
       invalidate();
       void client.invalidateQueries({ queryKey: ["inventory-meta"] });
@@ -126,7 +131,7 @@ export function useCart() {
         const ready = status === "SUBSCRIBED";
         setConnected(ready);
         if (ready) {
-          invalidate();
+          refresh(false);
           void client.invalidateQueries({ queryKey: ["inventory-meta"] });
         }
       });
@@ -135,25 +140,8 @@ export function useCart() {
     };
   }, [client, familyId]);
   const previous = useRef<CartData | undefined>(undefined);
-  const [activity, setActivity] = useState("");
   useEffect(() => {
     const data = query.data;
-    if (data && previous.current?.familyId === data.familyId) {
-      const checked = data.items.find(
-        (item) =>
-          item.is_checked &&
-          item.checked_by !== data.actorId &&
-          !previous.current?.items.find((old) => old.id === item.id)
-            ?.is_checked,
-      );
-      const actor = data.members.find(
-        (member) => member.user_id === checked?.checked_by,
-      );
-      if (checked && actor)
-        setActivity(
-          `방금 ${actor.display_name}님이 ${checked.name}를 담았어요`,
-        );
-    }
     if (data && previous.current?.networkError && !data.networkError)
       setSyncedAt(Date.now());
     previous.current = data;
@@ -162,7 +150,9 @@ export function useCart() {
     !online ||
     query.data?.networkError === true ||
     (query.error instanceof ApiError && query.error.code === "network_error");
-  return { ...query, offline, syncedAt, activity };
+  const remoteSyncing =
+    query.isFetching && remoteChangeAt >= query.dataUpdatedAt;
+  return { ...query, offline, syncedAt, remoteSyncing };
 }
 export function useCartActions() {
   const client = useQueryClient();
