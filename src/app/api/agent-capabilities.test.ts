@@ -8,6 +8,14 @@ const owner = "10000000-0000-4000-8000-000000000001";
 const partner = "10000000-0000-4000-8000-000000000002";
 const eventId = "10000000-0000-4000-8000-000000000003";
 const category = "10000000-0000-4000-8000-000000000004";
+const cartItem = {
+  name: "계란",
+  quantity: 2,
+  unit_id: category,
+  memo: "",
+  link_url: "",
+  inventory_item_id: null,
+};
 const details = {
   title: "PRIVATE_TITLE",
   place: "PRIVATE_PLACE",
@@ -115,6 +123,44 @@ describe("BOT-07 입력 검증", () => {
       ]),
     ).toThrow();
   });
+  it("INV-11 SCN-BOT-6 재고의 잘못된 카테고리를 비워도 장바구니와 함께 제안할 수 있어요", () => {
+    const stockItem = {
+      name: "우유",
+      mode: "quantity",
+      quantity: 1,
+      status: "enough",
+      unit_id: category,
+      location_id: category,
+      min_quantity: null,
+      expires_on: null,
+    };
+    const actions = parseAgentActions([
+      ...[category, "유제품·계란", null, undefined].map((category_id) => ({
+        domain: "inventory",
+        label: "재고 추가",
+        payload: {
+          action: "save",
+          id: null,
+          item: {
+            ...stockItem,
+            ...(category_id === undefined ? {} : { category_id }),
+          },
+        },
+      })),
+      {
+        domain: "cart",
+        label: "담기",
+        payload: { action: "add", item: cartItem },
+      },
+    ]);
+    expect(actions.slice(0, 4).map(({ payload }) => payload.item)).toEqual(
+      [category, null, null, null].map((category_id) => ({
+        ...stockItem,
+        category_id,
+      })),
+    );
+    expect(actions[4].payload.item).toEqual({ ...cartItem, category_id: null });
+  });
   it("CART-07 필수 보관 장소가 없는 구매 완료는 실행하지 않아요", () => {
     expect(() =>
       parseAgentActions([
@@ -174,6 +220,39 @@ describe("BOT-07 입력 검증", () => {
       ])[0].payload,
     ).toEqual({ action: "delete", id: eventId });
   });
+  it("CART-11 SCN-BOT-6 여러 품목의 카테고리를 보존하고 빠진 값은 추천에 맡겨요", () => {
+    const items = [
+      { ...cartItem, category_id: category },
+      { ...cartItem, name: "두부" },
+      { ...cartItem, name: "우유", category_id: "유제품·계란" },
+    ];
+    const actions = parseAgentActions(
+      items.map((item) => ({
+        domain: "cart",
+        label: item.name,
+        payload: { action: "add", item },
+      })),
+    );
+    expect(actions.map(({ payload }) => payload.item)).toEqual([
+      items[0],
+      { ...items[1], category_id: null },
+      { ...items[2], category_id: null },
+    ]);
+  });
+  it.each([category, null])(
+    "CART-11 SCN-BOT-6 장바구니 수정에 카테고리 %s를 전달해요",
+    (category_id) => {
+      const payload = {
+        action: "save",
+        id: eventId,
+        item: { ...cartItem, category_id },
+      };
+      expect(
+        parseAgentActions([{ domain: "cart", label: "수정", payload }])[0]
+          .payload,
+      ).toEqual(payload);
+    },
+  );
   it.each([
     "javascript:alert(1)",
     "https://user:secret@example.com/",

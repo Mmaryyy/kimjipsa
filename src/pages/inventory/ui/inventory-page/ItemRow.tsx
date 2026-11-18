@@ -92,21 +92,19 @@ const InventoryItemRow = ({
       disabled={pending}
       data-od-id={`inv-item-${item.id}`}
       aria-busy={pending}
-      contentClassName="flex min-h-[var(--row-min)] items-center gap-2 py-2"
+      contentClassName="flex min-h-11 items-center gap-3 py-2"
     >
       {(contentDisabled) => (
         <>
           <TextButton
             disabled={contentDisabled}
             className={cn(
-              "min-h-0 min-w-0 flex-1 flex-col items-start justify-center gap-0",
-              "text-left font-normal text-foreground",
+              "-my-2 min-h-11 min-w-0 flex-1 flex-col items-start justify-center gap-0",
+              "py-2 text-left font-normal text-foreground",
             )}
             onClick={onOpen}
           >
-            <span className="block max-w-full truncate text-body font-normal">
-              {item.name}
-            </span>
+            <span className="block max-w-full truncate">{item.name}</span>
             <Text
               as="span"
               variant="caption"
@@ -118,7 +116,7 @@ const InventoryItemRow = ({
           {item.mode === "quantity" ? (
             <>
               <InventoryBadges item={item} expiryDays={meta.expiry_days} />
-              <div className="flex shrink-0 items-center gap-1">
+              <div className="-my-2 flex shrink-0 items-center gap-1">
                 <QuantityStepper
                   disabled={contentDisabled}
                   collapsible={{
@@ -134,13 +132,15 @@ const InventoryItemRow = ({
               </div>
             </>
           ) : (
-            <InventoryStatusCapsule
-              label={item.name}
-              value={item.status}
-              open={controlOpen}
-              onOpenChange={onControlOpenChange}
-              onValueChange={onStatus}
-            />
+            <div className="-my-2 shrink-0">
+              <InventoryStatusCapsule
+                label={item.name}
+                value={item.status}
+                open={controlOpen}
+                onOpenChange={onControlOpenChange}
+                onValueChange={onStatus}
+              />
+            </div>
           )}
         </>
       )}

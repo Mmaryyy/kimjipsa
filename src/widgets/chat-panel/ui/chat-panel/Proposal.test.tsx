@@ -107,10 +107,51 @@ vi.mock("@/entities/inventory-item", async (original) => ({
   ...(await original<typeof InventoryEntity>()),
   useInventory: () => ({ data: [] }),
   useInventoryMeta: () => ({
-    data: { categories: [], locations: [], units: [] },
+    data: {
+      categories: [
+        { id: "dairy", name: "유제품·계란" },
+        { id: "other", name: "기타" },
+      ],
+      locations: [],
+      units: [],
+    },
     isError: false,
   }),
 }));
+it.each([
+  ["cart", "add", "우유 2개 장바구니에 담을까요 (유제품·계란)?"],
+  ["cart", "save", "우유 2개 장바구니에 수정할까요 (유제품·계란)?"],
+  ["inventory", "save", "우유 2개 재고를 추가할까요 (유제품·계란)?"],
+] as const)(
+  "INV-11 CART-11 SCN-BOT-6 %s %s 확인에 카테고리가 보이고 수정할 수 있어요",
+  (domain, action, label) => {
+    const payload = { action, item: { name: "우유", category_id: "dairy" } };
+    const editable: ActionProposal = {
+      ...proposal,
+      actions: [{ domain, label, expected: {}, payload }],
+    };
+    render(<ChatActionProposal proposal={editable} now={now} />);
+    expect(screen.getByText(label)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "유제품·계란" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "수정" }));
+    expect(
+      screen.getByRole("button", { name: "유제품·계란", pressed: true }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "기타" }));
+    fireEvent.click(screen.getByRole("button", { name: "저장" }));
+    expect(mutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actions: [
+          {
+            ...editable.actions[0],
+            payload: { action, item: { name: "우유", category_id: "other" } },
+          },
+        ],
+      }),
+      expect.any(Object),
+    );
+  },
+);
 it("BOT-08 SCN-BOT-6 같은 메시지 안에서 제목을 수정하고 저장해요", async () => {
   const editable: ActionProposal = {
     ...proposal,

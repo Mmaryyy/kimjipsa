@@ -7,6 +7,14 @@ import {
   type AgentAction,
 } from "@/entities/chat-message/index.server";
 
+const categoryIdSchema = z.uuid();
+const normalizeItemCategory = (raw: unknown) => {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return raw;
+  const item = raw as Record<string, unknown>;
+  const category = categoryIdSchema.safeParse(item.category_id);
+  return { ...item, category_id: category.data ?? null };
+};
+
 const inventoryCommand = z.discriminatedUnion("action", [
   z.object({
     action: z.literal("adjust"),
@@ -23,13 +31,20 @@ const inventoryCommand = z.discriminatedUnion("action", [
   z.object({
     action: z.literal("save"),
     id: z.uuid().nullable(),
-    item: inventoryInputSchema,
+    item: z.preprocess(normalizeItemCategory, inventoryInputSchema),
   }),
 ]);
-const allowedCartCommand = cartCommandSchema.refine(
-  (payload) =>
-    ["add", "save", "delete", "check", "restock"].includes(payload.action),
-  "지원하지 않는 장바구니 작업이에요.",
+const allowedCartCommand = z.preprocess(
+  (raw) => {
+    const payload = raw as AgentAction["payload"];
+    if (payload.action !== "add" && payload.action !== "save") return raw;
+    return { ...payload, item: normalizeItemCategory(payload.item) };
+  },
+  cartCommandSchema.refine(
+    (payload) =>
+      ["add", "save", "delete", "check", "restock"].includes(payload.action),
+    "지원하지 않는 장바구니 작업이에요.",
+  ),
 );
 const eventCommand = z.object({
   id: z.uuid().nullable(),

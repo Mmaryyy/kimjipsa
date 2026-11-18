@@ -11,6 +11,7 @@ import {
   inventoryStatusOptions,
   useInventoryMeta,
 } from "@/entities/inventory-item";
+import { cn } from "@/shared/lib";
 import { Button, Input, QuantityStepper, Text } from "@/shared/ui";
 import { DateTimeInput } from "@/shared/ui/date-time-input";
 
@@ -28,12 +29,19 @@ interface ChoicesProps {
   label: string;
   value: Value;
   options: readonly Option[];
+  category?: boolean;
   onChange: (value: Value) => void;
 }
-const ProposalChoices = ({ label, value, options, onChange }: ChoicesProps) => (
+const ProposalChoices = ({
+  label,
+  value,
+  options,
+  category,
+  onChange,
+}: ChoicesProps) => (
   <fieldset className="space-y-1">
     <legend className="text-caption text-muted-foreground">{label}</legend>
-    <div className="flex flex-wrap gap-1">
+    <div className={cn("flex flex-wrap gap-1", category && "gap-y-2")}>
       {options.length === 0 && (
         <Text as="p" variant="caption">
           고를 수 있는 항목이 없어요.
@@ -45,7 +53,10 @@ const ProposalChoices = ({ label, value, options, onChange }: ChoicesProps) => (
           type="button"
           variant="gray"
           size="sm"
-          className="rounded-full text-caption aria-pressed:bg-[var(--accent-soft)] aria-pressed:text-primary"
+          className={cn(
+            "rounded-full text-caption aria-pressed:bg-[var(--accent-soft)] aria-pressed:text-primary",
+            category && "min-h-[var(--hit)] min-w-[var(--hit)]",
+          )}
           aria-pressed={value === option.value}
           onClick={() => onChange(option.value)}
         >
@@ -58,15 +69,9 @@ const ProposalChoices = ({ label, value, options, onChange }: ChoicesProps) => (
 interface FieldsProps {
   fields: Fields;
   event?: boolean;
-  cart?: boolean;
   onChange: (fields: Fields) => void;
 }
-const ProposalFields = ({
-  fields,
-  event = false,
-  cart = false,
-  onChange,
-}: FieldsProps) => {
+const ProposalFields = ({ fields, event = false, onChange }: FieldsProps) => {
   const inputId = useId();
   const meta = useInventoryMeta();
   const categories = useEventCategories();
@@ -225,7 +230,7 @@ const ProposalFields = ({
         </Text>
       )}
       {Object.entries(fields).map(([key, value]) => {
-        if (!labels[key] || (cart && key === "category_id")) return null;
+        if (!labels[key]) return null;
         if (
           fields.kind === "event" &&
           ["ddayStyle", "celebrateMessage"].includes(key)
@@ -245,6 +250,7 @@ const ProposalFields = ({
               label={labels[key]}
               value={value}
               options={options[key]}
+              category={key === "category_id"}
               onChange={(next) => {
                 let patch: Fields = { [key]: next };
                 if (key === "isAllDay" && next === true)
@@ -340,7 +346,6 @@ const ChatProposalForm = ({
                 <ProposalFields
                   fields={nested}
                   event={action.domain === "event"}
-                  cart={action.domain === "cart"}
                   onChange={(next) =>
                     update(index, { ...action.payload, [nestedKey]: next })
                   }

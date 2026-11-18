@@ -11,13 +11,22 @@ const context = vi.hoisted(() => ({
 }));
 vi.mock("@/shared/server", () => ({
   mockContext: async () => (context.enabled ? context : null),
-  mockJson: async (name: string) =>
-    name === "event-categories"
-      ? [{ id: "10000000-0000-4000-8000-000000000012", name: "병원" }]
-      : {
-          id: "10000000-0000-4000-8000-000000000001",
-          members: [{ display_name: "지수" }, { display_name: "민호" }],
-        },
+  mockJson: async (name: string) => {
+    if (name === "event-categories")
+      return [{ id: "10000000-0000-4000-8000-000000000012", name: "병원" }];
+    if (name === "inventory-meta")
+      return {
+        categories: [
+          { id: "7f6eb754-9554-4d02-a16f-c1159ddbfaf7", name: "유제품·계란" },
+          { id: "006c5fbc-1462-40cf-83df-c1d910eb2f6b", name: "기타" },
+        ],
+        units: [{ id: "863a0860-2cfb-4361-8067-727ee92c58ea", name: "개" }],
+      };
+    return {
+      id: "10000000-0000-4000-8000-000000000001",
+      members: [{ display_name: "지수" }, { display_name: "민호" }],
+    };
+  },
 }));
 beforeEach(() => {
   context.values.clear();
@@ -198,6 +207,46 @@ it("BOT-08 SCN-BOT-6 단일 변경을 수정하면 질문 하나로 다시 확�
   expect(result).toContain("추가했어요");
   expect(result).not.toContain("할까요?");
 });
+
+it.each([
+  ["inventory", "우유 1개 재고를 수정할까요 (기타)?"],
+  ["cart", "우유 1개 장바구니에 수정할까요 (기타)?"],
+] as const)(
+  "INV-11 CART-11 SCN-BOT-6 %s 수정에 새 카테고리를 표시해요",
+  async (domain, label) => {
+    const chat = (await mockChatPage(null))!;
+    const proposal = chat.proposals[0];
+    const cart = proposal.actions[1];
+    const item = cart.payload.item as Record<string, string | number | null>;
+    const action = {
+      ...cart,
+      domain,
+      payload: {
+        action: "save",
+        id: proposal.id,
+        item: { ...item, mode: "quantity" },
+      },
+    };
+    proposal.actions = [action];
+    await mockChatCommand("edit-actions", {
+      id: proposal.id,
+      version: 1,
+      actions: [
+        {
+          ...action,
+          payload: {
+            ...action.payload,
+            item: {
+              ...action.payload.item,
+              category_id: "006c5fbc-1462-40cf-83df-c1d910eb2f6b",
+            },
+          },
+        },
+      ],
+    });
+    expect(proposal.actions[0].label).toBe(label);
+  },
+);
 
 describe("BOT-01 재시도 목업", () => {
   it.each(["failed", "cancelled", "unknown"] as const)(

@@ -17,6 +17,8 @@ async function mockState() {
   const key = `chat:private:${context.perspective}`;
   let state = context.values.get(key) as MockChatState | undefined;
   if (!state) {
+    const meta = await mockJson("inventory-meta");
+    const dairy = meta.categories.find(({ name }) => name === "유제품·계란");
     const created_at = new Date().toISOString();
     const message = (
       role: "user" | "assistant",
@@ -129,14 +131,16 @@ async function mockState() {
               },
               {
                 domain: "cart",
-                label: "우유 1개 장바구니 담기",
+                label: dairy
+                  ? `우유 1개 장바구니 담기 (${dairy.name})`
+                  : "우유 1개 장바구니 담기",
                 payload: {
                   action: "add",
                   item: {
                     name: "우유",
                     quantity: 1,
                     unit_id: "863a0860-2cfb-4361-8067-727ee92c58ea",
-                    category_id: null,
+                    category_id: dairy?.id ?? null,
                     memo: "",
                     link_url: "",
                     inventory_item_id: null,
@@ -284,7 +288,10 @@ export async function mockChatCommand(operation: string, raw: unknown) {
         )
       )
         throw new ApiError("invalid_chat", "변경 내용을 확인해 주세요.");
-      const categories = await mockJson("event-categories");
+      const [categories, meta] = await Promise.all([
+        mockJson("event-categories"),
+        mockJson("inventory-meta"),
+      ]);
       proposal.actions = updated.map((a) => {
         const nominal = updated.length > 1;
         const e = a.payload.event;
@@ -303,10 +310,43 @@ export async function mockChatCommand(operation: string, raw: unknown) {
             ? `${day} ${time} ${e.title} ${visibility} ${verb} (${category})`
             : `${day} ${time}, ${e.title}, ${target} ${verb}할까요?`;
         }
-        if (item && typeof item === "object" && !Array.isArray(item))
-          label = nominal
-            ? `${item.name} ${item.quantity}개 장바구니 담기`
-            : `${item.name} ${item.quantity}개 장바구니에 담을까요?`;
+        if (!item || typeof item !== "object" || Array.isArray(item))
+          return { ...a, label };
+        const category = meta.categories.find(
+          ({ id }) => id === item.category_id,
+        );
+        const suffix = category ? ` (${category.name})` : "";
+        const unit =
+          meta.units.find(({ id }) => id === item.unit_id)?.name ?? "";
+        const amount = item.quantity == null ? "" : ` ${item.quantity}${unit}`;
+        if (a.domain === "cart") {
+          const save = a.payload.action === "save";
+          const verb = nominal
+            ? save
+              ? "장바구니 수정"
+              : "장바구니 담기"
+            : save
+              ? "장바구니에 수정할까요"
+              : "장바구니에 담을까요";
+          label = `${item.name}${amount} ${verb}${suffix}${nominal ? "" : "?"}`;
+        } else if (a.domain === "inventory" && a.payload.action === "save") {
+          const verb = a.payload.id ? "수정" : "추가";
+          const quantityLabel = nominal
+            ? `재고 ${verb}`
+            : `재고를 ${verb}할까요`;
+          const status = { enough: "충분", low: "부족", none: "없음" };
+          const statusLabel =
+            item.status === "enough" ||
+            item.status === "low" ||
+            item.status === "none"
+              ? status[item.status]
+              : "";
+          const labelBody =
+            item.mode === "status"
+              ? `${item.name} ${nominal ? "재고" : "재고를"} ${statusLabel} 상태로 ${nominal ? "표시" : "표시할까요"}`
+              : `${item.name}${amount} ${quantityLabel}`;
+          label = `${labelBody}${suffix}${nominal ? "" : "?"}`;
+        }
         return { ...a, label };
       });
       proposal.version++;
@@ -321,10 +361,12 @@ export async function mockChatCommand(operation: string, raw: unknown) {
         label: label
           .replace(/ 추가 \(.+\)$/, "을 추가했어요")
           .replace(/ 수정 \(.+\)$/, "을 수정했어요")
-          .replace(/ 장바구니 담기$/, " 장바구니에 담았어요")
-          .replace(/추가할까요\?$/, "추가했어요")
-          .replace(/수정할까요\?$/, "수정했어요")
-          .replace(/담을까요\?$/, "담았어요"),
+          .replace(/ 장바구니 담기( \(.+\))?$/, " 장바구니에 담았어요")
+          .replace(/추가할까요( \(.+\))?\?$/, "추가했어요")
+          .replace(/수정할까요( \(.+\))?\?$/, "수정했어요")
+          .replace(/상태로 표시( \(.+\))$/, "상태로 표시했어요")
+          .replace(/표시할까요( \(.+\))?\?$/, "표시했어요")
+          .replace(/담을까요( \(.+\))?\?$/, "담았어요"),
       }));
     proposal.actions = proposal.actions.filter((_, index) =>
       (input.selected as number[]).includes(index),
