@@ -74,8 +74,8 @@ describe("P10.6 하단 메뉴 접근성과 렌즈 제스처", () => {
     expect(links.map((link) => link.textContent)).toEqual([
       "오늘",
       "일정",
-      "재고",
-      "장바구니",
+      "장보기",
+      "프로젝트",
       "설정",
     ]);
     expect(screen.getByRole("link", { name: "일정" })).toHaveAttribute(
@@ -116,7 +116,7 @@ describe("P10.6 하단 메뉴 접근성과 렌즈 제스처", () => {
     );
     fireEvent(nav, pointer("pointermove", 188.5, 25));
     fireEvent(nav, pointer("pointerup", 188.5, 25));
-    expect(router.push).toHaveBeenCalledExactlyOnceWith("/inventory");
+    expect(router.push).toHaveBeenCalledExactlyOnceWith("/cart");
   });
 
   it("놓을 때 한 번만 가장 가까운 탭으로 이동하고 후속 클릭은 막아요", () => {
@@ -129,13 +129,13 @@ describe("P10.6 하단 메뉴 접근성과 렌즈 제스처", () => {
     fireEvent(nav, pointer("pointermove", 190, 25));
     expect(router.push).not.toHaveBeenCalled();
     fireEvent(nav, pointer("pointerup", 190, 25));
-    expect(router.push).toHaveBeenCalledExactlyOnceWith("/inventory");
+    expect(router.push).toHaveBeenCalledExactlyOnceWith("/cart");
     fireEvent(nav, pointer("lostpointercapture", 190, 25));
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(nav.querySelectorAll("[data-selection]")).toHaveLength(1);
     expect(nav.querySelector("[data-lens] [data-copy]")).not.toBeNull();
     expect(
-      fireEvent.click(screen.getByRole("link", { name: "재고" }), {
+      fireEvent.click(screen.getByRole("link", { name: "장보기" }), {
         detail: 1,
       }),
     ).toBe(false);
@@ -158,7 +158,7 @@ describe("P10.6 하단 메뉴 접근성과 렌즈 제스처", () => {
       }
       fireEvent(nav, pointer("pointerup", 190, 25, "touch"));
       if (target === "link") {
-        expect(router.push).toHaveBeenCalledExactlyOnceWith("/inventory");
+        expect(router.push).toHaveBeenCalledExactlyOnceWith("/cart");
       } else {
         expect(router.push).not.toHaveBeenCalled();
       }
@@ -239,11 +239,15 @@ describe("P10.6 하단 메뉴 접근성과 렌즈 제스처", () => {
     },
   );
 
-  it("하이드레이션 전에도 현재 탭의 선택 면 폭과 위치를 제공해요", () => {
+  it("ACC-18 SCN-PRJ-6 재고에서 하이드레이션 전에도 장보기 탭만 선택해요", () => {
     const html = renderToString(<BottomNavigation pathname="/inventory" />);
     expect(html).toContain("--tab-cell:calc((100% - 8px) / 5)");
     expect(html).toContain("--indicator-default-x:200%");
     expect(html).toContain("--selection-visible:1");
+    render(<BottomNavigation pathname="/inventory" />);
+    const current = screen.getByRole("link", { current: "page" });
+    expect(current).toHaveTextContent("장보기");
+    expect(current).toHaveAttribute("href", "/cart");
   });
 
   it("끌지 않고 탭하면 한 번 이동하고 바로 뒤의 포인터 클릭만 막아요", () => {
@@ -412,7 +416,7 @@ describe("P10.6 하단 메뉴 접근성과 렌즈 제스처", () => {
     const nav = screen.getByRole("navigation");
     for (const [name, x] of [
       ["일정", 105],
-      ["재고", 175],
+      ["장보기", 175],
     ] as const) {
       const link = screen.getByRole("link", { name });
       fireEvent(link, pointer("pointerdown", x, 25));
@@ -422,7 +426,7 @@ describe("P10.6 하단 메뉴 접근성과 렌즈 제스처", () => {
     let time = 0;
     while (frames.length && time < 3000) frames.shift()!((time += 16));
     expect(nav.style.getPropertyValue("--indicator-x")).toBe("140px");
-    await act(async () => rerender(<BottomNavigation pathname="/inventory" />));
+    await act(async () => rerender(<BottomNavigation pathname="/cart" />));
     while (frames.length && time < 6000) frames.shift()!((time += 16));
     expect(nav.style.getPropertyValue("--indicator-x")).toBe("140px");
   });

@@ -1,4 +1,4 @@
-import { appNavigation, appNavigationWithBot } from "../config";
+import { sidebarNavigation, sidebarNavigationWithBot } from "../config";
 import { cartRoutes, chatPath } from "@/shared/config";
 import { cn, isCurrentPath } from "@/shared/lib";
 
@@ -7,10 +7,11 @@ import { useChatNavigation } from "@/features/chat-navigation";
 
 export function NavigationLinkList({ pathname }: { pathname: string }) {
   const { minimized, ready, onOpen } = useChatNavigation();
-  const navigation = ready && minimized ? appNavigationWithBot : appNavigation;
+  const navigation =
+    ready && minimized ? sidebarNavigationWithBot : sidebarNavigation;
   return (
     <ul>
-      {navigation.map(({ href, label }) => {
+      {navigation.map(({ href, label, icon: Icon }) => {
         const active =
           isCurrentPath(pathname, href) ||
           (href === cartRoutes.cart &&
@@ -34,6 +35,7 @@ export function NavigationLinkList({ pathname }: { pathname: string }) {
               ])}
               aria-current={active ? "page" : undefined}
             >
+              <Icon className="size-5" aria-hidden="true" />
               <span>{label}</span>
             </Link>
           </li>

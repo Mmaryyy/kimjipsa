@@ -1,1 +1,6 @@
-export { appNavigation, appNavigationWithBot } from "./navigation.constants";
+export {
+  bottomNavigation,
+  bottomNavigationWithBot,
+  sidebarNavigation,
+  sidebarNavigationWithBot,
+} from "./navigation.constants";

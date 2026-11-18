@@ -5,7 +5,12 @@ import { groupCartItems, useCart } from "@/entities/cart-item";
 import { useInventoryMeta } from "@/entities/inventory-item";
 import { RestockSheet } from "@/features/cart-checkout";
 import { markHistoryBack, cn } from "@/shared/lib";
-import { inventoryListPath, inventoryRoutes } from "@/shared/config";
+import {
+  cartRoutes,
+  inventoryListPath,
+  inventoryRoutes,
+} from "@/shared/config";
+import { ShoppingNavigation } from "@/widgets/shopping-navigation";
 import {
   Banner,
   Button,
@@ -143,6 +148,7 @@ const CartPage = () => {
           />
         }
       >
+        <ShoppingNavigation current={cartRoutes.cart} />
         {cart.offline && (
           <Banner
             variant="warning"

@@ -1,7 +1,7 @@
 "use client";
 
-import { appNavigation, appNavigationWithBot } from "../../config";
-import { cartRoutes, chatPath } from "@/shared/config";
+import { bottomNavigation, bottomNavigationWithBot } from "../../config";
+import { cartRoutes, chatPath, inventoryRoutes } from "@/shared/config";
 import { cn, isCurrentPath } from "@/shared/lib";
 
 import type { CSSProperties } from "react";
@@ -10,8 +10,8 @@ import { useChatNavigation } from "@/features/chat-navigation";
 import { useNavigationScroll } from "../../model/use-navigation-scroll";
 import { useTabLens } from "./use-tab-lens";
 
-const defaultHrefs = appNavigation.map((item) => item.href);
-const botHrefs = appNavigationWithBot.map((item) => item.href);
+const defaultHrefs = bottomNavigation.map((item) => item.href);
+const botHrefs = bottomNavigationWithBot.map((item) => item.href);
 const faceClass = cn([
   "flex min-h-11 flex-col items-center justify-center gap-0.5",
   "text-[length:calc(var(--sp-2)+var(--sp-half))] leading-[var(--lh-caption2)] whitespace-nowrap",
@@ -51,19 +51,22 @@ interface Props {
 }
 const BottomNavigation = ({ pathname }: Props) => {
   const { minimized, onOpen } = useChatNavigation();
-  const navigation = minimized ? appNavigationWithBot : appNavigation;
+  const navigation = minimized ? bottomNavigationWithBot : bottomNavigation;
   const hrefs = minimized ? botHrefs : defaultHrefs;
   const nav = useTabLens(hrefs);
   const { collapsed, keyboardOpen } = useNavigationScroll();
   const activeIndex = navigation.findIndex(
     ({ href }) =>
       isCurrentPath(pathname, href) ||
-      (href === cartRoutes.cart && isCurrentPath(pathname, cartRoutes.restock)),
+      (href === cartRoutes.cart &&
+        (isCurrentPath(pathname, inventoryRoutes.inventory) ||
+          isCurrentPath(pathname, cartRoutes.restock))),
   );
   return (
     <nav
       ref={nav}
       aria-label="하단 메뉴"
+      data-od-id="prj-bottom-navigation"
       hidden={keyboardOpen}
       data-collapsed={collapsed}
       style={

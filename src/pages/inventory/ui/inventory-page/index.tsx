@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from "react";
 import { Search } from "lucide-react";
 import { markHistoryBack, cn, normalizeItemName } from "@/shared/lib";
 import { inventoryRoutes, inventoryListPath } from "@/shared/config";
+import { ShoppingNavigation } from "@/widgets/shopping-navigation";
 import {
   useInventory,
   useInventoryMeta,
@@ -391,6 +392,7 @@ const InventoryPage = () => {
           />
         }
       >
+        <ShoppingNavigation current={inventoryRoutes.inventory} />
         {content}
         <Sheet
           historyManaged

@@ -129,6 +129,29 @@ export const textButtonStyles = cva(
   },
 );
 
+export const segmentedStyles = cva(
+  [
+    "flex min-w-max shrink-0 rounded-sm bg-muted p-0.5",
+    "[&>*]:min-w-max [&>*]:rounded-sm [&>*]:px-2 [&>*]:whitespace-nowrap [&>*]:[word-break:keep-all]",
+    "[&>*:is([data-state=on],[aria-current=page])]:font-semibold",
+  ],
+  {
+    variants: {
+      mode: {
+        control: [
+          "[&_button]:min-h-ctl-h-xs [&_button]:flex-[1_0_auto]",
+          "[&_button[data-state=on]]:bg-control-selected-bg",
+          "[&>*[data-state=on]]:shadow-[var(--shadow-control)]",
+        ],
+        navigation: [
+          "gap-1 [&>a]:flex [&>a]:min-h-ctl-h [&>a]:flex-1 [&>a]:items-center [&>a]:justify-center",
+          "[&>a[aria-current=page]]:bg-accent-soft [&>a[aria-current=page]]:text-primary",
+        ],
+      },
+    },
+  },
+);
+
 export const toggleGroupStyles = cva(
   [
     "flex min-w-0 [&_button]:cursor-pointer [&_button]:whitespace-nowrap",
@@ -138,13 +161,7 @@ export const toggleGroupStyles = cva(
   {
     variants: {
       appearance: {
-        segmented: [
-          "min-w-max shrink-0 rounded-sm bg-muted p-0.5 [&_button]:min-h-[var(--ctl-h-xs)]",
-          "[&_button]:min-w-max [&_button]:flex-[1_0_auto] [&_button]:rounded-sm [&_button]:px-2",
-          "[&_button[data-state=on]]:bg-[var(--control-selected-bg)]",
-          "[&_button[data-state=on]]:font-semibold",
-          "[&_button[data-state=on]]:shadow-[var(--shadow-control)]",
-        ],
+        segmented: segmentedStyles({ mode: "control" }),
         filters: [
           "gap-5 overflow-x-auto py-2 [scrollbar-width:none] [&_button]:min-h-[var(--ctl-h)]",
           "[&_button]:flex-none [&_button]:text-[var(--label-tertiary)]",

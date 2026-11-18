@@ -29,6 +29,7 @@ export function SidebarNavigation({ pathname }: { pathname: string }) {
         "lg:[&_li_a[aria-current=page]_svg]:text-primary lg:[&_li_a[aria-current=page]]:bg-muted",
       ])}
       aria-label="주 메뉴"
+      data-od-id="prj-sidebar"
     >
       <div className="flex flex-col gap-1">
         <Link href={accountRoutes.home} className="grid gap-1 px-3 pt-1">

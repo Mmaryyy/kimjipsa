@@ -1,5 +1,6 @@
 "use client";
 import { FormProvider, useForm } from "react-hook-form";
+import { cartRoutes, inventoryRoutes } from "@/shared/config";
 import {
   readableTextColor,
   resolveCategoryColor,
@@ -21,6 +22,7 @@ import {
   Button,
   TextButton,
   SegmentedControl,
+  SegmentedNavigation,
   FilterTabs,
   Switch,
   Checkbox,
@@ -306,6 +308,14 @@ function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
           options={viewOptions}
           value={view}
           onValueChange={setView}
+        />
+        <SegmentedNavigation
+          label="장보기 페이지 전환"
+          links={[
+            { href: cartRoutes.cart, label: "장바구니" },
+            { href: inventoryRoutes.inventory, label: "재고" },
+          ]}
+          current={cartRoutes.cart}
         />
         <FilterTabs
           label="목록 필터"

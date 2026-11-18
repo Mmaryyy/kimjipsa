@@ -6,6 +6,7 @@ export { StatusBadge } from "./status-badge";
 export { Banner } from "./banner";
 export { ToggleGroup } from "./toggle-group";
 export { SegmentedControl } from "./segmented-control";
+export { SegmentedNavigation } from "./segmented-navigation";
 export { FilterTabs } from "./filter-tabs";
 export { Switch } from "./switch";
 export { Checkbox } from "./checkbox";
