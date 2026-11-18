@@ -36,10 +36,6 @@ const CartPage = () => {
   const meta = useInventoryMeta();
   const actions = useCartPageActions(cart, Boolean(meta.data));
   const quickAdd = useCartQuickAdd(meta, actions.pending, actions.onMessage);
-  const companions = cart.data?.members
-    .filter((member) => member.user_id !== cart.data?.actorId)
-    .map((member) => `${member.display_name}님`)
-    .join(", ");
   let content;
   if ((cart.isError && !cart.data) || (meta.isError && !meta.data))
     content = (
@@ -124,12 +120,7 @@ const CartPage = () => {
           <PageHeader
             title="장바구니"
             odId="cart"
-            subtitle={
-              cart.activity ||
-              (companions
-                ? `${companions}과 함께 보는 중`
-                : "함께 쓰는 장바구니")
-            }
+            subtitle={cart.activity || undefined}
             actions={
               <>
                 <Button variant="glass" asChild>
