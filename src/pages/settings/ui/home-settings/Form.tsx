@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { Controller, useForm, useWatch } from "react-hook-form";
+import { FormProvider, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { calendarViews } from "@/entities/event";
 import {
@@ -7,9 +7,10 @@ import {
   useSaveHomeSettings,
   type HomeSettings as Settings,
 } from "@/entities/user";
-import { FormFieldRow, SegmentedControl, Switch, Toast } from "@/shared/ui";
+import { FormField, SegmentedControl, Switch, Toast } from "@/shared/ui";
 import { isEqual } from "lodash-es";
 
+const Field = FormField<Settings>;
 const HomeSettingsForm = ({ settings }: { settings: Settings }) => {
   const save = useSaveHomeSettings();
   const savedSettings = useRef(settings);
@@ -20,15 +21,11 @@ const HomeSettingsForm = ({ settings }: { settings: Settings }) => {
   const [toastOpen, setToastOpen] = useState(false);
   const [message, setMessage] = useState("");
 
-  const {
-    control,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<Settings>({
+  const form = useForm<Settings>({
     resolver: zodResolver(homeSettingsSchema),
     defaultValues: settings,
   });
+  const { control, handleSubmit, reset } = form;
 
   const onSubmit = useCallback(
     async (values: Settings) => {
@@ -67,99 +64,84 @@ const HomeSettingsForm = ({ settings }: { settings: Settings }) => {
   );
   const upcomingEnabled = useWatch({ control, name: "upcomingEnabled" });
   return (
-    <form
-      className="grid gap-3"
-      onSubmit={(event) => void handleSubmit(onSubmit)(event)}
-    >
-      <fieldset aria-busy={isSaving} className="grid min-w-0 gap-2">
-        <legend className="sr-only">홈 구성</legend>
-        <FormFieldRow
-          label="캘린더 보기"
-          htmlFor="home-view"
-          error={errors.homeView?.message}
-          invalid={!!errors.homeView}
-        >
-          {(props) => (
-            <Controller
-              name="homeView"
-              control={control}
-              render={({ field }) => (
-                <SegmentedControl
-                  odId="s-home-view"
-                  label="홈 캘린더 보기"
-                  options={calendarViews.map((option) => ({
-                    ...option,
-                    label: option.label,
-                  }))}
-                  value={field.value}
-                  onValueChange={(value) => {
-                    field.onChange(value);
-                    void handleSubmit(onSubmit)();
-                  }}
-                  {...props}
-                />
-              )}
-            />
-          )}
-        </FormFieldRow>
-        <FormFieldRow label="다가오는 일정" htmlFor="upcoming-enabled">
-          {(props) => (
-            <Controller
-              name="upcomingEnabled"
-              control={control}
-              render={({ field }) => (
-                <Switch
-                  {...props}
-                  data-od-id="s-widget"
-                  checked={field.value}
-                  onCheckedChange={(value) => {
-                    field.onChange(value);
-                    void handleSubmit(onSubmit)();
-                  }}
-                />
-              )}
-            />
-          )}
-        </FormFieldRow>
-        {upcomingEnabled && (
-          <FormFieldRow
-            label="표시 개수"
-            htmlFor="upcoming-count"
-            error={errors.upcomingCount?.message}
-            invalid={!!errors.upcomingCount}
-          >
-            {(props) => (
-              <Controller
-                name="upcomingCount"
-                control={control}
-                render={({ field }) => (
-                  <SegmentedControl
-                    odId="s-widget-count"
-                    label="표시 개수"
-                    options={[3, 5, 10].map((count) => ({
-                      value: String(count),
-                      label: `${count}개`,
-                    }))}
-                    value={String(field.value)}
-                    onValueChange={(value) => {
-                      field.onChange(Number(value));
-                      void handleSubmit(onSubmit)();
-                    }}
-                    {...props}
-                  />
-                )}
+    <FormProvider {...form}>
+      <form
+        className="grid gap-3"
+        onSubmit={(event) => void handleSubmit(onSubmit)(event)}
+      >
+        <fieldset aria-busy={isSaving} className="grid min-w-0 gap-2">
+          <legend className="sr-only">홈 구성</legend>
+          <Field
+            label="캘린더 보기"
+            name="homeView"
+            render={(field) => (
+              <SegmentedControl
+                id={field.id}
+                aria-invalid={field["aria-invalid"]}
+                aria-describedby={field["aria-describedby"]}
+                odId="s-home-view"
+                label="홈 캘린더 보기"
+                options={calendarViews.map((option) => ({
+                  ...option,
+                  label: option.label,
+                }))}
+                value={field.value}
+                onValueChange={(value) => {
+                  field.onChange(value);
+                  void handleSubmit(onSubmit)();
+                }}
               />
             )}
-          </FormFieldRow>
-        )}
-      </fieldset>
-      <Toast
-        open={toastOpen}
-        onOpenChange={setToastOpen}
-        message={message}
-        duration={2500}
-      />
-    </form>
+          />
+          <Field
+            label="다가오는 일정"
+            name="upcomingEnabled"
+            render={(field) => (
+              <Switch
+                {...field}
+                value={undefined}
+                data-od-id="s-widget"
+                checked={field.value}
+                onCheckedChange={(value) => {
+                  field.onChange(value);
+                  void handleSubmit(onSubmit)();
+                }}
+              />
+            )}
+          />
+          {upcomingEnabled && (
+            <Field
+              label="표시 개수"
+              name="upcomingCount"
+              render={(field) => (
+                <SegmentedControl
+                  id={field.id}
+                  aria-invalid={field["aria-invalid"]}
+                  aria-describedby={field["aria-describedby"]}
+                  odId="s-widget-count"
+                  label="표시 개수"
+                  options={[3, 5, 10].map((count) => ({
+                    value: String(count),
+                    label: `${count}개`,
+                  }))}
+                  value={String(field.value)}
+                  onValueChange={(value) => {
+                    field.onChange(Number(value));
+                    void handleSubmit(onSubmit)();
+                  }}
+                />
+              )}
+            />
+          )}
+        </fieldset>
+        <Toast
+          open={toastOpen}
+          onOpenChange={setToastOpen}
+          message={message}
+          duration={2500}
+        />
+      </form>
+    </FormProvider>
   );
 };
 

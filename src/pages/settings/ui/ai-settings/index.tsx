@@ -1,4 +1,5 @@
 "use client";
+import { FormProvider, useForm, useWatch } from "react-hook-form";
 import { useCallback, useRef, useState, useSyncExternalStore } from "react";
 import {
   useAiSettings,
@@ -21,6 +22,7 @@ import {
   useConfirm,
   useConfirmDisabled,
   GroupLabel,
+  FormField,
   FormFieldRow,
   List,
   ListRow,
@@ -44,6 +46,8 @@ const subscribeOnline = (notify: () => void) => {
   };
 };
 
+type AiFormValues = { name: string; memoryEnabled: boolean };
+const Field = FormField<AiFormValues>;
 interface Props {
   settings: Settings;
   onSaved: () => void;
@@ -62,9 +66,18 @@ const AiSettingsForm = ({ settings, onSaved }: Props) => {
     memoryEnabled: settings.memoryEnabled,
   });
   const saving = useRef(false);
-  const [nameError, setNameError] = useState("");
-  const [name, setName] = useState(settings.name);
-  const [memoryEnabled, setMemoryEnabled] = useState(settings.memoryEnabled);
+  const form = useForm<AiFormValues>({
+    defaultValues: {
+      name: settings.name,
+      memoryEnabled: settings.memoryEnabled,
+    },
+  });
+  const { setValue, setError, clearErrors } = form;
+  const name = useWatch({ control: form.control, name: "name" });
+  const memoryEnabled = useWatch({
+    control: form.control,
+    name: "memoryEnabled",
+  });
   const online = useSyncExternalStore(
     subscribeOnline,
     () => navigator.onLine,
@@ -112,7 +125,8 @@ const AiSettingsForm = ({ settings, onSaved }: Props) => {
         name: nextName.trim(),
         memoryEnabled: nextMemoryEnabled,
       };
-      setNameError(values.name ? "" : "이름을 입력해 주세요.");
+      if (values.name) clearErrors("name");
+      else setError("name", { message: "이름을 입력해 주세요." });
       if (
         !values.name ||
         saving.current ||
@@ -124,19 +138,19 @@ const AiSettingsForm = ({ settings, onSaved }: Props) => {
       try {
         await save.mutateAsync(values);
         saved.current = values;
-        setName(values.name);
+        setValue("name", values.name);
         onSaved();
       } catch {
-        setName(saved.current.name);
-        setMemoryEnabled(saved.current.memoryEnabled);
+        setValue("name", saved.current.name);
+        setValue("memoryEnabled", saved.current.memoryEnabled);
       } finally {
         saving.current = false;
       }
     },
-    [onSaved, save],
+    [onSaved, save, setValue, setError, clearErrors],
   );
   return (
-    <>
+    <FormProvider {...form}>
       <section data-od-id="set-ai" aria-label="AI 집사">
         <GroupLabel>AI 집사</GroupLabel>
         <form
@@ -183,44 +197,42 @@ const AiSettingsForm = ({ settings, onSaved }: Props) => {
             className="grid min-w-0 gap-2"
           >
             <legend className="sr-only">AI 집사 설정</legend>
-            <FormFieldRow
+            <Field
+              name="name"
               label="이름"
-              htmlFor="s-bot-name"
-              invalid={!!nameError}
-              error={nameError}
-            >
-              {(props) => (
+              render={(field) => (
                 <span className="flex items-center gap-0.5">
                   <span className="text-muted-foreground">김</span>
                   <Input
-                    {...props}
+                    {...field}
                     data-od-id="s-bot-name"
                     className="w-24! bg-transparent px-0 text-left!"
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                    onBlur={() => void onSave(name, memoryEnabled)}
+                    onBlur={() => {
+                      field.onBlur();
+                      void onSave(name, memoryEnabled);
+                    }}
                     required
                     maxLength={20}
                   />
                 </span>
               )}
-            </FormFieldRow>
-            <FormFieldRow
+            />
+            <Field
+              name="memoryEnabled"
               label="앱의 가족 기억 사용하기"
-              htmlFor="s-memory-toggle"
-            >
-              {(props) => (
+              render={(field) => (
                 <Switch
-                  {...props}
+                  {...field}
+                  value={undefined}
                   data-od-id="s-memory-toggle"
-                  checked={memoryEnabled}
+                  checked={field.value}
                   onCheckedChange={(checked) => {
-                    setMemoryEnabled(checked);
+                    field.onChange(checked);
                     void onSave(name, checked);
                   }}
                 />
               )}
-            </FormFieldRow>
+            />
             <Text as="p" variant="caption" className="text-muted-foreground">
               Hermes 자체 기억은 별도로 유지되며 Hermes에서 관리할 수 있어요.
             </Text>
@@ -412,18 +424,27 @@ const AiSettingsForm = ({ settings, onSaved }: Props) => {
                 saveMemory(onSaved);
               }}
             >
-              <Textarea
-                id="family-memory-text"
-                aria-label="기억 내용"
-                rows={3}
-                className="resize-none overflow-y-auto bg-transparent px-0"
-                value={memoryText}
-                disabled={memoryDisabled}
-                maxLength={2000}
-                required
-                placeholder="가족의 선호나 습관"
-                onChange={(event) => setMemoryText(event.target.value)}
-              />
+              <FormFieldRow
+                htmlFor="family-memory-text"
+                label="기억 내용"
+                showLabel={false}
+                className="block min-h-0 p-0 [&>div]:block"
+              >
+                {(controlProps) => (
+                  <Textarea
+                    {...controlProps}
+                    aria-label="기억 내용"
+                    value={memoryText}
+                    onChange={(event) => setMemoryText(event.target.value)}
+                    disabled={memoryDisabled}
+                    rows={3}
+                    className="resize-none overflow-y-auto bg-transparent px-0"
+                    maxLength={2000}
+                    required
+                    placeholder="가족의 선호나 습관"
+                  />
+                )}
+              </FormFieldRow>
               {memory.error && (
                 <Text as="p" role="alert" className="text-error-text">
                   {memory.error.message}
@@ -433,7 +454,7 @@ const AiSettingsForm = ({ settings, onSaved }: Props) => {
           )
         }
       </FormSheet>
-    </>
+    </FormProvider>
   );
 };
 const AiSettings = () => {

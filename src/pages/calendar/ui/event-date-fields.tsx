@@ -1,20 +1,14 @@
 "use client";
 
-import {
-  useWatch,
-  type Control,
-  type UseFormSetValue,
-  type FieldErrors,
-} from "react-hook-form";
+import { useWatch, type Control, type UseFormSetValue } from "react-hook-form";
 import type { EventInput } from "@/entities/event";
-import { FormFieldRow } from "@/shared/ui";
+import { FormField, type FieldRenderProps } from "@/shared/ui";
 import { DateTimeInput, type DateTimeRange } from "@/shared/ui/date-time-input";
 import type { EventFormInput } from "../model/event-form.schema";
 
 type DateFieldsProps = {
   control: Control<EventFormInput, unknown, EventInput>;
   setValue: UseFormSetValue<EventFormInput>;
-  errors: FieldErrors<EventFormInput>;
   dateOnly: boolean;
   singleDate: boolean;
 };
@@ -22,7 +16,6 @@ type DateFieldsProps = {
 export function EventDateFields({
   control,
   setValue,
-  errors,
   dateOnly,
   singleDate,
 }: DateFieldsProps) {
@@ -50,28 +43,27 @@ export function EventDateFields({
         const dateField = prefix === "start" ? "startDate" : "endDate";
         const timeField = prefix === "start" ? "startTime" : "endTime";
         const label = prefix === "start" ? "시작" : "종료";
-        const error = errors[dateField]?.message ?? errors[timeField]?.message;
         return (
-          <FormFieldRow
+          <FormField<EventFormInput>
             key={prefix}
             label={label}
-            htmlFor={`event-${prefix}`}
-            invalid={Boolean(error)}
-            error={error}
-          >
-            {(props) => (
+            name={dateField}
+            errorNames={[timeField]}
+            render={(
+              field: FieldRenderProps<EventFormInput, "startDate" | "endDate">,
+            ) => (
               <DateTimeInput
                 range={range}
                 label={label}
                 initialTab={prefix}
                 dateOnly={dateOnly}
                 singleDate={singleDate}
-                controlProps={props}
+                controlProps={field}
                 pickerOdId={`f-${prefix}-picker`}
                 onConfirm={applyRange}
               />
             )}
-          </FormFieldRow>
+          />
         );
       })}
     </>

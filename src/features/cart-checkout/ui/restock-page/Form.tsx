@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { FormProvider, useForm } from "react-hook-form";
 import {
   useCartActions,
   type CartItem,
@@ -105,16 +105,20 @@ const RestockForm = ({
     if (disabled || action.isPending) return;
     let invalid = false;
     entries.forEach((entry, index) => {
-      for (const field of ["unit_id", "category_id", "location_id"] as const)
+      for (const [field, label] of [
+        ["unit_id", "단위"],
+        ["category_id", "카테고리"],
+        ["location_id", "보관 장소"],
+      ] as const)
         if (!entry[field]) {
           form.setError(`entries.${index}.${field}`, {
-            message: "선택해 주세요.",
+            message: `${label}를 선택해 주세요.`,
           });
           invalid = true;
         }
       if (!Number.isFinite(entry.quantity) || entry.quantity <= 0) {
         form.setError(`entries.${index}.quantity`, {
-          message: "수량을 확인해 주세요.",
+          message: "수량은 0보다 커야 해요.",
         });
         invalid = true;
       }
@@ -139,7 +143,7 @@ const RestockForm = ({
     }
   });
   return (
-    <>
+    <FormProvider {...form}>
       <form data-od-id="restock-form" onSubmit={submit}>
         {snapshot.map(({ item, existing }, index) => (
           <RestockItem
@@ -176,7 +180,7 @@ const RestockForm = ({
           </Button>
         </div>
       </form>
-    </>
+    </FormProvider>
   );
 };
 export default RestockForm;

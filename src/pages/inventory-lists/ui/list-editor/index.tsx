@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { FormProvider, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   useInventoryActions,
@@ -14,12 +14,13 @@ import {
 import {
   FormSheet,
   TextButton,
-  FormFieldRow,
+  FormField,
   Input,
   Switch,
   Text,
   useConfirm,
 } from "@/shared/ui";
+const Field = FormField<InventoryMetaInput>;
 interface Props {
   kind: InventoryListKind;
   nextSortOrder: number;
@@ -43,15 +44,7 @@ const InventoryListEditor = ({
       : null,
   );
   const confirm = useConfirm();
-  const {
-    reset,
-    register,
-    control,
-    setValue,
-    handleSubmit,
-    setError,
-    formState: { errors, isDirty },
-  } = useForm<InventoryMetaInput>({
+  const form = useForm<InventoryMetaInput>({
     resolver: zodResolver(inventoryMetaInputSchema),
     defaultValues: entry ?? {
       name: "",
@@ -61,9 +54,16 @@ const InventoryListEditor = ({
       icon_value: "",
     },
   });
+  const {
+    reset,
+    control,
+    setValue,
+    handleSubmit,
+    setError,
+    formState: { errors, isDirty },
+  } = form;
   const iconKind = useWatch({ control, name: "icon_kind" });
   const iconValue = useWatch({ control, name: "icon_value" });
-  const enabled = useWatch({ control, name: "enabled" });
   const name = useWatch({ control, name: "name" });
   const pending = actions.meta.isPending;
   const save = (onSaved: () => void) =>
@@ -111,178 +111,171 @@ const InventoryListEditor = ({
       },
     });
   return (
-    <FormSheet
-      onSaved={onClose}
-      onCancel={
-        entry
-          ? () => {
-              reset();
-              setEditing(false);
-            }
-          : undefined
-      }
-      open
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
-      title={entry ? (editing ? "목록 수정" : "목록") : "목록 추가"}
-      editable={editing}
-      leadingAction={() =>
-        entry &&
-        !(kind === "categories" && entry.name === "기타") && (
-          <TextButton
-            tone="danger"
-            aria-label="목록 삭제"
-            data-od-id="lists-delete"
-            disabled={pending}
-            onClick={() => void remove()}
-          >
-            삭제
-          </TextButton>
-        )
-      }
-      action={
-        <TextButton
-          aria-label="목록 수정"
-          disabled={pending}
-          onClick={() => setEditing(true)}
-        >
-          수정
-        </TextButton>
-      }
-      description="가정에서 함께 사용하는 목록이에요."
-      odId="lists-sheet"
-      dirty={isDirty}
-      pending={pending}
-      submitOdId="lists-save"
-    >
-      {(formId, onSaved) =>
-        !editing && entry ? (
-          <div className="grid gap-3 py-4">
-            <Text as="h2" variant="title">
-              {entry.name}
-            </Text>
-            {kind === "categories" && (
-              <InventoryCategoryIcon category={entry} />
-            )}
-            {kind === "locations" && (
-              <Text>사용 · {entry.enabled ? "켬" : "끔"}</Text>
-            )}
-          </div>
-        ) : (
-          <form id={formId} onSubmit={save(onSaved)}>
-            <FormFieldRow
-              label="이름"
-              htmlFor="lists-name"
-              invalid={!!errors.name}
-              error={errors.name?.message}
+    <FormProvider {...form}>
+      <FormSheet
+        onSaved={onClose}
+        onCancel={
+          entry
+            ? () => {
+                reset();
+                setEditing(false);
+              }
+            : undefined
+        }
+        open
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
+        title={entry ? (editing ? "목록 수정" : "목록") : "목록 추가"}
+        editable={editing}
+        leadingAction={() =>
+          entry &&
+          !(kind === "categories" && entry.name === "기타") && (
+            <TextButton
+              tone="danger"
+              aria-label="목록 삭제"
+              data-od-id="lists-delete"
+              disabled={pending}
+              onClick={() => void remove()}
             >
-              {(props) => (
-                <Input
-                  {...props}
-                  {...register("name")}
-                  data-od-id="lists-name"
+              삭제
+            </TextButton>
+          )
+        }
+        action={
+          <TextButton
+            aria-label="목록 수정"
+            disabled={pending}
+            onClick={() => setEditing(true)}
+          >
+            수정
+          </TextButton>
+        }
+        description="가정에서 함께 사용하는 목록이에요."
+        odId="lists-sheet"
+        dirty={isDirty}
+        pending={pending}
+        submitOdId="lists-save"
+      >
+        {(formId, onSaved) =>
+          !editing && entry ? (
+            <div className="grid gap-3 py-4">
+              <Text as="h2" variant="title">
+                {entry.name}
+              </Text>
+              {kind === "categories" && (
+                <InventoryCategoryIcon category={entry} />
+              )}
+              {kind === "locations" && (
+                <Text>사용 · {entry.enabled ? "켬" : "끔"}</Text>
+              )}
+            </div>
+          ) : (
+            <form id={formId} onSubmit={save(onSaved)}>
+              <Field
+                label="이름"
+                name="name"
+                render={(field) => <Input {...field} data-od-id="lists-name" />}
+              />
+              {kind === "categories" && (
+                <Field
+                  name="icon_value"
+                  label="아이콘"
+                  render={(field) => (
+                    <div className="flex items-center gap-2">
+                      <InventoryCategoryIcon
+                        category={{
+                          name,
+                          icon_kind: iconKind,
+                          icon_value: iconValue,
+                        }}
+                      />
+                      <Input
+                        {...field}
+                        data-od-id="lists-icon"
+                        placeholder="이모지나 글자 하나"
+                        value={iconKind === "text" ? iconValue : ""}
+                        onChange={(event) => {
+                          setValue(
+                            "icon_kind",
+                            event.target.value
+                              ? "text"
+                              : defaultIcon
+                                ? "lucide"
+                                : null,
+                            {
+                              shouldDirty: true,
+                            },
+                          );
+                          setValue(
+                            "icon_value",
+                            event.target.value || defaultIcon || "",
+                            {
+                              shouldDirty: true,
+                            },
+                          );
+                        }}
+                      />
+                      {defaultIcon && (
+                        <TextButton
+                          onClick={() => {
+                            setValue("icon_kind", "lucide", {
+                              shouldDirty: true,
+                            });
+                            setValue("icon_value", defaultIcon, {
+                              shouldDirty: true,
+                            });
+                          }}
+                        >
+                          기본 아이콘
+                        </TextButton>
+                      )}
+                    </div>
+                  )}
                 />
               )}
-            </FormFieldRow>
-            {kind === "categories" && (
-              <FormFieldRow
-                label="아이콘"
-                htmlFor="lists-icon"
-                invalid={!!errors.icon_value}
-                error={errors.icon_value?.message}
-              >
-                {(props) => (
-                  <div className="flex items-center gap-2">
-                    <InventoryCategoryIcon
-                      category={{
-                        name,
-                        icon_kind: iconKind,
-                        icon_value: iconValue,
-                      }}
-                    />
-                    <Input
-                      {...props}
-                      data-od-id="lists-icon"
-                      placeholder="이모지나 글자 하나"
-                      value={iconKind === "text" ? iconValue : ""}
-                      onChange={(event) => {
-                        setValue(
-                          "icon_kind",
-                          event.target.value
-                            ? "text"
-                            : defaultIcon
-                              ? "lucide"
-                              : null,
-                          {
-                            shouldDirty: true,
-                          },
-                        );
-                        setValue(
-                          "icon_value",
-                          event.target.value || defaultIcon || "",
-                          {
-                            shouldDirty: true,
-                          },
-                        );
-                      }}
-                    />
-                    {defaultIcon && (
-                      <TextButton
-                        onClick={() => {
-                          setValue("icon_kind", "lucide", {
-                            shouldDirty: true,
-                          });
-                          setValue("icon_value", defaultIcon, {
-                            shouldDirty: true,
-                          });
-                        }}
-                      >
-                        기본 아이콘
-                      </TextButton>
+              {kind === "locations" && (
+                <>
+                  <Field
+                    name="enabled"
+                    label="사용"
+                    render={(field) => (
+                      <Switch
+                        {...field}
+                        value={undefined}
+                        checked={field.value}
+                        onCheckedChange={(value) =>
+                          setValue("enabled", value, { shouldDirty: true })
+                        }
+                        data-od-id="lists-on"
+                      />
                     )}
-                  </div>
-                )}
-              </FormFieldRow>
-            )}
-            {kind === "locations" && (
-              <>
-                <FormFieldRow label="사용" htmlFor="lists-on">
-                  {(props) => (
-                    <Switch
-                      {...props}
-                      checked={enabled}
-                      onCheckedChange={(value) =>
-                        setValue("enabled", value, { shouldDirty: true })
-                      }
-                      data-od-id="lists-on"
-                    />
-                  )}
-                </FormFieldRow>
+                  />
+                  <Text
+                    as="p"
+                    variant="caption"
+                    className="text-muted-foreground"
+                  >
+                    끄면 보관 장소 선택지와 필터에서 숨겨져요. 품목은 전체
+                    목록에 그대로 남아요.
+                  </Text>
+                </>
+              )}
+              {errors.root && (
                 <Text
                   as="p"
                   variant="caption"
-                  className="text-muted-foreground"
+                  role="alert"
+                  className="text-destructive"
                 >
-                  끄면 보관 장소 선택지와 필터에서 숨겨져요. 품목은 전체 목록에
-                  그대로 남아요.
+                  {errors.root.message}
                 </Text>
-              </>
-            )}
-            {errors.root && (
-              <Text
-                as="p"
-                variant="caption"
-                role="alert"
-                className="text-destructive"
-              >
-                {errors.root.message}
-              </Text>
-            )}
-          </form>
-        )
-      }
-    </FormSheet>
+              )}
+            </form>
+          )
+        }
+      </FormSheet>
+    </FormProvider>
   );
 };
 export default InventoryListEditor;

@@ -1,3 +1,5 @@
+"use client";
+
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/shared/lib";
 import { formFieldRowStyles } from "./ui.variants";
@@ -12,12 +14,16 @@ type FormFieldRowProps = Omit<ComponentProps<"div">, "children"> & {
   htmlFor: string;
   invalid?: boolean;
   error?: string;
+  showLabel?: boolean;
+  errorClassName?: string;
 };
 export function FormFieldRow({
   label,
   htmlFor,
   invalid = false,
   error,
+  showLabel = true,
+  errorClassName,
   className,
   children,
   ...props
@@ -28,7 +34,21 @@ export function FormFieldRow({
       className={cn(formFieldRowStyles({ invalid }), className)}
       {...props}
     >
-      <label htmlFor={htmlFor}>{label}</label>
+      {showLabel && (
+        <label
+          htmlFor={htmlFor}
+          onClick={(event) => {
+            if (
+              document
+                .getElementById(htmlFor)
+                ?.matches('button:not([role="switch"]):not([role="checkbox"])')
+            )
+              event.preventDefault();
+          }}
+        >
+          {label}
+        </label>
+      )}
       <div
         className={cn([
           "flex min-w-0 flex-1 justify-end [&_:is(input,select,textarea)]:min-h-[var(--ctl-h)]",
@@ -49,7 +69,10 @@ export function FormFieldRow({
           variant="caption"
           id={`${htmlFor}-error`}
           role="alert"
-          className="basis-full [color:var(--destructive)]"
+          className={cn(
+            "basis-full [color:var(--destructive)]",
+            errorClassName,
+          )}
         >
           {error}
         </Text>

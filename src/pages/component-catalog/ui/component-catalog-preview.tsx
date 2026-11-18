@@ -1,4 +1,5 @@
 "use client";
+import { FormProvider, useForm } from "react-hook-form";
 import {
   readableTextColor,
   resolveCategoryColor,
@@ -11,7 +12,7 @@ import {
   type InventoryItem,
 } from "@/entities/inventory-item";
 import { Bell, Check, Plus, Trash2 } from "lucide-react";
-import { useId, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   Text,
   StatusBadge,
@@ -24,7 +25,8 @@ import {
   Switch,
   Checkbox,
   QuantityStepper,
-  FormFieldRow,
+  FormField,
+  defineFields,
   List,
   ListRow,
   ListGroupLabel,
@@ -225,13 +227,37 @@ const CategoryLabelSamples = () => (
   </div>
 );
 
+type CatalogFormValues = {
+  enabled: boolean;
+  checked: boolean;
+  name: string;
+  invalid: string;
+  sheetName: string;
+};
+const Field = FormField<CatalogFormValues>;
+const catalogFields = defineFields<CatalogFormValues>()([
+  {
+    name: "name",
+    label: "이름",
+    inputProps: { placeholder: "이름을 입력해 주세요" },
+  },
+  { name: "invalid", label: "이름" },
+]);
 function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
-  const fieldId = useId();
+  const form = useForm<CatalogFormValues>({
+    defaultValues: {
+      enabled: true,
+      checked: false,
+      name: "",
+      invalid: "",
+      sheetName: "",
+    },
+    errors: { invalid: { type: "required", message: "이름을 입력해 주세요" } },
+  });
   const [view, setView] =
     useState<(typeof viewOptions)[number]["value"]>("month");
   const [filter, setFilter] =
     useState<(typeof filterOptions)[number]["value"]>("all");
-  const [enabled, setEnabled] = useState(true);
   const [checked, setChecked] = useState(false);
   const [quantity, setQuantity] = useState(2);
   const [stepperOpen, setStepperOpen] = useState(false);
@@ -290,41 +316,28 @@ function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
       </div>
 
       <SectionHeader title="입력과 수량" />
-      <FormFieldRow label="스위치" htmlFor={`${fieldId}-switch`}>
-        {(controlProps) => (
-          <Switch
-            {...controlProps}
-            checked={enabled}
-            onCheckedChange={setEnabled}
-          />
-        )}
-      </FormFieldRow>
-      <FormFieldRow label="체크" htmlFor={`${fieldId}-check`}>
-        {(controlProps) => (
-          <Checkbox
-            {...controlProps}
-            checked={checked}
-            onCheckedChange={(next) => setChecked(next === true)}
-          />
-        )}
-      </FormFieldRow>
-      <div className="flex flex-wrap items-center gap-4 py-4">
-        <Switch aria-label="비활성 스위치" disabled />
-        <Checkbox aria-label="비활성 체크" disabled />
-      </div>
-      <FormFieldRow label="이름" htmlFor={`${fieldId}-name`}>
-        {(controlProps) => (
-          <input {...controlProps} placeholder="이름을 입력해 주세요" />
-        )}
-      </FormFieldRow>
-      <FormFieldRow
-        label="이름"
-        htmlFor={`${fieldId}-invalid`}
-        invalid
-        error="이름을 입력해 주세요"
-      >
-        {(controlProps) => <input {...controlProps} defaultValue="" />}
-      </FormFieldRow>
+      <FormProvider {...form}>
+        <Field name="enabled" label="스위치" type="switch" />
+        <Field
+          name="checked"
+          label="체크"
+          render={(field) => (
+            <Checkbox
+              {...field}
+              value={undefined}
+              checked={field.value}
+              onCheckedChange={(next) => field.onChange(next === true)}
+            />
+          )}
+        />
+        <div className="flex flex-wrap items-center gap-4 py-4">
+          <Switch aria-label="비활성 스위치" disabled />
+          <Checkbox aria-label="비활성 체크" disabled />
+        </div>
+        {catalogFields.map((row) => (
+          <Field key={row.name} {...row} />
+        ))}
+      </FormProvider>
 
       <SectionHeader title="재고 상태 캡슐" />
       <div className="flex flex-wrap items-center gap-4 py-4">
@@ -443,6 +456,7 @@ function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
               aria-label="견본 수정"
               onClick={() => {
                 setSheetOpen(false);
+                form.resetField("sheetName");
                 setFormOpen(true);
               }}
             >
@@ -457,7 +471,14 @@ function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
         <Button variant="danger" onClick={() => void remove()}>
           확인창 열기
         </Button>
-        <Button onClick={() => setFormOpen(true)}>폼 시트 열기</Button>
+        <Button
+          onClick={() => {
+            form.resetField("sheetName");
+            setFormOpen(true);
+          }}
+        >
+          폼 시트 열기
+        </Button>
         <FormSheet
           open={formOpen}
           onOpenChange={(open) => {
@@ -478,11 +499,21 @@ function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
                 setFormOpen(false);
               }}
             >
-              <FormFieldRow label="이름" htmlFor={`${fieldId}-form-sheet`}>
-                {(controlProps) => (
-                  <input {...controlProps} onChange={() => setDirty(true)} />
-                )}
-              </FormFieldRow>
+              <FormProvider {...form}>
+                <Field
+                  name="sheetName"
+                  label="이름"
+                  render={(field) => (
+                    <input
+                      {...field}
+                      onChange={(event) => {
+                        field.onChange(event);
+                        setDirty(true);
+                      }}
+                    />
+                  )}
+                />
+              </FormProvider>
             </form>
           )}
         </FormSheet>

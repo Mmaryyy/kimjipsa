@@ -174,3 +174,9 @@ JSX 줄 수를 줄이려고 별도 컴포넌트로 나누지 않는다. 컴포�
 ## 시트 동작 이름 (P15.1b)
 
 시트 머리는 기기와 관계없이 보조·제목·주요 순서다. 보기의 삭제는 `TextButton tone="danger"`, 수정은 `TextButton`으로 두고 편집은 `FormSheet`의 취소·저장을 쓴다. 별도 닫기 X는 두지 않는다. 맥락이 분명한 버튼은 삭제·수정·담기로 표시하고 `aria-label`에는 일정·품목·장바구니 등 대상을 남긴다. 하단 버튼은 한 줄 grid, 약관 재동의 버튼은 세로 배치다(`DESIGN_SYSTEM.md` §3).
+
+## 폼 필드 (P15.2)
+
+`FormField`는 React Hook Form 필드 연결과 라벨·힌트·오류 접근성을 맡는다. `name`은 `Path<FormValues>`, `label`은 표시할 문자열 하나다. `type`으로 공용 입력을 고르고, 특수 입력·연동·자동 저장은 `render(field)`로 조합한다. 폼의 값 타입을 지정한 `const Field = FormField<FormValues>` 형태도 쓴다.
+
+균일한 행 배열만 `defineFields<FormValues>()([...])`로 선언한다. 조건부·서로 연동하는 폼은 JSX를 유지한다. 새 입력 종류는 `FieldTypeProps<V>` 맵과 같은 key의 registry 한 항목씩으로 추가하며 폼 쪽 `any`나 name 캐스팅을 만들지 않는다. 자세한 사용 기준은 `DESIGN_SYSTEM.md`의 폼 필드를 따른다.

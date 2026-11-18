@@ -2,7 +2,14 @@
 
 import { flushSync } from "react-dom";
 import { Minus, Plus } from "lucide-react";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ComponentProps,
+} from "react";
 
 import { Button } from "../button";
 import { Input } from "../input";
@@ -11,6 +18,10 @@ import { cn, useDismissOnOutside } from "@/shared/lib";
 
 interface Props {
   label: string;
+  controlProps?: Pick<
+    ComponentProps<"button">,
+    "id" | "aria-invalid" | "aria-describedby"
+  > & { onBlur?: () => void; ref?: (node: HTMLElement | null) => void };
   value: number;
   onValueChange: (value: number) => void;
   min?: number;
@@ -27,6 +38,7 @@ interface Props {
 
 const QuantityStepper = ({
   label,
+  controlProps,
   value,
   onValueChange,
   min = 0,
@@ -37,7 +49,8 @@ const QuantityStepper = ({
   allowDirectInput = false,
   collapsible,
 }: Props) => {
-  const inputId = useId();
+  const generatedId = useId();
+  const inputId = controlProps?.id ?? generatedId;
   const [draft, setDraft] = useState<string | null>(null);
   const editing = useRef(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -101,7 +114,11 @@ const QuantityStepper = ({
     quantityControl =
       draft === null ? (
         <TextButton
-          ref={collapsedRef}
+          {...controlProps}
+          ref={(node) => {
+            collapsedRef.current = node;
+            if (typeof controlProps?.ref === "function") controlProps.ref(node);
+          }}
           aria-expanded={collapsible ? expanded : undefined}
           className={cn(
             "min-h-[var(--ctl-h-xs)] min-w-11 w-full px-1 text-body font-semibold text-foreground tabular-nums",
@@ -138,6 +155,9 @@ const QuantityStepper = ({
           </label>
           <Input
             id={inputId}
+            ref={(node) => controlProps?.ref?.(node)}
+            aria-invalid={controlProps?.["aria-invalid"]}
+            aria-describedby={controlProps?.["aria-describedby"]}
             type="text"
             inputMode="decimal"
             className={cn([
@@ -163,7 +183,16 @@ const QuantityStepper = ({
   }
   return (
     <div
-      ref={rootRef}
+      ref={(node) => {
+        rootRef.current = node;
+        if (!(allowDirectInput || collapsible)) controlProps?.ref?.(node);
+      }}
+      id={!(allowDirectInput || collapsible) ? controlProps?.id : undefined}
+      tabIndex={!(allowDirectInput || collapsible) ? -1 : undefined}
+      onBlur={
+        !(allowDirectInput || collapsible) ? controlProps?.onBlur : undefined
+      }
+      aria-describedby={controlProps?.["aria-describedby"]}
       className="inline-flex shrink-0 items-center gap-1"
       role="group"
       aria-label={label}

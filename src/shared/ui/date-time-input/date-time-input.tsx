@@ -22,9 +22,9 @@ type DateTimeInputProps = {
   dateOnly?: boolean;
   singleDate?: boolean;
   timeOnly?: boolean;
-  controlProps: Pick<
-    ComponentProps<"input">,
-    "id" | "aria-invalid" | "aria-describedby"
+  controlProps: { ref?: (node: HTMLButtonElement | null) => void } & Pick<
+    ComponentProps<"button">,
+    "id" | "aria-invalid" | "aria-describedby" | "disabled" | "onBlur"
   >;
   pickerOdId?: string;
   onConfirm: (range: DateTimeRange) => void;
@@ -41,6 +41,13 @@ export function DateTimeInput({
   pickerOdId,
   onConfirm,
 }: DateTimeInputProps) {
+  const triggerProps = {
+    id: controlProps.id,
+    "aria-invalid": controlProps["aria-invalid"],
+    "aria-describedby": controlProps["aria-describedby"],
+    disabled: controlProps.disabled,
+    onBlur: controlProps.onBlur,
+  };
   const [session, setSession] = useState<DateTimeRange | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const date = initialTab === "start" ? range.startDate : range.endDate;
@@ -56,8 +63,12 @@ export function DateTimeInput({
   return (
     <>
       <button
-        {...controlProps}
-        ref={triggerRef}
+        {...triggerProps}
+        ref={(node) => {
+          triggerRef.current = node;
+          const ref = controlProps.ref;
+          if (typeof ref === "function") ref(node);
+        }}
         type="button"
         data-od-id={pickerOdId}
         aria-label={accessibleLabel}

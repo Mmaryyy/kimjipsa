@@ -2,7 +2,7 @@
 import type { CategoryColor } from "@/shared/lib";
 
 import { useCallback, useEffect } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { FormProvider, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   eventCategorySchema,
@@ -11,9 +11,10 @@ import {
   type EventCategory,
   type EventCategoryInput,
 } from "@/entities/event";
-import { CategoryDot, FormFieldRow, GroupLabel, Text } from "@/shared/ui";
+import { CategoryDot, FormField, GroupLabel, Text } from "@/shared/ui";
 import EventCategoryColorPicker from "./ColorPicker";
 import { useCategoryEditor } from "../../model/use-category-editor";
+const Field = FormField<Omit<EventCategoryInput, "sortOrder">>;
 interface Props {
   category?: EventCategory;
   formId?: string;
@@ -34,20 +35,20 @@ const EventCategoryForm = ({
       ...(categories.data ?? []).map((category) => category.sortOrder),
     ) + 1;
   const { onSave } = useCategoryEditor(category?.id, onSaved);
-  const {
-    register,
-    control,
-    handleSubmit,
-    setError,
-    setValue,
-    formState: { errors, isSubmitting, isDirty },
-  } = useForm<Omit<EventCategoryInput, "sortOrder">>({
+  const form = useForm<Omit<EventCategoryInput, "sortOrder">>({
     resolver: zodResolver(eventCategorySchema.omit({ sortOrder: true })),
     defaultValues: category ?? {
       name: "",
       color: Object.keys(eventCategoryColors)[0] as EventCategoryInput["color"],
     },
   });
+  const {
+    control,
+    handleSubmit,
+    setError,
+    setValue,
+    formState: { errors, isSubmitting, isDirty },
+  } = form;
   useEffect(() => {
     onDirtyChange?.(isDirty);
   }, [isDirty, onDirtyChange]);
@@ -77,60 +78,81 @@ const EventCategoryForm = ({
   );
   const busy = isSubmitting;
   return (
-    <form
-      id={formId}
-      onSubmit={(event) => {
-        if (busy) {
-          event.preventDefault();
-          return;
-        }
-        void handleSubmit(onSubmit)(event);
-      }}
-      className="grid gap-3"
-      noValidate
-      aria-busy={busy}
-    >
-      <fieldset disabled={busy} className="grid min-w-0 gap-2">
-        <legend className="sr-only">일정 카테고리 입력</legend>
-        <FormFieldRow
-          label="이름"
-          htmlFor="category-name"
-          invalid={!!errors.name}
-          error={errors.name?.message}
-        >
-          {(props) => (
-            <div className="flex items-center gap-3">
-              <CategoryDot color={color} />
-              <input
-                {...props}
-                {...register("name")}
-                data-od-id="lists-name"
-                placeholder="이름"
-                readOnly={category?.name === "기타"}
-                autoComplete="off"
-                autoFocus
-              />
-            </div>
-          )}
-        </FormFieldRow>
-        <fieldset data-od-id="lists-colors" className="min-w-0">
-          <legend>
-            <GroupLabel as="span">색상 · {colorLabel}</GroupLabel>
-          </legend>
-          <EventCategoryColorPicker color={color} onChange={onCustomColor} />
-          {errors.color && (
-            <Text as="p" role="alert" className="text-error-text">
-              {errors.color.message}
-            </Text>
-          )}
+    <FormProvider {...form}>
+      <form
+        id={formId}
+        onSubmit={(event) => {
+          if (busy) {
+            event.preventDefault();
+            return;
+          }
+          void handleSubmit(onSubmit)(event);
+        }}
+        className="grid gap-3"
+        noValidate
+        aria-busy={busy}
+      >
+        <fieldset disabled={busy} className="grid min-w-0 gap-2">
+          <legend className="sr-only">일정 카테고리 입력</legend>
+          <Field
+            label="이름"
+            name="name"
+            render={(field) => (
+              <div className="flex items-center gap-3">
+                <CategoryDot color={color} />
+                <input
+                  {...field}
+                  data-od-id="lists-name"
+                  placeholder="이름"
+                  readOnly={category?.name === "기타"}
+                  autoComplete="off"
+                  autoFocus
+                />
+              </div>
+            )}
+          />
+          <Field
+            name="color"
+            label={`색상 · ${colorLabel}`}
+            showLabel={false}
+            showError={false}
+            className="block min-h-0 p-0 [&>div]:block"
+            render={(field) => (
+              <fieldset
+                data-od-id="lists-colors"
+                className="min-w-0"
+                id={field.id}
+                aria-invalid={field["aria-invalid"]}
+                aria-describedby={field["aria-describedby"]}
+              >
+                <legend>
+                  <GroupLabel as="span">색상 · {colorLabel}</GroupLabel>
+                </legend>
+                {errors.color && (
+                  <Text
+                    as="p"
+                    id={field["aria-describedby"]}
+                    role="alert"
+                    className="text-error-text"
+                  >
+                    {errors.color.message}
+                  </Text>
+                )}
+                <EventCategoryColorPicker
+                  color={field.value}
+                  onChange={onCustomColor}
+                />
+              </fieldset>
+            )}
+          />
         </fieldset>
-      </fieldset>
-      {errors.root && (
-        <Text as="p" role="alert" className="text-error-text">
-          {errors.root.message}
-        </Text>
-      )}
-    </form>
+        {errors.root && (
+          <Text as="p" role="alert" className="text-error-text">
+            {errors.root.message}
+          </Text>
+        )}
+      </form>
+    </FormProvider>
   );
 };
 

@@ -1,7 +1,7 @@
 "use client";
 import { useMediaQuery } from "@/shared/lib";
 import { useCallback, useEffect, type FormEvent } from "react";
-import { Controller, useForm, useWatch } from "react-hook-form";
+import { FormProvider, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   type CalendarEvent,
@@ -14,7 +14,7 @@ import {
   Button,
   useConfirm,
   CategoryDot,
-  FormFieldRow,
+  FormField,
   GroupLabel,
   Switch,
   Text,
@@ -26,6 +26,7 @@ import {
 import { useEventEditor } from "../../model/use-event-editor";
 import { defaultDateRange } from "@/shared/ui/date-time-input";
 import { EventDateFields } from "../event-date-fields";
+const Field = FormField<EventFormInput>;
 function initialValues(
   event: CalendarEvent | undefined,
   categories: EventCategory[],
@@ -71,17 +72,17 @@ const EventForm = ({
   const confirm = useConfirm();
   const coarse = useMediaQuery("(pointer: coarse)");
   const { onSave } = useEventEditor(event?.id, onSaved);
+  const form = useForm<EventFormInput, unknown, EventInput>({
+    resolver: zodResolver(eventFormSchema),
+    defaultValues: initialValues(event, categories, initialDate),
+  });
   const {
-    register,
     control,
     handleSubmit,
     setError,
     setValue,
     formState: { errors, isSubmitting, isDirty },
-  } = useForm<EventFormInput, unknown, EventInput>({
-    resolver: zodResolver(eventFormSchema),
-    defaultValues: initialValues(event, categories, initialDate),
-  });
+  } = form;
   useEffect(() => {
     onDirtyChange?.(isDirty);
   }, [isDirty, onDirtyChange]);
@@ -165,255 +166,173 @@ const EventForm = ({
   const categoryId = useWatch({ control, name: "categoryId" });
   const category = categories.find((category) => category.id === categoryId);
   return (
-    <form
-      id={formId}
-      onSubmit={onFormSubmit}
-      aria-busy={isSubmitting}
-      className="grid gap-3"
-      noValidate
-    >
-      <fieldset disabled={isSubmitting} className="grid min-w-0 gap-2">
-        <legend className="sr-only">일정 입력</legend>
-        <GroupLabel>분류</GroupLabel>
-        <FormFieldRow
-          label="카테고리"
-          htmlFor="event-category"
-          invalid={!!errors.categoryId}
-          error={errors.categoryId?.message}
-        >
-          {(props) => (
-            <div className="flex items-center gap-2">
-              {category && <CategoryDot color={category.color} />}
-              <select
-                {...props}
-                data-od-id="f-category"
-                {...register("categoryId")}
-              >
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </FormFieldRow>
-        {(!event || event.canChangeVisibility) && (
-          <FormFieldRow label="개인 일정" htmlFor="event-private">
-            {(props) => (
-              <Controller
-                control={control}
-                name="visibility"
-                render={({ field }) => (
-                  <Switch
-                    {...props}
-                    data-od-id="f-private"
-                    checked={field.value === "private"}
-                    onCheckedChange={(checked) =>
-                      field.onChange(checked ? "private" : "shared")
-                    }
-                    aria-label="개인 일정"
-                  />
-                )}
-              />
-            )}
-          </FormFieldRow>
-        )}
-        <Text as="p" variant="caption" className="text-muted-foreground">
-          기본은 가족 모두가 함께 보는 공유 일정이에요.
-        </Text>
-        <FormFieldRow label="일정 종류" htmlFor="event-kind">
-          {(props) => (
-            <select {...props} {...register("kind")}>
-              <option value="event">일정</option>
-              <option value="dday">D-day</option>
-            </select>
-          )}
-        </FormFieldRow>
-        {kind === "dday" && (
-          <>
-            <FormFieldRow
-              label="D-day 종류"
-              htmlFor="event-dday-style"
-              error={errors.ddayStyle?.message}
-              invalid={!!errors.ddayStyle}
-            >
-              {(props) => (
-                <select {...props} {...register("ddayStyle")}>
-                  <option value="normal">일반</option>
-                  <option value="celebrate">축하</option>
-                </select>
-              )}
-            </FormFieldRow>
-          </>
-        )}
-        <FormFieldRow
-          label="제목"
-          htmlFor="event-title"
-          invalid={!!errors.title}
-          error={errors.title?.message}
-        >
-          {(props) => (
-            <input
-              {...props}
-              data-od-id="f-title"
-              {...register("title")}
-              autoFocus={!coarse}
-            />
-          )}
-        </FormFieldRow>
-        <GroupLabel>시간</GroupLabel>
-        {kind !== "dday" && (
-          <FormFieldRow label="종일" htmlFor="event-all-day">
-            {(props) => (
-              <Switch
-                {...props}
-                data-od-id="f-allday"
-                checked={isAllDay}
-                onCheckedChange={onAllDayChange}
-              />
-            )}
-          </FormFieldRow>
-        )}
-        {kind !== "dday" && (
-          <FormFieldRow label="시간 미정" htmlFor="event-time-unknown">
-            {(props) => (
-              <Switch
-                {...props}
-                data-od-id="f-time-unknown"
-                checked={isTimeUnknown}
-                onCheckedChange={onTimeUnknownChange}
-              />
-            )}
-          </FormFieldRow>
-        )}
-        <EventDateFields
-          control={control}
-          setValue={setValue}
-          errors={errors}
-          dateOnly={isAllDay || isTimeUnknown || kind === "dday"}
-          singleDate={kind === "dday"}
-        />
-        {kind !== "dday" && !isAllDay && !isTimeUnknown && (
-          <Text as="p" variant="caption" className="text-muted-foreground">
-            시각을 정하지 않았다면 시간 미정을 켜 주세요.
-          </Text>
-        )}
-        {kind !== "dday" && (
-          <FormFieldRow
-            label="반복"
-            htmlFor="event-recurrence"
-            invalid={!!errors.recurrence}
-            error={errors.recurrence?.message}
-          >
-            {(props) => (
-              <Controller
-                control={control}
-                name="recurrence"
-                render={({ field }) => (
-                  <select
-                    {...props}
-                    data-od-id="f-recurrence"
-                    value={field.value ?? "none"}
-                    onChange={(event) =>
-                      field.onChange(
-                        event.target.value === "none"
-                          ? null
-                          : event.target.value,
-                      )
-                    }
-                  >
-                    {recurrenceOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              />
-            )}
-          </FormFieldRow>
-        )}
-        <FormFieldRow
-          label="알림"
-          htmlFor="event-remind"
-          invalid={!!errors.remindBefore}
-          error={errors.remindBefore?.message}
-        >
-          {(props) => (
-            <Controller
-              control={control}
-              name="remindBefore"
-              render={({ field }) => (
-                <select
-                  {...props}
-                  data-od-id="f-remind"
-                  value={field.value === null ? "none" : field.value}
-                  onChange={(event) =>
-                    field.onChange(
-                      event.target.value === "none"
-                        ? null
-                        : Number(event.target.value),
-                    )
-                  }
-                >
-                  {reminderOptions.map((option) => (
-                    <option
-                      key={String(option.value)}
-                      value={option.value ?? "none"}
-                    >
-                      {option.label}
+    <FormProvider {...form}>
+      <form
+        id={formId}
+        onSubmit={onFormSubmit}
+        aria-busy={isSubmitting}
+        className="grid gap-3"
+        noValidate
+      >
+        <fieldset disabled={isSubmitting} className="grid min-w-0 gap-2">
+          <legend className="sr-only">일정 입력</legend>
+          <GroupLabel>분류</GroupLabel>
+          <Field
+            name="categoryId"
+            label="카테고리"
+            render={(field) => (
+              <div className="flex items-center gap-2">
+                {category && <CategoryDot color={category.color} />}
+                <select {...field} data-od-id="f-category">
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
                     </option>
                   ))}
                 </select>
+              </div>
+            )}
+          />
+          {(!event || event.canChangeVisibility) && (
+            <Field
+              name="visibility"
+              label="개인 일정"
+              render={(field) => (
+                <Switch
+                  {...field}
+                  value={undefined}
+                  data-od-id="f-private"
+                  checked={field.value === "private"}
+                  onCheckedChange={(checked) =>
+                    field.onChange(checked ? "private" : "shared")
+                  }
+                  aria-label="개인 일정"
+                />
               )}
             />
           )}
-        </FormFieldRow>
-        <FormFieldRow label="장소" htmlFor="event-place">
-          {(props) => (
-            <input {...props} data-od-id="f-place" {...register("place")} />
-          )}
-        </FormFieldRow>
-        {kind === "dday" && ddayStyle === "celebrate" && (
-          <FormFieldRow
-            label="축하 문구 (선택)"
-            htmlFor="event-celebrate-message"
-            error={errors.celebrateMessage?.message}
-            invalid={!!errors.celebrateMessage}
-          >
-            {(props) => (
-              <input
-                {...props}
-                {...register("celebrateMessage")}
-                placeholder="소중한 날을 축하해요!"
-              />
-            )}
-          </FormFieldRow>
-        )}
-        <GroupLabel>메모</GroupLabel>
-        <FormFieldRow label="메모" htmlFor="event-memo">
-          {(props) => (
-            <textarea
-              {...props}
-              data-od-id="f-memo"
-              {...register("memo")}
-              rows={3}
+          <Text as="p" variant="caption" className="text-muted-foreground">
+            기본은 가족 모두가 함께 보는 공유 일정이에요.
+          </Text>
+          <Field
+            name="kind"
+            label="일정 종류"
+            type="select"
+            options={[
+              { value: "event", label: "일정" },
+              { value: "dday", label: "D-day" },
+            ]}
+          />
+          {kind === "dday" && (
+            <Field
+              name="ddayStyle"
+              label="D-day 종류"
+              type="select"
+              options={[
+                { value: "normal", label: "일반" },
+                { value: "celebrate", label: "축하" },
+              ]}
             />
           )}
-        </FormFieldRow>
-      </fieldset>
-      {errors.root && (
-        <Text as="p" role="alert" className="text-error-text">
-          {errors.root.message}
-        </Text>
-      )}
-      {!formId && (
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "저장하고 있어요" : "저장하기"}
-        </Button>
-      )}
-    </form>
+          <Field
+            name="title"
+            label="제목"
+            inputProps={{ "data-od-id": "f-title", autoFocus: !coarse }}
+          />
+          <GroupLabel>시간</GroupLabel>
+          {kind !== "dday" && (
+            <Field
+              name="isAllDay"
+              label="종일"
+              render={(field) => (
+                <Switch
+                  {...field}
+                  value={undefined}
+                  data-od-id="f-allday"
+                  checked={field.value}
+                  onCheckedChange={onAllDayChange}
+                />
+              )}
+            />
+          )}
+          {kind !== "dday" && (
+            <Field
+              name="isTimeUnknown"
+              label="시간 미정"
+              render={(field) => (
+                <Switch
+                  {...field}
+                  value={undefined}
+                  data-od-id="f-time-unknown"
+                  checked={field.value}
+                  onCheckedChange={onTimeUnknownChange}
+                />
+              )}
+            />
+          )}
+          <EventDateFields
+            control={control}
+            setValue={setValue}
+            dateOnly={isAllDay || isTimeUnknown || kind === "dday"}
+            singleDate={kind === "dday"}
+          />
+          {kind !== "dday" && !isAllDay && !isTimeUnknown && (
+            <Text as="p" variant="caption" className="text-muted-foreground">
+              시각을 정하지 않았다면 시간 미정을 켜 주세요.
+            </Text>
+          )}
+          {kind !== "dday" && (
+            <Field
+              name="recurrence"
+              label="반복"
+              type="select"
+              noneLabel="안 함"
+              options={recurrenceOptions.filter(
+                (option) => option.value !== "none",
+              )}
+              inputProps={{ "data-od-id": "f-recurrence" }}
+            />
+          )}
+          <Field
+            name="remindBefore"
+            label="알림"
+            type="select"
+            noneLabel="없음"
+            options={reminderOptions.filter((option) => option.value !== null)}
+            inputProps={{ "data-od-id": "f-remind" }}
+          />
+          <Field
+            name="place"
+            label="장소"
+            inputProps={{ "data-od-id": "f-place" }}
+          />
+          {kind === "dday" && ddayStyle === "celebrate" && (
+            <Field
+              name="celebrateMessage"
+              label="축하 문구 (선택)"
+              inputProps={{ placeholder: "소중한 날을 축하해요!" }}
+            />
+          )}
+          <GroupLabel>메모</GroupLabel>
+          <Field
+            name="memo"
+            label="메모"
+            type="textarea"
+            inputProps={{ "data-od-id": "f-memo", rows: 3 }}
+          />
+        </fieldset>
+        {errors.root && (
+          <Text as="p" role="alert" className="text-error-text">
+            {errors.root.message}
+          </Text>
+        )}
+        {!formId && (
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "저장하고 있어요" : "저장하기"}
+          </Button>
+        )}
+      </form>
+    </FormProvider>
   );
 };
 

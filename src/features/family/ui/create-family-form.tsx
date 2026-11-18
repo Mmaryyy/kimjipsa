@@ -1,7 +1,7 @@
 "use client";
 import { cn } from "@/shared/lib";
 import { useCallback } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { FormProvider, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { familySchema } from "@/entities/family";
 import { ApiError } from "@/shared/api";
@@ -10,22 +10,23 @@ import {
   onboardingStyles,
   Button,
   CategoryDot,
-  FormFieldRow,
+  FormField,
   Text,
 } from "@/shared/ui";
 import { useCreateFamily } from "../model/use-family";
+const Field = FormField<{ name: string }>;
 export function CreateFamilyForm({ onCreated }: { onCreated?: () => void }) {
   const { onSubmit } = useCreateFamily(onCreated);
+  const form = useForm<{ name: string }>({
+    resolver: zodResolver(familySchema),
+    defaultValues: { name: "" },
+  });
   const {
-    register,
     control,
     handleSubmit,
     setError,
     formState: { errors, isSubmitting },
-  } = useForm<{ name: string }>({
-    resolver: zodResolver(familySchema),
-    defaultValues: { name: "" },
-  });
+  } = form;
   const onCreate = useCallback(
     async ({ name }: { name: string }) => {
       try {
@@ -46,67 +47,57 @@ export function CreateFamilyForm({ onCreated }: { onCreated?: () => void }) {
     [onSubmit, setError],
   );
   const name = useWatch({ control, name: "name" });
-  const nameError = errors.name?.message;
   const formError = errors.root?.server?.message;
   return (
-    <form
-      onSubmit={handleSubmit(onCreate)}
-      noValidate
-      className={onCreated ? onboardingStyles({ part: "form" }) : "grid gap-5"}
-      aria-busy={isSubmitting}
-    >
-      <FormFieldRow
-        className={cn(
-          onCreated && [
-            "block [&>label]:sr-only [&_input]:w-full [&_input]:rounded-sm [&_input]:bg-muted",
-            "[&_input]:px-3 [&_input]:py-4 [&_input]:text-left",
-            "[&_input]:text-[length:var(--type-title-size)]",
-          ],
-        )}
-        label="가정 이름"
-        htmlFor="familyName"
-        invalid={Boolean(nameError)}
-        error={nameError}
+    <FormProvider {...form}>
+      <form
+        onSubmit={handleSubmit(onCreate)}
+        noValidate
+        className={
+          onCreated ? onboardingStyles({ part: "form" }) : "grid gap-5"
+        }
+        aria-busy={isSubmitting}
       >
-        {(controlProps) => (
-          <Input
-            {...controlProps}
-            aria-describedby={[
-              controlProps["aria-describedby"],
-              "familyName-hint",
-            ]
-              .filter(Boolean)
-              .join(" ")}
-            data-od-id="ob-home-name"
-            className="text-title"
-            {...register("name")}
-            required
-            placeholder="도토리네"
-            autoComplete="off"
-          />
+        <Field
+          name="name"
+          label="가정 이름"
+          hint="가정 이름은 10자 이하로 입력해 주세요."
+          className={cn(
+            onCreated && [
+              "block [&>label]:sr-only [&_input]:w-full [&_input]:rounded-sm [&_input]:bg-muted",
+              "[&_input]:px-3 [&_input]:py-4 [&_input]:text-left",
+              "[&_input]:text-[length:var(--type-title-size)]",
+            ],
+          )}
+          render={(field) => (
+            <Input
+              {...field}
+              data-od-id="ob-home-name"
+              className="text-title"
+              required
+              placeholder="도토리네"
+              autoComplete="off"
+            />
+          )}
+        />
+        <div className="flex items-center gap-2 text-body-sm text-muted-foreground">
+          <CategoryDot />
+          {name.trim() || "도토리네"}
+          <span>· 일정 카테고리</span>
+        </div>
+        {formError && (
+          <Text as="p" role="alert" className="text-error-text">
+            {formError}
+          </Text>
         )}
-      </FormFieldRow>
-      <Text
-        as="p"
-        id="familyName-hint"
-        variant="caption"
-        className="text-muted-foreground"
-      >
-        가정 이름은 10자 이하로 입력해 주세요.
-      </Text>
-      <div className="flex items-center gap-2 text-body-sm text-muted-foreground">
-        <CategoryDot />
-        {name.trim() || "도토리네"}
-        <span>· 일정 카테고리</span>
-      </div>
-      {formError && (
-        <Text as="p" role="alert" className="text-error-text">
-          {formError}
-        </Text>
-      )}
-      <Button data-od-id="ob-home-create" type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "우리 집을 만들고 있어요" : "우리 집 만들기"}
-      </Button>
-    </form>
+        <Button
+          data-od-id="ob-home-create"
+          type="submit"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "우리 집을 만들고 있어요" : "우리 집 만들기"}
+        </Button>
+      </form>
+    </FormProvider>
   );
 }

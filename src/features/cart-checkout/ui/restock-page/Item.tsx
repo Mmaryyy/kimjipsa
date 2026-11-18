@@ -3,12 +3,14 @@ import type { RestockEntry, CartItem } from "@/entities/cart-item";
 import type { InventoryItem, InventoryMeta } from "@/entities/inventory-item";
 import { DateTimeInput } from "@/shared/ui/date-time-input";
 import {
-  FormFieldRow,
+  FormField,
+  type FieldRenderProps,
   QuantityStepper,
   StatusBadge,
   TextButton,
 } from "@/shared/ui";
 export type RestockFormValues = { entries: RestockEntry[] };
+const Field = FormField<RestockFormValues>;
 interface Props {
   item: CartItem;
   existing?: InventoryItem;
@@ -39,7 +41,6 @@ const RestockItem = ({
     : `${existing?.quantity ?? 0}${currentUnit}`;
   const purchaseUnit =
     meta.units.find((unit) => unit.id === item.unit_id)?.name ?? "";
-  const errors = form.formState.errors.entries?.[index];
   const selectRows = [
     {
       key: "unit_id",
@@ -97,35 +98,33 @@ const RestockItem = ({
         </p>
       )}
       {statusOnly ? (
-        <FormFieldRow label="상태" htmlFor={`restock-status-${index}`}>
-          {() => (
-            <span
-              id={`restock-status-${index}`}
-              className="text-body-sm text-muted-foreground"
-            >
-              충분으로 바꿔요
-            </span>
-          )}
-        </FormFieldRow>
-      ) : (
-        <FormFieldRow
-          label="더할 수량"
-          htmlFor={`restock-quantity-${index}`}
-          invalid={!!errors?.quantity}
-          error="수량은 0보다 커야 해요."
+        <div
+          data-slot="field-row"
+          className="flex min-h-[var(--row-min)] items-center gap-3 py-1"
         >
-          {() => (
-            <div className="flex items-center justify-end gap-2">
+          <span className="basis-22 shrink-0 text-muted-foreground">상태</span>
+          <span className="ml-auto text-body-sm text-muted-foreground">
+            충분으로 바꿔요
+          </span>
+        </div>
+      ) : (
+        <Field
+          name={`entries.${index}.quantity`}
+          label="더할 수량"
+          render={(
+            field: FieldRenderProps<
+              RestockFormValues,
+              `entries.${number}.quantity`
+            >,
+          ) => (
+            <div className="flex flex-wrap items-center justify-end gap-2">
               <QuantityStepper
                 label={item.name}
-                value={entry?.quantity ?? 1}
+                value={field.value ?? 1}
                 min={0}
                 allowDirectInput
-                onValueChange={(value) =>
-                  form.setValue(`entries.${index}.quantity`, value, {
-                    shouldDirty: true,
-                  })
-                }
+                onValueChange={field.onChange}
+                controlProps={field}
               />
               {grouped ? (
                 <span className="text-body-sm">
@@ -133,23 +132,29 @@ const RestockItem = ({
                     ?.name ?? "단위 선택 전"}
                 </span>
               ) : (
-                <select
-                  aria-label={`${item.name} 단위`}
-                  {...form.register(`entries.${index}.unit_id`)}
+                <Field
+                  name={`entries.${index}.unit_id`}
+                  label={`${item.name} 단위`}
+                  showLabel={false}
+                  className="contents [&>div]:flex-none"
+                  type="select"
                   disabled={!!existing?.unit_id || disabled}
-                  className="max-w-16"
-                >
-                  <option value="">단위</option>
-                  {meta.units.map((unit) => (
-                    <option key={unit.id} value={unit.id}>
-                      {unit.name}
-                    </option>
-                  ))}
-                </select>
+                  options={[
+                    { value: "", label: "단위" },
+                    ...meta.units.map((unit) => ({
+                      value: unit.id,
+                      label: unit.name,
+                    })),
+                  ]}
+                  inputProps={{
+                    className: "max-w-16",
+                    "aria-label": `${item.name} 단위`,
+                  }}
+                />
               )}
             </div>
           )}
-        </FormFieldRow>
+        />
       )}
       {existing?.unit_id && existing.unit_id !== item.unit_id && (
         <p className="text-caption text-muted-foreground">
@@ -160,34 +165,34 @@ const RestockItem = ({
         selectRows
           .filter((row) => !row.hide)
           .map((row) => (
-            <FormFieldRow
+            <Field
               key={row.key}
+              name={`entries.${index}.${row.key}`}
               label={row.label}
-              htmlFor={`restock-${row.key}-${index}`}
-              invalid={!!errors?.[row.key]}
-              error={`${row.label}를 선택해 주세요.`}
-            >
-              {(props) => (
-                <select
-                  {...props}
-                  {...form.register(`entries.${index}.${row.key}`)}
-                  disabled={row.locked || disabled}
-                >
-                  <option value="">선택</option>
-                  {row.entries.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </FormFieldRow>
+              type="select"
+              options={[
+                { value: "", label: "선택" },
+                ...row.entries.map((option) => ({
+                  value: option.id,
+                  label: option.name,
+                })),
+              ]}
+              disabled={row.locked || disabled}
+            />
           ))}
       {!grouped && (
-        <FormFieldRow label="유통기한" htmlFor={`restock-expiry-${index}`}>
-          {(props) => (
+        <Field
+          name={`entries.${index}.expires_on`}
+          label="유통기한"
+          disabled={disabled}
+          render={(
+            field: FieldRenderProps<
+              RestockFormValues,
+              `entries.${number}.expires_on`
+            >,
+          ) => (
             <DateTimeInput
-              controlProps={props}
+              controlProps={field}
               label={`${item.name} 유통기한`}
               dateOnly
               singleDate
@@ -197,15 +202,10 @@ const RestockItem = ({
                 startTime: "",
                 endTime: "",
               }}
-              onConfirm={(range) =>
-                form.setValue(
-                  `entries.${index}.expires_on`,
-                  range.startDate || null,
-                )
-              }
+              onConfirm={(range) => field.onChange(range.startDate || null)}
             />
           )}
-        </FormFieldRow>
+        />
       )}
       {!grouped && expiry && (
         <TextButton

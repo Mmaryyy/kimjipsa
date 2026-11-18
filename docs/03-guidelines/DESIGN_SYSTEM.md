@@ -316,3 +316,11 @@ hex와 프리셋 키는 서버·브라우저에서 같은 순수 함수로 계�
 저장한 직접 색은 가정 단위 기록으로 남겨 최근 저장 순으로 다시 고른다. 프리셋·저장 색·직접 선택은 최대 두 줄이며, 오래된 저장 색부터 숨기고 직접 선택은 항상 표시한다. 모든 색은 같은 라디오 그룹이며 선택 테두리는 `primary`를 쓴다. 색이 없는 점은 `--cat-gray`로 표시한다.
 
 스켈레톤(P11.4)은 앞의 “첫 화면 준비와 섹션 스켈레톤” 규칙을 따른다. 로그인·온보딩 상태 확인과 집사 대화 경유 화면처럼 데이터 목록이 없는 화면은 큰 카드 없이 상태 안내만 표시한다.
+
+### 폼 필드 (P15.2)
+
+- `FormProvider` 안의 `FormField<T>`가 `useController` 연결, 고유 id, 라벨, 오류와 힌트의 `aria-describedby`, `aria-invalid`, `role="alert"`를 맡는다. 행 레이아웃은 `FormFieldRow`를 유지한다. 폼에서 id·오류 문구 연결·필드용 `Controller`를 직접 만들지 않는다.
+- 일반 입력은 `type`(생략하면 `text`)을 쓴다. `textarea`, `number`, `select`, `switch`, `segmented`, `quantity`, `date`, `datetime`을 지원한다. `select`와 `segmented`의 `options.value`는 해당 필드 값 타입을 따르며 `switch`는 boolean 필드에만 쓴다. `select`의 `noneLabel`은 null 선택지이고 숫자 선택지는 숫자로 저장한다.
+- 입력 속성은 `inputProps`, 행 스타일은 `className`, 단순 문자열 값 변환은 `parse`·`format`으로 전달한다. 날짜 하나는 `date`, 범위 값은 `datetime`을 사용한다. 여러 필드를 함께 갱신하는 일정 범위, 색점이 붙은 선택지, 기존 `Input` 스타일, 자동 저장 콜백 등은 `render(field)`에서 기존 입력 컴포넌트를 조합한다. 전달된 field의 id·ref·aria 속성과 onBlur를 입력에 연결한다. 날짜 범위처럼 함께 낭독할 오류는 `errorNames`에 연동 필드 이름을 넣는다.
+- 조건부·연동 필드가 있으면 JSX에 `FormField`를 나열한다. 균일한 설정 행만 `defineFields<FormValues>()([...])`로 선언하고 배열 원소를 `FormField<FormValues>`에 전달한다. 일반 객체 배열로 타입 검사를 우회하지 않는다. 카탈로그가 배열 사용 예시다.
+- 새 type은 `form-field.types.ts`의 `FieldTypeProps<V>`에 props 한 항목, `index.tsx`의 registry에 입력 컴포넌트 한 항목을 추가한다. registry는 mapped type으로 누락을 검사한다. 폼마다 분기·캐스팅을 추가하지 않는다.

@@ -23,6 +23,7 @@ const { saveType, save, memory, settings, connection, account } = vi.hoisted(
       pending: false,
       memoryPending: false,
       memoryError: null as Error | null,
+      typeError: null as Error | null,
     },
     account: { role: "admin" },
     saveType: vi.fn(),
@@ -60,7 +61,11 @@ vi.mock("@/features/account", () => ({
     avatar: "/images/kimjipsa-avatar.png",
     label: "집사",
   }),
-  useSaveBotType: () => ({ mutate: saveType, isPending: false }),
+  useSaveBotType: () => ({
+    mutate: saveType,
+    isPending: false,
+    error: connection.typeError,
+  }),
   useAccount: () => ({
     data: {
       userId: "user",
@@ -77,6 +82,7 @@ beforeEach(() => {
   connection.pending = false;
   connection.memoryPending = false;
   connection.memoryError = null;
+  connection.typeError = null;
   connection.refetch.mockReset();
 });
 it("BOT-15/16 이름 변경과 기억 스위치는 달라졌을 때만 자동 저장해요", async () => {
@@ -308,4 +314,26 @@ it("BOT-13 P15.1b 수정 취소로 보기로 돌아오고 다시 수정할 수 �
   fireEvent.click(screen.getByRole("button", { name: "기억 수정" }));
   expect(screen.getByLabelText("기억 내용")).toHaveValue("우유는 저지방");
   expect(memory).not.toHaveBeenCalled();
+});
+
+it("BOT-18 타입 저장이 실패하면 저장된 집사 선택을 유지해요", () => {
+  connection.typeError = new Error("타입을 저장하지 못했어요.");
+  render(
+    <ToastProvider>
+      <AiSettings />
+    </ToastProvider>,
+  );
+  fireEvent.click(screen.getByRole("radio", { name: "노비" }));
+  expect(saveType).toHaveBeenCalledWith("nobi", expect.anything());
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "타입을 저장하지 못했어요.",
+  );
+  expect(screen.getByRole("radio", { name: "집사" })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+  expect(screen.getByRole("radio", { name: "노비" })).toHaveAttribute(
+    "aria-checked",
+    "false",
+  );
 });

@@ -80,11 +80,11 @@ const InventorySettings = () => {
         </Link>
       ))}
       <div data-od-id="s-expiry-days">
-        <FormFieldRow label="유통기한 임박 기준" htmlFor="expiry-days">
-          {(props) => (
+        <FormFieldRow htmlFor="expiry-days" label="유통기한 임박 기준">
+          {(field) => (
             <div className="flex items-center gap-2">
               <Input
-                {...props}
+                {...field}
                 aria-label="유통기한 임박 기준 일수"
                 type="number"
                 min="0"
