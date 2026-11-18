@@ -1,0 +1,2922 @@
+<!doctype html>
+<html lang="ko" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>프로젝트 시안 · 김집사 · PJ0 승인 대기</title>
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <style>
+      [hidden] {
+        display: none !important;
+      }
+      .grow {
+        flex: 1;
+        min-width: 0;
+      }
+      .prj-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 24px 0 20px;
+      }
+      .prj-head > div:first-child {
+        min-width: 0;
+        flex: 1;
+      }
+      .prj-head h1 {
+        margin: 8px 0 4px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .back {
+        font-size: var(--text-footnote);
+      }
+      .glass-btn {
+        min-height: 44px;
+        padding: 0 16px;
+        border-radius: 24px;
+        background: var(--fill-quaternary);
+        backdrop-filter: blur(16px);
+        font-size: var(--type-label-size);
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .preview-controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 0 8px;
+      }
+      .preview-controls label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: var(--text-caption1);
+      }
+      .preview-controls select {
+        max-width: 190px;
+        background: var(--bg-secondary);
+        border: 0;
+        border-radius: 6px;
+        min-height: 34px;
+      }
+      .preview-note {
+        color: var(--label-secondary);
+        font-size: var(--text-caption1);
+      }
+      .main {
+        width: 100%;
+        padding-bottom: calc(200px + env(safe-area-inset-bottom));
+      }
+      .screen {
+        animation: none;
+      }
+      .section:first-of-type {
+        margin-top: 20px;
+      }
+      .project-link {
+        display: block;
+        color: var(--label);
+      }
+      .list > li {
+        padding: 16px 0;
+      }
+      .list p {
+        margin-top: 4px;
+      }
+      .progress-label {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 18px;
+        font-size: var(--text-footnote);
+        color: var(--label-secondary);
+      }
+      progress {
+        width: 100%;
+        height: 5px;
+        accent-color: var(--accent);
+        border: 0;
+        border-radius: 0;
+      }
+      progress::-webkit-progress-bar {
+        background: var(--fill-quaternary);
+      }
+      progress::-webkit-progress-value {
+        background: var(--accent);
+      }
+      .row progress,
+      .list progress {
+        max-width: 100px;
+      }
+      .project-link progress {
+        max-width: none;
+      }
+      .overview-intro {
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        padding: 8px 0;
+      }
+      .timeline {
+        padding: 0;
+        list-style: none;
+      }
+      .timeline li {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 0;
+      }
+      .timeline p {
+        width: 100%;
+        font-size: var(--text-footnote);
+      }
+      .timeline [aria-current] {
+        background: var(--fill-quaternary);
+        padding: 14px 12px;
+      }
+      .timeline .text-btn {
+        margin-left: auto;
+      }
+      .filters {
+        display: flex;
+        gap: 24px;
+        margin: 8px 0;
+      }
+      .filters button {
+        min-height: 44px;
+        color: var(--label-secondary);
+      }
+      .filters [aria-pressed="true"] {
+        color: var(--accent);
+        font-weight: 700;
+      }
+      .fields {
+        display: grid;
+        gap: 16px;
+      }
+      .filters-grid {
+        grid-template-columns: 1fr 1fr;
+        margin-bottom: 20px;
+      }
+      .filters-grid .editor-field:first-child {
+        grid-column: 1 / -1;
+      }
+      .editor-field {
+        display: grid;
+        gap: 6px;
+        font-size: var(--text-footnote);
+      }
+      .editor-field > span {
+        color: var(--label-secondary);
+      }
+      .input {
+        width: 100%;
+        min-width: 0;
+        min-height: 42px;
+        background: var(--fill-quaternary);
+        border: 0;
+        padding: 10px 12px;
+        border-radius: 6px;
+      }
+      textarea.input {
+        min-height: 80px;
+        resize: vertical;
+      }
+      input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        accent-color: var(--accent);
+        flex-shrink: 0;
+      }
+      label:has(> input[type="checkbox"]) {
+        min-height: 44px;
+      }
+      .task-list li {
+        align-items: flex-start;
+      }
+      .task-list input {
+        margin-top: 4px;
+      }
+      details {
+        margin-top: 24px;
+      }
+      summary {
+        cursor: pointer;
+        min-height: 44px;
+        padding: 10px 0;
+        color: var(--link);
+      }
+      details .fields {
+        margin-top: 12px;
+      }
+      .facts {
+        margin: 8px 0 16px;
+      }
+      .facts > div {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 8px 0;
+      }
+      .facts dt {
+        color: var(--label-secondary);
+      }
+      .facts dd {
+        margin: 0;
+      }
+      .banner {
+        margin: 16px 0;
+      }
+      .quantity {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        font-size: var(--text-footnote);
+      }
+      .quantity button {
+        margin-left: auto;
+      }
+      .photo-placeholder {
+        background: var(--fill-quaternary);
+        color: var(--label-secondary);
+        height: 100px;
+        display: grid;
+        place-items: center;
+        margin-bottom: 8px;
+      }
+      .tag-checks {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 16px;
+        margin-top: 8px;
+      }
+      .tag-checks label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: var(--text-footnote);
+      }
+      .summary-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px 12px;
+      }
+      .summary-grid b {
+        font-size: 20px;
+      }
+      .summary-grid p {
+        margin-bottom: 4px;
+      }
+      .shopping-segments {
+        display: flex;
+        margin-bottom: 20px;
+        padding: 3px;
+        gap: 4px;
+        background: var(--fill-quaternary);
+        border-radius: 8px;
+      }
+      .shopping-segments a {
+        flex: 1;
+        text-align: center;
+        padding: 8px;
+        color: var(--label-secondary);
+        border-radius: 6px;
+      }
+      .shopping-segments [aria-current] {
+        background: var(--bg);
+        color: var(--label);
+      }
+      .tabbar {
+        left: 16px;
+        right: 16px;
+        bottom: calc(12px + env(safe-area-inset-bottom));
+        border-radius: 34px;
+        padding: 10px 6px;
+        background: var(--bg-secondary);
+        backdrop-filter: blur(20px);
+        box-shadow: 0 4px 20px #00000012;
+      }
+      .tabbar a {
+        justify-content: center;
+      }
+      .sidebar a {
+        min-height: 44px;
+      }
+      .sidebar .home-name {
+        padding-top: 16px;
+      }
+      .bot-launcher {
+        position: fixed;
+        right: 24px;
+        bottom: 100px;
+        width: 70px;
+        height: 82px;
+      }
+      .bot-launcher img {
+        width: 100%;
+        height: 100%;
+      }
+      dialog.sheet {
+        border: 0;
+        color: var(--label);
+        background: var(--bg);
+        width: calc(100% - 24px);
+        max-width: 520px;
+        max-height: 88dvh;
+        padding: 0;
+        border-radius: 12px;
+      }
+      dialog.sheet::backdrop {
+        background: var(--backdrop, rgba(0, 0, 0, 0.32));
+      }
+      dialog.sheet[open] {
+        animation: none;
+      }
+      .sheet-head {
+        margin: 0;
+        position: sticky;
+        top: 0;
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+        gap: 8px;
+        padding: 16px;
+        background: var(--bg);
+        z-index: 1;
+      }
+      .sheet-head > :last-child {
+        justify-self: end;
+      }
+      .sheet-content {
+        padding: 8px 20px 24px;
+      }
+      .sheet .fields {
+        margin: 8px 0;
+      }
+      fieldset {
+        border: 0;
+        padding: 0;
+        margin: 0;
+      }
+      legend {
+        margin-bottom: 8px;
+      }
+      .module-picks {
+        display: grid;
+        gap: 4px;
+        margin-top: 12px;
+      }
+      .module-picks label {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .sheet p {
+        margin-bottom: 8px;
+      }
+      .danger {
+        color: var(--destructive);
+      }
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: 100px;
+        transform: translateX(-50%);
+        max-width: calc(100% - 32px);
+        width: max-content;
+        background: var(--bg-secondary);
+        padding: 12px 20px;
+        z-index: 100;
+        font-size: var(--text-footnote);
+      }
+      .approval-checklist {
+        margin-top: 32px;
+      }
+      .approval-checklist li {
+        padding: 6px 0;
+        font-size: var(--text-footnote);
+      }
+      @media (max-width: 767px) {
+        dialog.sheet {
+          margin: auto 0 0;
+          width: 100%;
+          max-width: none;
+          border-radius: 12px 12px 0 0;
+        }
+      }
+      @media (min-width: 1024px) {
+        .main {
+          max-width: 520px;
+        }
+        .main.wide {
+          max-width: 1120px;
+        }
+        .bot-launcher {
+          bottom: 24px;
+        }
+        .summary-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      .task-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        height: 44px;
+        flex-shrink: 0;
+      }
+      .task-toggle input {
+        margin: 0;
+      }
+      .confirm-dialog {
+        position: fixed;
+        inset: 0;
+        margin: auto;
+        width: calc(100% - 48px);
+        max-width: 300px;
+        text-align: center;
+        border: 0;
+        border-radius: var(--r-dialog, var(--r-control));
+        padding: 20px;
+        background: var(--bg);
+        color: var(--label);
+      }
+      .confirm-dialog::backdrop {
+        background: var(--backdrop, rgba(0, 0, 0, 0.32));
+      }
+      .confirm-dialog .sheet-head {
+        display: block;
+        padding: 0 0 16px;
+      }
+      .confirm-dialog .sheet-head h2 {
+        width: 100%;
+        justify-self: stretch;
+      }
+      .confirm-dialog .sheet-content {
+        padding: 0;
+      }
+      .confirm-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 20px;
+      }
+      .confirm-actions button {
+        flex: 1;
+        min-height: 44px;
+      }
+      .shopping-input {
+        display: flex;
+        gap: 8px;
+        margin: 20px 0;
+      }
+      .shopping-input .input {
+        min-width: 0;
+        flex: 1;
+        border-radius: 24px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <nav class="sidebar" aria-label="사이드 메뉴" data-od-id="prj-sidebar">
+        <div class="home-name"><b>도토리네</b><small>김집사</small></div>
+        <a href="#home" data-nav="home"
+          ><svg
+            class="icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="4" />
+            <path d="M12 2v3m0 14v3M2 12h3m14 0h3" /></svg
+          ><span>오늘</span></a
+        ><a href="#calendar" data-nav="calendar"
+          ><svg
+            class="icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <rect x="4" y="5" width="16" height="15" rx="2" />
+            <path d="M4 10h16M8 3v4m8-4v4" /></svg
+          ><span>일정</span></a
+        ><a href="#shopping" data-nav="shopping"
+          ><svg
+            class="icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M3 4h3l2 11h10l2-8H7" />
+            <circle cx="9" cy="20" r="1" />
+            <circle cx="17" cy="20" r="1" /></svg
+          ><span>장바구니</span></a
+        ><a href="#inventory" data-nav="inventory"
+          ><svg
+            class="icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="m3 7 9-4 9 4v10l-9 4-9-4Zm0 0 9 4 9-4M12 11v10" /></svg
+          ><span>재고</span></a
+        ><a href="#projects" data-nav="projects"
+          ><svg
+            class="icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <rect x="4" y="6" width="16" height="14" rx="2" />
+            <path d="M9 6V3h6v3M4 11h16" /></svg
+          ><span>프로젝트</span></a
+        ><a
+          href="#"
+          class="minimized-bot"
+          data-od-id="prj-sidebar-minimized-bot"
+          data-bot-tab
+          hidden
+          ><svg
+            class="icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M4 6h16v12h-5l-5 3v-3H4Z" />
+            <path d="M9 10v2m6-2v2" /></svg
+          ><span>집사</span></a
+        ><a href="#settings" data-nav="settings"
+          ><svg
+            class="icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="4" />
+            <path
+              d="M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2"
+            /></svg
+          ><span>설정</span></a
+        >
+      </nav>
+      <main class="main">
+        <div class="preview-controls" data-od-id="prj-preview-controls">
+          <label
+            >화면<select id="screen-picker">
+              <option value="projects">PJ2 · 프로젝트</option>
+              <option value="overview">PJ2 · 결혼 준비</option>
+              <option value="tasks">PJ2 · 할 일</option>
+              <option value="decisions">PJ3 · 결정</option>
+              <option value="reservations">PJ3 · 예약</option>
+              <option value="itinerary">PJ3 · 일정표</option>
+              <option value="candidates">PJ4 · 답례품 후보</option>
+              <option value="people">PJ4 · 가족 명단</option>
+              <option value="budget">PJ5 · 예산·지출·정산</option>
+              <option value="home-settings">PJ6 · 홈 화면 설정</option>
+              <option value="settings">PJ6 · 설정 &gt; 홈 화면</option>
+              <option value="home">PJ6 · 오늘</option>
+              <option value="shopping">PJ1 · 장보기</option>
+              <option value="inventory">PJ1 · 재고</option>
+            </select></label
+          ><label><input type="checkbox" id="theme-toggle" />다크</label
+          ><label><input type="checkbox" id="bot-toggle" />집사 최소화</label>
+        </div>
+        <p class="preview-note">PJ0 시안 · 사용자 승인 대기 · 예시 데이터</p>
+        <section
+          id="screen-projects"
+          class="screen"
+          data-screen="projects"
+          data-phase="PJ2"
+          data-od-id="prj-projects"
+          hidden
+        >
+          <header class="prj-head">
+            <div>
+              <a class="back" href="#overview">‹ 프로젝트 개요</a>
+              <h1 class="t-title-lg">프로젝트</h1>
+              <p class="secondary t-caption">
+                우리 집의 오래 걸리는 일, 한곳에서
+              </p>
+            </div>
+            <button
+              type="button"
+              class="glass-btn"
+              data-open="project-create"
+              data-od-id="prj-create-open"
+            >
+              새 프로젝트
+            </button>
+          </header>
+          <div class="filters" aria-label="프로젝트 상태">
+            <button
+              type="button"
+              class="text-btn"
+              data-project-filter="active"
+              aria-pressed="true"
+            >
+              진행 중</button
+            ><button
+              type="button"
+              class="text-btn"
+              data-project-filter="completed"
+              aria-pressed="false"
+            >
+              완료</button
+            ><button
+              type="button"
+              class="text-btn"
+              data-project-filter="archived"
+              aria-pressed="false"
+            >
+              보관
+            </button>
+          </div>
+          <ul class="list" data-od-id="prj-project-list">
+            <li data-project-status="active">
+              <a class="grow project-link" href="#overview"
+                ><h2 class="t-title-sm">결혼 준비</h2>
+                <p class="secondary t-caption">
+                  2026.11.18 – 2027.04.15 · 가정 전체 공유
+                </p>
+                <div class="progress-label">
+                  <span>할 일 8 / 20 완료</span><span>40%</span>
+                </div>
+                <progress
+                  value="8"
+                  max="20"
+                  aria-label="결혼 준비 진행률 40%"
+                ></progress>
+                <p class="section-note">다음 마감 · 11.20 여행 루트 결정</p></a
+              ><span aria-hidden="true">›</span>
+            </li>
+            <li>
+              <div class="grow">
+                <div class="t-headline"><a href="#overview">이사 준비</a></div>
+                <p class="secondary t-caption">2027.06 · 목표일 미정</p>
+              </div>
+              <span class="status" data-variant="info">진행 중</span>
+            </li>
+          </ul>
+          <p class="empty" data-od-id="prj-project-empty" hidden>
+            아직 이 상태의 프로젝트가 없어요.
+          </p>
+        </section>
+        <section
+          id="screen-overview"
+          class="screen"
+          data-screen="overview"
+          data-phase="PJ2"
+          data-od-id="prj-overview"
+          hidden
+        >
+          <header class="prj-head">
+            <div>
+              <a class="back" href="#projects">‹ 프로젝트</a>
+              <h1 class="t-title-lg">결혼 준비</h1>
+              <p class="secondary t-caption">결혼 준비 · 도토리네 함께</p>
+            </div>
+            <button
+              type="button"
+              class="glass-btn"
+              data-open="project-settings"
+            >
+              설정
+            </button>
+          </header>
+          <div class="overview-intro" data-od-id="prj-overview-progress">
+            <div>
+              <span class="secondary t-caption">전체 준비</span>
+              <p class="t-display">40<span class="t-title">%</span></p>
+            </div>
+            <div>
+              <p>2027.04.15까지</p>
+              <p class="secondary t-caption">함께 준비하는 우리의 다음 계절</p>
+            </div>
+          </div>
+          <section class="section">
+            <div class="section-head"><h2>타임라인</h2></div>
+            <ol class="timeline" data-od-id="prj-timeline">
+              <li aria-current="step">
+                <span class="status" data-variant="info">지금</span
+                ><b>11월 · 큰 틀 정하기</b>
+                <p class="secondary">예산·휴가·전체 일정 확인</p>
+              </li>
+              <li>
+                <b>2.27 – 3.01 · 웨딩스냅</b
+                ><button
+                  type="button"
+                  class="text-btn"
+                  data-event="milestone"
+                  data-od-id="prj-event-milestone"
+                >
+                  일정에 추가
+                </button>
+              </li>
+              <li>
+                <b>상견례 · 날짜 미정</b>
+                <p class="secondary">3.27 또는 4.03 · 가족 일정 확인 후 결정</p>
+              </li>
+              <li><b>4.28 – 5.16 · 신혼여행</b></li>
+            </ol>
+          </section>
+          <section class="section">
+            <div class="section-head"><h2>영역별 진행률</h2></div>
+            <ul class="list" data-od-id="prj-area-progress">
+              <li>
+                <div class="grow">
+                  <div class="t-headline">신혼여행</div>
+                  <p class="secondary t-caption">3 / 8 완료 · 38%</p>
+                </div>
+                <progress
+                  value="3"
+                  max="8"
+                  aria-label="신혼여행 진행률"
+                ></progress>
+              </li>
+              <li>
+                <div class="grow">
+                  <div class="t-headline">웨딩스냅</div>
+                  <p class="secondary t-caption">4 / 6 완료 · 67%</p>
+                </div>
+                <progress
+                  value="4"
+                  max="6"
+                  aria-label="웨딩스냅 진행률"
+                ></progress>
+              </li>
+              <li>
+                <div class="grow">
+                  <div class="t-headline">상견례</div>
+                  <p class="secondary t-caption">1 / 6 완료 · 17%</p>
+                </div>
+                <progress
+                  value="1"
+                  max="6"
+                  aria-label="상견례 진행률"
+                ></progress>
+              </li>
+            </ul>
+          </section>
+          <section class="section">
+            <div class="section-head"><h2>다가오는 마감</h2></div>
+            <ul class="list">
+              <li>
+                <div class="grow">
+                  <div class="t-headline">여행 루트 결정</div>
+                  <p class="secondary t-caption">11.20 · 함께 · 할 일</p>
+                </div>
+                <span class="status" data-variant="warning">D-2</span>
+              </li>
+              <li>
+                <div class="grow">
+                  <div class="t-headline">상견례 날짜 고르기</div>
+                  <p class="secondary t-caption">11.21 · 결정</p>
+                </div>
+                <span class="status" data-variant="info">D-3</span>
+              </li>
+            </ul>
+          </section>
+          <section class="section">
+            <div class="section-head"><h2>구성 요소</h2></div>
+            <ul class="list module-links">
+              <li>
+                <div class="grow">
+                  <div class="t-headline"><a href="#tasks">할 일</a></div>
+                  <p class="secondary t-caption">12개 남음</p>
+                </div>
+                <span aria-hidden="true">›</span>
+              </li>
+              <li>
+                <div class="grow">
+                  <div class="t-headline"><a href="#decisions">결정</a></div>
+                  <p class="secondary t-caption">논의 중 2개</p>
+                </div>
+                <span aria-hidden="true">›</span>
+              </li>
+              <li>
+                <div class="grow">
+                  <div class="t-headline">
+                    <a href="#candidates">후보 목록</a>
+                  </div>
+                  <p class="secondary t-caption">답례품 · 3개</p>
+                </div>
+                <span aria-hidden="true">›</span>
+              </li>
+              <li>
+                <div class="grow">
+                  <div class="t-headline"><a href="#people">명단</a></div>
+                  <p class="secondary t-caption">가족 · 2명</p>
+                </div>
+                <span aria-hidden="true">›</span>
+              </li>
+              <li>
+                <div class="grow">
+                  <div class="t-headline"><a href="#reservations">예약</a></div>
+                  <p class="secondary t-caption">숙소 겹침 확인</p>
+                </div>
+                <span aria-hidden="true">›</span>
+              </li>
+              <li>
+                <div class="grow">
+                  <div class="t-headline"><a href="#itinerary">일정표</a></div>
+                  <p class="secondary t-caption">날짜순 계획</p>
+                </div>
+                <span aria-hidden="true">›</span>
+              </li>
+              <li>
+                <div class="grow">
+                  <div class="t-headline">
+                    <a href="#budget">예산·지출·정산</a>
+                  </div>
+                  <p class="secondary t-caption">정산 보류 1건</p>
+                </div>
+                <span aria-hidden="true">›</span>
+              </li>
+            </ul>
+          </section>
+          <button
+            type="button"
+            class="text-btn"
+            data-open="area-editor"
+            data-edit
+          >
+            영역·마일스톤
+          </button>
+        </section>
+        <section
+          id="screen-tasks"
+          class="screen"
+          data-screen="tasks"
+          data-phase="PJ2"
+          data-od-id="prj-tasks"
+          hidden
+        >
+          <header class="prj-head">
+            <div>
+              <a class="back" href="#overview">‹ 프로젝트 개요</a>
+              <h1 class="t-title-lg">할 일</h1>
+              <p class="secondary t-caption">결혼 준비 · 도토리네 함께</p>
+            </div>
+            <button type="button" class="glass-btn" data-open="task-editor">
+              추가
+            </button>
+          </header>
+          <div class="fields filters-grid" data-od-id="prj-task-filters">
+            <label class="editor-field"
+              ><span>검색</span
+              ><input
+                class="input"
+                type="search"
+                value=""
+                id="task-search"
+                placeholder="할 일 검색" /></label
+            ><label class="editor-field"
+              ><span>영역</span
+              ><select class="input" id="task-area">
+                <option value="">모든 영역</option>
+                <option>신혼여행</option>
+                <option>상견례</option>
+              </select></label
+            ><label class="editor-field"
+              ><span>상태</span
+              ><select class="input" id="task-status">
+                <option value="">모든 상태</option>
+                <option>미시작</option>
+                <option>진행 중</option>
+                <option>보류</option>
+                <option>완료</option>
+              </select></label
+            ><label class="editor-field"
+              ><span>담당</span
+              ><select class="input" id="task-assignee">
+                <option value="">모든 담당</option>
+                <option>미정</option>
+                <option>함께</option>
+                <option>지수</option>
+                <option>민호</option>
+              </select></label
+            >
+          </div>
+          <ul class="list task-list" data-od-id="prj-task-list">
+            <li
+              data-task
+              data-area="신혼여행"
+              data-status="진행 중"
+              data-assignee="함께"
+            >
+              <label class="task-toggle"
+                ><input type="checkbox" aria-label="여행 루트 결정 완료"
+              /></label>
+              <div class="grow">
+                <h2 class="t-headline">여행 루트 결정</h2>
+                <p class="secondary t-caption">
+                  신혼여행 · 함께 · 11.18 – 11.20
+                </p>
+                <p class="t-caption">선행 조건: 두 사람 휴가 확인</p>
+              </div>
+              <span class="status" data-variant="info">진행 중</span>
+            </li>
+            <li
+              data-task
+              data-area="상견례"
+              data-status="미시작"
+              data-assignee="미정"
+            >
+              <label class="task-toggle"
+                ><input type="checkbox" aria-label="가족 일정 확인 완료"
+              /></label>
+              <div class="grow">
+                <h2 class="t-headline">가족 일정 확인</h2>
+                <p class="secondary t-caption">
+                  상견례 · 담당 미정 · 마감 미정
+                </p>
+              </div>
+              <span class="status" data-variant="info">미시작</span>
+            </li>
+            <li
+              data-task
+              data-area="신혼여행"
+              data-status="보류"
+              data-assignee="민호"
+            >
+              <label class="task-toggle"
+                ><input type="checkbox" aria-label="항공권 결제 완료"
+              /></label>
+              <div class="grow">
+                <h2 class="t-headline">항공권 결제</h2>
+                <p class="secondary t-caption">신혼여행 · 민호 · 1.15</p>
+              </div>
+              <span class="status" data-variant="warning">보류</span>
+            </li>
+          </ul>
+          <p id="task-empty" class="section-note" hidden>
+            조건에 맞는 할 일이 없어요.
+          </p>
+          <details data-od-id="prj-task-completed">
+            <summary>완료한 할 일 <span id="completed-count">1</span></summary>
+            <ul class="list" id="completed-tasks">
+              <li>
+                <label class="task-toggle"
+                  ><input type="checkbox" checked aria-label="휴가 확인 완료"
+                /></label>
+                <div class="grow">
+                  <s>휴가 확인</s>
+                  <p class="secondary t-caption">지수 · 11.18 완료</p>
+                </div>
+              </li>
+            </ul>
+          </details>
+          <button
+            type="button"
+            class="text-btn"
+            data-open="task-editor"
+            data-edit
+          >
+            할 일 수정
+          </button>
+        </section>
+        <section
+          id="screen-decisions"
+          class="screen"
+          data-screen="decisions"
+          data-phase="PJ3"
+          data-od-id="prj-decisions"
+          hidden
+        >
+          <header class="prj-head">
+            <div>
+              <a class="back" href="#overview">‹ 프로젝트 개요</a>
+              <h1 class="t-title-lg">결정</h1>
+              <p class="secondary t-caption">결혼 준비 · 도토리네 함께</p>
+            </div>
+            <button type="button" class="glass-btn" data-open="decision-editor">
+              추가
+            </button>
+          </header>
+          <section class="section">
+            <div class="section-head"><h2>논의 중</h2></div>
+            <article data-od-id="prj-decision-detail">
+              <div class="row">
+                <h3 class="grow t-title-sm">상견례 날짜를 언제로 할까?</h3>
+                <span class="status" data-variant="info">논의 중</span>
+              </div>
+              <p class="secondary t-caption">기한 11.21</p>
+              <p class="section-note">후보 · 2027.03.27 / 2027.04.03</p>
+              <ul class="list">
+                <li>
+                  <div class="grow">
+                    <div class="t-headline">지수의 의견</div>
+                    <p class="secondary t-caption">
+                      3월 말이면 가족들이 이동하기 좋을 것 같아.
+                    </p>
+                  </div>
+                </li>
+                <li>
+                  <div class="grow">
+                    <div class="t-headline">민호의 의견</div>
+                    <p class="secondary t-caption">
+                      4월 첫 주도 괜찮아. 부모님 일정 확인할게.
+                    </p>
+                  </div>
+                </li>
+              </ul>
+              <p>최종 선택 · 아직 정하지 않았어요</p>
+            </article>
+          </section>
+          <section class="section">
+            <div class="section-head"><h2>결정 완료</h2></div>
+            <ul class="list">
+              <li>
+                <div class="grow">
+                  <div class="t-headline">스냅 촬영 장소</div>
+                  <p class="secondary t-caption">
+                    최종 선택 · 제주 · 11.17 결정
+                  </p>
+                </div>
+                <span class="status" data-variant="success">결정 완료</span>
+              </li>
+            </ul>
+          </section>
+          <button
+            type="button"
+            class="text-btn"
+            data-open="decision-editor"
+            data-edit
+          >
+            결정 수정
+          </button>
+        </section>
+        <section
+          id="screen-reservations"
+          class="screen"
+          data-screen="reservations"
+          data-phase="PJ3"
+          data-od-id="prj-reservations"
+          hidden
+        >
+          <header class="prj-head">
+            <div>
+              <a class="back" href="#overview">‹ 프로젝트 개요</a>
+              <h1 class="t-title-lg">예약</h1>
+              <p class="secondary t-caption">결혼 준비 · 도토리네 함께</p>
+            </div>
+            <button
+              type="button"
+              class="glass-btn"
+              data-open="reservation-editor"
+            >
+              추가
+            </button>
+          </header>
+          <aside
+            class="banner"
+            data-variant="warning"
+            data-od-id="prj-reservation-conflict"
+          >
+            <div>
+              <b>숙소 이용 기간이 겹쳐요</b>
+              <p>파리 작은 호텔 ↔ 파리 강변 숙소 · 4.30 – 5.02</p>
+              <p class="t-caption">
+                같은 프로젝트·같은 종류끼리 비교해요. 취소 예약은 제외해요.
+              </p>
+            </div>
+          </aside>
+          <ul class="list">
+            <li>
+              <div class="grow">
+                <div class="t-headline">파리 작은 호텔</div>
+                <p class="secondary t-caption">
+                  숙소 · 예약 완료 · 4.28 – 5.02
+                </p>
+              </div>
+              <span class="status" data-variant="success">예약 완료</span>
+            </li>
+            <li>
+              <div class="grow">
+                <div class="t-headline">파리 강변 숙소</div>
+                <p class="secondary t-caption">
+                  숙소 · 예약 예정 · 4.30 – 5.03
+                </p>
+              </div>
+              <span
+                ><span class="status" data-variant="success">예약 완료</span>
+                <span class="status" data-variant="warning"
+                  >겹침 확인</span
+                ></span
+              >
+            </li>
+            <li>
+              <div class="grow">
+                <div class="t-headline">파리 → 로마</div>
+                <p class="secondary t-caption">교통 · 예약 예정 · 5.02</p>
+              </div>
+              <span class="status" data-variant="info">예약 예정</span>
+            </li>
+            <li>
+              <div class="grow">
+                <div class="t-headline">이전 숙소</div>
+                <p class="secondary t-caption">숙소 · 취소 · 4.28 – 5.02</p>
+              </div>
+              <span class="status" data-variant="info">취소</span>
+            </li>
+          </ul>
+          <section class="section">
+            <div class="section-head"><h2>파리 작은 호텔</h2></div>
+            <dl class="facts" data-od-id="prj-reservation-detail">
+              <div>
+                <dt>예약 번호</dt>
+                <dd>DEMO-0428</dd>
+              </div>
+              <div>
+                <dt>무료 취소 마감</dt>
+                <dd>2027.04.20</dd>
+              </div>
+              <div>
+                <dt>결제 마감</dt>
+                <dd>2027.04.21</dd>
+              </div>
+              <div>
+                <dt>총액 / 결제액</dt>
+                <dd>800,000원 / 200,000원</dd>
+              </div>
+            </dl>
+            <p>
+              <a
+                href="https://example.com/reservation"
+                target="_blank"
+                rel="noreferrer"
+                >예약 링크 ↗</a
+              >
+            </p>
+            <button
+              type="button"
+              class="text-btn"
+              data-event="reservation"
+              data-od-id="prj-event-reservation"
+            >
+              일정에 추가
+            </button>
+          </section>
+          <button
+            type="button"
+            class="text-btn"
+            data-open="reservation-editor"
+            data-edit
+          >
+            예약 수정
+          </button>
+        </section>
+        <section
+          id="screen-itinerary"
+          class="screen"
+          data-screen="itinerary"
+          data-phase="PJ3"
+          data-od-id="prj-itinerary"
+          hidden
+        >
+          <header class="prj-head">
+            <div>
+              <a class="back" href="#overview">‹ 프로젝트 개요</a>
+              <h1 class="t-title-lg">일정표</h1>
+              <p class="secondary t-caption">결혼 준비 · 도토리네 함께</p>
+            </div>
+            <button
+              type="button"
+              class="glass-btn"
+              data-open="itinerary-editor"
+            >
+              추가
+            </button>
+          </header>
+          <section class="section">
+            <div class="section-head"><h2>2027.04.28 수요일</h2></div>
+            <ul class="list">
+              <li>
+                <div class="grow">
+                  <div class="t-headline">파리 도착</div>
+                  <p class="secondary t-caption">
+                    샤를 드골 공항 · 숙소로 이동
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  class="text-btn"
+                  data-event="itinerary"
+                  data-od-id="prj-event-itinerary"
+                >
+                  일정에 추가
+                </button>
+              </li>
+            </ul>
+          </section>
+          <section class="section">
+            <div class="section-head"><h2>2027.04.29 목요일</h2></div>
+            <ul class="list">
+              <li>
+                <div class="grow">
+                  <div class="t-headline">오르세미술관</div>
+                  <p class="secondary t-caption">파리 · 관람 후 강변 산책</p>
+                </div>
+                <span
+                  class="status"
+                  data-variant="success"
+                  data-od-id="prj-event-linked"
+                  >일정 연결됨</span
+                >
+              </li>
+            </ul>
+            <p class="section-note" data-od-id="prj-event-unlink-note">
+              연결된 일정을 삭제하면 이 항목은 남고 일정에 추가 버튼이 다시
+              나타나요.
+            </p>
+          </section>
+          <button
+            type="button"
+            class="text-btn"
+            data-open="itinerary-editor"
+            data-edit
+          >
+            일정표 수정
+          </button>
+        </section>
+        <section
+          id="screen-candidates"
+          class="screen"
+          data-screen="candidates"
+          data-phase="PJ4"
+          data-od-id="prj-candidates"
+          hidden
+        >
+          <header class="prj-head">
+            <div>
+              <a class="back" href="#overview">‹ 프로젝트 개요</a>
+              <h1 class="t-title-lg">답례품 후보</h1>
+              <p class="secondary t-caption">결혼 준비 · 도토리네 함께</p>
+            </div>
+            <button
+              type="button"
+              class="glass-btn"
+              data-open="candidate-editor"
+            >
+              추가
+            </button>
+          </header>
+          <div class="quantity" data-od-id="prj-quantity-source">
+            <p>
+              수량 기준 · <b id="quantity-label">가족 명단 → 답례품 · 2명</b>
+            </p>
+            <button type="button" class="text-btn" id="quantity-disconnect">
+              연결 해제
+            </button>
+          </div>
+          <ul class="list" data-od-id="prj-candidate-list">
+            <li>
+              <div class="grow">
+                <div class="t-headline">작은 차 선물 세트</div>
+                <p class="secondary t-caption">
+                  12,000원 × <span class="quantity-count">2명</span> · 예상
+                  <span id="candidate-estimate">24,000원</span>
+                </p>
+              </div>
+              <span class="status" data-variant="success">선택</span>
+            </li>
+            <li>
+              <div class="grow">
+                <div class="t-headline">수제 과자 상자</div>
+                <p class="secondary t-caption">
+                  가격 미정 · <span class="secondary">사진 없음</span>
+                </p>
+              </div>
+              <span class="status" data-variant="info">후보</span>
+            </li>
+            <li>
+              <div class="grow">
+                <div class="t-headline">머그 세트</div>
+                <p class="secondary t-caption">18,000원 · 비교 후 제외</p>
+              </div>
+              <span class="status" data-variant="info">제외</span>
+            </li>
+          </ul>
+          <section class="section">
+            <div class="section-head"><h2>작은 차 선물 세트</h2></div>
+            <div class="photo-placeholder" data-od-id="prj-candidate-photo">
+              사진 미등록
+            </div>
+            <p class="secondary t-caption">
+              사진은 브라우저에서 줄여 가정 전용 공간에 올려요.
+            </p>
+            <dl class="facts">
+              <div>
+                <dt>배송일 (선택 칸)</dt>
+                <dd>행사 3일 전</dd>
+              </div>
+              <div>
+                <dt>배송비 (금액 칸)</dt>
+                <dd>3,000원</dd>
+              </div>
+              <div>
+                <dt>메모</dt>
+                <dd>포장 색상 확인하기</dd>
+              </div>
+            </dl>
+            <p>
+              <a href="https://example.com/tea" target="_blank" rel="noreferrer"
+                >판매처 ↗</a
+              >
+              ·
+              <a
+                href="https://example.com/tea-details"
+                target="_blank"
+                rel="noreferrer"
+                >상세 정보 ↗</a
+              >
+            </p>
+          </section>
+          <button type="button" class="text-btn" data-open="list-columns">
+            목록·사용자 정의 칸 설정
+          </button>
+          <button
+            type="button"
+            class="text-btn"
+            data-open="candidate-editor"
+            data-edit
+          >
+            후보 수정
+          </button>
+        </section>
+        <section
+          id="screen-people"
+          class="screen"
+          data-screen="people"
+          data-phase="PJ4"
+          data-od-id="prj-people"
+          hidden
+        >
+          <header class="prj-head">
+            <div>
+              <a class="back" href="#overview">‹ 프로젝트 개요</a>
+              <h1 class="t-title-lg">가족 명단</h1>
+              <p class="secondary t-caption">결혼 준비 · 도토리네 함께</p>
+            </div>
+            <button type="button" class="glass-btn" data-open="people-editor">
+              추가
+            </button>
+          </header>
+          <p class="section-note">
+            한 사람에게 여러 태그를 붙이고 태그마다 완료해요.
+          </p>
+          <div class="row" data-od-id="prj-people-tag-summary">
+            <b class="grow">답례품 · 대상 2명</b
+            ><span id="tag-done-count">완료 1 / 2</span>
+          </div>
+          <ul class="list" data-od-id="prj-people-list">
+            <li>
+              <div class="grow">
+                <h2 class="t-headline">김하늘</h2>
+                <p class="secondary t-caption">관계: 가족 · 지역: 광주</p>
+                <div class="tag-checks">
+                  <label
+                    ><input type="checkbox" data-done-tag checked />답례품
+                    완료</label
+                  ><label><input type="checkbox" />별도 연락 완료</label>
+                </div>
+              </div>
+            </li>
+            <li>
+              <div class="grow">
+                <h2 class="t-headline">이바다</h2>
+                <p class="secondary t-caption">관계: 가족 · 지역: 안산</p>
+                <div class="tag-checks">
+                  <label
+                    ><input type="checkbox" data-done-tag />답례품 완료</label
+                  ><label><input type="checkbox" checked />만남 완료</label>
+                </div>
+              </div>
+            </li>
+          </ul>
+          <button
+            type="button"
+            class="text-btn"
+            data-open="people-editor"
+            data-edit
+          >
+            사람·태그·사용자 정의 칸
+          </button>
+        </section>
+        <section
+          id="screen-budget"
+          class="screen"
+          data-screen="budget"
+          data-phase="PJ5"
+          data-od-id="prj-budget"
+          hidden
+        >
+          <header class="prj-head">
+            <div>
+              <a class="back" href="#overview">‹ 프로젝트 개요</a>
+              <h1 class="t-title-lg">예산·지출·정산</h1>
+              <p class="secondary t-caption">결혼 준비 · 도토리네 함께</p>
+            </div>
+            <button type="button" class="glass-btn" data-open="expense-editor">
+              추가
+            </button>
+          </header>
+          <div class="summary-grid" data-od-id="prj-budget-summary">
+            <div>
+              <p class="secondary t-caption">예상 지출</p>
+              <b class="t-title">12,000,000원</b>
+            </div>
+            <div>
+              <p class="secondary t-caption">실제 지출</p>
+              <b class="t-title">2,000,000원</b>
+            </div>
+            <div>
+              <p class="secondary t-caption">예산 상한</p>
+              <b class="t-title">15,000,000원</b>
+            </div>
+            <div>
+              <p class="secondary t-caption">상한 대비 실제</p>
+              <b class="t-title">13.3%</b>
+            </div>
+          </div>
+          <section class="section">
+            <div class="section-head"><h2>지출</h2></div>
+            <ul class="list" data-od-id="prj-expense-list">
+              <li>
+                <div class="grow">
+                  <div class="t-headline">항공권</div>
+                  <p class="secondary t-caption">
+                    신혼여행 · 예상 3,500,000원 · 예상 결제 2027.01.15
+                  </p>
+                </div>
+                <span class="secondary">미결제</span>
+              </li>
+              <li>
+                <div class="grow">
+                  <div class="t-headline">스냅 숙소</div>
+                  <p class="secondary t-caption">
+                    웨딩스냅 · 실제 1,200,000원 · 11.17 · 지수
+                  </p>
+                </div>
+                <span class="status" data-variant="info">공동</span>
+              </li>
+              <li>
+                <div class="grow">
+                  <div class="t-headline">여행 예약금</div>
+                  <p class="secondary t-caption" id="settlement-expense-payer">
+                    신혼여행 · 실제 800,000원 · 11.18 · 민호
+                  </p>
+                </div>
+                <span
+                  id="settlement-expense-type"
+                  class="status"
+                  data-variant="warning"
+                  >미정</span
+                >
+              </li>
+            </ul>
+          </section>
+          <section class="section">
+            <div class="section-head"><h2>월별</h2></div>
+            <ul class="list" data-od-id="prj-budget-monthly">
+              <li>
+                <div class="grow">
+                  <div class="t-headline">2026.11</div>
+                  <p class="secondary t-caption">예상 2,000,000원</p>
+                </div>
+                <span>실제 2,000,000원</span>
+              </li>
+              <li>
+                <div class="grow">
+                  <div class="t-headline">2027.01</div>
+                  <p class="secondary t-caption">예상 3,500,000원</p>
+                </div>
+                <span>실제 0원</span>
+              </li>
+            </ul>
+          </section>
+          <section class="section">
+            <div class="section-head"><h2>정산</h2></div>
+            <div class="fields" data-od-id="prj-shares">
+              <label class="editor-field"
+                ><span>지수 분담 비율</span
+                ><input
+                  class="input"
+                  type="number"
+                  value="50"
+                  min="0"
+                  max="100" /></label
+              ><label class="editor-field"
+                ><span>민호 분담 비율</span
+                ><input
+                  class="input"
+                  type="number"
+                  value="50"
+                  min="0"
+                  max="100"
+              /></label>
+            </div>
+            <aside
+              class="banner"
+              data-variant="warning"
+              data-od-id="prj-settlement-held"
+            >
+              <div>
+                <b>정산 보류</b>
+                <p id="settlement-reason" role="list">
+                  결제한 여행 예약금의 공동/개인 구분이 미정이에요.
+                </p>
+              </div>
+            </aside>
+            <div
+              data-od-id="prj-settlement-result"
+              id="settlement-result"
+              hidden
+            >
+              <b>민호 → 지수 200,000원</b>
+              <p>
+                공동 지출 2,000,000원 · 지수 결제 1,200,000원 · 민호 결제
+                800,000원 · 각자 분담 1,000,000원
+              </p>
+            </div>
+            <label class="editor-field"
+              ><span>정산 상태 미리보기</span
+              ><select class="input" id="settlement-state">
+                <option value="normal">정상 정산</option>
+                <option value="multiple">여러 보류 이유</option>
+                <option value="unknown">공동/개인 미정</option>
+                <option value="missing">비율 없음</option>
+                <option value="sum">비율 합 100% 아님 (탈퇴)</option>
+                <option value="payer">공동 지출 결제자 없음 (탈퇴)</option>
+              </select></label
+            >
+            <p class="section-note" data-od-id="prj-expense-preserved">
+              구성원이 탈퇴해도 실제 지출과 금액은 남아요. 비율·결제자 공백이
+              있으면 정산을 보류해요.
+            </p>
+          </section>
+          <button
+            type="button"
+            class="text-btn"
+            data-open="expense-editor"
+            data-edit
+          >
+            지출 수정
+          </button>
+        </section>
+        <section
+          id="screen-home"
+          class="screen"
+          data-screen="home"
+          data-phase="PJ6"
+          data-od-id="prj-home"
+          hidden
+        >
+          <header class="prj-head">
+            <div>
+              <a class="back" href="#overview">‹ 프로젝트 개요</a>
+              <h1 class="t-title-lg">오늘</h1>
+              <p class="secondary t-caption">오늘 함께 챙길 일</p>
+            </div>
+          </header>
+          <p class="secondary">11월 18일 수요일</p>
+          <section class="section">
+            <div class="section-head"><h2>오늘 일정</h2></div>
+            <ul class="list">
+              <li>
+                <div class="grow">
+                  <div class="t-headline">저녁 장보기</div>
+                  <p class="secondary t-caption">19:00 · 함께</p>
+                </div>
+              </li>
+            </ul>
+          </section>
+          <section class="section">
+            <div class="section-head"><h2>다가오는 프로젝트 마감</h2></div>
+            <div data-od-id="prj-home-deadlines" id="home-deadlines">
+              <p class="section-note">
+                진행 중 프로젝트 · 7일 안 마감 · 최대 5개
+              </p>
+              <ul class="list">
+                <li>
+                  <div class="grow">
+                    <div class="t-headline">
+                      <a href="#tasks">여행 루트 결정</a>
+                    </div>
+                    <p class="secondary t-caption">결혼 준비 · 함께 · 11.20</p>
+                  </div>
+                  <span class="status" data-variant="info">할 일</span>
+                </li>
+                <li>
+                  <div class="grow">
+                    <div class="t-headline">
+                      <a href="#decisions">상견례 날짜 고르기</a>
+                    </div>
+                    <p class="secondary t-caption">결혼 준비 · 11.21</p>
+                  </div>
+                  <span class="status" data-variant="info">결정</span>
+                </li>
+                <li>
+                  <div class="grow">
+                    <div class="t-headline">
+                      <a href="#reservations">숙소 예약금 결제</a>
+                    </div>
+                    <p class="secondary t-caption">결혼 준비 · 11.23</p>
+                  </div>
+                  <span class="status" data-variant="warning">예약</span>
+                </li>
+              </ul>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-head"><h2>아침 요약 미리보기</h2></div>
+            <p data-od-id="prj-morning-summary">
+              오늘 프로젝트 마감 · 여행 루트 결정 외 1건
+            </p>
+            <p class="section-note">
+              내 할 일(나·함께), 결정·예약의 마감 전날 알림은 기존 푸시 설정을
+              따라요. 완료·보관 프로젝트는 제외해요.
+            </p>
+          </section>
+        </section>
+        <section
+          id="screen-shopping"
+          class="screen"
+          data-screen="shopping"
+          data-phase="PJ1"
+          data-od-id="prj-shopping"
+          hidden
+        >
+          <header class="prj-head">
+            <div>
+              <a class="back" href="#overview">‹ 프로젝트 개요</a>
+              <h1 class="t-title-lg">장바구니</h1>
+              <p class="secondary t-caption">민호님과 함께 보는 중</p>
+            </div>
+            <div>
+              <button type="button" class="glass-btn">편집</button
+              ><button type="button" class="glass-btn">설정</button>
+            </div>
+          </header>
+          <nav
+            class="segmented shopping-segments"
+            aria-label="장보기"
+            data-od-id="prj-shopping-segments"
+          >
+            <a href="#shopping" aria-current="page" data-route="/cart"
+              >장바구니</a
+            ><a href="#inventory" data-route="/inventory">재고</a>
+          </nav>
+          <div class="shopping-input" data-od-id="prj-shopping-input">
+            <label class="grow"
+              ><span class="sr-only">장바구니 항목 추가</span
+              ><input
+                class="input"
+                placeholder="살 품목 추가"
+                aria-label="장바구니 항목 추가" /></label
+            ><button type="button" class="glass-btn">추가</button>
+          </div>
+          <ul class="list">
+            <li>
+              <div class="grow">
+                <div class="t-headline">두부</div>
+                <p class="secondary t-caption">2모 · 냉장식품</p>
+              </div>
+            </li>
+            <li>
+              <div class="grow">
+                <div class="t-headline">우유</div>
+                <p class="secondary t-caption">1팩 · 유제품</p>
+              </div>
+            </li>
+          </ul>
+          <p class="section-note">주소 /cart 유지 · 하단 장보기 선택</p>
+        </section>
+        <section
+          id="screen-inventory"
+          class="screen"
+          data-screen="inventory"
+          data-phase="PJ1"
+          data-od-id="prj-inventory"
+          hidden
+        >
+          <header class="prj-head">
+            <div>
+              <a class="back" href="#overview">‹ 프로젝트 개요</a>
+              <h1 class="t-title-lg">재고</h1>
+              <p class="secondary t-caption">우리 집에 있는 물건</p>
+            </div>
+            <div>
+              <button type="button" class="glass-btn">등록</button
+              ><button type="button" class="glass-btn">설정</button>
+            </div>
+          </header>
+          <nav
+            class="segmented shopping-segments"
+            aria-label="장보기"
+            data-od-id="prj-inventory-segments"
+          >
+            <a href="#shopping" data-route="/cart">장바구니</a
+            ><a href="#inventory" aria-current="page" data-route="/inventory"
+              >재고</a
+            >
+          </nav>
+          <div class="shopping-input" data-od-id="prj-inventory-input">
+            <input
+              class="input"
+              type="search"
+              placeholder="품목 검색"
+              aria-label="품목 검색"
+            />
+          </div>
+          <ul class="list">
+            <li>
+              <div class="grow">
+                <div class="t-headline">두부</div>
+                <p class="secondary t-caption">냉장실 · 2모</p>
+              </div>
+              <span class="status" data-variant="success">충분</span>
+            </li>
+            <li>
+              <div class="grow">
+                <div class="t-headline">우유</div>
+                <p class="secondary t-caption">냉장실 · 0팩</p>
+              </div>
+              <span class="status" data-variant="error">없음</span>
+            </li>
+          </ul>
+          <p class="section-note">
+            주소 /inventory 유지 · 하단 장보기 / 사이드 재고 선택
+          </p>
+        </section>
+        <section
+          class="screen"
+          id="screen-settings"
+          data-screen="settings"
+          data-phase="PJ6"
+          data-od-id="prj-settings"
+          hidden
+        >
+          <header class="prj-head">
+            <div><h1 class="t-title-lg">설정</h1></div>
+          </header>
+          <ul class="list">
+            <li>
+              <a class="grow" href="#home-settings">홈 화면</a
+              ><span aria-hidden="true">›</span>
+            </li>
+          </ul>
+        </section>
+        <section
+          class="screen"
+          id="screen-home-settings"
+          data-screen="home-settings"
+          data-phase="PJ6"
+          data-od-id="prj-home-settings"
+          hidden
+        >
+          <header class="prj-head">
+            <div>
+              <a class="back" href="#settings">‹ 설정</a>
+              <h1 class="t-title-lg">홈 화면</h1>
+              <p class="secondary t-caption">
+                설정 &gt; 홈 화면 · 나에게만 적용
+              </p>
+            </div>
+          </header>
+          <section class="section">
+            <div class="section-head"><h2>홈 화면 설정</h2></div>
+            <label class="row" data-od-id="prj-home-setting"
+              ><span class="grow">다가오는 프로젝트 마감</span
+              ><input
+                type="checkbox"
+                id="home-deadlines-toggle"
+                role="switch"
+                checked
+            /></label>
+          </section>
+        </section>
+        <details class="approval-checklist" data-od-id="prj-approval-checklist">
+          <summary>PJ1~PJ6 화면 체크리스트</summary>
+          <ul>
+            <li>
+              PJ2 · <a href="#projects">프로젝트</a> · <code>prj-projects</code>
+            </li>
+            <li>
+              PJ2 · <a href="#overview">결혼 준비</a> ·
+              <code>prj-overview</code>
+            </li>
+            <li>PJ2 · <a href="#tasks">할 일</a> · <code>prj-tasks</code></li>
+            <li>
+              PJ3 · <a href="#decisions">결정</a> · <code>prj-decisions</code>
+            </li>
+            <li>
+              PJ3 · <a href="#reservations">예약</a> ·
+              <code>prj-reservations</code>
+            </li>
+            <li>
+              PJ3 · <a href="#itinerary">일정표</a> · <code>prj-itinerary</code>
+            </li>
+            <li>
+              PJ4 · <a href="#candidates">답례품 후보</a> ·
+              <code>prj-candidates</code>
+            </li>
+            <li>
+              PJ4 · <a href="#people">가족 명단</a> · <code>prj-people</code>
+            </li>
+            <li>
+              PJ5 · <a href="#budget">예산·지출·정산</a> ·
+              <code>prj-budget</code>
+            </li>
+            <li>PJ6 · <a href="#home">오늘</a> · <code>prj-home</code></li>
+            <li>
+              PJ1 · <a href="#shopping">장보기</a> · <code>prj-shopping</code>
+            </li>
+            <li>
+              PJ1 · <a href="#inventory">재고</a> · <code>prj-inventory</code>
+            </li>
+            <li>PJ2 · 새 프로젝트 폼 · <code>prj-create</code></li>
+            <li>
+              PJ1 · 최소화: 하단 6개 / 사이드 7개 ·
+              <code>prj-bottom-navigation / prj-sidebar</code>
+            </li>
+            <li>
+              PJ3 · 공유 일정 연결 전/후/삭제 ·
+              <code
+                >prj-event-milestone / prj-event-reservation /
+                prj-event-itinerary / prj-event-linked</code
+              >
+            </li>
+            <li>
+              PJ4 · 명단·태그 연결 해제 · <code>prj-quantity-source</code>
+            </li>
+            <li>PJ5 · 정산 보류 네 경우 · <code>prj-settlement-held</code></li>
+            <li>모든 화면 · 375px / 1280px · 라이트 / 다크 · 승인 전</li>
+          </ul>
+          <button type="button" class="text-btn" id="event-reset">
+            일정 삭제 후 연결 해제 미리보기
+          </button>
+        </details>
+      </main>
+    </div>
+    <nav class="tabbar" aria-label="하단 탭" data-od-id="prj-bottom-navigation">
+      <a href="#home" data-nav="home"
+        ><svg
+          class="icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v3m0 14v3M2 12h3m14 0h3" /></svg
+        ><span>오늘</span></a
+      ><a href="#calendar" data-nav="calendar"
+        ><svg
+          class="icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <rect x="4" y="5" width="16" height="15" rx="2" />
+          <path d="M4 10h16M8 3v4m8-4v4" /></svg
+        ><span>일정</span></a
+      ><a href="#shopping" data-nav="shopping"
+        ><svg
+          class="icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M3 4h3l2 11h10l2-8H7" />
+          <circle cx="9" cy="20" r="1" />
+          <circle cx="17" cy="20" r="1" /></svg
+        ><span>장보기</span></a
+      ><a href="#projects" data-nav="projects"
+        ><svg
+          class="icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <rect x="4" y="6" width="16" height="14" rx="2" />
+          <path d="M9 6V3h6v3M4 11h16" /></svg
+        ><span>프로젝트</span></a
+      ><a
+        href="#"
+        class="minimized-bot"
+        data-od-id="prj-tabbar-minimized-bot"
+        data-bot-tab
+        hidden
+        ><svg
+          class="icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M4 6h16v12h-5l-5 3v-3H4Z" />
+          <path d="M9 10v2m6-2v2" /></svg
+        ><span>집사</span></a
+      ><a href="#settings" data-nav="settings"
+        ><svg
+          class="icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="4" />
+          <path
+            d="M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2"
+          /></svg
+        ><span>설정</span></a
+      >
+    </nav>
+    <button type="button" class="bot-launcher" aria-label="집사 대화 열기">
+      <img src="assets/kimjipsa-house.svg" alt="" />
+    </button>
+    <dialog
+      class="sheet"
+      id="project-create"
+      aria-labelledby="create-title"
+      data-od-id="prj-create"
+    >
+      <div class="sheet-head">
+        <button type="button" class="text-btn" data-close>취소</button>
+        <h2 class="t-headline" id="create-title">새 프로젝트</h2>
+        <button class="text-btn" type="submit" form="create-form">
+          만들기
+        </button>
+      </div>
+      <form id="create-form" class="sheet-content">
+        <div class="fields">
+          <label class="editor-field"
+            ><span>프로젝트 이름 (필수)</span
+            ><input
+              class="input"
+              type="text"
+              value=""
+              name="title"
+              required
+              maxlength="100"
+              placeholder="예: 이사 준비" /></label
+          ><label class="editor-field"
+            ><span>설명</span
+            ><textarea
+              class="input"
+              name="description"
+              placeholder="무엇을 함께 준비하나요?"
+            ></textarea></label
+          ><label class="editor-field"
+            ><span>시작일</span
+            ><input class="input" type="date" value="2026-11-18" /></label
+          ><label class="editor-field"
+            ><span>목표일</span
+            ><input class="input" type="date" value="2027-04-15"
+          /></label>
+          <fieldset>
+            <legend>구성 요소</legend>
+            <p class="secondary t-caption">
+              할 일·마일스톤은 항상 켜져 있어요.
+            </p>
+            <div class="module-picks">
+              <label><input type="checkbox" checked />결정</label
+              ><label><input type="checkbox" checked />목록 (후보·명단)</label
+              ><label><input type="checkbox" checked />예약</label
+              ><label><input type="checkbox" checked />일정표</label
+              ><label><input type="checkbox" checked />예산·지출·정산</label>
+            </div>
+          </fieldset>
+          <p class="section-note">가정 전체가 함께 보고 수정해요.</p>
+        </div>
+      </form>
+    </dialog>
+    <dialog
+      class="sheet"
+      id="project-settings"
+      aria-labelledby="settings-title"
+      data-od-id="prj-project-settings"
+    >
+      <div class="sheet-head">
+        <button type="button" class="text-btn" data-close>취소</button>
+        <h2 class="t-headline" id="settings-title">프로젝트 설정</h2>
+        <button type="button" class="text-btn" data-close>저장</button>
+      </div>
+      <div class="sheet-content fields">
+        <label class="editor-field"
+          ><span>이름</span
+          ><input class="input" type="text" value="결혼 준비" /></label
+        ><label class="editor-field"
+          ><span>설명</span
+          ><input
+            class="input"
+            type="text"
+            value="함께 준비하는 우리의 다음 계절" /></label
+        ><label class="editor-field"
+          ><span>시작일</span
+          ><input class="input" type="date" value="2026-11-18"
+        /></label>
+        <label class="editor-field"
+          ><span>목표일</span
+          ><input class="input" type="date" value="2027-05-16"
+        /></label>
+        <fieldset>
+          <legend>구성 요소</legend>
+          <p class="secondary t-caption">할 일·마일스톤은 항상 켜져 있어요.</p>
+          <div class="module-picks">
+            <label><input type="checkbox" checked />결정</label
+            ><label><input type="checkbox" checked />목록 (후보·명단)</label
+            ><label><input type="checkbox" checked />예약</label
+            ><label><input type="checkbox" checked />일정표</label
+            ><label><input type="checkbox" checked />예산·지출·정산</label>
+          </div>
+        </fieldset>
+        <p class="section-note">
+          구성 요소를 끄면 데이터는 삭제하지 않고 숨겨요. 다시 켜면 그대로
+          보여요.
+        </p>
+        <label class="editor-field"
+          ><span>상태</span
+          ><select class="input">
+            <option>진행 중</option>
+            <option>완료</option>
+            <option>보관</option>
+          </select></label
+        ><button
+          type="button"
+          class="text-btn danger"
+          data-open="project-delete"
+        >
+          결혼 준비 삭제
+        </button>
+        <p class="section-note">설정 시안 · 실제 저장·삭제는 하지 않아요.</p>
+      </div>
+    </dialog>
+    <dialog
+      class="confirm-dialog"
+      id="project-delete"
+      role="alertdialog"
+      aria-describedby="delete-description"
+      aria-labelledby="delete-title"
+      data-od-id="prj-delete-confirm"
+    >
+      <div class="sheet-head">
+        <h2 class="t-headline" id="delete-title">결혼 준비 삭제</h2>
+      </div>
+      <div class="sheet-content">
+        <p id="delete-description">
+          결혼 준비 프로젝트와 안의 항목이 삭제돼요. 되돌릴 수 없어요.
+        </p>
+        <p class="secondary">
+          삭제 확인 화면 시안이에요. 실제 삭제하지 않아요.
+        </p>
+        <div class="confirm-actions">
+          <button type="button" class="btn gray" data-close>취소</button
+          ><button type="button" class="btn danger" data-close>삭제</button>
+        </div>
+      </div>
+    </dialog>
+    <dialog
+      class="sheet"
+      id="event-add"
+      aria-labelledby="event-sheet-title"
+      data-od-id="prj-event-add"
+    >
+      <div class="sheet-head">
+        <button type="button" class="text-btn" data-close>취소</button>
+        <h2 class="t-headline" id="event-sheet-title">일정에 추가</h2>
+        <button type="button" class="text-btn" id="event-confirm">추가</button>
+      </div>
+      <div class="sheet-content">
+        <h3 class="t-title-sm" id="event-title">공유 일정</h3>
+        <p>가정 전체가 보는 공유 일정을 만들고 이 항목에 연결해요.</p>
+        <p class="secondary">기존 일정 알림과 챗봇 조회를 그대로 이용해요.</p>
+      </div>
+    </dialog>
+    <dialog
+      class="sheet"
+      id="bot-preview"
+      aria-labelledby="bot-title"
+      data-od-id="prj-bot-panel"
+    >
+      <div class="sheet-head">
+        <button type="button" class="text-btn" data-close>닫기</button>
+        <h2 class="t-headline" id="bot-title">김데비</h2>
+      </div>
+      <div class="sheet-content">
+        <p>상견례 준비 뭐 남았어?</p>
+        <p class="secondary">가족 일정 확인과 날짜 결정이 남아 있어요.</p>
+        <p class="section-note">PJ6 대화 예시 · 실제 모델에 전송하지 않아요.</p>
+      </div>
+    </dialog>
+    <div id="toast" class="toast" role="status" hidden></div>
+    <dialog
+      class="sheet"
+      id="area-editor"
+      aria-labelledby="area-editor-title"
+      data-od-id="prj-area-editor"
+    >
+      <div class="sheet-head">
+        <button type="button" class="text-btn" data-close>취소</button>
+        <h2 class="t-headline" id="area-editor-title">영역·마일스톤</h2>
+        <button type="button" class="text-btn" data-close>저장</button>
+      </div>
+      <div class="sheet-content">
+        <div class="fields">
+          <label class="editor-field"
+            ><span>영역 이름</span
+            ><input class="input" type="text" value="상견례" /></label
+          ><label class="editor-field"
+            ><span>순서</span><input class="input" type="number" value="3"
+          /></label>
+          <p>영역을 삭제하면 소속 항목은 영역 없음으로 남아요.</p>
+          <label class="editor-field"
+            ><span>마일스톤 제목</span
+            ><input class="input" type="text" value="상견례" /></label
+          ><label class="editor-field"
+            ><span>시작일</span
+            ><input class="input" type="date" value="" /></label
+          ><label class="editor-field"
+            ><span>종료일</span
+            ><input class="input" type="date" value="" /></label
+          ><label class="editor-field"
+            ><span>날짜 미정</span><input type="checkbox" checked /></label
+          ><label class="editor-field"
+            ><span>메모</span><textarea class="input">3.27 또는 4.03</textarea>
+          </label>
+        </div>
+        <p class="section-note">시안 입력 미리보기 · 서버에 저장하지 않아요.</p>
+      </div>
+    </dialog>
+    <dialog
+      class="sheet"
+      id="task-editor"
+      aria-labelledby="task-editor-title"
+      data-od-id="prj-task-editor"
+    >
+      <div class="sheet-head">
+        <button type="button" class="text-btn" data-close>취소</button>
+        <h2 class="t-headline" id="task-editor-title">할 일 추가</h2>
+        <button type="button" class="text-btn" data-close>저장</button>
+      </div>
+      <div class="sheet-content">
+        <div class="fields">
+          <label class="editor-field"
+            ><span>제목</span
+            ><input class="input" type="text" value="여행 루트 결정" /></label
+          ><label class="editor-field"
+            ><span>영역</span
+            ><select class="input">
+              <option>신혼여행</option>
+              <option>상견례</option>
+              <option>영역 없음</option>
+            </select></label
+          ><label class="editor-field"
+            ><span>담당</span
+            ><select class="input">
+              <option>미정</option>
+              <option>함께</option>
+              <option>지수</option>
+              <option>민호</option>
+            </select></label
+          ><label class="editor-field"
+            ><span>상태</span
+            ><select class="input">
+              <option>미시작</option>
+              <option>진행 중</option>
+              <option>완료</option>
+              <option>보류</option>
+            </select></label
+          ><label class="editor-field"
+            ><span>시작일</span
+            ><input class="input" type="date" value="2026-11-18" /></label
+          ><label class="editor-field"
+            ><span>마감일</span
+            ><input class="input" type="date" value="2026-11-20" /></label
+          ><label class="editor-field"
+            ><span>선행 조건</span
+            ><input
+              class="input"
+              type="text"
+              value="두 사람 휴가 확인" /></label
+          ><label class="editor-field"
+            ><span>메모</span
+            ><textarea class="input">프랑스와 이탈리아 우선 검토</textarea>
+          </label>
+        </div>
+        <p class="section-note">시안 입력 미리보기 · 서버에 저장하지 않아요.</p>
+      </div>
+    </dialog>
+    <dialog
+      class="sheet"
+      id="decision-editor"
+      aria-labelledby="decision-editor-title"
+      data-od-id="prj-decision-editor"
+    >
+      <div class="sheet-head">
+        <button type="button" class="text-btn" data-close>취소</button>
+        <h2 class="t-headline" id="decision-editor-title">결정 추가</h2>
+        <button type="button" class="text-btn" data-close>저장</button>
+      </div>
+      <div class="sheet-content">
+        <div class="fields">
+          <label class="editor-field"
+            ><span>질문</span
+            ><input
+              class="input"
+              type="text"
+              value="상견례 날짜를 언제로 할까?" /></label
+          ><label class="editor-field"
+            ><span>상태</span
+            ><select class="input">
+              <option>논의 중</option>
+              <option>결정 완료</option>
+              <option>보류</option>
+            </select></label
+          ><label class="editor-field"
+            ><span>기한</span
+            ><input class="input" type="date" value="2026-11-21" /></label
+          ><label class="editor-field"
+            ><span>후보</span
+            ><textarea class="input">2027.03.27 / 2027.04.03</textarea></label
+          ><label class="editor-field"
+            ><span>지수 의견</span
+            ><input class="input" type="text" value="3월 말 선호" /></label
+          ><label class="editor-field"
+            ><span>민호 의견</span
+            ><input
+              class="input"
+              type="text"
+              value="가족 일정 확인 중" /></label
+          ><label class="editor-field"
+            ><span>최종 선택</span><input class="input" type="text" value=""
+          /></label>
+        </div>
+        <p class="section-note">시안 입력 미리보기 · 서버에 저장하지 않아요.</p>
+      </div>
+    </dialog>
+    <dialog
+      class="sheet"
+      id="reservation-editor"
+      aria-labelledby="reservation-editor-title"
+      data-od-id="prj-reservation-editor"
+    >
+      <div class="sheet-head">
+        <button type="button" class="text-btn" data-close>취소</button>
+        <h2 class="t-headline" id="reservation-editor-title">예약 추가</h2>
+        <button type="button" class="text-btn" data-close>저장</button>
+      </div>
+      <div class="sheet-content">
+        <div class="fields">
+          <label class="editor-field"
+            ><span>제목</span
+            ><input class="input" type="text" value="파리 작은 호텔" /></label
+          ><label class="editor-field"
+            ><span>영역</span
+            ><select class="input">
+              <option>신혼여행</option>
+              <option>영역 없음</option>
+            </select></label
+          ><label class="editor-field"
+            ><span>종류</span
+            ><select class="input">
+              <option>숙소</option>
+              <option>교통</option>
+              <option>식당</option>
+              <option>체험</option>
+              <option>기타</option>
+            </select></label
+          ><label class="editor-field"
+            ><span>상태</span
+            ><select class="input">
+              <option>검토 중</option>
+              <option>예약 예정</option>
+              <option>예약 완료</option>
+              <option>취소</option>
+            </select></label
+          ><label class="editor-field"
+            ><span>이용 시작</span
+            ><input class="input" type="date" value="2027-04-28" /></label
+          ><label class="editor-field"
+            ><span>이용 종료</span
+            ><input class="input" type="date" value="2027-05-02" /></label
+          ><label class="editor-field"
+            ><span>예약 번호</span
+            ><input class="input" type="text" value="DEMO-0428" /></label
+          ><label class="editor-field"
+            ><span>링크</span
+            ><input
+              class="input"
+              type="url"
+              value="https://example.com/reservation" /></label
+          ><label class="editor-field"
+            ><span>무료 취소 마감</span
+            ><input class="input" type="date" value="2027-04-20" /></label
+          ><label class="editor-field"
+            ><span>결제 마감</span
+            ><input class="input" type="date" value="2027-04-21" /></label
+          ><label class="editor-field"
+            ><span>총액</span
+            ><input class="input" type="number" value="800000" min="0" /></label
+          ><label class="editor-field"
+            ><span>결제액 (총액 이하)</span
+            ><input
+              class="input"
+              type="number"
+              value="200000"
+              min="0"
+              max="800000" /></label
+          ><label class="editor-field"
+            ><span>메모</span
+            ><textarea class="input">도착 시간 확인하기</textarea>
+          </label>
+        </div>
+        <p class="section-note">시안 입력 미리보기 · 서버에 저장하지 않아요.</p>
+      </div>
+    </dialog>
+    <dialog
+      class="sheet"
+      id="itinerary-editor"
+      aria-labelledby="itinerary-editor-title"
+      data-od-id="prj-itinerary-editor"
+    >
+      <div class="sheet-head">
+        <button type="button" class="text-btn" data-close>취소</button>
+        <h2 class="t-headline" id="itinerary-editor-title">일정표 추가</h2>
+        <button type="button" class="text-btn" data-close>저장</button>
+      </div>
+      <div class="sheet-content">
+        <div class="fields">
+          <label class="editor-field"
+            ><span>날짜 (필수)</span
+            ><input
+              class="input"
+              type="date"
+              value="2027-04-28"
+              required /></label
+          ><label class="editor-field"
+            ><span>종료일</span
+            ><input class="input" type="date" value="" /></label
+          ><label class="editor-field"
+            ><span>장소</span
+            ><input class="input" type="text" value="파리" /></label
+          ><label class="editor-field"
+            ><span>내용</span
+            ><input class="input" type="text" value="파리 도착" /></label
+          ><label class="editor-field"
+            ><span>링크</span
+            ><input
+              class="input"
+              type="url"
+              value="https://example.com/route" /></label
+          ><label class="editor-field"
+            ><span>메모</span><textarea class="input">숙소로 이동</textarea>
+          </label>
+        </div>
+        <p class="section-note">시안 입력 미리보기 · 서버에 저장하지 않아요.</p>
+      </div>
+    </dialog>
+    <dialog
+      class="sheet"
+      id="list-columns"
+      aria-labelledby="list-columns-title"
+      data-od-id="prj-list-columns"
+    >
+      <div class="sheet-head">
+        <button type="button" class="text-btn" data-close>취소</button>
+        <h2 class="t-headline" id="list-columns-title">
+          목록·사용자 정의 칸 설정
+        </h2>
+        <button type="button" class="text-btn" data-close>저장</button>
+      </div>
+      <div class="sheet-content">
+        <div class="fields">
+          <label class="editor-field"
+            ><span>목록 이름</span
+            ><input class="input" type="text" value="답례품" /></label
+          ><label class="editor-field"
+            ><span>수량 명단</span
+            ><select class="input">
+              <option>가족 명단</option>
+              <option>수량 기준 없음</option>
+            </select></label
+          ><label class="editor-field"
+            ><span>명단 태그</span
+            ><select class="input">
+              <option>답례품</option>
+              <option>별도 연락</option>
+            </select></label
+          ><label class="editor-field"
+            ><span>칸 이름</span
+            ><input class="input" type="text" value="배송일" /></label
+          ><label class="editor-field"
+            ><span>칸 유형</span
+            ><select class="input">
+              <option>글</option>
+              <option>숫자</option>
+              <option>금액</option>
+              <option>선택</option>
+            </select></label
+          ><label class="editor-field"
+            ><span>선택 옵션</span
+            ><input class="input" type="text" value="행사 3일 전, 행사 전날"
+          /></label>
+          <p>연결된 명단이나 태그가 지워지면 수량 기준 없음으로 바뀌어요.</p>
+        </div>
+        <p class="section-note">시안 입력 미리보기 · 서버에 저장하지 않아요.</p>
+      </div>
+    </dialog>
+    <dialog
+      class="sheet"
+      id="candidate-editor"
+      aria-labelledby="candidate-editor-title"
+      data-od-id="prj-candidate-editor"
+    >
+      <div class="sheet-head">
+        <button type="button" class="text-btn" data-close>취소</button>
+        <h2 class="t-headline" id="candidate-editor-title">후보 추가</h2>
+        <button type="button" class="text-btn" data-close>저장</button>
+      </div>
+      <div class="sheet-content">
+        <div class="fields">
+          <label class="editor-field"
+            ><span>이름</span
+            ><input
+              class="input"
+              type="text"
+              value="작은 차 선물 세트" /></label
+          ><label class="editor-field"
+            ><span>가격</span
+            ><input class="input" type="number" value="12000" min="0" /></label
+          ><label class="editor-field"
+            ><span>상태</span
+            ><select class="input">
+              <option>후보</option>
+              <option>선택</option>
+              <option>제외</option>
+            </select></label
+          ><label class="editor-field"
+            ><span>링크 여러 개</span
+            ><textarea class="input">
+https://example.com/tea
+https://example.com/tea-details</textarea></label
+          ><label class="editor-field"
+            ><span>사진</span
+            ><input type="file" accept="image/*" multiple /></label
+          ><label class="editor-field"
+            ><span>메모</span
+            ><textarea class="input">포장 색상 확인하기</textarea>
+          </label>
+        </div>
+        <p class="section-note">시안 입력 미리보기 · 서버에 저장하지 않아요.</p>
+      </div>
+    </dialog>
+    <dialog
+      class="sheet"
+      id="people-editor"
+      aria-labelledby="people-editor-title"
+      data-od-id="prj-people-editor"
+    >
+      <div class="sheet-head">
+        <button type="button" class="text-btn" data-close>취소</button>
+        <h2 class="t-headline" id="people-editor-title">
+          사람·태그·사용자 정의 칸
+        </h2>
+        <button type="button" class="text-btn" data-close>저장</button>
+      </div>
+      <div class="sheet-content">
+        <div class="fields">
+          <label class="editor-field"
+            ><span>명단 이름</span
+            ><input class="input" type="text" value="가족 명단" /></label
+          ><label class="editor-field"
+            ><span>이름</span
+            ><input class="input" type="text" value="김하늘" /></label
+          ><label class="editor-field"
+            ><span>태그 (복수)</span
+            ><span class="tag-checks"
+              ><label><input type="checkbox" checked />답례품</label
+              ><label><input type="checkbox" checked />별도 연락</label
+              ><label><input type="checkbox" />만남</label></span
+            ></label
+          ><label class="editor-field"
+            ><span>관계 (글 칸)</span
+            ><input class="input" type="text" value="가족" /></label
+          ><label class="editor-field"
+            ><span>지역 (선택 칸)</span
+            ><select class="input">
+              <option>광주</option>
+              <option>안산</option>
+              <option>포항</option>
+            </select></label
+          ><label class="editor-field"
+            ><span>메모</span
+            ><textarea class="input">이동 일정 먼저 확인</textarea>
+          </label>
+        </div>
+        <p class="section-note">시안 입력 미리보기 · 서버에 저장하지 않아요.</p>
+      </div>
+    </dialog>
+    <dialog
+      class="sheet"
+      id="expense-editor"
+      aria-labelledby="expense-editor-title"
+      data-od-id="prj-expense-editor"
+    >
+      <div class="sheet-head">
+        <button type="button" class="text-btn" data-close>취소</button>
+        <h2 class="t-headline" id="expense-editor-title">지출 추가</h2>
+        <button type="button" class="text-btn" data-close>저장</button>
+      </div>
+      <div class="sheet-content">
+        <div class="fields">
+          <label class="editor-field"
+            ><span>예산 상한 (선택)</span
+            ><input
+              class="input"
+              type="number"
+              value="15000000"
+              min="0" /></label
+          ><label class="editor-field"
+            ><span>제목</span
+            ><input class="input" type="text" value="여행 예약금" /></label
+          ><label class="editor-field"
+            ><span>영역</span
+            ><select class="input">
+              <option>신혼여행</option>
+              <option>웨딩스냅</option>
+              <option>영역 없음</option>
+            </select></label
+          ><label class="editor-field"
+            ><span>예상액</span
+            ><input class="input" type="number" value="800000" min="0" /></label
+          ><label class="editor-field"
+            ><span>예상 결제일</span
+            ><input class="input" type="date" value="2026-11-18" /></label
+          ><label class="editor-field"
+            ><span>실제액</span
+            ><input class="input" type="number" value="800000" min="0" /></label
+          ><label class="editor-field"
+            ><span>실제 결제일 (실제액 있으면 필수)</span
+            ><input class="input" type="date" value="2026-11-18" /></label
+          ><label class="editor-field"
+            ><span>결제자 (실제액 있으면 필수)</span
+            ><select class="input">
+              <option>민호</option>
+              <option>지수</option>
+            </select></label
+          ><label class="editor-field"
+            ><span>구분</span
+            ><select class="input">
+              <option>미정</option>
+              <option>공동</option>
+              <option>개인</option>
+            </select></label
+          ><label class="editor-field"
+            ><span>링크</span
+            ><input
+              class="input"
+              type="url"
+              value="https://example.com/payment" /></label
+          ><label class="editor-field"
+            ><span>메모</span><textarea class="input">예약금</textarea>
+          </label>
+        </div>
+        <p class="section-note">시안 입력 미리보기 · 서버에 저장하지 않아요.</p>
+      </div>
+    </dialog>
+    <script>
+      const screens = [...document.querySelectorAll("[data-screen]")];
+      const picker = document.querySelector("#screen-picker");
+      let minimized = false;
+      let eventButton;
+      const toast = (text) => {
+        const node = document.querySelector("#toast");
+        node.textContent = text;
+        node.hidden = false;
+        clearTimeout(toast.timer);
+        toast.timer = setTimeout(() => {
+          node.hidden = true;
+        }, 3500);
+      };
+      function navigate() {
+        const requested = location.hash.slice(1) || "projects";
+        const key = screens.some((node) => node.dataset.screen === requested)
+          ? requested
+          : "projects";
+        screens.forEach((node) => {
+          node.hidden = node.dataset.screen !== key;
+        });
+        picker.value = key;
+        document
+          .querySelector(".main")
+          .classList.toggle("wide", ["home", "settings"].includes(key));
+        document.querySelectorAll("[data-nav]").forEach((node) => {
+          const mobile = node.closest(".tabbar");
+          let current = key;
+          if (key === "home-settings") current = "settings";
+          if (mobile && key === "inventory") current = "shopping";
+          const projectScreen = ![
+            "home",
+            "shopping",
+            "inventory",
+            "settings",
+            "home-settings",
+          ].includes(key);
+          const selected =
+            node.dataset.nav === current ||
+            (projectScreen && node.dataset.nav === "projects");
+          if (selected) node.setAttribute("aria-current", "page");
+          else node.removeAttribute("aria-current");
+        });
+        document.querySelectorAll("[data-screen] .back").forEach((node) => {
+          node.hidden = ["projects", "home", "shopping", "inventory"].includes(
+            key,
+          );
+        });
+        window.scrollTo(0, 0);
+      }
+      picker.addEventListener("change", () => {
+        location.hash = picker.value;
+      });
+      window.addEventListener("hashchange", navigate);
+      document
+        .querySelector("#theme-toggle")
+        .addEventListener("change", (event) => {
+          document.documentElement.dataset.theme = event.target.checked
+            ? "dark"
+            : "light";
+        });
+      document
+        .querySelector("#bot-toggle")
+        .addEventListener("change", (event) => {
+          minimized = event.target.checked;
+          document.querySelectorAll("[data-bot-tab]").forEach((node) => {
+            node.hidden = !minimized;
+          });
+          document.querySelector(".bot-launcher").hidden = minimized;
+        });
+      document
+        .querySelectorAll("[data-bot-tab], .bot-launcher")
+        .forEach((node) =>
+          node.addEventListener("click", (event) => {
+            event.preventDefault();
+            document.querySelector("#bot-preview").showModal();
+          }),
+        );
+      document.querySelectorAll('[data-nav="calendar"]').forEach((node) =>
+        node.addEventListener("click", (event) => {
+          event.preventDefault();
+          toast("기존 화면은 이번 시안 범위에 포함하지 않았어요.");
+        }),
+      );
+      document.querySelectorAll("[data-open]").forEach((node) =>
+        node.addEventListener("click", () => {
+          const dialog = document.getElementById(node.dataset.open);
+          const title = dialog.querySelector("h2");
+          if (node.dataset.open.endsWith("-editor")) {
+            title.textContent = title.textContent.replace(
+              /추가|수정/,
+              node.hasAttribute("data-edit") ? "수정" : "추가",
+            );
+          }
+          dialog.showModal();
+          dialog.scrollTop = 0;
+        }),
+      );
+      document
+        .querySelectorAll("[data-close]")
+        .forEach((node) =>
+          node.addEventListener("click", () => node.closest("dialog").close()),
+        );
+      document.querySelectorAll("[data-event]").forEach((node) =>
+        node.addEventListener("click", () => {
+          if (node.dataset.linked) {
+            toast("공유 일정에 연결되어 있어요.");
+            return;
+          }
+          eventButton = node;
+          const titles = {
+            milestone: "웨딩스냅",
+            reservation: "파리 작은 호텔",
+            itinerary: "파리 도착",
+          };
+          document.querySelector("#event-title").textContent =
+            titles[node.dataset.event];
+          document.querySelector("#event-add").showModal();
+        }),
+      );
+      document.querySelector("#event-confirm").addEventListener("click", () => {
+        eventButton.textContent = "일정 연결됨";
+        eventButton.dataset.linked = "true";
+        eventButton.closest("li")?.classList.add("linked");
+        document.querySelector("#event-add").close();
+        toast("공유 일정 연결 미리보기예요. 실제 일정은 만들지 않았어요.");
+      });
+      document.querySelector("#event-reset").addEventListener("click", () => {
+        document.querySelectorAll("[data-event]").forEach((node) => {
+          delete node.dataset.linked;
+          node.textContent = "일정에 추가";
+        });
+        toast("일정 삭제 후 연결 해제 상태예요. 프로젝트 항목은 남아요.");
+      });
+      document
+        .querySelector("#create-form")
+        .addEventListener("submit", (event) => {
+          event.preventDefault();
+          document.querySelector("#project-create").close();
+          location.hash = "overview";
+          toast("프로젝트 만들기 흐름 미리보기예요. 입력은 저장하지 않았어요.");
+        });
+      document
+        .querySelector("#quantity-disconnect")
+        .addEventListener("click", () => {
+          document.querySelector("#quantity-label").textContent =
+            "수량 기준 없음";
+          document.querySelector(".quantity-count").textContent = "수량 미정";
+          document.querySelector("#candidate-estimate").textContent =
+            "수량 기준 없음";
+          toast("명단·태그 연결을 모두 해제한 상태예요.");
+        });
+      document.querySelectorAll("[data-done-tag]").forEach((node) =>
+        node.addEventListener("change", () => {
+          const done = document.querySelectorAll(
+            "[data-done-tag]:checked",
+          ).length;
+          document.querySelector("#tag-done-count").textContent =
+            `완료 ${done} / 2`;
+        }),
+      );
+      const reasons = {
+        unknown: "결제한 여행 예약금의 공동/개인 구분이 미정이에요.",
+        missing: "구성원별 분담 비율이 없어요.",
+        sum: "탈퇴 후 남은 분담 비율은 50%예요. 합이 100%가 되어야 해요.",
+        payer:
+          "결제한 공동 지출에 탈퇴한 구성원의 결제자 정보가 없어요. 지출 기록은 남아 있어요.",
+      };
+      function previewSettlement(state) {
+        let keys = [state];
+        if (state === "normal") keys = [];
+        if (state === "multiple") keys = ["sum", "unknown", "payer"];
+        const unknown = ["unknown", "multiple"].includes(state);
+        const departed = ["payer", "multiple"].includes(state);
+        const expenseType = document.querySelector("#settlement-expense-type");
+        expenseType.textContent = unknown ? "미정" : "공동";
+        expenseType.dataset.variant = unknown ? "warning" : "info";
+        document.querySelector("#settlement-expense-payer").textContent =
+          "신혼여행 · 실제 800,000원 · 11.18 · " +
+          (departed ? "탈퇴한 구성원" : "민호");
+        const shares = document.querySelector('[data-od-id="prj-shares"]');
+        const labels = shares.querySelectorAll("label");
+        labels[0].querySelector("input").value =
+          state === "missing" ? "" : "50";
+        labels[1].querySelector("input").value =
+          state === "missing" ? "" : "50";
+        labels[1].hidden = ["sum", "multiple"].includes(state);
+        document.querySelector('[data-od-id="prj-settlement-held"]').hidden =
+          keys.length === 0;
+        document.querySelector("#settlement-result").hidden = keys.length > 0;
+        document.querySelector("#settlement-reason").replaceChildren(
+          ...keys.map((key) => {
+            const reason = document.createElement("span");
+            reason.setAttribute("role", "listitem");
+            reason.style.display = "block";
+            reason.textContent = reasons[key];
+            return reason;
+          }),
+        );
+      }
+      document
+        .querySelector("#settlement-state")
+        .addEventListener("change", (event) => {
+          previewSettlement(event.target.value);
+        });
+      document.querySelector("#settlement-state").value = "unknown";
+      previewSettlement("unknown");
+      document
+        .querySelector("#home-deadlines-toggle")
+        .addEventListener("change", (event) => {
+          document.querySelector("#home-deadlines").hidden =
+            !event.target.checked;
+        });
+      document.querySelectorAll("[data-project-filter]").forEach((node) =>
+        node.addEventListener("click", () => {
+          document
+            .querySelectorAll("[data-project-filter]")
+            .forEach((button) =>
+              button.setAttribute("aria-pressed", String(button === node)),
+            );
+          const active = node.dataset.projectFilter === "active";
+          document.querySelector('[data-od-id="prj-project-list"]').hidden =
+            !active;
+          document.querySelector('[data-od-id="prj-project-empty"]').hidden =
+            active;
+        }),
+      );
+      function filterTasks() {
+        const query = document.querySelector("#task-search").value.trim();
+        const area = document.querySelector("#task-area").value;
+        const status = document.querySelector("#task-status").value;
+        const assignee = document.querySelector("#task-assignee").value;
+        let count = 0;
+        document.querySelectorAll("[data-task]").forEach((node) => {
+          const visible =
+            node.textContent.includes(query) &&
+            (!area || node.dataset.area === area) &&
+            (!status || node.dataset.status === status) &&
+            (!assignee || node.dataset.assignee === assignee);
+          node.hidden = !visible;
+          if (visible) count++;
+        });
+        document.querySelector("#task-empty").hidden = count > 0;
+      }
+      document
+        .querySelectorAll(
+          "#task-search, #task-area, #task-status, #task-assignee",
+        )
+        .forEach((node) => node.addEventListener("input", filterTasks));
+      document.querySelectorAll("[data-task] input").forEach((node) =>
+        node.addEventListener("change", () => {
+          const row = node.closest("[data-task]");
+          if (node.checked) {
+            row.dataset.previousStatus = row.dataset.status;
+            row.dataset.status = "완료";
+            document.querySelector("#completed-tasks").append(row);
+          } else {
+            row.dataset.status = row.dataset.previousStatus;
+            document.querySelector(".task-list").append(row);
+          }
+          const completed = document.querySelectorAll(
+            "#completed-tasks input:checked",
+          ).length;
+          document.querySelector("#completed-count").textContent = completed;
+          filterTasks();
+        }),
+      );
+      navigate();
+    </script>
+  </body>
+</html>
