@@ -1,8 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { X } from "lucide-react";
 import { useRef, useState, type ComponentProps } from "react";
 import { cn } from "@/shared/lib";
+import { TextButton } from "../text-button";
+import { dateTimeTriggerStyles } from "./date-time-input.variants";
 import {
   dateLabel,
   timeLabel,
@@ -28,7 +31,10 @@ type DateTimeInputProps = {
   >;
   pickerOdId?: string;
   onConfirm: (range: DateTimeRange) => void;
-};
+} & (
+  | { variant?: "inline"; onClear?: never }
+  | { variant: "field"; onClear?: () => void }
+);
 
 export function DateTimeInput({
   range,
@@ -40,6 +46,8 @@ export function DateTimeInput({
   controlProps,
   pickerOdId,
   onConfirm,
+  variant = "inline",
+  onClear,
 }: DateTimeInputProps) {
   const triggerProps = {
     id: controlProps.id,
@@ -60,39 +68,58 @@ export function DateTimeInput({
     .filter(Boolean)
     .join(", ");
 
+  const trigger = (
+    <button
+      {...triggerProps}
+      ref={(node) => {
+        triggerRef.current = node;
+        const ref = controlProps.ref;
+        if (typeof ref === "function") ref(node);
+      }}
+      type="button"
+      data-od-id={pickerOdId}
+      aria-label={accessibleLabel}
+      aria-haspopup="dialog"
+      aria-expanded={session !== null}
+      className={cn(dateTimeTriggerStyles({ variant, clearable: !!onClear }))}
+      onClick={() =>
+        setSession({
+          ...range,
+          startDate: range.startDate || todayInSeoul(),
+          endDate: range.endDate || range.startDate || todayInSeoul(),
+        })
+      }
+    >
+      {!timeOnly && dateLabel(date, "yyyy. M. d.")}
+      {!dateOnly && (
+        <span className={timeOnly ? undefined : "ml-2"}>{timeLabel(time)}</span>
+      )}
+    </button>
+  );
+
   return (
     <>
-      <button
-        {...triggerProps}
-        ref={(node) => {
-          triggerRef.current = node;
-          const ref = controlProps.ref;
-          if (typeof ref === "function") ref(node);
-        }}
-        type="button"
-        data-od-id={pickerOdId}
-        aria-label={accessibleLabel}
-        aria-haspopup="dialog"
-        aria-expanded={session !== null}
-        className={cn([
-          "min-h-[var(--ctl-h)] min-w-0 max-w-full text-right text-primary",
-          "[@media(pointer:coarse)]:focus-visible:outline-none",
-        ])}
-        onClick={() =>
-          setSession({
-            ...range,
-            startDate: range.startDate || todayInSeoul(),
-            endDate: range.endDate || range.startDate || todayInSeoul(),
-          })
-        }
-      >
-        {!timeOnly && dateLabel(date, "yyyy. M. d.")}
-        {!dateOnly && (
-          <span className={timeOnly ? undefined : "ml-2"}>
-            {timeLabel(time)}
-          </span>
-        )}
-      </button>
+      {variant === "field" ? (
+        <div className="relative w-full min-w-0">
+          {trigger}
+          {onClear && (
+            <TextButton
+              size="icon"
+              className="absolute end-0 top-0"
+              aria-label={`${label} 지우기`}
+              disabled={controlProps.disabled}
+              onClick={() => {
+                onClear();
+                triggerRef.current?.focus();
+              }}
+            >
+              <X size={16} aria-hidden />
+            </TextButton>
+          )}
+        </div>
+      ) : (
+        trigger
+      )}
       {session && (
         <DateTimeSheet
           range={session}

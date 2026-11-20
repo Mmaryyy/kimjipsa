@@ -1,19 +1,21 @@
 import type { ComponentProps } from "react";
 import { cn } from "@/shared/lib";
-import type { StatusBadgeVariant } from "./ui.variants";
-import { statusBadgeStyles } from "./ui.variants";
-type StatusBadgeProps = ComponentProps<"span"> & {
-  variant?: StatusBadgeVariant;
-};
+import { statusBadgeStyles, type StatusBadgeVariants } from "./ui.variants";
+
+type StatusBadgeProps = ComponentProps<"span"> & StatusBadgeVariants;
 
 export function StatusBadge({
   variant = "info",
+  shape,
   className,
   children,
   ...props
 }: StatusBadgeProps) {
   return (
-    <span className={cn(statusBadgeStyles({ variant }), className)} {...props}>
+    <span
+      className={cn(statusBadgeStyles({ variant, shape }), className)}
+      {...props}
+    >
       <span
         className="size-1.25 flex-none rounded-[var(--r-round)] bg-[var(--status-dot)]"
         aria-hidden="true"

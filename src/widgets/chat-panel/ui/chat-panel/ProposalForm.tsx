@@ -14,6 +14,7 @@ import {
 import { cn } from "@/shared/lib";
 import { Button, Input, QuantityStepper, Text } from "@/shared/ui";
 import { DateTimeInput } from "@/shared/ui/date-time-input";
+import { chatProposalChoiceStyles } from "./chat-panel.variants";
 
 type Fields = AgentAction["payload"];
 type Value = Fields[string];
@@ -51,12 +52,9 @@ const ProposalChoices = ({
         <Button
           key={String(option.value)}
           type="button"
-          variant="gray"
-          size="sm"
-          className={cn(
-            "rounded-full text-caption aria-pressed:bg-[var(--accent-soft)] aria-pressed:text-primary",
-            category && "min-h-[var(--hit)] min-w-[var(--hit)]",
-          )}
+          variant={null}
+          className={chatProposalChoiceStyles()}
+          size={category ? "touch" : "sm"}
           aria-pressed={value === option.value}
           onClick={() => onChange(option.value)}
         >

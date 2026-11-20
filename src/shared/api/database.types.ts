@@ -37,6 +37,43 @@ type InventoryMetaRow = {
   icon_kind?: string | null;
   icon_value?: string;
 };
+type ProjectRow = {
+  id: string;
+  family_id: string;
+  title: string;
+  description: string;
+  starts_on: string | null;
+  target_on: string | null;
+  status: string;
+  modules: string[];
+  budget_limit: number | null;
+  created_by: string | null;
+  sort_order: number;
+};
+type ProjectChildRow = { id: string; family_id: string; project_id: string };
+type ProjectAreaRow = ProjectChildRow & { name: string; sort_order: number };
+type ProjectMilestoneRow = ProjectChildRow & {
+  area_id: string | null;
+  title: string;
+  starts_on: string | null;
+  ends_on: string | null;
+  is_tentative: boolean;
+  memo: string;
+  event_id: string | null;
+};
+type ProjectTaskRow = ProjectChildRow & {
+  area_id: string | null;
+  title: string;
+  assignee_kind: string;
+  assignee_id: string | null;
+  status: string;
+  starts_on: string | null;
+  due_on: string | null;
+  depends_note: string;
+  memo: string;
+  completed_by: string | null;
+  completed_at: string | null;
+};
 // P2/P3/P4 migration contract. Regenerate with `supabase gen types typescript --local`
 // after applying the migration to a local Supabase instance.
 export type Json =
@@ -92,6 +129,10 @@ export type Database<
         { user_id: string; bot_type: string }
       >;
       cart_items: Table<CartRow, CartRow>;
+      projects: Table<ProjectRow, never>;
+      project_areas: Table<ProjectAreaRow, never>;
+      project_milestones: Table<ProjectMilestoneRow, never>;
+      project_tasks: Table<ProjectTaskRow, never>;
       frequent_cart_overrides: Table<
         {
           family_id: string;
@@ -342,6 +383,8 @@ export type Database<
       save_frequent_cart_override: { Args: { payload: Json }; Returns: Json };
       frequent_cart_items: { Args: Record<string, never>; Returns: CartRow[] };
       undo_cart_restock: { Args: { token: string }; Returns: Json };
+      // reorder_areas uses projectId and areaIds, and returns the project ID.
+      write_project: { Args: { payload: Json }; Returns: string };
       write_cart: { Args: { payload: Json }; Returns: Json };
       write_inventory: { Args: { payload: Json }; Returns: string };
       write_inventory_meta: { Args: { payload: Json }; Returns: undefined };

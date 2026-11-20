@@ -1,6 +1,7 @@
 import { cn } from "@/shared/lib";
 import type { ReactNode } from "react";
 import { Text } from "./text";
+import { pageHeaderSubtitleStyles } from "./page-header.variants";
 interface Props {
   title: string;
   titleAriaLabel?: string;
@@ -11,12 +12,14 @@ interface Props {
   children?: ReactNode;
   titleOdId?: string;
   subtitle?: string;
+  subtitleVariant?: "default" | "context";
   odId?: string;
 }
 const PageHeader = ({
   title,
   actions,
   subtitle,
+  subtitleVariant = "default",
   odId,
   navigation,
   children,
@@ -25,15 +28,36 @@ const PageHeader = ({
   titleId,
   headingLevel = 1,
 }: Props) => {
+  const contextual = subtitleVariant === "context" && Boolean(subtitle);
+  const subtitleText = subtitle && (
+    <Text
+      as="p"
+      variant={contextual ? "body" : "body-sm"}
+      className={pageHeaderSubtitleStyles({ variant: subtitleVariant })}
+    >
+      {subtitle}
+    </Text>
+  );
+
   return (
     <header className="kj-page-header" data-od-id={odId && `${odId}-header`}>
-      <div className="relative flex items-center gap-2">
+      <div
+        className={cn(
+          "relative flex gap-2",
+          contextual ? "items-start" : "items-center",
+        )}
+      >
         {navigation && (
           <div className="-ml-3 flex shrink-0 items-center [&_a]:min-h-11 [&_a]:min-w-11">
             {navigation}
           </div>
         )}
-        <div className="flex min-w-0 flex-1 items-center">
+        <div
+          className={cn(
+            "min-w-0 flex-1",
+            contextual ? "pt-1" : "flex items-center",
+          )}
+        >
           <Text
             as={`h${headingLevel}`}
             className={cn("min-w-0 flex-1", navigation && "truncate")}
@@ -44,6 +68,7 @@ const PageHeader = ({
           >
             {title}
           </Text>
+          {contextual && subtitleText}
         </div>
         {actions && (
           <div
@@ -57,11 +82,7 @@ const PageHeader = ({
           </div>
         )}
       </div>
-      {subtitle && (
-        <Text as="p" variant="body-sm" className="mt-1 text-muted-foreground">
-          {subtitle}
-        </Text>
-      )}
+      {!contextual && subtitleText}
       {children}
     </header>
   );

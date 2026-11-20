@@ -144,6 +144,7 @@
   --color-sys-gray6: var(--sys-gray6);
   --color-label-primary: var(--label);
   --color-label-secondary: var(--label-secondary);
+  --color-label-done: var(--label-done);
   --color-icon-secondary: var(--icon-secondary);
   --color-icon-tertiary: var(--icon-tertiary);
   --color-label-tertiary: var(--label-tertiary);

@@ -51,9 +51,10 @@ export function FormFieldRow({
       )}
       <div
         className={cn([
-          "flex min-w-0 flex-1 justify-end [&_:is(input,select,textarea)]:min-h-[var(--ctl-h)]",
-          "[&_:is(input,select,textarea)]:min-w-0 [&_:is(input,select,textarea)]:w-full",
-          "[&_:is(input,select,textarea)]:bg-transparent [&_:is(input,select,textarea)]:text-right",
+          "flex min-w-0 flex-1 justify-end [&_:is(input,textarea)]:min-h-[var(--ctl-h)]",
+          "[&_:is(input,textarea)]:min-w-0 [&_:is(input,textarea)]:bg-transparent",
+          "[&_:is(input:not([data-variant=inline]),textarea)]:w-full",
+          "[&_input:not([data-variant=inline])]:text-right",
           "[&_textarea]:text-left",
         ])}
       >

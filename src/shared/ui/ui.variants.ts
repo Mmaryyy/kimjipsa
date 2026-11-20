@@ -37,17 +37,27 @@ export const statusBadgeStyles = cva(
         expiring:
           "text-status-expiring-text [--status-dot:var(--status-expiring)]",
         error: "text-error-text [--status-dot:var(--error)]",
+        progress: "text-sys-cyan-ic [--status-dot:var(--sys-cyan)]",
+        neutral: [
+          "text-label-secondary [--status-dot:var(--sys-gray)]",
+          "[--status-border:var(--sys-gray3)]",
+        ],
+      },
+      shape: {
+        capsule:
+          "h-5.5 rounded-full border border-[color:var(--status-border,var(--status-dot))] px-2",
       },
     },
     defaultVariants: { variant: "info" },
   },
 );
 
-export type StatusBadgeVariant = NonNullable<
-  VariantProps<typeof statusBadgeStyles>["variant"]
->;
+export type StatusBadgeVariants = VariantProps<typeof statusBadgeStyles>;
 
-export type StatusVariant = Exclude<StatusBadgeVariant, "expiring">;
+export type StatusVariant = Exclude<
+  NonNullable<StatusBadgeVariants["variant"]>,
+  "expiring" | "progress" | "neutral"
+>;
 
 export const bannerStyles = cva(
   "flex items-start gap-3 p-3 [&_strong]:font-semibold text-caption",
@@ -61,6 +71,33 @@ export const bannerStyles = cva(
       } satisfies Record<StatusVariant, string>,
     },
     defaultVariants: { variant: "info" },
+  },
+);
+
+export const inputStyles = cva("min-w-0", {
+  variants: {
+    variant: {
+      default:
+        "w-full min-h-[var(--hit)] rounded-sm border-0 bg-muted px-3 py-2 text-foreground",
+      inline:
+        "w-full min-h-[var(--hit)] rounded-sm border-0 bg-transparent py-2 text-right text-foreground",
+      glass:
+        "glass-surface kj-field-focus relative flex min-h-[var(--hit)] items-center gap-2 px-3",
+    },
+  },
+  defaultVariants: { variant: "default" },
+});
+
+export const textareaStyles = cva(
+  "min-h-hit w-full min-w-0 rounded-sm border-0 py-2 text-foreground disabled:cursor-default",
+  {
+    variants: {
+      variant: {
+        default: "bg-muted px-3",
+        inline: "resize-none overflow-y-auto bg-transparent px-0",
+      },
+    },
+    defaultVariants: { variant: "default" },
   },
 );
 
@@ -89,6 +126,7 @@ export const buttonStyles = cva(
         icon: "size-11 p-0",
         "icon-sm": "size-8 rounded-full p-0 [&_svg]:size-4",
         sm: "min-h-[var(--ctl-h-sm)] text-caption",
+        touch: "min-h-[var(--hit)] min-w-[var(--hit)]",
         md: "min-h-[var(--ctl-h)]",
         block: "min-h-[var(--ctl-h-lg)] w-full",
       },
@@ -119,15 +157,83 @@ export const textButtonStyles = cva(
   ],
   {
     variants: {
-      tone: { default: "text-primary", danger: "text-destructive" },
+      tone: {
+        default: "text-primary",
+        danger: "text-destructive",
+        neutral: "text-foreground",
+        muted: "text-muted-foreground [&_svg]:text-[var(--icon-secondary)]",
+      },
       size: {
+        icon: "size-11",
         sm: "min-h-[var(--ctl-h-sm)] text-[length:var(--type-caption-size)]",
         md: "min-h-[var(--ctl-h)]",
+        touch: "min-h-[var(--hit)]",
+        "row-start":
+          "min-h-[var(--row-min)] w-full justify-start text-left font-normal",
       },
     },
     defaultVariants: { tone: "default", size: "md" },
   },
 );
+
+export const checkboxStyles = cva(
+  [
+    "group/checkbox grid size-5 flex-none cursor-pointer place-items-center",
+    "rounded-[var(--r-round)] border-[length:calc(var(--sp-half)*0.75)]",
+    "border-[var(--sys-gray3)] disabled:cursor-default disabled:opacity-50 kj-hit",
+    "data-[state=indeterminate]:border-primary data-[state=indeterminate]:bg-primary",
+    "data-[state=indeterminate]:text-primary-foreground",
+  ],
+  {
+    variants: {
+      tone: {
+        default: [
+          "data-[state=checked]:border-primary data-[state=checked]:bg-primary",
+          "data-[state=checked]:text-primary-foreground",
+        ],
+        muted: [
+          "data-[state=checked]:border-label-done data-[state=checked]:bg-label-done",
+          "data-[state=checked]:bg-clip-padding data-[state=checked]:text-background",
+        ],
+      },
+    },
+    defaultVariants: { tone: "default" },
+  },
+);
+
+export const accordionItemStyles = cva("", {
+  variants: {
+    variant: {
+      default: "border-b last:border-b-0",
+      plain: "border-0",
+    },
+  },
+  defaultVariants: { variant: "default" },
+});
+
+export const accordionTriggerStyles = cva(
+  [
+    "flex min-h-11 w-full items-center gap-2 rounded-sm py-3",
+    "text-start text-headline font-normal disabled:cursor-default disabled:opacity-50",
+    "[&>svg]:size-5 [&>svg]:shrink-0 data-[state=open]:[&>svg]:rotate-180",
+    "motion-safe:[&>svg]:transition-transform motion-safe:[&>svg]:duration-[var(--dur-fast)]",
+  ],
+  {
+    variants: {
+      tone: {
+        default: "text-foreground",
+        muted: "text-label-done",
+      },
+    },
+    defaultVariants: { tone: "default" },
+  },
+);
+
+export const accordionContentStyles = cva([
+  "overflow-hidden",
+  "motion-safe:data-[state=open]:animate-[accordion-expand_var(--dur-fast)_var(--ease)]",
+  "motion-safe:data-[state=closed]:animate-[accordion-collapse_var(--dur-fast)_var(--ease)]",
+]);
 
 export const segmentedStyles = cva(
   [
@@ -172,6 +278,32 @@ export const toggleGroupStyles = cva(
       },
     },
     defaultVariants: { appearance: "segmented" },
+  },
+);
+
+export const selectStyles = cva(
+  "h-full w-full min-w-0 appearance-none truncate pr-8",
+  {
+    variants: {
+      variant: {
+        default: "min-h-11 rounded-sm bg-muted pl-3 text-base",
+        row: "min-h-[var(--ctl-h)] bg-transparent text-right text-base",
+        inline: "bg-transparent text-body-sm leading-[1.4]",
+      },
+    },
+    defaultVariants: { variant: "default" },
+  },
+);
+
+export const selectContainerStyles = cva(
+  [
+    "relative block max-w-full min-w-0",
+    "[&>svg]:pointer-events-none [&>svg]:absolute [&>svg]:right-3",
+    "[&>svg]:top-1/2 [&>svg]:-translate-y-1/2 [&>svg]:text-muted-foreground",
+  ],
+  {
+    variants: { inline: { true: "w-fit", false: "w-full" } },
+    defaultVariants: { inline: false },
   },
 );
 

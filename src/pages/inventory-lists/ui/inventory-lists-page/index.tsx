@@ -177,7 +177,8 @@ const InventoryListsPage = () => {
                 }
               >
                 <TextButton
-                  className="min-h-[var(--row-min)] w-full justify-start text-left font-normal text-foreground"
+                  tone="neutral"
+                  size="row-start"
                   onClick={() => setEditor(entry)}
                 >
                   {entry.name}
@@ -246,15 +247,16 @@ const InventoryListsPage = () => {
             </Button>
           }
           navigation={
-            <Link
-              href={backHref}
-              onNavigate={onNavigate}
-              data-od-id="lists-back"
-              aria-label="뒤로"
-              className="inline-flex size-11 items-center justify-center text-primary"
-            >
-              <ChevronLeft aria-hidden size={20} />
-            </Link>
+            <TextButton asChild size="icon">
+              <Link
+                href={backHref}
+                onNavigate={onNavigate}
+                data-od-id="lists-back"
+                aria-label="뒤로"
+              >
+                <ChevronLeft aria-hidden size={20} />
+              </Link>
+            </TextButton>
           }
         />
       }

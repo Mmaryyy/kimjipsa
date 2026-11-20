@@ -1,10 +1,6 @@
 import { cva } from "class-variance-authority";
 
-export const spacingButtonStyles = cva("min-h-[var(--hit)] px-1 tabular-nums", {
-  variants: {
-    selected: {
-      true: "bg-primary text-primary-foreground",
-      false: "",
-    },
-  },
-});
+export const spacingButtonStyles = cva([
+  "bg-muted px-1 text-foreground tabular-nums",
+  "aria-pressed:bg-primary aria-pressed:text-primary-foreground",
+]);

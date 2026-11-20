@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useId, useState } from "react";
 import {
   type Receipt,
   type ReceiptItem,
@@ -7,12 +7,14 @@ import {
 } from "@/entities/chat-message";
 import { useInventory, useInventoryMeta } from "@/entities/inventory-item";
 import { compareItemNames } from "@/shared/lib";
-import { Button, Input, Text } from "@/shared/ui";
+import { Button, Checkbox, Input, Select, Text } from "@/shared/ui";
+import { chatReceiptSelectStyles } from "./chat-panel.variants";
 interface Props {
   receipt: Receipt;
   now: number;
 }
 const ReceiptCard = ({ receipt, now }: Props) => {
+  const selectionId = useId();
   const [items, setItems] = useState(receipt.items);
   const { data: inventory = [] } = useInventory();
   const { data: meta } = useInventoryMeta();
@@ -57,16 +59,17 @@ const ReceiptCard = ({ receipt, now }: Props) => {
             className="min-w-0 space-y-2"
           >
             <legend className="text-label">품목 {index + 1}</legend>
-            <label className="flex gap-2">
-              <input
-                type="checkbox"
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id={`${selectionId}-${index}`}
                 checked={item.selected}
-                onChange={(event) =>
-                  update(index, { selected: event.target.checked })
+                disabled={!editable || mutation.isPending}
+                onCheckedChange={(checked) =>
+                  update(index, { selected: checked === true })
                 }
               />
-              반영하기
-            </label>
+              <label htmlFor={`${selectionId}-${index}`}>반영하기</label>
+            </div>
             <Input
               className="text-body-sm"
               aria-label={`품목 ${index + 1} 이름`}
@@ -85,8 +88,9 @@ const ReceiptCard = ({ receipt, now }: Props) => {
                   update(index, { quantity: event.target.valueAsNumber })
                 }
               />
-              <select
-                className="min-w-0 bg-muted p-2"
+              <Select
+                variant={null}
+                controlClassName={chatReceiptSelectStyles()}
                 aria-label={`품목 ${index + 1} 단위`}
                 value={item.unit_id ?? ""}
                 onChange={(event) =>
@@ -102,10 +106,11 @@ const ReceiptCard = ({ receipt, now }: Props) => {
                     {unit.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
-            <select
-              className="w-full bg-muted p-2"
+            <Select
+              variant={null}
+              controlClassName={chatReceiptSelectStyles()}
               aria-label={`품목 ${index + 1} 기존 재고 연결`}
               value={item.inventory_item_id ?? ""}
               onChange={(event) => {
@@ -127,11 +132,12 @@ const ReceiptCard = ({ receipt, now }: Props) => {
                     {candidates.includes(candidate) ? " · 이름이 비슷해요" : ""}
                   </option>
                 ))}
-            </select>
+            </Select>
             {!item.inventory_item_id && (
               <>
-                <select
-                  className="w-full bg-muted p-2"
+                <Select
+                  variant={null}
+                  controlClassName={chatReceiptSelectStyles()}
                   aria-label={`품목 ${index + 1} 카테고리`}
                   value={item.category_id ?? ""}
                   onChange={(event) =>
@@ -144,9 +150,10 @@ const ReceiptCard = ({ receipt, now }: Props) => {
                       {entry.name}
                     </option>
                   ))}
-                </select>
-                <select
-                  className="w-full bg-muted p-2"
+                </Select>
+                <Select
+                  variant={null}
+                  controlClassName={chatReceiptSelectStyles()}
                   aria-label={`품목 ${index + 1} 보관 장소`}
                   value={item.location_id ?? ""}
                   onChange={(event) =>
@@ -161,7 +168,7 @@ const ReceiptCard = ({ receipt, now }: Props) => {
                         {entry.name}
                       </option>
                     ))}
-                </select>
+                </Select>
                 <Input
                   className="text-body-sm"
                   type="date"

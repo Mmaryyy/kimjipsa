@@ -2,6 +2,7 @@ import type { Ref } from "react";
 import { LoaderCircle } from "lucide-react";
 import { Button, Input } from "@/shared/ui";
 import type { useCartQuickAdd } from "../../model/use-cart-quick-add";
+import { cartQuickAddInputStyles } from "./cart-page.variants";
 interface Props {
   inputRef: Ref<HTMLInputElement>;
   quickAdd: ReturnType<typeof useCartQuickAdd>;
@@ -23,7 +24,7 @@ const CartQuickAddForm = ({ inputRef, quickAdd, pending }: Props) => {
         <Input
           ref={inputRef}
           variant="glass"
-          className="min-h-[var(--ctl-h)] flex-1"
+          className={cartQuickAddInputStyles()}
           aria-label="항목 추가"
           aria-describedby="cart-add-status"
           placeholder="항목 추가 (예: 두부 2모)"

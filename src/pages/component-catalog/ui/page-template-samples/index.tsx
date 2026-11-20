@@ -64,8 +64,9 @@ const PageTemplateSamples = ({ onAction }: Props) => {
           width="narrow"
           header={{
             headingLevel: 3,
-            title: "재고",
-            subtitle: "목록 · narrow",
+            title: "할 일",
+            subtitle: "이사 준비",
+            subtitleVariant: "context",
             actions,
           }}
         >

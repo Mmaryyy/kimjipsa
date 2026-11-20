@@ -53,6 +53,7 @@ import {
   type MonthEventBar,
 } from "../model/month-event-bars.utils";
 import { useCalendarLocation } from "../model/use-calendar-location";
+import { calendarTodayButtonStyles } from "./calendar-view.variants";
 
 type CalendarProps = {
   loading?: boolean;
@@ -1014,7 +1015,8 @@ function CalendarContent({
             />
             <div className="flex shrink-0 items-center">
               <TextButton
-                className="size-11 text-muted-foreground [&_svg]:text-[var(--icon-secondary)]"
+                tone="muted"
+                size="icon"
                 aria-label={previousLabel}
                 data-od-id="cal-prev"
                 onClick={() => onMove(-1)}
@@ -1022,14 +1024,17 @@ function CalendarContent({
                 <ChevronLeft size={20} aria-hidden="true" />
               </TextButton>
               <TextButton
-                className="min-h-11 min-w-11 text-muted-foreground"
+                tone="muted"
+                size={null}
+                className={calendarTodayButtonStyles()}
                 data-od-id="cal-today"
                 onClick={() => onDateChange(today)}
               >
                 오늘
               </TextButton>
               <TextButton
-                className="size-11 text-muted-foreground [&_svg]:text-[var(--icon-secondary)]"
+                tone="muted"
+                size="icon"
                 aria-label={nextLabel}
                 data-od-id="cal-next"
                 onClick={() => onMove(1)}

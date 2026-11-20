@@ -11,7 +11,7 @@ import {
   type EventCategory,
   type EventCategoryInput,
 } from "@/entities/event";
-import { CategoryDot, FormField, GroupLabel, Text } from "@/shared/ui";
+import { CategoryDot, FormField, GroupLabel, Input, Text } from "@/shared/ui";
 import EventCategoryColorPicker from "./ColorPicker";
 import { useCategoryEditor } from "../../model/use-category-editor";
 const Field = FormField<Omit<EventCategoryInput, "sortOrder">>;
@@ -100,8 +100,9 @@ const EventCategoryForm = ({
             render={(field) => (
               <div className="flex items-center gap-3">
                 <CategoryDot color={color} />
-                <input
+                <Input
                   {...field}
+                  variant="inline"
                   data-od-id="lists-name"
                   placeholder="이름"
                   readOnly={category?.name === "기타"}

@@ -16,6 +16,7 @@ import {
   Input,
   FormField,
   GroupLabel,
+  Select,
   SegmentedControl,
   Text,
   Button,
@@ -265,7 +266,8 @@ const InventoryItemEditor = ({
                       있어요. 기존 품목에 더할까요?
                     </p>
                     {candidates.length > 1 && (
-                      <select
+                      <Select
+                        variant="inline"
                         aria-label="더할 품목 선택"
                         value={mergeTarget?.id ?? ""}
                         onChange={(event) => setMergeId(event.target.value)}
@@ -283,7 +285,7 @@ const InventoryItemEditor = ({
                             )?.name ?? ""}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     )}
                     {mergeTarget && <p>‘{mergeTarget.name}’에 더해요.</p>}
                     <div className="mt-2 flex flex-wrap gap-2">

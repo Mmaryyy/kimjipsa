@@ -9,6 +9,7 @@ import {
   type RefCallBack,
 } from "react-hook-form";
 import { Input } from "../input";
+import { Select } from "../select";
 import { Text } from "../text";
 import { FormFieldRow } from "../form-field-row";
 import { Switch } from "../switch";
@@ -76,7 +77,8 @@ const registry: Registry = {
     while (options.some((option) => String(option.value) === noneValue))
       noneValue = `_${noneValue}`;
     return (
-      <select
+      <Select
+        variant="row"
         {...inputProps}
         {...field}
         value={value == null ? noneValue : String(value)}
@@ -103,7 +105,7 @@ const registry: Registry = {
             {option.label}
           </option>
         ))}
-      </select>
+      </Select>
     );
   },
   switch: ({ props, field: { value, onChange, ...field } }) => (

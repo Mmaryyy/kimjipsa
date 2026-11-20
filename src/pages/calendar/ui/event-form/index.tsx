@@ -16,6 +16,7 @@ import {
   CategoryDot,
   FormField,
   GroupLabel,
+  Select,
   Switch,
   Text,
 } from "@/shared/ui";
@@ -183,13 +184,13 @@ const EventForm = ({
             render={(field) => (
               <div className="flex items-center gap-2">
                 {category && <CategoryDot color={category.color} />}
-                <select {...field} data-od-id="f-category">
+                <Select {...field} variant="row" data-od-id="f-category">
                   {categories.map((category) => (
                     <option key={category.id} value={category.id}>
                       {category.name}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
             )}
           />

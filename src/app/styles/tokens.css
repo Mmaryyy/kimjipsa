@@ -125,6 +125,7 @@
   /* Labels */
   --label: #1d1d1f; /* Apple #000000 → 김집사 조정 */
   --label-secondary: rgba(60, 60, 67, 0.6);
+  --label-done: rgba(60, 60, 67, 0.75);
   --icon-secondary: #86868b;
   --icon-tertiary: #bebec2;
   --label-tertiary: rgba(60, 60, 67, 0.3);
@@ -218,6 +219,7 @@
 
   --label: #e5e5ea; /* Apple #FFFFFF → 김집사 조정 */
   --label-secondary: rgba(235, 235, 245, 0.6);
+  --label-done: rgba(235, 235, 245, 0.75);
   --icon-secondary: #97979e;
   --icon-tertiary: #59595d;
   --label-tertiary: rgba(235, 235, 245, 0.3);
@@ -304,6 +306,7 @@
     --sys-gray6: #1c1c1e;
     --label: #e5e5ea;
     --label-secondary: rgba(235, 235, 245, 0.6);
+    --label-done: rgba(235, 235, 245, 0.75);
     --icon-secondary: #97979e;
     --icon-tertiary: #59595d;
     --label-tertiary: rgba(235, 235, 245, 0.3);

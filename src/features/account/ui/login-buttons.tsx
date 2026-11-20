@@ -1,9 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { cn } from "@/shared/lib";
 import { Banner, Button, Text } from "@/shared/ui";
 import { useKakaoBrowser, useSignIn } from "../model/use-account";
+import { loginButtonStyles } from "./login-buttons.variants";
 
 export function LoginButtons({ inviteToken }: { inviteToken?: string | null }) {
   const isKakaoBrowser = useKakaoBrowser();
@@ -28,10 +28,7 @@ export function LoginButtons({ inviteToken }: { inviteToken?: string | null }) {
       )}
       <div className="mt-auto grid gap-2">
         <Button
-          className={cn(
-            "h-[46px] w-full min-w-0 justify-center overflow-hidden rounded-[12px] p-0",
-            "bg-[var(--oauth-kakao-bg)]",
-          )}
+          className={loginButtonStyles({ provider: "kakao" })}
           data-od-id="ob-login-kakao"
           onClick={onKakao}
           disabled={pending}
@@ -47,12 +44,7 @@ export function LoginButtons({ inviteToken }: { inviteToken?: string | null }) {
           />
         </Button>
         <Button
-          className={cn(
-            "h-[46px] w-full min-w-0 justify-center rounded-[12px] px-3 py-0",
-            "font-app text-[14px] leading-[20px] font-medium tracking-normal whitespace-nowrap",
-            "bg-[var(--oauth-google-bg)] text-[var(--oauth-google-fg)]",
-            "shadow-[inset_0_0_0_1px_var(--oauth-google-border)]",
-          )}
+          className={loginButtonStyles({ provider: "google" })}
           data-od-id="ob-login-google"
           onClick={onGoogle}
           disabled={pending}

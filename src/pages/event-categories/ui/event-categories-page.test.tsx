@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { markHistoryBack } from "@/shared/lib";
 import { eventRoutes, settingsPath } from "@/shared/config";
+import type * as SharedUi from "@/shared/ui";
 import { EventCategoriesPage } from "./event-categories-page";
 
 const navigation = vi.hoisted(() => ({ back: vi.fn(), from: "" }));
@@ -34,11 +35,11 @@ vi.mock("../model/use-category-editor", () => ({
 }));
 vi.mock("./sortable-category-list", () => ({ default: () => null }));
 vi.mock("./event-category-form", () => ({ default: () => null }));
-vi.mock("@/shared/ui", () => ({
+vi.mock("@/shared/ui", async (importOriginal) => ({
   PageLayout: ({ header }: { header: ReactNode }) => header,
   PageHeader: ({ navigation }: { navigation: ReactNode }) => navigation,
   Button: () => null,
-  TextButton: () => null,
+  TextButton: (await importOriginal<typeof SharedUi>()).TextButton,
   FormSheet: () => null,
   useConfirm: () => vi.fn(),
 }));

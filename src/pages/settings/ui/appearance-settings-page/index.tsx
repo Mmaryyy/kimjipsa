@@ -29,8 +29,9 @@ const AppearanceSettingsPage = () => {
       width="wide"
       className={cn([
         "[&_[data-slot=segmented-control]]:w-42 [&_[data-slot=field-row]>label]:w-auto",
-        "[&_[data-slot=field-row]>label]:flex-1 [&_[data-slot=input]]:w-35",
-        "[&_[data-slot=input]]:text-right",
+        "[&_[data-slot=field-row]>label]:flex-1",
+        "[&_[data-slot=input]:not([data-variant=inline])]:w-35",
+        "[&_[data-slot=input]:not([data-variant=inline])]:text-right",
       ])}
       odId="settings-main"
       header={<PageHeader odId="settings" title="설정" />}

@@ -8,6 +8,7 @@ import { cn, useCartActionsVisible } from "@/shared/lib";
 import { useChatNavigation } from "@/features/chat-navigation";
 
 import { useNavigationScroll } from "../../model/use-navigation-scroll";
+import { chatLauncherStyles } from "./chat-launcher.variants";
 
 const peekLines = ["...", "무엇이든 도와줄 수 있어!", "오늘 할 일 알려줄까?"];
 
@@ -61,14 +62,7 @@ const ChatLauncher = () => {
         onClick={onOpen}
         aria-label="AI 집사 채팅 열기"
         data-od-id="bot-fab"
-        variant="gray"
-        className={cn(
-          "relative grid h-[82px] w-[88px] place-items-center overflow-visible",
-          "rounded-none bg-transparent p-0 shadow-none transition-transform",
-          "duration-[var(--dur-fast)] ease-[var(--ease)] active:scale-[0.94] active:opacity-100",
-          "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary",
-          "motion-reduce:transition-none",
-        )}
+        className={chatLauncherStyles()}
       >
         <Image
           src="/images/kimjipsa-house.svg"

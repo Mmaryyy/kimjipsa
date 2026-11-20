@@ -1,13 +1,15 @@
 import type { ComponentProps } from "react";
+import type { VariantProps } from "class-variance-authority";
 import { cn } from "@/shared/lib";
+import { textareaStyles } from "../ui.variants";
 
-const Textarea = ({ className, ...props }: ComponentProps<"textarea">) => (
+type TextareaProps = ComponentProps<"textarea"> &
+  VariantProps<typeof textareaStyles>;
+
+const Textarea = ({ variant, className, ...props }: TextareaProps) => (
   <textarea
     data-slot="textarea"
-    className={cn(
-      "min-h-hit w-full min-w-0 rounded-sm border-0 bg-muted px-3 py-2 text-foreground disabled:cursor-default",
-      className,
-    )}
+    className={cn(textareaStyles({ variant }), className)}
     {...props}
   />
 );

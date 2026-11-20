@@ -24,9 +24,15 @@ import {
   SegmentedControl,
   SegmentedNavigation,
   FilterTabs,
+  Select,
   Switch,
   Checkbox,
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
   QuantityStepper,
+  Input,
   FormField,
   defineFields,
   List,
@@ -317,6 +323,13 @@ function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
           ]}
           current={cartRoutes.cart}
         />
+        <Select aria-label="견본 선택" defaultValue="all">
+          {filterOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </Select>
         <FilterTabs
           label="목록 필터"
           options={filterOptions}
@@ -343,11 +356,26 @@ function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
         <div className="flex flex-wrap items-center gap-4 py-4">
           <Switch aria-label="비활성 스위치" disabled />
           <Checkbox aria-label="비활성 체크" disabled />
+          <Checkbox aria-label="완료 체크" defaultChecked tone="muted" />
         </div>
         {catalogFields.map((row) => (
           <Field key={row.name} {...row} />
         ))}
       </FormProvider>
+
+      <SectionHeader title="접기" />
+      <Accordion type="single" collapsible>
+        <AccordionItem value="completed" variant="plain">
+          <AccordionTrigger tone="muted" aria-label="완료한 할 일 1개">
+            <span>
+              <span className="font-semibold">완료</span>(1)
+            </span>
+          </AccordionTrigger>
+          <AccordionContent>
+            <Text as="p">휴가 확인</Text>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
 
       <SectionHeader title="재고 상태 캡슐" />
       <div className="flex flex-wrap items-center gap-4 py-4">
@@ -514,7 +542,7 @@ function ComponentCatalogPane({ theme }: { theme: "light" | "dark" }) {
                   name="sheetName"
                   label="이름"
                   render={(field) => (
-                    <input
+                    <Input
                       {...field}
                       onChange={(event) => {
                         field.onChange(event);

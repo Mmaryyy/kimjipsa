@@ -206,7 +206,8 @@ const AiSettingsForm = ({ settings, onSaved }: Props) => {
                   <Input
                     {...field}
                     data-od-id="s-bot-name"
-                    className="w-24! bg-transparent px-0 text-left!"
+                    variant="inline"
+                    className="w-24 text-left"
                     onBlur={() => {
                       field.onBlur();
                       void onSave(name, memoryEnabled);
@@ -438,7 +439,7 @@ const AiSettingsForm = ({ settings, onSaved }: Props) => {
                     onChange={(event) => setMemoryText(event.target.value)}
                     disabled={memoryDisabled}
                     rows={3}
-                    className="resize-none overflow-y-auto bg-transparent px-0"
+                    variant="inline"
                     maxLength={2000}
                     required
                     placeholder="가족의 선호나 습관"

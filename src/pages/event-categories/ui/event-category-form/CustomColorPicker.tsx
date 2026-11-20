@@ -11,6 +11,7 @@ import {
   type CategoryColor,
 } from "@/shared/lib";
 import { Button, Sheet, TextButton } from "@/shared/ui";
+import { customColorButtonStyles } from "./event-category-form.variants";
 
 interface Props {
   initialColor: string;
@@ -81,14 +82,13 @@ const EventCategoryCustomColorPicker = ({
       ref={trigger}
       tabIndex={-1}
       variant="glass"
-      size="icon"
+      size={null}
       aria-label="직접 선택"
       aria-haspopup="dialog"
       aria-expanded={open}
       onClick={mobile ? () => onOpenChange(true) : undefined}
       className={cn(
-        "size-9 min-h-9 after:pointer-events-none before:absolute before:-inset-1",
-        "peer-focus-visible:outline-2 peer-focus-visible:outline-primary peer-focus-visible:outline-offset-2",
+        customColorButtonStyles(),
         selected && "ring-2 ring-primary",
       )}
       style={selected ? { backgroundColor: color } : undefined}

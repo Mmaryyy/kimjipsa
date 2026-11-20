@@ -1,6 +1,7 @@
 "use client";
 
 import { ToggleGroup as ToggleGroupPrimitive } from "radix-ui";
+import type { VariantProps } from "class-variance-authority";
 import type { ComponentProps } from "react";
 import { cn } from "@/shared/lib";
 import { toggleGroupStyles } from "./ui.variants";
@@ -24,6 +25,8 @@ export type ToggleGroupProps<Value extends string> = Pick<
   odId?: string;
 };
 
+type ToggleGroupStyleProps = VariantProps<typeof toggleGroupStyles>;
+
 export function ToggleGroup<Value extends string>({
   label,
   options,
@@ -31,14 +34,12 @@ export function ToggleGroup<Value extends string>({
   onValueChange,
   disabled,
   className,
-  appearance,
+  appearance = "segmented",
   odId,
   id,
   "aria-invalid": ariaInvalid,
   "aria-describedby": ariaDescribedBy,
-}: ToggleGroupProps<Value> & {
-  appearance: "segmented" | "filters";
-}) {
+}: ToggleGroupProps<Value> & ToggleGroupStyleProps) {
   return (
     <ToggleGroupPrimitive.Root
       data-slot={

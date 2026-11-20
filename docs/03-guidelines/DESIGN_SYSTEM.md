@@ -174,10 +174,18 @@ AppLayout ─ 모바일: 본문 + 하단 탭(유리 캡슐) / lg 이상: 왼쪽 
 | 상태 배지 | `StatusBadge`, `InventoryBadges` | `src/shared/ui/status-badge.tsx`, `src/entities/inventory-item/ui/inventory-badges/index.tsx` |
 | 빈 값·로딩·오류 | `EmptyState`, `ListSkeleton`, `SkeletonSection`, `ErrorState` | `src/shared/ui/empty-state.tsx`, `src/shared/ui/list-skeleton.tsx`, `src/shared/ui/skeleton.tsx`, `src/shared/ui/error-state.tsx` |
 | 스위치·입력 행 | `Switch`, `FormFieldRow` | `src/shared/ui/switch.tsx`, `src/shared/ui/form-field-row.tsx` |
+| 선택 입력 | `Select` | `src/shared/ui/select/index.tsx` |
 | 목록·행·그룹 머리 | `List`, `ListRow`, `GroupLabel` | `src/shared/ui/list.tsx`, `src/shared/ui/group-label.tsx` |
 | 카테고리 색·아이콘 | `CategoryDot`, `InventoryCategoryIcon` | `src/shared/ui/category-dot.tsx`, `src/entities/inventory-item/ui/category-icon/index.tsx` |
+| 접기 | `Accordion` | `src/shared/ui/accordion/index.tsx` |
 | 기본·접힘 수량 스테퍼 | `QuantityStepper` | `src/shared/ui/quantity-stepper/index.tsx` |
 | 가정 단위 목록 편집 | `InventoryListEditor` (페이지 전용) | `src/pages/inventory-lists/ui/list-editor/index.tsx` |
+
+`StatusBadge`의 `shape="capsule"`은 프로젝트 화면에서 상태 점과 글자를 높이 22px의 테두리 있는 캡슐로 표시한다.
+
+완료 상태에는 라이트·다크 모두 `--label-secondary`보다 선명한 회색인 `--label-done`을 쓴다. 프로젝트 할 일에서는 접기 머리와 개수, 화살표, 체크된 `Checkbox tone="muted"`의 채움과 테두리, 제목·취소선·설명에 적용한다.
+
+`Accordion`은 키보드로 여닫을 수 있고, 본문 높이와 둥근 20px 화살표가 함께 움직인다. 동작 줄이기를 사용하면 즉시 전환한다.
 
 `PageLayout`은 `width`와 `header`(PageHeader props 또는 요소)를 받는다. `odId`는 바깥 `data-od-id`다. 하단 탭·safe area 여백은 `AppLayout`이 유지한다. `bottomBar` 슬롯은 아직 없다. P10.9 하단 입력 바를 만들 때 고정·키보드 대응·본문 아래 여백과 함께 추가한다.
 

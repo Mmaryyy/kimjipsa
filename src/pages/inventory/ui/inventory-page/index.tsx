@@ -36,6 +36,7 @@ import {
 import { useItemActions } from "../../model/use-item-actions";
 import InventoryGroup from "./Group";
 import InventoryItemEditor from "../item-editor";
+import { inventoryFilterTabsStyles } from "./inventory-page.variants";
 const groups = [
   { value: "locations", label: "보관 장소별", odId: "by-location" },
   { value: "categories", label: "카테고리별", odId: "by-category" },
@@ -278,7 +279,7 @@ const InventoryPage = () => {
               ]}
               value={selectedFilter}
               onValueChange={(value) => updateSearch({ filter: value })}
-              className="flex-1 overflow-x-auto pb-1"
+              className={inventoryFilterTabsStyles()}
             />
           </div>
         </div>

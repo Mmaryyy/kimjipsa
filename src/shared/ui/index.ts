@@ -10,6 +10,12 @@ export { SegmentedNavigation } from "./segmented-navigation";
 export { FilterTabs } from "./filter-tabs";
 export { Switch } from "./switch";
 export { Checkbox } from "./checkbox";
+export {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "./accordion";
 export { default as QuantityStepper } from "./quantity-stepper";
 export { List, ListRow, ListGroupLabel } from "./list";
 export { SectionHeader } from "./section-header";
@@ -31,6 +37,7 @@ export type { TextVariant, StatusVariant } from "./ui.variants";
 export { GroupLabel } from "./group-label";
 export { onboardingStyles, wordmarkStyles } from "./onboarding.variants";
 export { Input } from "./input";
+export { Select } from "./select";
 export { Skeleton, SkeletonSection, SkeletonStatus } from "./skeleton";
 export { default as Textarea } from "./textarea";
 

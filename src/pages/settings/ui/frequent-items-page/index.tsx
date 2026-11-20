@@ -100,7 +100,8 @@ const FrequentItemsPage = () => {
                   }
                 >
                   <TextButton
-                    className="min-h-[var(--row-min)] w-full justify-start text-left font-normal text-foreground"
+                    tone="neutral"
+                    size="row-start"
                     disabled={cart.offline}
                     onClick={() =>
                       setEditor({
@@ -146,15 +147,16 @@ const FrequentItemsPage = () => {
           title="자주 사는 품목"
           odId="frequent-items"
           navigation={
-            <Link
-              href={backHref}
-              onNavigate={onNavigate}
-              aria-label="뒤로"
-              data-od-id="frequent-items-back"
-              className="inline-flex size-11 items-center justify-center text-primary"
-            >
-              <ChevronLeft aria-hidden size={20} />
-            </Link>
+            <TextButton asChild size="icon">
+              <Link
+                href={backHref}
+                onNavigate={onNavigate}
+                aria-label="뒤로"
+                data-od-id="frequent-items-back"
+              >
+                <ChevronLeft aria-hidden size={20} />
+              </Link>
+            </TextButton>
           }
         />
       }

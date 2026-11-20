@@ -8,6 +8,7 @@ import ChatRun, { ChatRunCaption } from "./Run";
 import ChatTime from "./Time";
 import ReceiptCard from "./Receipt";
 import { cn } from "@/shared/lib";
+import { chatAnswerChoiceStyles } from "./chat-panel.variants";
 
 interface Props {
   name?: string;
@@ -82,13 +83,9 @@ const ChatMessage = ({
               {message.choices.map((choice) => (
                 <Button
                   key={choice.value}
-                  variant="gray"
+                  variant={null}
+                  className={chatAnswerChoiceStyles()}
                   size="sm"
-                  className={cn(
-                    "rounded-full border border-[var(--separator)] bg-transparent px-3 py-1",
-                    "text-caption text-foreground aria-pressed:border-primary",
-                    "aria-pressed:bg-[var(--accent-soft)] aria-pressed:text-primary disabled:opacity-40",
-                  )}
                   aria-pressed={choice.label === selectedChoice}
                   disabled={choicesDisabled}
                   onClick={() => onChoice?.(choice.label)}

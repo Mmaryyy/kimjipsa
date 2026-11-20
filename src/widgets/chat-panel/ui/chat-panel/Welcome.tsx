@@ -2,6 +2,7 @@ import { chatCapabilities } from "@/entities/chat-message";
 import { Text, TextButton } from "@/shared/ui";
 import { chatFaqs } from "../../config/chat.constants";
 import ChatBotMessage from "./BotMessage";
+import { chatFaqButtonStyles } from "./chat-panel.variants";
 
 interface Props {
   name: string;
@@ -23,7 +24,9 @@ const ChatWelcome = ({ name, displayName, onFaq }: Props) => (
         {chatFaqs.map((faq, index) => (
           <TextButton
             key={faq.title}
-            className="min-h-8 justify-start p-0 text-left text-body-sm font-normal text-[var(--link)]"
+            tone={null}
+            size={null}
+            className={chatFaqButtonStyles()}
             onClick={() => onFaq(index)}
             data-od-id={`faq-${index + 1}`}
           >

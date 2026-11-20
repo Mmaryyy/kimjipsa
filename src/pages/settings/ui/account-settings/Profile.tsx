@@ -5,6 +5,7 @@ import { ProfileForm } from "@/features/account";
 import SettingsRow from "../settings-row";
 import { getOptionLabel } from "@/shared/lib";
 import { useState } from "react";
+import { profileButtonStyles } from "./account-settings.variants";
 
 interface Props {
   profile: Account["profile"];
@@ -24,7 +25,9 @@ const ProfileSettings = ({ profile, loginProvider }: Props) => {
         trigger={
           <TextButton
             data-od-id="s-display-name"
-            className="flex min-h-11 w-full justify-between text-body font-normal text-foreground"
+            tone="neutral"
+            size={null}
+            className={profileButtonStyles()}
           >
             <span>표시 이름</span>
             <Text variant="body-sm" className="text-muted-foreground">

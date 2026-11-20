@@ -1,26 +1,20 @@
 "use client";
 import { Checkbox as CheckboxPrimitive } from "radix-ui";
 import { Check, Minus } from "lucide-react";
+import type { VariantProps } from "class-variance-authority";
 import type { ComponentProps } from "react";
 import { cn } from "@/shared/lib";
+import { checkboxStyles } from "./ui.variants";
+
 export function Checkbox({
   className,
+  tone,
   ...props
-}: ComponentProps<typeof CheckboxPrimitive.Root>) {
+}: ComponentProps<typeof CheckboxPrimitive.Root> &
+  VariantProps<typeof checkboxStyles>) {
   return (
     <CheckboxPrimitive.Root
-      className={cn(
-        [
-          "group/checkbox grid size-5 flex-none cursor-pointer place-items-center",
-          "rounded-[var(--r-round)] border-[length:calc(var(--sp-half)*0.75)]",
-          "border-[var(--sys-gray3)] data-[state=checked]:border-primary",
-          "data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",
-          "data-[state=indeterminate]:border-primary data-[state=indeterminate]:bg-primary",
-          "data-[state=indeterminate]:text-primary-foreground disabled:cursor-default",
-          "disabled:opacity-50 kj-hit",
-        ],
-        className,
-      )}
+      className={cn(checkboxStyles({ tone }), className)}
       {...props}
     >
       <CheckboxPrimitive.Indicator>

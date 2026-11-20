@@ -198,9 +198,10 @@ export function ViewportSpacingPage() {
             {spacingValues.map((value) => (
               <Button
                 key={value}
-                variant="gray"
+                variant={null}
+                size="touch"
                 aria-pressed={value === spacing}
-                className={spacingButtonStyles({ selected: value === spacing })}
+                className={spacingButtonStyles()}
                 onClick={() => onSpacingChange(value)}
               >
                 {value}px

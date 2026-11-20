@@ -7,8 +7,9 @@ import type {
 } from "react-hook-form";
 import type QuantityStepper from "../quantity-stepper";
 import type { DateTimeInput } from "../date-time-input";
+import type { Select } from "../select";
 
-type NativeProps<E extends "input" | "textarea" | "select"> = Omit<
+type NativeProps<E extends "input" | "textarea" | typeof Select> = Omit<
   ComponentProps<E>,
   | "id"
   | "name"
@@ -32,7 +33,7 @@ export type FieldTypeProps<V> = {
   select: {
     options: readonly FieldOption<NonNullable<V>>[];
     noneLabel?: null extends V ? string : never;
-    inputProps?: NativeProps<"select">;
+    inputProps?: NativeProps<typeof Select>;
   };
   switch: { "data-od-id"?: string };
   segmented: {

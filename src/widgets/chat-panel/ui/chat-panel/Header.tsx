@@ -5,6 +5,7 @@ import { ChevronDown, X } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/shared/lib";
 import { useChatNavigation } from "@/features/chat-navigation";
+import { chatHeaderButtonStyles } from "./chat-panel.variants";
 
 interface Props {
   name: string;
@@ -54,8 +55,8 @@ const ChatHeader = ({ name, online, failed }: Props) => {
           </Badge>
         </div>
         <Button
-          variant="gray"
-          className="bg-transparent text-primary!"
+          variant={null}
+          className={chatHeaderButtonStyles()}
           size="icon"
           aria-label="최소화"
           data-od-id="chat-minimize"
@@ -64,8 +65,8 @@ const ChatHeader = ({ name, online, failed }: Props) => {
           <ChevronDown aria-hidden="true" />
         </Button>
         <Button
-          variant="gray"
-          className="bg-transparent text-primary!"
+          variant={null}
+          className={chatHeaderButtonStyles()}
           size="icon"
           aria-label="닫기"
           data-od-id="chat-close"
