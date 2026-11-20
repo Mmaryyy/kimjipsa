@@ -63,9 +63,6 @@
           <h1 class="t-large" id="rs-title" data-od-id="restock-title">
             재고 반영
           </h1>
-          <div class="sub" id="rs-sub">
-            구매한 품목을 재고에 반영하기 전에 확인해 주세요.
-          </div>
         </header>
 
         <form id="rs-form" novalidate data-od-id="restock-form">
@@ -326,10 +323,6 @@
           this.hidden = true;
           document.getElementById("done").hidden = false;
           document.getElementById("rs-title").textContent = "반영했어요";
-          document.getElementById("rs-sub").textContent =
-            "구매한 " +
-            bought.length +
-            "개 품목이 장바구니에서 빠지고 구매 기록에 남았어요.";
           try {
             sessionStorage.removeItem("kj:purchased");
           } catch (_) {}
