@@ -17,7 +17,11 @@ import {
   useProject,
   type ProjectTask,
 } from "@/entities/project";
-import { MilestoneEditor, ProjectEditor } from "@/features/project-edit";
+import {
+  MilestoneEditor,
+  ProjectEditor,
+  ProjectEventAction,
+} from "@/features/project-edit";
 import {
   Button,
   ErrorState,
@@ -95,13 +99,15 @@ function ProjectOverview({ id }: { id: string }) {
   }
   const ungrouped = byArea.get(null);
   const assignees = taskAssignees(members);
-  const moduleLabels = projectModules
+  const modules = projectModules
     .filter((module) => project.modules.includes(module))
-    .flatMap((module) =>
-      module === "lists"
-        ? ["후보 목록", "명단"]
-        : [projectModuleLabels[module]],
-    );
+    .flatMap<{ label: string; href?: string }>((module) => {
+      if (module === "lists")
+        return [{ label: "후보 목록" }, { label: "명단" }];
+      const label = projectModuleLabels[module];
+      if (module === "budget") return [{ label }];
+      return [{ label, href: `/projects/${id}/${module}` }];
+    });
 
   return (
     <PageLayout
@@ -139,6 +145,7 @@ function ProjectOverview({ id }: { id: string }) {
           milestones={milestones}
           areas={areas}
           today={today}
+          action={(row) => <ProjectEventAction row={row} source="milestones" />}
         />
       </section>
       <section aria-labelledby="prj-area-progress-title">
@@ -212,12 +219,22 @@ function ProjectOverview({ id }: { id: string }) {
               <ChevronRight aria-hidden size={16} />
             </Link>
           </li>
-          {moduleLabels.map((label) => (
+          {modules.map(({ label, href }) => (
             <ListRow
               key={label}
               className="border-b border-border/60 text-muted-foreground"
             >
-              {label}
+              {href ? (
+                <Link
+                  href={href}
+                  className="flex min-h-11 items-center justify-between gap-3 font-semibold text-primary"
+                >
+                  {label}
+                  <ChevronRight aria-hidden size={16} />
+                </Link>
+              ) : (
+                label
+              )}
             </ListRow>
           ))}
           <li>

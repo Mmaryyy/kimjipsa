@@ -2,6 +2,10 @@ import { z } from "zod";
 import {
   areaInput,
   areaSortOrder,
+  decisionInput,
+  reservationInput,
+  itineraryInput,
+  opinionInput,
   milestoneInput,
   projectId,
   projectInput,
@@ -16,7 +20,29 @@ export const areaRow = areaInput.extend({
   ...childIdentity,
   sort_order: areaSortOrder,
 });
-export const milestoneRow = milestoneInput.safeExtend(childIdentity);
+const eventLink = { event_id: projectId.nullable() };
+export const milestoneRow = milestoneInput.safeExtend({
+  ...childIdentity,
+  ...eventLink,
+});
+export const decisionRow = decisionInput.extend({
+  ...childIdentity,
+  opinions: z.array(
+    opinionInput.extend({ id: projectId, user_id: projectId.nullable() }),
+  ),
+});
+export const reservationRow = reservationInput.safeExtend({
+  ...childIdentity,
+  ...eventLink,
+});
+export const itineraryRow = itineraryInput.safeExtend({
+  ...childIdentity,
+  ...eventLink,
+  starts_on: z.iso.date(),
+});
+export type ProjectDecision = z.infer<typeof decisionRow>;
+export type ProjectReservation = z.infer<typeof reservationRow>;
+export type ProjectItinerary = z.infer<typeof itineraryRow>;
 export const taskRow = taskInput.safeExtend({
   ...childIdentity,
   completed_at: z.string().nullable(),
@@ -41,4 +67,7 @@ export type ProjectDetail = {
   milestones: ProjectMilestone[];
   tasks: ProjectTask[];
   members: ProjectMember[];
+  decisions: ProjectDecision[];
+  reservations: ProjectReservation[];
+  itinerary: ProjectItinerary[];
 };

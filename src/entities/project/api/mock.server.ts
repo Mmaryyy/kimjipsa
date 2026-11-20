@@ -1,12 +1,20 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { ApiError } from "@/shared/api";
-import type { ProjectCommand } from "../model/project.schema";
+import { moduleFixtures } from "./module-mock.server";
+import type {
+  ProjectCommand,
+  ProjectModuleCommand,
+} from "../model/project.schema";
 import type {
   Project,
   ProjectArea,
   ProjectMilestone,
   ProjectTask,
+  ProjectDecision,
+  ProjectReservation,
+  ProjectItinerary,
+  ProjectMember,
 } from "./type";
 
 export type ProjectStore = {
@@ -14,10 +22,16 @@ export type ProjectStore = {
   areas: ProjectArea[];
   milestones: ProjectMilestone[];
   tasks: ProjectTask[];
+  decisions: ProjectDecision[];
+  reservations: ProjectReservation[];
+  itinerary: ProjectItinerary[];
 };
 
-export function projectMock(values: Map<string, unknown>): ProjectStore {
-  const key = "project-store";
+export function projectMock(
+  values: Map<string, unknown>,
+  members: ProjectMember[],
+): ProjectStore {
+  const key = "project-store-pj3";
   const existing = values.get(key) as ProjectStore | undefined;
   if (existing) return existing;
   const id = "2fc2341a-62cb-4b1a-8bdc-de35bbd2e0fa";
@@ -58,6 +72,7 @@ export function projectMock(values: Map<string, unknown>): ProjectStore {
     project_id: id,
     area_id: null,
     is_tentative: row.starts_on === null,
+    event_id: null,
   }));
   const taskFixtures: (Partial<ProjectTask> & Pick<ProjectTask, "title">)[] = [
     {
@@ -122,6 +137,7 @@ export function projectMock(values: Map<string, unknown>): ProjectStore {
     areas,
     milestones,
     tasks,
+    ...moduleFixtures(id, areas[0].id, members),
   };
   values.set(key, store);
   return store;
@@ -129,7 +145,7 @@ export function projectMock(values: Map<string, unknown>): ProjectStore {
 
 export function writeProjectMock(
   store: ProjectStore,
-  command: ProjectCommand,
+  command: Exclude<ProjectCommand, ProjectModuleCommand>,
   actor: string,
   members: string[],
 ) {
@@ -157,6 +173,11 @@ export function writeProjectMock(
     store.areas = store.areas.filter((row) => row.project_id !== id);
     store.milestones = store.milestones.filter((row) => row.project_id !== id);
     store.tasks = store.tasks.filter((row) => row.project_id !== id);
+    store.decisions = store.decisions.filter((row) => row.project_id !== id);
+    store.reservations = store.reservations.filter(
+      (row) => row.project_id !== id,
+    );
+    store.itinerary = store.itinerary.filter((row) => row.project_id !== id);
     return id;
   }
   const project_id = command.projectId;
@@ -214,13 +235,26 @@ export function writeProjectMock(
     }
     case "delete_area":
       remove(store.areas);
-      for (const row of [...store.milestones, ...store.tasks]) {
+      for (const row of [
+        ...store.milestones,
+        ...store.tasks,
+        ...store.reservations,
+      ]) {
         if (row.area_id === id) row.area_id = null;
       }
       break;
-    case "save_milestone":
-      save(store.milestones, { ...command.item, id, project_id });
+    case "save_milestone": {
+      const previous = store.milestones.find((row) => row.id === id);
+      if (previous) Object.assign(previous, command.item);
+      else
+        save(store.milestones, {
+          ...command.item,
+          id,
+          project_id,
+          event_id: null,
+        });
       break;
+    }
     case "delete_milestone":
       remove(store.milestones);
       break;

@@ -1,4 +1,10 @@
-import type { Project, ProjectMember, ProjectTask } from "../api/type";
+import type {
+  Project,
+  ProjectMember,
+  ProjectTask,
+  ProjectDecision,
+  ProjectReservation,
+} from "../api/type";
 
 export const projectStatusLabels: Record<Project["status"], string> = {
   active: "진행 중",
@@ -27,3 +33,28 @@ export const taskAssignees = (members: ProjectMember[]) => [
     label: member.display_name,
   })),
 ];
+
+export const decisionStatusLabels: Record<ProjectDecision["status"], string> = {
+  discussing: "논의 중",
+  decided: "결정 완료",
+  on_hold: "보류",
+};
+
+export const reservationKindLabels: Record<ProjectReservation["kind"], string> =
+  {
+    lodging: "숙소",
+    transport: "교통",
+    restaurant: "식당",
+    activity: "체험",
+    other: "기타",
+  };
+
+export const reservationStatusLabels: Record<
+  ProjectReservation["status"],
+  string
+> = {
+  reviewing: "검토 중",
+  planned: "예약 예정",
+  booked: "예약 완료",
+  cancelled: "취소",
+};

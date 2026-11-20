@@ -94,9 +94,129 @@ export const taskInput = z
     },
   );
 
+export const decisionStatuses = ["discussing", "decided", "on_hold"] as const;
+export const reservationKinds = [
+  "lodging",
+  "transport",
+  "restaurant",
+  "activity",
+  "other",
+] as const;
+export const reservationStatuses = [
+  "reviewing",
+  "planned",
+  "booked",
+  "cancelled",
+] as const;
+export const projectEventSources = [
+  "milestones",
+  "reservations",
+  "itinerary",
+] as const;
+
+export const opinionInput = z.object({ user_id: projectId, opinion: note });
+export const decisionInput = z.object({
+  question: title,
+  status: z.enum(decisionStatuses),
+  due_on: date,
+  options: note,
+  final_choice: note,
+  opinions: z.array(opinionInput),
+});
+
+const projectLink = z
+  .string()
+  .max(2048)
+  .regex(/^https?:\/\/[^/\s]+[^\s]*$/i)
+  .pipe(z.url());
+const links = z
+  .array(z.string())
+  .transform((values) => values.map((value) => value.trim()).filter(Boolean))
+  .refine(
+    (values) => values.every((value) => projectLink.safeParse(value).success),
+    "2,048자 이내의 http 또는 https 링크를 입력해 주세요.",
+  );
+const amount = z.number().min(0).max(Number.MAX_SAFE_INTEGER).nullable();
+const endsAfterStart = ({
+  starts_on,
+  ends_on,
+}: {
+  starts_on: string | null;
+  ends_on: string | null;
+}) => !ends_on || (starts_on !== null && starts_on <= ends_on);
+const endDateError = {
+  path: ["ends_on"],
+  message: "종료일은 시작일 이후로 입력해 주세요.",
+};
+
+export const reservationInput = z
+  .object({
+    title,
+    area_id: projectId.nullable(),
+    kind: z.enum(reservationKinds),
+    status: z.enum(reservationStatuses),
+    starts_on: date,
+    ends_on: date,
+    reference_no: z.string().trim().max(100),
+    links,
+    cancel_deadline: date,
+    payment_deadline: date,
+    total_amount: amount,
+    paid_amount: amount,
+    memo: note,
+  })
+  .refine(endsAfterStart, endDateError)
+  .refine(
+    ({ paid_amount, total_amount }) =>
+      paid_amount === null ||
+      (total_amount !== null && paid_amount <= total_amount),
+    { path: ["paid_amount"], message: "결제액은 총액 이내로 입력해 주세요." },
+  );
+
+export const itineraryInput = z
+  .object({
+    starts_on: date,
+    ends_on: date,
+    place: note,
+    title,
+    links,
+    memo: note,
+  })
+  .refine(({ starts_on }) => starts_on !== null, {
+    path: ["starts_on"],
+    message: "날짜를 입력해 주세요.",
+  })
+  .refine(endsAfterStart, endDateError);
+
 const child = { projectId, id: projectId.optional() };
 const existing = { projectId, id: projectId };
+export const projectModuleCommand = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("save_decision"),
+    ...child,
+    item: decisionInput,
+  }),
+  z.object({ action: z.literal("delete_decision"), ...existing }),
+  z.object({
+    action: z.literal("save_reservation"),
+    ...child,
+    item: reservationInput,
+  }),
+  z.object({ action: z.literal("delete_reservation"), ...existing }),
+  z.object({
+    action: z.literal("save_itinerary"),
+    ...child,
+    item: itineraryInput,
+  }),
+  z.object({ action: z.literal("delete_itinerary"), ...existing }),
+  z.object({
+    action: z.literal("add_project_event"),
+    ...existing,
+    source: z.enum(projectEventSources),
+  }),
+]);
 export const projectCommand = z.discriminatedUnion("action", [
+  projectModuleCommand,
   z.object({
     action: z.literal("save_project"),
     id: projectId.optional(),
@@ -134,3 +254,9 @@ export type AreaInput = z.infer<typeof areaInput>;
 export type MilestoneInput = z.infer<typeof milestoneInput>;
 export type TaskInput = z.infer<typeof taskInput>;
 export type ProjectCommand = z.infer<typeof projectCommand>;
+
+export type DecisionInput = z.infer<typeof decisionInput>;
+export type ReservationInput = z.infer<typeof reservationInput>;
+export type ItineraryInput = z.infer<typeof itineraryInput>;
+export type ProjectModuleCommand = z.infer<typeof projectModuleCommand>;
+export type ProjectEventSource = (typeof projectEventSources)[number];

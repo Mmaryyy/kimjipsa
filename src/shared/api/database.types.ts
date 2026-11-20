@@ -74,6 +74,45 @@ type ProjectTaskRow = ProjectChildRow & {
   completed_by: string | null;
   completed_at: string | null;
 };
+type ProjectDecisionRow = ProjectChildRow & {
+  question: string;
+  status: string;
+  due_on: string | null;
+  options: string;
+  final_choice: string;
+};
+type ProjectOpinionRow = {
+  id: string;
+  family_id: string;
+  decision_id: string;
+  user_id: string | null;
+  opinion: string;
+};
+type ProjectReservationRow = ProjectChildRow & {
+  area_id: string | null;
+  title: string;
+  kind: string;
+  status: string;
+  starts_on: string | null;
+  ends_on: string | null;
+  reference_no: string;
+  links: string[];
+  cancel_deadline: string | null;
+  payment_deadline: string | null;
+  total_amount: number | null;
+  paid_amount: number | null;
+  memo: string;
+  event_id: string | null;
+};
+type ProjectItineraryRow = ProjectChildRow & {
+  starts_on: string;
+  ends_on: string | null;
+  place: string;
+  title: string;
+  links: string[];
+  memo: string;
+  event_id: string | null;
+};
 // P2/P3/P4 migration contract. Regenerate with `supabase gen types typescript --local`
 // after applying the migration to a local Supabase instance.
 export type Json =
@@ -133,6 +172,23 @@ export type Database<
       project_areas: Table<ProjectAreaRow, never>;
       project_milestones: Table<ProjectMilestoneRow, never>;
       project_tasks: Table<ProjectTaskRow, never>;
+      project_decisions: Table<ProjectDecisionRow, never>;
+      project_decision_opinions: Omit<
+        Table<ProjectOpinionRow, never>,
+        "Relationships"
+      > & {
+        Relationships: [
+          {
+            foreignKeyName: "project_decision_opinions_decision_id_family_id_fkey";
+            columns: ["decision_id", "family_id"];
+            isOneToOne: false;
+            referencedRelation: "project_decisions";
+            referencedColumns: ["id", "family_id"];
+          },
+        ];
+      };
+      project_reservations: Table<ProjectReservationRow, never>;
+      project_itinerary: Table<ProjectItineraryRow, never>;
       frequent_cart_overrides: Table<
         {
           family_id: string;
@@ -383,6 +439,7 @@ export type Database<
       save_frequent_cart_override: { Args: { payload: Json }; Returns: Json };
       frequent_cart_items: { Args: Record<string, never>; Returns: CartRow[] };
       undo_cart_restock: { Args: { token: string }; Returns: Json };
+      write_project_module: { Args: { payload: Json }; Returns: string };
       // reorder_areas uses projectId and areaIds, and returns the project ID.
       write_project: { Args: { payload: Json }; Returns: string };
       write_cart: { Args: { payload: Json }; Returns: Json };

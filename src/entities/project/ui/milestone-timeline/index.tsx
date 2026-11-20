@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { StatusBadge } from "@/shared/ui";
 import type { ProjectArea, ProjectMilestone } from "../../api/type";
 import { projectShortPeriod } from "../../model/project-date.utils";
@@ -17,10 +18,12 @@ function MilestoneTimeline({
   milestones,
   areas,
   today,
+  action,
 }: {
   milestones: readonly ProjectMilestone[];
   areas: readonly ProjectArea[];
   today: string;
+  action?: (milestone: ProjectMilestone) => ReactNode;
 }) {
   const timeline = projectTimeline(milestones, today);
   if (timeline.length === 0) {
@@ -89,6 +92,7 @@ function MilestoneTimeline({
                   {details}
                 </p>
               )}
+              {action?.(milestone)}
             </div>
           </li>
         );

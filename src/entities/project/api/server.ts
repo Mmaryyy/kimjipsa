@@ -10,13 +10,24 @@ import {
 import {
   projectCommand,
   projectId,
+  projectModuleCommand,
+  type ProjectCommand,
+  type ProjectModuleCommand,
   taskStatuses,
 } from "../model/project.schema";
 import { projectProgress, upcomingTasks } from "../model/progress.utils";
 import { projectToday } from "../model/project-date.utils";
+import {
+  clearMockProjectLinks,
+  writeProjectModuleMock,
+  type CreateProjectMockEvent,
+} from "./module-mock.server";
 import { projectMock, writeProjectMock } from "./mock.server";
 import {
   areaRow,
+  decisionRow,
+  reservationRow,
+  itineraryRow,
   milestoneRow,
   projectRow,
   taskRow,
@@ -78,9 +89,14 @@ const summaryTask = z.object({
 
 export async function listProjects(): Promise<ProjectList> {
   const mock = await mockContext();
-  const { projects, tasks, familyId } = mock
-    ? { ...projectMock(mock.values), familyId: (await mockJson("family")).id }
-    : await readList();
+  const mockFamily = mock && (await mockJson("family"));
+  const { projects, tasks, familyId } =
+    mock && mockFamily
+      ? {
+          ...projectMock(mock.values, mockFamily.members),
+          familyId: mockFamily.id,
+        }
+      : await readList();
   const byProject = Map.groupBy(tasks, (task) => task.project_id);
   const today = projectToday();
   return {
@@ -130,7 +146,8 @@ export async function readProject(rawId: string): Promise<ProjectDetail> {
   const mock = await mockContext();
   if (mock) {
     const family = await mockJson("family");
-    const store = projectMock(mock.values);
+    const store = projectMock(mock.values, family.members);
+    await clearMockProjectLinks(store);
     const project = store.projects.find((row) => row.id === id);
     if (!project)
       throw new ApiError("project_not_found", errors.project_not_found[1], 404);
@@ -143,6 +160,15 @@ export async function readProject(rawId: string): Promise<ProjectDetail> {
       milestones: store.milestones.filter((row) => row.project_id === id),
       tasks: store.tasks.filter((row) => row.project_id === id),
       members: family.members,
+      decisions: project.modules.includes("decisions")
+        ? store.decisions.filter((row) => row.project_id === id)
+        : [],
+      reservations: project.modules.includes("reservations")
+        ? store.reservations.filter((row) => row.project_id === id)
+        : [],
+      itinerary: project.modules.includes("itinerary")
+        ? store.itinerary.filter((row) => row.project_id === id)
+        : [],
     };
   }
 
@@ -156,7 +182,17 @@ export async function readProject(rawId: string): Promise<ProjectDetail> {
   throwDatabaseError(project.error);
   if (!project.data)
     throw new ApiError("project_not_found", errors.project_not_found[1], 404);
-  const [areas, milestones, tasks, members] = await Promise.all([
+  const parsedProject = projectRow.parse(project.data);
+  const modules = parsedProject.modules;
+  const [
+    areas,
+    milestones,
+    tasks,
+    members,
+    decisions,
+    reservations,
+    itinerary,
+  ] = await Promise.all([
     allRows((from, to) =>
       client
         .from("project_areas")
@@ -186,27 +222,84 @@ export async function readProject(rawId: string): Promise<ProjectDetail> {
         .range(from, to),
     ),
     client.rpc("family_members"),
+    modules.includes("decisions")
+      ? allRows((from, to) =>
+          client
+            .from("project_decisions")
+            .select("*,opinions:project_decision_opinions(id,user_id,opinion)")
+            .eq("family_id", familyId)
+            .eq("project_id", id)
+            .order("id")
+            .range(from, to),
+        )
+      : [],
+    modules.includes("reservations")
+      ? allRows((from, to) =>
+          client
+            .from("project_reservations")
+            .select("*")
+            .eq("family_id", familyId)
+            .eq("project_id", id)
+            .order("starts_on")
+            .order("id")
+            .range(from, to),
+        )
+      : [],
+    modules.includes("itinerary")
+      ? allRows((from, to) =>
+          client
+            .from("project_itinerary")
+            .select("*")
+            .eq("family_id", familyId)
+            .eq("project_id", id)
+            .order("starts_on")
+            .order("id")
+            .range(from, to),
+        )
+      : [],
   ]);
   throwDatabaseError(members.error);
   return {
     familyId,
-    project: projectRow.parse(project.data),
+    project: parsedProject,
     areas: areaRow.array().parse(areas),
     milestones: milestoneRow.array().parse(milestones),
     tasks: taskRow.array().parse(tasks),
     members: members.data ?? [],
+    decisions: decisionRow.array().parse(decisions),
+    reservations: reservationRow.array().parse(reservations),
+    itinerary: itineraryRow.array().parse(itinerary),
   };
 }
 
-export async function writeProject(raw: unknown) {
+function isModuleCommand(
+  command: ProjectCommand,
+): command is ProjectModuleCommand {
+  return projectModuleCommand.safeParse(command).success;
+}
+
+export async function writeProject(
+  raw: unknown,
+  createMockEvent: CreateProjectMockEvent,
+) {
   const command = projectCommand.parse(raw);
   const mock = await mockContext();
   if (mock) {
     const { members } = await mockJson("family");
+    const store = projectMock(mock.values, members);
+    if (isModuleCommand(command))
+      return {
+        id: await writeProjectModuleMock(
+          store,
+          command,
+          members,
+          createMockEvent,
+        ),
+      };
     const actor = members[mock.perspective]!.user_id;
     return {
       id: writeProjectMock(
-        projectMock(mock.values),
+        store,
         command,
         actor,
         members.map((member) => member.user_id),
@@ -214,9 +307,12 @@ export async function writeProject(raw: unknown) {
     };
   }
   const { client } = await projectContext();
-  const { data, error } = await client.rpc("write_project", {
-    payload: command,
-  });
+  const { data, error } = await client.rpc(
+    isModuleCommand(command) ? "write_project_module" : "write_project",
+    {
+      payload: command,
+    },
+  );
   throwDatabaseError(error, errors);
   return { id: projectId.parse(data) };
 }

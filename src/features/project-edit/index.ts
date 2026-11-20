@@ -2,3 +2,7 @@ export { default as ProjectEditor } from "./ui/project-editor";
 export { default as AreaEditor } from "./ui/area-editor";
 export { default as MilestoneEditor } from "./ui/milestone-editor";
 export { default as TaskEditor } from "./ui/task-editor";
+export { default as DecisionEditor } from "./ui/decision-editor";
+export { default as ReservationEditor } from "./ui/reservation-editor";
+export { default as ItineraryEditor } from "./ui/itinerary-editor";
+export { default as ProjectEventAction } from "./ui/project-event-action";
