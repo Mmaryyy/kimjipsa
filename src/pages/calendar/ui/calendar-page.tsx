@@ -2,6 +2,14 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { useSearchParams } from "next/navigation";
+import {
+  todoSchedule,
+  useTodos,
+  useTodoWrite,
+  type Todo,
+  type TodoCommand,
+  type TodoFields,
+} from "@/entities/todo";
 import { useFamily } from "@/features/family";
 import { CalendarView } from "@/widgets/calendar-view";
 import {
@@ -18,6 +26,7 @@ import {
   EmptyState,
   ErrorState,
   FormSheet,
+  ListSkeleton,
   PageLayout,
   PullToAdd,
   Toast,
@@ -26,14 +35,34 @@ import { useEventDelete } from "../model/use-event-delete";
 import EventForm from "./event-form";
 import EventFormSkeleton from "./event-form/Skeleton";
 import EventDetail from "./event-detail";
+
+function groupTodosByDate(items: Todo[], today: string) {
+  const scheduled = items.map((todo) => {
+    const { date, overdueDays } = todoSchedule(todo, today);
+    return { date, todo, overdueDays };
+  });
+  return Map.groupBy(scheduled, (item) => item.date);
+}
+
 function EventList({
   onOpen,
   onAdd,
+  instant,
+  todos,
+  todoBusy,
+  onToggleTodo,
+  onEditTodo,
+  onDeleteTodo,
 }: {
   onOpen: (id: string, action?: "edit" | "delete") => void;
   onAdd: () => void;
+  instant: Date;
+  todos: ReturnType<typeof useTodos>;
+  todoBusy: boolean;
+  onToggleTodo: (todo: Todo, done: boolean) => void;
+  onEditTodo: (todo: Todo) => void;
+  onDeleteTodo: (todo: Todo) => void;
 }) {
-  const instant = useCalendarClock();
   const params = useSearchParams();
   const selected = z.iso.date().safeParse(params?.get("date"));
   const year = Number(
@@ -76,8 +105,24 @@ function EventList({
       />
     );
   const loading = events.isPending || categories.isPending || family.isPending;
+  const today = eventDateInput(instant.toISOString());
+  const items = todos.data?.items ?? [];
+  const todoActions = {
+    onEdit: onEditTodo,
+    onDelete: onDeleteTodo,
+    onToggle: onToggleTodo,
+  };
+  const retryTodos = () => void todos.refetch();
+  let todoStatus;
+  if (todos.error) {
+    todoStatus = (
+      <ErrorState message={todos.error.message} onRetry={retryTodos} />
+    );
+  } else if (todos.isPending) {
+    todoStatus = <ListSkeleton label="할 일을 불러오고 있어요" />;
+  }
   return (
-    <PageLayout width="wide" className="grid gap-10">
+    <div className="grid gap-10">
       <CalendarView
         loading={loading}
         ownerNames={Object.fromEntries(
@@ -88,9 +133,21 @@ function EventList({
         )}
         events={events.data ?? []}
         categories={categories.data ?? []}
-        today={eventDateInput(instant.toISOString())}
+        today={today}
+        todosByDate={groupTodosByDate(
+          items.filter((todo) => todo.due_on),
+          today,
+        )}
+        undatedTodosByDate={groupTodosByDate(
+          items.filter((todo) => !todo.due_on),
+          today,
+        )}
+        todoBusy={todoBusy || todos.isError}
+        onToggleTodo={onToggleTodo}
         onOpen={onOpen}
         onAdd={onAdd}
+        todoActions={todoActions}
+        todoStatus={todoStatus}
       />
       {loading ? (
         <EventListSkeleton title="D-day" dday />
@@ -103,42 +160,47 @@ function EventList({
           limit={calendarDdayLimit}
         />
       )}
-    </PageLayout>
+    </div>
   );
 }
 
 function NewEvent({
   onSaved,
+  onSaveTodo,
   initialDate,
   formId,
   onDirtyChange,
 }: {
   onSaved: () => void;
+  onSaveTodo: (item: TodoFields) => Promise<void>;
   initialDate?: string;
   formId: string;
   onDirtyChange: (dirty: boolean) => void;
 }) {
   const categories = useEventCategories();
-  if (categories.isError)
-    return (
+  if (categories.isPending) return <EventFormSkeleton />;
+  const availableCategories = categories.isError ? [] : categories.data;
+  let categoryStatus;
+  if (categories.isError) {
+    categoryStatus = (
       <ErrorState
         message={categories.error.message}
-        onRetry={() => {
-          void categories.refetch();
-        }}
+        onRetry={() => void categories.refetch()}
       />
     );
-  if (categories.isPending) return <EventFormSkeleton />;
-  if (!categories.data.length)
-    return (
+  } else if (!availableCategories.length) {
+    categoryStatus = (
       <EmptyState message="카테고리가 없어요. 가정 설정에서 추가해 주세요." />
     );
+  }
   return (
     <EventForm
       onDirtyChange={onDirtyChange}
       formId={formId}
       initialDate={initialDate}
-      categories={categories.data}
+      categories={availableCategories}
+      categoryStatus={categoryStatus}
+      onSaveTodo={onSaveTodo}
       onSaved={onSaved}
     />
   );
@@ -197,26 +259,80 @@ function CalendarContent() {
     id: parsedEvent.success ? parsedEvent.data : null,
     action: params?.get("action") === "edit" ? "edit" : undefined,
   });
+  const instant = useCalendarClock();
+  const todos = useTodos();
+  const todoWrite = useTodoWrite();
+  const [editor, setEditor] = useState<Todo | null>(null);
+  const [deleted, setDeleted] = useState<Todo | null>(null);
   const [dirty, setDirty] = useState(false);
   const [message, setMessage] = useState("");
   const close = () => {
     setDirty(false);
+    setEditor(null);
     setSheet({ mode: "closed", id: null });
   };
   const openNew = () => setSheet({ mode: "new", id: null });
+  const writeTodo = async (command: TodoCommand) => {
+    if (todoWrite.isPending) return;
+    try {
+      await todoWrite.mutateAsync(command);
+      if (command.action === "undo") {
+        setDeleted(null);
+        setMessage("할 일을 되돌렸어요");
+      }
+    } catch (error) {
+      setDeleted(null);
+      setMessage(
+        error instanceof Error ? error.message : "할 일을 변경하지 못했어요.",
+      );
+    }
+  };
+  const toggleTodo = (todo: Todo, done: boolean) =>
+    void writeTodo({ action: "set_done", id: todo.id, done });
+  const removeTodo = async (todo: Todo) => {
+    if (todoWrite.isPending) return;
+    try {
+      await todoWrite.mutateAsync({ action: "delete", id: todo.id });
+      setDeleted(todo);
+      setMessage("");
+    } catch (error) {
+      setDeleted(null);
+      setMessage(
+        error instanceof Error ? error.message : "할 일을 삭제하지 못했어요.",
+      );
+    }
+  };
+  const saveTodo = async (item: TodoFields) => {
+    await todoWrite.mutateAsync({ action: "save", id: editor?.id, item });
+    setDeleted(null);
+    setMessage(editor ? "할 일을 수정했어요" : "할 일을 등록했어요");
+  };
   return (
     <PullToAdd
       action="일정 등록하기"
       onAdd={openNew}
-      disabled={sheet.mode !== "closed"}
+      disabled={sheet.mode !== "closed" || !!editor}
     >
-      <div data-od-id="calendar-main">
-        {message && (
+      <PageLayout width="wide" odId="calendar-main">
+        {(message || deleted) && (
           <Toast
             open
-            message={message}
+            key={deleted?.id ?? message}
+            message={deleted ? `${deleted.title} 지웠어요` : message}
+            action={
+              deleted
+                ? {
+                    label: "되돌리기",
+                    onClick: () =>
+                      void writeTodo({ action: "undo", id: deleted.id }),
+                  }
+                : undefined
+            }
             onOpenChange={(open) => {
-              if (!open) setMessage("");
+              if (!open) {
+                setMessage("");
+                setDeleted(null);
+              }
             }}
           />
         )}
@@ -229,30 +345,59 @@ function CalendarContent() {
             })
           }
           onAdd={openNew}
+          instant={instant}
+          todos={todos}
+          todoBusy={todoWrite.isPending}
+          onToggleTodo={toggleTodo}
+          onEditTodo={setEditor}
+          onDeleteTodo={(todo) => void removeTodo(todo)}
         />
         <FormSheet
           dirty={dirty}
-          open={sheet.mode === "new"}
+          pending={todoWrite.isPending}
+          open={sheet.mode === "new" || !!editor}
           onOpenChange={(open) => {
             if (!open) close();
           }}
-          title="새 일정"
-          odId="sheet-new-event"
-          submitLabel="추가"
+          title={editor ? "할 일 수정" : "새 일정"}
+          odId={editor ? "sheet-edit-todo" : "sheet-new-event"}
+          submitLabel={editor ? "저장" : "추가"}
+          submitDisabled={!!editor && !dirty}
           submitOdId="new-save"
           cancelOdId="new-cancel"
-          description="제목과 날짜를 입력하고 공유 또는 개인 일정으로 저장해요."
-        >
-          {(formId) =>
-            sheet.mode === "new" && (
-              <NewEvent
-                formId={formId}
-                initialDate={initialDate}
-                onDirtyChange={setDirty}
-                onSaved={close}
-              />
-            )
+          description={
+            editor
+              ? "할 일 제목과 마감일, 공개 범위를 변경해요."
+              : "등록할 종류와 제목, 공개 범위를 설정해요."
           }
+        >
+          {(formId) => {
+            if (editor) {
+              return (
+                <EventForm
+                  key={editor.id}
+                  todo={editor}
+                  todoUserId={todos.data?.userId}
+                  categories={[]}
+                  formId={formId}
+                  onDirtyChange={setDirty}
+                  onSaveTodo={saveTodo}
+                  onSaved={close}
+                />
+              );
+            }
+            return (
+              sheet.mode === "new" && (
+                <NewEvent
+                  formId={formId}
+                  initialDate={initialDate}
+                  onDirtyChange={setDirty}
+                  onSaved={close}
+                  onSaveTodo={saveTodo}
+                />
+              )
+            );
+          }}
         </FormSheet>
         {sheet.id && sheet.mode === "delete" && (
           <EventDeleteConfirmation
@@ -270,7 +415,7 @@ function CalendarContent() {
             onClose={close}
           />
         )}
-      </div>
+      </PageLayout>
     </PullToAdd>
   );
 }

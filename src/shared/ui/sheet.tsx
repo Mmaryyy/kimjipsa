@@ -8,6 +8,7 @@ import { SheetHeader } from "./sheet-header";
 import { Drawer } from "./drawer";
 import { sheetStyles } from "./sheet.variants";
 import type { SheetProps } from "./overlay.types";
+import { useSheetLayer } from "./use-sheet-layer";
 const openSheets: string[] = [];
 
 function useSheetHistory({
@@ -77,16 +78,21 @@ function DesktopSheet({
   presentation = "sheet",
   onEscapeKeyDown,
 }: SheetProps) {
+  const layer = useSheetLayer(open);
   const contentRef = useRef<HTMLDivElement>(null);
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       {trigger && <Dialog.Trigger asChild>{trigger}</Dialog.Trigger>}
       <Dialog.Portal>
-        <Dialog.Overlay className={cn("kj-overlay", overlayClassName)} />
+        <Dialog.Overlay
+          className={cn("kj-overlay", overlayClassName)}
+          style={{ zIndex: layer }}
+        />
         <Dialog.Content
           ref={contentRef}
           tabIndex={-1}
           aria-modal="true"
+          style={{ zIndex: layer + 1 }}
           className={cn(
             sheetStyles({ presentation }),
             "outline-none",

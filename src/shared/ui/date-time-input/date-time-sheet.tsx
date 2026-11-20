@@ -97,9 +97,8 @@ export function DateTimeSheet({
           확인
         </TextButton>
       }
-      overlayClassName="z-82"
       odId="sheet-event-date-time"
-      className="z-83 rounded-t-[var(--sp-6)] overflow-hidden"
+      className="rounded-t-[var(--sp-6)] overflow-hidden"
       onOpenAutoFocus={(event) => {
         event.preventDefault();
         selectedTabRef.current?.focus({ preventScroll: true });

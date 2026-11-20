@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { eventSchema } from "@/entities/event";
+import { todoFields } from "@/entities/todo";
 export const eventFormSchema = z
   .object({
     ...eventSchema.shape,
@@ -38,4 +39,28 @@ export const eventFormSchema = z
     celebrateMessage: event.kind === "dday" ? event.celebrateMessage : "",
   }))
   .pipe(eventSchema);
-export type EventFormInput = z.input<typeof eventFormSchema>;
+export type EventFormInput = Omit<z.input<typeof eventFormSchema>, "kind"> & {
+  kind?: z.input<typeof eventSchema>["kind"] | "todo";
+  due_on?: string | null;
+};
+
+const todoFormSchema = todoFields.transform((item) => ({
+  kind: "todo" as const,
+  item,
+}));
+
+export const calendarFormSchema = z.transform(
+  (input: EventFormInput, context) => {
+    const result =
+      input.kind === "todo"
+        ? todoFormSchema.safeParse(input)
+        : eventFormSchema.safeParse(input);
+    if (result.success) return result.data;
+    for (const { path, message } of result.error.issues) {
+      context.addIssue({ code: "custom", path, message });
+    }
+    return z.NEVER;
+  },
+);
+
+export type CalendarFormOutput = z.output<typeof calendarFormSchema>;

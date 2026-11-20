@@ -5,6 +5,7 @@ import { Drawer as DrawerPrimitive } from "vaul";
 import { cn } from "@/shared/lib";
 import type { SheetProps } from "./overlay.types";
 import { SheetHeader } from "./sheet-header";
+import { useSheetLayer } from "./use-sheet-layer";
 
 const DrawerContext = createContext(false);
 
@@ -26,6 +27,7 @@ export function Drawer({
   onOpenAutoFocus,
   onCloseAutoFocus,
 }: SheetProps) {
+  const layer = useSheetLayer(open);
   const nested = useContext(DrawerContext);
   const Root = nested ? DrawerPrimitive.NestedRoot : DrawerPrimitive.Root;
   const contentRef = useRef<HTMLDivElement>(null);
@@ -103,10 +105,11 @@ export function Drawer({
           <DrawerPrimitive.Overlay
             ref={overlayRef}
             className={cn("kj-overlay", overlayClassName)}
+            style={{ zIndex: layer }}
           />
           <DrawerPrimitive.Content
             ref={contentRef}
-            style={{ touchAction: "pan-y" }}
+            style={{ touchAction: "pan-y", zIndex: layer + 1 }}
             onOpenAutoFocus={(event) => {
               onOpenAutoFocus?.(event);
               if (!event.defaultPrevented)
@@ -117,7 +120,7 @@ export function Drawer({
             data-theme={theme}
             data-od-id={odId}
             className={cn([
-              "fixed inset-x-0 bottom-0 z-81 flex flex-col",
+              "fixed inset-x-0 bottom-0 flex flex-col",
               "[--drawer-safe-height:calc(var(--drawer-viewport-height,100dvh)-env(safe-area-inset-top))]",
               "max-h-[min(var(--sheet-mobile-max-height),var(--drawer-safe-height))]",
               "overflow-hidden rounded-t-[var(--sp-6)] bg-background px-4",

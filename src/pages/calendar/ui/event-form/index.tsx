@@ -1,15 +1,15 @@
 "use client";
 import { useMediaQuery } from "@/shared/lib";
-import { useCallback, useEffect, type FormEvent } from "react";
+import { useCallback, useEffect, type FormEvent, type ReactNode } from "react";
 import { FormProvider, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   type CalendarEvent,
   type EventCategory,
-  type EventInput,
   reminderOptions,
   recurrenceOptions,
 } from "@/entities/event";
+import type { Todo, TodoFields } from "@/entities/todo";
 import {
   Button,
   useConfirm,
@@ -21,30 +21,66 @@ import {
   Text,
 } from "@/shared/ui";
 import {
-  eventFormSchema,
+  calendarFormSchema,
+  type CalendarFormOutput,
   type EventFormInput,
 } from "../../model/event-form.schema";
 import { useEventEditor } from "../../model/use-event-editor";
-import { defaultDateRange } from "@/shared/ui/date-time-input";
+import { DateTimeInput, defaultDateRange } from "@/shared/ui/date-time-input";
 import { EventDateFields } from "../event-date-fields";
 const Field = FormField<EventFormInput>;
+const kindOptions = [
+  { value: "event", label: "일정" },
+  { value: "dday", label: "D-day" },
+  { value: "todo", label: "할 일" },
+] as const;
+
+function TodoDueDateField() {
+  return (
+    <FormField<EventFormInput, "due_on">
+      name="due_on"
+      label="마감일 (선택)"
+      render={({ value, onChange, ...controlProps }) => (
+        <DateTimeInput
+          label="마감일"
+          controlProps={controlProps}
+          range={{
+            startDate: value ?? "",
+            endDate: value ?? "",
+            startTime: "",
+            endTime: "",
+          }}
+          dateOnly
+          singleDate
+          variant="field"
+          pickerOdId="todo-due-date"
+          onClear={value ? () => onChange(null) : undefined}
+          onConfirm={(range) => onChange(range.startDate || null)}
+        />
+      )}
+    />
+  );
+}
+
 function initialValues(
   event: CalendarEvent | undefined,
   categories: EventCategory[],
   initialDate?: string,
+  todo?: Todo,
 ): EventFormInput {
   const defaults = defaultDateRange(initialDate);
   return {
     recurrence: event?.recurrence ?? null,
     remindBefore: event?.remindBefore === undefined ? 30 : event.remindBefore,
-    kind: event?.kind ?? "event",
+    kind: todo ? "todo" : (event?.kind ?? "event"),
+    due_on: todo?.due_on ?? null,
     ddayStyle: event?.details?.ddayStyle ?? "normal",
     celebrateMessage: event?.details?.celebrateMessage ?? "",
-    title: event?.details?.title ?? "",
+    title: todo?.title ?? event?.details?.title ?? "",
     place: event?.details?.place ?? "",
     memo: event?.details?.memo ?? "",
     categoryId: event?.details?.categoryId ?? categories[0]?.id ?? "",
-    visibility: event?.visibility ?? "shared",
+    visibility: todo?.visibility ?? event?.visibility ?? "shared",
     isAllDay: event?.isAllDay ?? false,
     isTimeUnknown: Boolean(
       event && !event.isAllDay && !event.startTime && !event.endTime,
@@ -57,13 +93,21 @@ function initialValues(
 }
 const EventForm = ({
   event,
+  todo,
+  todoUserId,
+  onSaveTodo,
   categories,
+  categoryStatus,
   onSaved,
   formId,
   initialDate,
   onDirtyChange,
 }: {
   event?: CalendarEvent;
+  todo?: Todo;
+  todoUserId?: string;
+  onSaveTodo?: (item: TodoFields) => Promise<void>;
+  categoryStatus?: ReactNode;
   categories: EventCategory[];
   onSaved: () => void;
   formId?: string;
@@ -73,9 +117,9 @@ const EventForm = ({
   const confirm = useConfirm();
   const coarse = useMediaQuery("(pointer: coarse)");
   const { onSave } = useEventEditor(event?.id, onSaved);
-  const form = useForm<EventFormInput, unknown, EventInput>({
-    resolver: zodResolver(eventFormSchema),
-    defaultValues: initialValues(event, categories, initialDate),
+  const form = useForm<EventFormInput, unknown, CalendarFormOutput>({
+    resolver: zodResolver(calendarFormSchema),
+    defaultValues: initialValues(event, categories, initialDate, todo),
   });
   const {
     control,
@@ -90,6 +134,11 @@ const EventForm = ({
   const isAllDay = useWatch({ control, name: "isAllDay" });
   const isTimeUnknown = useWatch({ control, name: "isTimeUnknown" });
   const kind = useWatch({ control, name: "kind" });
+  const isTodo = kind === "todo";
+  const privateLabel = isTodo ? "개인 할 일" : "개인 일정";
+  const canChangeVisibility = todo
+    ? todo.owner_id === todoUserId
+    : !event || event.canChangeVisibility;
   const ddayStyle = useWatch({ control, name: "ddayStyle" });
   const onAllDayChange = useCallback(
     (checked: boolean) => {
@@ -114,9 +163,15 @@ const EventForm = ({
     [setValue],
   );
   const persist = useCallback(
-    async (input: EventInput) => {
+    async (input: CalendarFormOutput) => {
       try {
-        await onSave(input);
+        if (input.kind === "todo") {
+          if (!onSaveTodo || event) return;
+          await onSaveTodo(input.item);
+          onSaved();
+        } else {
+          await onSave(input);
+        }
         return true;
       } catch (error) {
         setError("root", {
@@ -126,11 +181,11 @@ const EventForm = ({
         return false;
       }
     },
-    [onSave, setError],
+    [event, onSave, onSaved, onSaveTodo, setError],
   );
   const onSubmit = useCallback(
-    async (input: EventInput) => {
-      if (!event?.recurrence) {
+    async (input: CalendarFormOutput) => {
+      if (input.kind === "todo" || !event?.recurrence) {
         await persist(input);
         return;
       }
@@ -177,27 +232,33 @@ const EventForm = ({
       >
         <fieldset disabled={isSubmitting} className="grid min-w-0 gap-2">
           <legend className="sr-only">일정 입력</legend>
-          <GroupLabel>분류</GroupLabel>
-          <Field
-            name="categoryId"
-            label="카테고리"
-            render={(field) => (
-              <div className="flex items-center gap-2">
-                {category && <CategoryDot color={category.color} />}
-                <Select {...field} variant="row" data-od-id="f-category">
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-            )}
-          />
-          {(!event || event.canChangeVisibility) && (
+          {!isTodo && (
+            <>
+              <GroupLabel>분류</GroupLabel>
+              {categoryStatus ?? (
+                <Field
+                  name="categoryId"
+                  label="카테고리"
+                  render={(field) => (
+                    <div className="flex items-center gap-2">
+                      {category && <CategoryDot color={category.color} />}
+                      <Select {...field} variant="row" data-od-id="f-category">
+                        {categories.map((category) => (
+                          <option key={category.id} value={category.id}>
+                            {category.name}
+                          </option>
+                        ))}
+                      </Select>
+                    </div>
+                  )}
+                />
+              )}
+            </>
+          )}
+          {canChangeVisibility && (
             <Field
               name="visibility"
-              label="개인 일정"
+              label={privateLabel}
               render={(field) => (
                 <Switch
                   {...field}
@@ -207,22 +268,22 @@ const EventForm = ({
                   onCheckedChange={(checked) =>
                     field.onChange(checked ? "private" : "shared")
                   }
-                  aria-label="개인 일정"
+                  aria-label={privateLabel}
                 />
               )}
             />
           )}
-          <Text as="p" variant="caption" className="text-muted-foreground">
-            기본은 가족 모두가 함께 보는 공유 일정이에요.
-          </Text>
+          {!isTodo && (
+            <Text as="p" variant="caption" className="text-muted-foreground">
+              기본은 가족 모두가 함께 보는 공유 일정이에요.
+            </Text>
+          )}
           <Field
             name="kind"
             label="일정 종류"
             type="select"
-            options={[
-              { value: "event", label: "일정" },
-              { value: "dday", label: "D-day" },
-            ]}
+            disabled={Boolean(event || todo)}
+            options={kindOptions}
           />
           {kind === "dday" && (
             <Field
@@ -240,87 +301,99 @@ const EventForm = ({
             label="제목"
             inputProps={{ "data-od-id": "f-title", autoFocus: !coarse }}
           />
-          <GroupLabel>시간</GroupLabel>
-          {kind !== "dday" && (
-            <Field
-              name="isAllDay"
-              label="종일"
-              render={(field) => (
-                <Switch
-                  {...field}
-                  value={undefined}
-                  data-od-id="f-allday"
-                  checked={field.value}
-                  onCheckedChange={onAllDayChange}
+          {isTodo ? (
+            <TodoDueDateField />
+          ) : (
+            <>
+              <GroupLabel>시간</GroupLabel>
+              {kind !== "dday" && (
+                <Field
+                  name="isAllDay"
+                  label="종일"
+                  render={(field) => (
+                    <Switch
+                      {...field}
+                      value={undefined}
+                      data-od-id="f-allday"
+                      checked={field.value}
+                      onCheckedChange={onAllDayChange}
+                    />
+                  )}
                 />
               )}
-            />
-          )}
-          {kind !== "dday" && (
-            <Field
-              name="isTimeUnknown"
-              label="시간 미정"
-              render={(field) => (
-                <Switch
-                  {...field}
-                  value={undefined}
-                  data-od-id="f-time-unknown"
-                  checked={field.value}
-                  onCheckedChange={onTimeUnknownChange}
+              {kind !== "dday" && (
+                <Field
+                  name="isTimeUnknown"
+                  label="시간 미정"
+                  render={(field) => (
+                    <Switch
+                      {...field}
+                      value={undefined}
+                      data-od-id="f-time-unknown"
+                      checked={field.value}
+                      onCheckedChange={onTimeUnknownChange}
+                    />
+                  )}
                 />
               )}
-            />
-          )}
-          <EventDateFields
-            control={control}
-            setValue={setValue}
-            dateOnly={isAllDay || isTimeUnknown || kind === "dday"}
-            singleDate={kind === "dday"}
-          />
-          {kind !== "dday" && !isAllDay && !isTimeUnknown && (
-            <Text as="p" variant="caption" className="text-muted-foreground">
-              시각을 정하지 않았다면 시간 미정을 켜 주세요.
-            </Text>
-          )}
-          {kind !== "dday" && (
-            <Field
-              name="recurrence"
-              label="반복"
-              type="select"
-              noneLabel="안 함"
-              options={recurrenceOptions.filter(
-                (option) => option.value !== "none",
+              <EventDateFields
+                control={control}
+                setValue={setValue}
+                dateOnly={isAllDay || isTimeUnknown || kind === "dday"}
+                singleDate={kind === "dday"}
+              />
+              {kind !== "dday" && !isAllDay && !isTimeUnknown && (
+                <Text
+                  as="p"
+                  variant="caption"
+                  className="text-muted-foreground"
+                >
+                  시각을 정하지 않았다면 시간 미정을 켜 주세요.
+                </Text>
               )}
-              inputProps={{ "data-od-id": "f-recurrence" }}
-            />
+              {kind !== "dday" && (
+                <Field
+                  name="recurrence"
+                  label="반복"
+                  type="select"
+                  noneLabel="안 함"
+                  options={recurrenceOptions.filter(
+                    (option) => option.value !== "none",
+                  )}
+                  inputProps={{ "data-od-id": "f-recurrence" }}
+                />
+              )}
+              <Field
+                name="remindBefore"
+                label="알림"
+                type="select"
+                noneLabel="없음"
+                options={reminderOptions.filter(
+                  (option) => option.value !== null,
+                )}
+                inputProps={{ "data-od-id": "f-remind" }}
+              />
+              <Field
+                name="place"
+                label="장소"
+                inputProps={{ "data-od-id": "f-place" }}
+              />
+              {kind === "dday" && ddayStyle === "celebrate" && (
+                <Field
+                  name="celebrateMessage"
+                  label="축하 문구 (선택)"
+                  inputProps={{ placeholder: "소중한 날을 축하해요!" }}
+                />
+              )}
+              <GroupLabel>메모</GroupLabel>
+              <Field
+                name="memo"
+                label="메모"
+                type="textarea"
+                inputProps={{ "data-od-id": "f-memo", rows: 3 }}
+              />
+            </>
           )}
-          <Field
-            name="remindBefore"
-            label="알림"
-            type="select"
-            noneLabel="없음"
-            options={reminderOptions.filter((option) => option.value !== null)}
-            inputProps={{ "data-od-id": "f-remind" }}
-          />
-          <Field
-            name="place"
-            label="장소"
-            inputProps={{ "data-od-id": "f-place" }}
-          />
-          {kind === "dday" && ddayStyle === "celebrate" && (
-            <Field
-              name="celebrateMessage"
-              label="축하 문구 (선택)"
-              inputProps={{ placeholder: "소중한 날을 축하해요!" }}
-            />
-          )}
-          <GroupLabel>메모</GroupLabel>
-          <Field
-            name="memo"
-            label="메모"
-            type="textarea"
-            inputProps={{ "data-od-id": "f-memo", rows: 3 }}
-          />
         </fieldset>
         {errors.root && (
           <Text as="p" role="alert" className="text-error-text">

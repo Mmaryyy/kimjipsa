@@ -158,28 +158,54 @@ it("r184 키보드가 닫힌 뒤 늦게 복구된 viewport와 시트 여백을 �
   }
 });
 
-function NestedSheets() {
+function NestedSheets({ sibling = false }: { sibling?: boolean }) {
   const [open, setOpen] = useState(true);
   const [child, setChild] = useState(false);
-  return (
+  const childSheet = (
     <Sheet
-      open={open}
-      onOpenChange={setOpen}
-      title="부모 시트"
-      description="부모"
+      open={child && open}
+      onOpenChange={setChild}
+      title="하위 시트"
+      description="하위"
     >
-      <button onClick={() => setChild(true)}>하위 시트 열기</button>
-      <Sheet
-        open={child && open}
-        onOpenChange={setChild}
-        title="하위 시트"
-        description="하위"
-      >
-        <p>선택 내용</p>
-      </Sheet>
+      <p>선택 내용</p>
     </Sheet>
   );
+  return (
+    <>
+      <Sheet
+        open={open}
+        onOpenChange={setOpen}
+        title="부모 시트"
+        description="부모"
+      >
+        <button onClick={() => setChild(true)}>하위 시트 열기</button>
+        {!sibling && childSheet}
+      </Sheet>
+      {sibling && childSheet}
+    </>
+  );
 }
+
+describe.each([true, false])("r307 터치 여부 %s", (coarse) => {
+  it.each(["중첩", "형제"])("%s 시트가 아래 시트를 어둡게 덮어요", (kind) => {
+    pointer(coarse);
+    render(<NestedSheets sibling={kind === "형제"} />);
+    const lower = screen.getByRole("dialog", { name: "부모 시트" });
+    fireEvent.click(screen.getByRole("button", { name: "하위 시트 열기" }));
+    const upper = screen.getByRole("dialog", { name: "하위 시트" });
+    const overlay = document.querySelectorAll(".kj-overlay")[1];
+    const layer = (element: Element) =>
+      Number(getComputedStyle(element).zIndex);
+    expect(layer(overlay)).toBeGreaterThan(layer(lower));
+    expect(layer(upper)).toBeGreaterThan(layer(overlay));
+
+    fireEvent.keyDown(upper, { key: "Escape" });
+    expect(overlay).not.toBeInTheDocument();
+    expect(lower).toBeVisible();
+  });
+});
+
 it.each(["Escape", "뒤로"])(
   "P15.1b 일반 시트도 %s로 하위만 닫고 뒤로가기로 부모를 닫아요",
   async (method) => {

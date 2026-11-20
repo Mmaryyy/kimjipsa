@@ -111,8 +111,7 @@ const EventCategoryCustomColorPicker = ({
           description="색을 고른 뒤 선택을 누르면 적용돼요."
           leadingAction={() => cancelButton}
           action={confirmButton}
-          overlayClassName="z-82"
-          className="z-83 rounded-t-[var(--sp-6)]"
+          className="rounded-t-[var(--sp-6)]"
           onCloseAutoFocus={restoreFocus}
           odId="sheet-category-color"
         >

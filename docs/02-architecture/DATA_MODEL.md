@@ -119,6 +119,20 @@ DEC-009 ① 처리(2026-10-16 제안안 승인, 2026-10-21 P5a 구현): `push_su
 
 DEC-009 처리(2026-10-16, 제안안 승인, 필요하면 차후 수정): ② 축하 카드 닫음 상태는 `dday_card_dismissals`(`user_id`, `event_id`, `year`)로 저장한다. ④ 탈퇴자가 만든 공유 일정은 `owner_id`를 null로 두고 "탈퇴한 사용자"로 표시한다. ⑥ 일정 카테고리를 지우면 소속 일정은 `기타` 카테고리로 옮기고 `기타`는 삭제할 수 없다. 반복 일정은 일정 하나에 반복 규칙(`recurrence`, 매일·매주·매월·매년)을 두고, "이 일정만" 수정·삭제는 해당 회차의 예외 행으로 저장한다. "이후 모든 일정"은 기존 규칙을 그 회차 전에서 끝내고 새 일정(규칙)으로 나눈다(2026-10-30 사용자 결정, 권장안). **개인 일정 컬럼 보호 구조는 ADR-0012로 확정(DEC-001).**
 
+### todos (CAL-18, 2026-11-20 계획)
+
+| 컬럼 | 설명 |
+| --- | --- |
+| id, family_id | 가정 단위. `current_family_id()` RLS |
+| title | 필수 |
+| due_on | 마감일(date, KST). 없으면 완료 전까지 오늘 목록에 표시. 미완료로 지나면 미루기(표시일 = max(due_on, 오늘), "n일째" = 오늘 − due_on + 1)는 계산만 하고 저장하지 않는다. 완료된 할 일의 표시일 = max(due_on, completed_at의 KST 날짜) |
+| visibility | `shared` 또는 `private`. private은 owner만 조회·수정(배우자에게 행 자체를 내려보내지 않음) |
+| owner_id | 작성자 |
+| completed_at, completed_by | 완료 시각·사람. null이면 미완료 |
+| created_at, updated_at | |
+
+프로젝트 할 일(project_tasks, PRJ-04)과 별개 테이블이다. 상세 컬럼·RPC는 구현 Phase에서 확정한다.
+
 ## 4. 재고
 
 ### inventory_items

@@ -1,3 +1,15 @@
+type TodoRow = {
+  id: string;
+  family_id: string;
+  title: string;
+  due_on: string | null;
+  visibility: "shared" | "private";
+  owner_id: string | null;
+  completed_at: string | null;
+  completed_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
 type CartRow = {
   id: string;
   created_at: string;
@@ -168,6 +180,7 @@ export type Database<
         { user_id: string; bot_type: string }
       >;
       cart_items: Table<CartRow, CartRow>;
+      todos: Table<TodoRow, never>;
       projects: Table<ProjectRow, never>;
       project_areas: Table<ProjectAreaRow, never>;
       project_milestones: Table<ProjectMilestoneRow, never>;
@@ -442,6 +455,7 @@ export type Database<
       write_project_module: { Args: { payload: Json }; Returns: string };
       // reorder_areas uses projectId and areaIds, and returns the project ID.
       write_project: { Args: { payload: Json }; Returns: string };
+      write_todo: { Args: { payload: Json }; Returns: string };
       write_cart: { Args: { payload: Json }; Returns: Json };
       write_inventory: { Args: { payload: Json }; Returns: string };
       write_inventory_meta: { Args: { payload: Json }; Returns: undefined };

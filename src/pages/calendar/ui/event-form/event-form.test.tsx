@@ -90,6 +90,7 @@ describe("CAL-01~03 SCN-CAL-1 일정 입력", () => {
     render(
       <EventForm event={event} categories={categories} onSaved={() => {}} />,
     );
+    expect(screen.getByRole("combobox", { name: "일정 종류" })).toBeDisabled();
     expect(
       screen.queryByRole("switch", { name: "개인 일정" }),
     ).not.toBeInTheDocument();
@@ -121,7 +122,11 @@ describe("CAL-01~03 SCN-CAL-1 일정 입력", () => {
 describe("CAL-06 CAL-16 SCN-CAL-9~10 D-day 등록", () => {
   it("기준 날짜와 종류·축하 문구를 저장하고 숨긴 시간·기간은 비워요", async () => {
     render(
-      <EventForm event={event} categories={categories} onSaved={() => {}} />,
+      <EventForm
+        initialDate={event.startDate}
+        categories={categories}
+        onSaved={() => {}}
+      />,
     );
     fireEvent.change(screen.getByRole("combobox", { name: "일정 종류" }), {
       target: { value: "dday" },
@@ -131,6 +136,9 @@ describe("CAL-06 CAL-16 SCN-CAL-9~10 D-day 등록", () => {
     });
     fireEvent.change(screen.getByLabelText("축하 문구 (선택)"), {
       target: { value: "축하해요" },
+    });
+    fireEvent.change(screen.getByLabelText("제목"), {
+      target: { value: "기념일" },
     });
     fireEvent.click(screen.getByRole("button", { name: /^시작,/ }));
     const year = await screen.findByRole("spinbutton", { name: "연도" });
@@ -335,4 +343,44 @@ it("CAL-01 SCN-CAL-1 P15.1b 분류·제목·시간·반복·알림·장소·메�
     ).toBeTruthy();
   });
   expect(screen.getByLabelText("제목")).toHaveFocus();
+});
+
+it("CAL-18 SCN-CAL-11 종류를 할 일로 바꾸면 할 일 필드만 저장해요", async () => {
+  const onSaveTodo = vi.fn().mockResolvedValue(undefined);
+  const onSaved = vi.fn();
+  render(
+    <EventForm categories={[]} onSaveTodo={onSaveTodo} onSaved={onSaved} />,
+  );
+  const kind = screen.getByRole("combobox", { name: "일정 종류" });
+  expect(screen.getByRole("combobox", { name: "카테고리" })).toBeVisible();
+  fireEvent.change(kind, { target: { value: "todo" } });
+  for (const label of [
+    "카테고리",
+    "시작",
+    "종일",
+    "반복",
+    "알림",
+    "장소",
+    "메모",
+    "D-day 종류",
+  ]) {
+    expect(
+      screen.queryByLabelText(label, { exact: true }),
+    ).not.toBeInTheDocument();
+  }
+  expect(screen.getByRole("button", { name: /^마감일/ })).toBeVisible();
+  const visibility = screen.getByRole("switch", { name: "개인 할 일" });
+  expect(visibility).not.toBeChecked();
+  fireEvent.click(visibility);
+  fireEvent.change(screen.getByLabelText("제목"), {
+    target: { value: " 관리비 내기 " },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "저장하기" }));
+  await waitFor(() => expect(onSaved).toHaveBeenCalledOnce());
+  expect(onSaveTodo).toHaveBeenCalledWith({
+    title: "관리비 내기",
+    due_on: null,
+    visibility: "private",
+  });
+  expect(onSave).not.toHaveBeenCalled();
 });

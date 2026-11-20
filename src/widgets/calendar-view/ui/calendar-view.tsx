@@ -1,6 +1,12 @@
 "use client";
 import { resolveCategoryColor } from "@/shared/lib";
-import { Suspense, type CSSProperties } from "react";
+import {
+  Suspense,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
@@ -28,6 +34,7 @@ import {
   type EventOccurrence,
 } from "@/entities/event";
 import { useHolidays, type Holiday, type SpecialDay } from "@/entities/holiday";
+import { TodoListRow, type Todo, type TodoActions } from "@/entities/todo";
 import { eventRoutes } from "@/shared/config";
 import { markHistoryBack, cn } from "@/shared/lib";
 import {
@@ -41,9 +48,15 @@ import {
   GroupLabel,
   SegmentedControl,
   SectionHeader,
+  Sheet,
   Text,
   TextButton,
 } from "@/shared/ui";
+import {
+  CalendarTodos,
+  type CalendarTodoProps,
+  type CalendarTodosByDate,
+} from "./calendar-todos";
 import { CalendarCarousel } from "./calendar-carousel";
 import { calendarNumberStyles } from "./calendar-date.variants";
 import { monthEventBarStyles } from "./month-event-bar.variants";
@@ -53,9 +66,13 @@ import {
   type MonthEventBar,
 } from "../model/month-event-bars.utils";
 import { useCalendarLocation } from "../model/use-calendar-location";
-import { calendarTodayButtonStyles } from "./calendar-view.variants";
+import {
+  calendarTodayButtonStyles,
+  dayEventListStyles,
+  dayEventsStyles,
+} from "./calendar-view.variants";
 
-type CalendarProps = {
+type CalendarProps = CalendarTodoProps & {
   loading?: boolean;
   events: CalendarEvent[];
   categories: EventCategory[];
@@ -65,7 +82,12 @@ type CalendarProps = {
   ownerNames?: Record<string, string>;
   onOpen?: (id: string, action?: "edit" | "delete") => void;
   onAdd?: () => void;
+  undatedTodosByDate?: CalendarTodosByDate;
+  todoStatus?: ReactNode;
+  todoActions?: TodoActions;
 };
+
+type DatePress = (date: string, button: HTMLButtonElement) => void;
 
 function getCalendarNumberTone({
   outside,
@@ -104,7 +126,7 @@ function CalendarDate({
   today: string;
   occurrences: EventOccurrence[];
   categories: EventCategory[];
-  onSelect: (date: string) => void;
+  onSelect: DatePress;
   month?: number;
   holidayName?: string;
   specialDays?: SpecialDay[];
@@ -147,15 +169,9 @@ function CalendarDate({
       className={cn([
         "group/calendar-date @container flex min-w-0 flex-col gap-1",
         "px-0 pt-2 pb-2.5 text-foreground outline-none",
-        month !== undefined && [
-          "relative gap-[var(--calendar-date-gap)] pb-0",
-          "[--calendar-date-gap:var(--sp-1)]",
-          "[--calendar-bar-height:calc(var(--spacing)*2)]",
-          // 글자 안쪽 여백까지 포함한 보이는 간격에 막대 간격을 맞춘다.
-          "[--calendar-mark-gap:calc(var(--calendar-date-gap)+var(--spacing)*0.25)]",
-        ],
+        month !== undefined && "relative gap-[var(--calendar-date-gap)] pb-0",
       ])}
-      onClick={() => onSelect(date)}
+      onClick={(event) => onSelect(date, event.currentTarget)}
       data-od-id={`${month !== undefined ? "month" : "week"}-day-${date}`}
       data-outside={month !== undefined && day.getMonth() !== month}
       data-today={isToday}
@@ -218,8 +234,10 @@ function CalendarDate({
       <span
         className={cn(
           "flex shrink-0 flex-col items-center",
-          month !== undefined &&
-            "relative h-[calc(var(--spacing)*1.25+var(--calendar-bar-height)*2+var(--calendar-mark-gap)*2)] w-full",
+          month !== undefined && [
+            "relative w-full",
+            "h-[calc(var(--spacing)*1.25+var(--calendar-bar-area)+var(--calendar-mark-gap)+var(--calendar-todo-height,0px))]",
+          ],
         )}
       >
         <span
@@ -241,7 +259,7 @@ function CalendarDate({
           <span
             className={cn([
               "absolute inset-x-0 bottom-0 block",
-              "h-[calc(var(--calendar-bar-height)*2+var(--calendar-mark-gap))]",
+              "h-[var(--calendar-bar-area)]",
             ])}
             aria-hidden="true"
           >
@@ -365,32 +383,115 @@ function SpecialDayRows({
   ));
 }
 
-function DayEvents({
-  holiday,
-  specialDays,
+type DayEventListProps = Pick<
+  CalendarProps,
+  | "categories"
+  | "ownerNames"
+  | "onOpen"
+  | "todosByDate"
+  | "undatedTodosByDate"
+  | "todoActions"
+  | "todoStatus"
+  | "todoBusy"
+> & {
+  date: string;
+  occurrences: EventOccurrence[];
+  holiday?: Holiday;
+  specialDays?: SpecialDay[];
+  home?: boolean;
+  emptyAction?: ReactNode;
+  emptyMessage?: string;
+};
+
+function DayEventList({
   date,
-  today,
-  home,
   occurrences,
   categories,
   ownerNames,
   onOpen,
-  onAdd,
-}: {
-  holiday?: Holiday;
-  specialDays?: SpecialDay[];
-  date: string;
-  today: string;
-  home: boolean;
-  occurrences: EventOccurrence[];
-  categories: EventCategory[];
-  ownerNames?: Record<string, string>;
-  onOpen?: (id: string, action?: "edit" | "delete") => void;
-  onAdd?: () => void;
-}) {
+  holiday,
+  specialDays,
+  home = false,
+  emptyAction,
+  emptyMessage = "등록된 일정이 없어요",
+  todosByDate,
+  undatedTodosByDate,
+  todoActions,
+  todoStatus,
+  todoBusy,
+}: DayEventListProps) {
   const daily = occurrences.filter(
     (item) => item.startDate <= date && item.endDate >= date,
   );
+  const todos = [
+    ...(todosByDate?.get(date) ?? []),
+    ...(undatedTodosByDate?.get(date) ?? []),
+  ].sort(
+    (a, b) =>
+      Number(Boolean(a.todo.completed_at)) -
+        Number(Boolean(b.todo.completed_at)) ||
+      (b.overdueDays ?? 0) - (a.overdueDays ?? 0) ||
+      Number(!a.todo.due_on) - Number(!b.todo.due_on) ||
+      a.todo.created_at.localeCompare(b.todo.created_at),
+  );
+  const todoRows =
+    !todoStatus && todoActions
+      ? todos.map(({ todo, overdueDays }) => (
+          <TodoListRow
+            key={todo.id}
+            todo={todo}
+            overdueDays={overdueDays}
+            disabled={Boolean(todoBusy)}
+            {...todoActions}
+          />
+        ))
+      : [];
+  return (
+    <>
+      {todoStatus}
+      {Boolean(
+        holiday || specialDays?.length || daily.length || todoRows.length,
+      ) && (
+        <List className={dayEventListStyles()}>
+          {holiday && <HolidayRow holiday={holiday} />}
+          <SpecialDayRows days={specialDays} />
+          {todoRows}
+          {daily.map((occurrence) => (
+            <EventOccurrenceRow
+              key={occurrence.event.id}
+              occurrence={occurrence}
+              showDdayCountdown={home}
+              date={date}
+              categories={categories}
+              ownerNames={ownerNames}
+              onOpen={onOpen}
+            />
+          ))}
+        </List>
+      )}
+      {!todoStatus && !todoRows.length && !daily.length && (
+        <EmptyState
+          layout="row"
+          icon={null}
+          message={emptyMessage}
+          action={emptyAction}
+        />
+      )}
+    </>
+  );
+}
+
+function DayEvents({
+  date,
+  today,
+  home,
+  onAdd,
+  ...listProps
+}: DayEventListProps & {
+  today: string;
+  home: boolean;
+  onAdd?: () => void;
+}) {
   const title = home
     ? date === today
       ? "오늘 일정"
@@ -412,6 +513,7 @@ function DayEvents({
   return (
     <section
       aria-label={title}
+      className={dayEventsStyles()}
       data-od-id={home ? "today-schedule" : "cal-day-list"}
     >
       <SectionHeader
@@ -431,34 +533,12 @@ function DayEvents({
           )
         }
       />
-      {(holiday || (!home && specialDays && specialDays.length > 0)) && (
-        <List>
-          {holiday && <HolidayRow holiday={holiday} />}
-          {!home && <SpecialDayRows days={specialDays} />}
-        </List>
-      )}
-      {daily.length === 0 ? (
-        <EmptyState
-          layout="row"
-          icon={null}
-          message="등록된 일정이 없어요"
-          action={home ? add : undefined}
-        />
-      ) : (
-        <List>
-          {daily.map((occurrence) => (
-            <EventOccurrenceRow
-              key={occurrence.event.id}
-              occurrence={occurrence}
-              showDdayCountdown={home}
-              date={date}
-              categories={categories}
-              ownerNames={ownerNames}
-              onOpen={onOpen}
-            />
-          ))}
-        </List>
-      )}
+      <DayEventList
+        {...listProps}
+        date={date}
+        home={home}
+        emptyAction={home ? add : undefined}
+      />
     </section>
   );
 }
@@ -472,9 +552,14 @@ function WeekEvents({
   today,
   holidayNames,
   specialDays,
+  selected,
+  onDatePress,
   loading = false,
-}: {
+  ...todoProps
+}: CalendarTodoProps & {
   loading?: boolean;
+  selected: string;
+  onDatePress: DatePress;
   specialDays: Record<string, SpecialDay[]>;
   holidayNames: Record<string, string>;
   days: Date[];
@@ -492,7 +577,10 @@ function WeekEvents({
           (item) => item.startDate <= date && item.endDate >= date,
         );
         const hasEntries = Boolean(
-          daily.length || holidayNames[date] || specialDays[date]?.length,
+          daily.length ||
+          holidayNames[date] ||
+          specialDays[date]?.length ||
+          todoProps.todosByDate?.get(date)?.length,
         );
         return (
           <section
@@ -514,30 +602,44 @@ function WeekEvents({
                   "text-[var(--sys-red-ic)]",
               )}
             >
-              {format(day, "M월 d일 EEEE", { locale: ko })}
-              {holidayNames[date] && ` · ${holidayNames[date]}`}
-              {date === today && " · 오늘"}
+              <TextButton
+                size={null}
+                tone={null}
+                className={cn(
+                  "text-[length:var(--type-caption-size)] text-inherit",
+                  date === selected && "underline underline-offset-4",
+                )}
+                aria-pressed={date === selected}
+                onClick={(event) => onDatePress(date, event.currentTarget)}
+              >
+                {format(day, "M월 d일 EEEE", { locale: ko })}
+                {holidayNames[date] && ` · ${holidayNames[date]}`}
+                {date === today && " · 오늘"}
+              </TextButton>
             </GroupLabel>
             {loading ? (
               <Skeleton className="h-32" />
             ) : hasEntries ? (
-              <List>
-                {holidayNames[date] && (
-                  <HolidayRow holiday={{ date, name: holidayNames[date] }} />
-                )}
-                <SpecialDayRows days={specialDays[date]} />
-                {daily.map((occurrence) => (
-                  <EventOccurrenceRow
-                    key={occurrence.event.id}
-                    occurrence={occurrence}
-                    showDdayCountdown={false}
-                    date={date}
-                    categories={categories}
-                    ownerNames={ownerNames}
-                    onOpen={onOpen}
-                  />
-                ))}
-              </List>
+              <>
+                <List>
+                  {holidayNames[date] && (
+                    <HolidayRow holiday={{ date, name: holidayNames[date] }} />
+                  )}
+                  <SpecialDayRows days={specialDays[date]} />
+                  {daily.map((occurrence) => (
+                    <EventOccurrenceRow
+                      key={occurrence.event.id}
+                      occurrence={occurrence}
+                      showDdayCountdown={false}
+                      date={date}
+                      categories={categories}
+                      ownerNames={ownerNames}
+                      onOpen={onOpen}
+                    />
+                  ))}
+                </List>
+                <CalendarTodos date={date} {...todoProps} />
+              </>
             ) : (
               <Text
                 as="p"
@@ -652,7 +754,8 @@ function DayTimeline({
   categories,
   ownerNames,
   onOpen,
-}: {
+  ...todoProps
+}: CalendarTodoProps & {
   holiday?: Holiday;
   specialDays?: SpecialDay[];
   occurrences: EventOccurrence[];
@@ -720,12 +823,17 @@ function DayTimeline({
               : "등록된 일정이 없어요"}
           </Text>
         </li>
-        {rows
-          .filter((row) => row.events.length || row.id.startsWith("hour-"))
-          .map((row) => (
+        {rows.map((row) => {
+          const hasTodos =
+            row.id === "all-day" && todoProps.todosByDate?.has(date);
+          if (!hasTodos && !row.events.length && !row.id.startsWith("hour-"))
+            return null;
+          return (
             <li
               key={row.id}
-              aria-hidden={row.events.length === 0 ? true : undefined}
+              aria-hidden={
+                !hasTodos && row.events.length === 0 ? true : undefined
+              }
               className="flex min-h-12 items-start gap-3 py-[9px]"
               data-od-id={row.id}
             >
@@ -747,9 +855,11 @@ function DayTimeline({
                     onOpen={onOpen}
                   />
                 ))}
+                {hasTodos && <CalendarTodos date={date} {...todoProps} />}
               </div>
             </li>
-          ))}
+          );
+        })}
       </ul>
     </>
   );
@@ -776,15 +886,16 @@ function CalendarPanel({
   onOpen,
   date,
   view,
-  onDateChange,
+  onDatePress,
   holidayNames,
   specialDays,
   holidaysPending,
   loading,
+  ...todoProps
 }: CalendarProps & {
   date: string;
   view: View;
-  onDateChange: (date: string) => void;
+  onDatePress: DatePress;
   holidayNames: Record<string, string>;
   specialDays: Record<string, SpecialDay[]>;
   holidaysPending: boolean;
@@ -817,6 +928,7 @@ function CalendarPanel({
   if (view === "day") {
     return (
       <DayTimeline
+        {...todoProps}
         specialDays={specialDays[date]}
         holiday={selectedHoliday ? { date, name: selectedHoliday } : undefined}
         date={date}
@@ -830,6 +942,7 @@ function CalendarPanel({
   if (view === "week" && !home) {
     const week = (
       <WeekEvents
+        {...todoProps}
         days={days}
         occurrences={occurrences}
         categories={categories}
@@ -838,6 +951,8 @@ function CalendarPanel({
         today={today}
         holidayNames={holidayNames}
         specialDays={specialDays}
+        selected={date}
+        onDatePress={onDatePress}
         loading={loading || holidaysPending}
       />
     );
@@ -849,6 +964,9 @@ function CalendarPanel({
       week
     );
   }
+  const dates = days.map((day) => format(day, "yyyy-MM-dd"));
+  const showMonthTodos =
+    view === "month" && dates.some((date) => todoProps.todosByDate?.has(date));
   return (
     <nav
       style={{ "--holiday-chars": 6 } as CSSProperties}
@@ -858,32 +976,115 @@ function CalendarPanel({
       className={cn(
         "mt-1 grid min-w-0 grid-cols-7",
         view === "month" && [
-          "[&>button]:min-h-14 lg:[&>button]:min-h-21",
-          "[&>button:nth-child(n+8)>span:first-child]:hidden",
+          "[&>div>button]:min-h-14 lg:[&>div>button]:min-h-21",
+          "[&>div:nth-child(n+8)>button>span:first-child]:hidden",
         ],
       )}
     >
-      {days.map((day) => (
-        <CalendarDate
-          key={day.toISOString()}
-          day={day}
-          bars={bars.filter(
-            (bar) =>
-              bar.startDate <= format(day, "yyyy-MM-dd") &&
-              bar.endDate >= format(day, "yyyy-MM-dd"),
-          )}
-          loading={loading}
-          month={view === "month" ? selected.getMonth() : undefined}
-          selected={date}
-          today={today}
-          occurrences={occurrences}
-          categories={categories}
-          onSelect={onDateChange}
-          holidayName={holidayNames[format(day, "yyyy-MM-dd")]}
-          specialDays={specialDays[format(day, "yyyy-MM-dd")]}
-        />
-      ))}
+      {days.map((day, index) => {
+        const dayDate = dates[index];
+        const control = (
+          <CalendarDate
+            key={dayDate}
+            day={day}
+            bars={bars.filter(
+              (bar) => bar.startDate <= dayDate && bar.endDate >= dayDate,
+            )}
+            loading={loading}
+            month={view === "month" ? selected.getMonth() : undefined}
+            selected={date}
+            today={today}
+            occurrences={occurrences}
+            categories={categories}
+            onSelect={onDatePress}
+            holidayName={holidayNames[dayDate]}
+            specialDays={specialDays[dayDate]}
+          />
+        );
+        return view === "month" ? (
+          <div
+            key={dayDate}
+            data-od-id={`month-cell-${dayDate}`}
+            className={cn(
+              "relative grid min-w-0",
+              "[--calendar-date-gap:var(--sp-1)]",
+              "[--calendar-bar-height:calc(var(--spacing)*2)]",
+              // 글자 안쪽 여백까지 포함한 보이는 간격에 막대 간격을 맞춘다.
+              "[--calendar-mark-gap:calc(var(--calendar-date-gap)+var(--spacing)*0.25)]",
+              "[--calendar-bar-area:calc(var(--calendar-bar-height)*2+var(--calendar-mark-gap))]",
+              showMonthTodos && [
+                "[--calendar-todo-height:calc(var(--spacing)*4)]",
+                "[&>button]:justify-end",
+              ],
+            )}
+          >
+            {control}
+            {todoProps.todosByDate?.has(dayDate) && (
+              <div
+                className={cn(
+                  "absolute inset-x-0 min-w-0 overflow-hidden",
+                  "bottom-[var(--calendar-bar-area)] h-[var(--calendar-todo-height)]",
+                )}
+              >
+                <CalendarTodos date={dayDate} compact {...todoProps} />
+              </div>
+            )}
+          </div>
+        ) : (
+          control
+        );
+      })}
     </nav>
+  );
+}
+
+function CalendarDaySheet({
+  date,
+  events,
+  loading,
+  todoActions,
+  onClose,
+  restoreFocus,
+  ...listProps
+}: Omit<DayEventListProps, "occurrences"> &
+  Pick<CalendarProps, "events" | "loading"> & {
+    onClose: () => void;
+    restoreFocus: () => void;
+  }) {
+  const occurrences = loading ? [] : occurrencesInRange(events, date, date);
+  const sheetTodoActions = todoActions && {
+    ...todoActions,
+    onDelete: (todo: Todo) => {
+      onClose();
+      todoActions.onDelete(todo);
+    },
+  };
+  return (
+    <Sheet
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      onCloseAutoFocus={(event) => {
+        event.preventDefault();
+        restoreFocus();
+      }}
+      title={format(kstDate(date), "M월 d일 EEEE", { locale: ko })}
+      description="선택한 날짜의 일정과 할 일"
+      odId="sheet-calendar-day"
+    >
+      {loading ? (
+        <EventListSkeleton title="일정" />
+      ) : (
+        <DayEventList
+          {...listProps}
+          date={date}
+          occurrences={occurrences}
+          todoActions={sheetTodoActions}
+          emptyMessage="일정과 할 일이 없어요"
+        />
+      )}
+    </Sheet>
   );
 }
 
@@ -897,9 +1098,23 @@ function CalendarContent({
   onOpen,
   onAdd,
   loading,
+  undatedTodosByDate,
+  todoStatus,
+  todoActions,
+  ...todoProps
 }: CalendarProps) {
   const { view, date, onViewChange, onDateChange, onMove } =
     useCalendarLocation(defaultView, today);
+  const [sheetDate, setSheetDate] = useState<string | null>(null);
+  const sheetTrigger = useRef<HTMLButtonElement | null>(null);
+  const onDatePress: DatePress = (pressed, button) => {
+    if (!home && pressed === date) {
+      sheetTrigger.current = button;
+      setSheetDate(pressed);
+    } else {
+      onDateChange(pressed);
+    }
+  };
   const selected = kstDate(date);
   const { start, end } = calendarRange(date, view);
   const move = { month: addMonths, week: addWeeks, day: addDays }[view];
@@ -938,6 +1153,7 @@ function CalendarContent({
       : isPending;
     return (
       <CalendarPanel
+        {...todoProps}
         loading={loading}
         events={events}
         categories={categories}
@@ -947,7 +1163,7 @@ function CalendarContent({
         onOpen={onOpen}
         date={panelDate}
         view={view}
-        onDateChange={onDateChange}
+        onDatePress={onDatePress}
         holidayNames={holidayNames}
         specialDays={specialDays}
         holidaysPending={panelHolidaysPending}
@@ -1064,6 +1280,7 @@ function CalendarContent({
             />
           )}
         </div>
+        {!home && view !== "month" && todoStatus}
         {(home || view === "month") &&
         (loading || (!home && holidaysPending)) ? (
           <EventListSkeleton
@@ -1090,6 +1307,11 @@ function CalendarContent({
         ) : (
           (home || view === "month") && (
             <DayEvents
+              todosByDate={todoProps.todosByDate}
+              undatedTodosByDate={undatedTodosByDate}
+              todoBusy={todoProps.todoBusy}
+              todoStatus={todoStatus}
+              todoActions={todoActions}
               specialDays={home ? undefined : specialDays[date]}
               holiday={
                 !home && selectedHoliday
@@ -1108,6 +1330,31 @@ function CalendarContent({
           )
         )}
       </div>
+      {sheetDate && (
+        <CalendarDaySheet
+          todosByDate={todoProps.todosByDate}
+          undatedTodosByDate={undatedTodosByDate}
+          todoBusy={todoProps.todoBusy}
+          date={sheetDate}
+          events={events}
+          categories={categories}
+          ownerNames={ownerNames}
+          onOpen={onOpen}
+          loading={loading || holidaysPending}
+          holiday={
+            holidayNames[sheetDate]
+              ? { date: sheetDate, name: holidayNames[sheetDate] }
+              : undefined
+          }
+          specialDays={specialDays[sheetDate]}
+          todoStatus={todoStatus}
+          todoActions={todoActions}
+          restoreFocus={() =>
+            sheetTrigger.current?.focus({ preventScroll: true })
+          }
+          onClose={() => setSheetDate(null)}
+        />
+      )}
     </div>
   );
 }

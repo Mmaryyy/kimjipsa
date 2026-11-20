@@ -13,6 +13,7 @@ vi.mock("@/entities/holiday", () => ({
   useHolidays: () => ({ names: {}, isPending: false }),
 }));
 import type * as EventModule from "@/entities/event";
+import type * as TodoModule from "@/entities/todo";
 import {
   cleanup,
   fireEvent,
@@ -26,13 +27,18 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ToastProvider } from "@/shared/ui";
 import { CalendarPage } from "./calendar-page";
 
-const render = (ui: ReactElement) =>
-  renderWithoutConfirm(
-    <ToastProvider>
-      <QueryClientProvider client={new QueryClient()}>{ui}</QueryClientProvider>
-    </ToastProvider>,
-    { wrapper: ConfirmProvider },
-  );
+const render = (ui: ReactElement) => {
+  const client = new QueryClient();
+  return renderWithoutConfirm(ui, {
+    wrapper: ({ children }) => (
+      <ConfirmProvider>
+        <ToastProvider>
+          <QueryClientProvider client={client}>{children}</QueryClientProvider>
+        </ToastProvider>
+      </ConfirmProvider>
+    ),
+  });
+};
 const { useEvents, useEventCategories, useEvent, deleteEvent, navigation } =
   vi.hoisted(() => ({
     useEvent: vi.fn(),
@@ -44,9 +50,19 @@ const { useEvents, useEventCategories, useEvent, deleteEvent, navigation } =
 vi.mock("@/entities/event", async (original) => ({
   ...(await original<typeof EventModule>()),
   useEvents,
+  useCalendarClock: () => new Date("2026-11-20T03:00:00Z"),
   useEvent,
   deleteEvent,
   useEventCategories,
+}));
+const { useTodos, mutateTodo } = vi.hoisted(() => ({
+  useTodos: vi.fn(),
+  mutateTodo: vi.fn().mockResolvedValue({}),
+}));
+vi.mock("@/entities/todo", async (original) => ({
+  ...(await original<typeof TodoModule>()),
+  useTodos,
+  useTodoWrite: () => ({ mutateAsync: mutateTodo, isPending: false }),
 }));
 vi.mock("./event-detail", () => ({ default: () => <p>상세 내용</p> }));
 vi.mock("@/features/family", () => ({
@@ -62,6 +78,148 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn() }),
 }));
 const refetch = vi.fn();
+beforeEach(() => {
+  useTodos.mockReturnValue({
+    data: { items: [], userId: "me" },
+    isPending: false,
+    isError: false,
+    error: null,
+  });
+});
+
+const undatedTodo: TodoModule.Todo = {
+  id: "10000000-0000-4000-8000-000000000001",
+  owner_id: "spouse",
+  title: "택배 반품",
+  due_on: null,
+  visibility: "shared",
+  completed_at: null,
+  completed_by: null,
+  created_at: "2026-11-18T01:00:00.000Z",
+  updated_at: "2026-11-18T01:00:00.000Z",
+};
+
+it("CAL-18 SCN-CAL-11 일정 본문에서 할 일을 보고 같은 시트로 수정해요", async () => {
+  navigation.search = "date=2026-11-20&view=month";
+  useEvents.mockReturnValue({ data: [] });
+  useEventCategories.mockReturnValue({ data: [] });
+  const todo = undatedTodo;
+  useTodos.mockReturnValue({ data: { userId: "me", items: [todo] } });
+  render(<CalendarPage />);
+  const section = screen.getByRole("region", { name: "11월 20일 금요일" });
+  expect(
+    screen.queryByRole("region", { name: "할 일" }),
+  ).not.toBeInTheDocument();
+  expect(screen.getAllByRole("button", { name: "등록" })).toHaveLength(1);
+  expect(
+    screen.queryByRole("radio", { name: "할 일" }),
+  ).not.toBeInTheDocument();
+  const calendar = screen.getByRole("navigation", { name: "달력" });
+  expect(
+    calendar.compareDocumentPosition(section) &
+      Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  fireEvent.click(within(section).getByRole("button", { name: "택배 반품" }));
+  const dialog = screen.getByRole("dialog", { name: "할 일 수정" });
+  const form = within(dialog);
+  expect(form.getByRole("combobox", { name: "일정 종류" })).toBeDisabled();
+  expect(form.getByRole("combobox", { name: "일정 종류" })).toHaveValue("todo");
+  expect(
+    form.queryByRole("switch", { name: "개인 할 일" }),
+  ).not.toBeInTheDocument();
+  fireEvent.change(form.getByLabelText("제목"), {
+    target: { value: "반품 보내기" },
+  });
+  fireEvent.click(form.getByRole("button", { name: "저장" }));
+  await waitFor(() => expect(dialog).not.toBeInTheDocument());
+  expect(mutateTodo).toHaveBeenCalledWith({
+    action: "save",
+    id: todo.id,
+    item: { title: "반품 보내기", due_on: null, visibility: "shared" },
+  });
+  expect(screen.getByText("할 일을 수정했어요")).toBeVisible();
+});
+
+it("CAL-18 SCN-CAL-11 할 일을 표시일에 정렬하고 완료한 날에 남겨요", () => {
+  navigation.search = "date=2026-11-20&view=month";
+  useEvents.mockReturnValue({ data: [] });
+  useEventCategories.mockReturnValue({ data: [] });
+  const dueToday = {
+    ...undatedTodo,
+    id: "due",
+    title: "세탁하기",
+    due_on: "2026-11-20",
+  };
+  const overdue = {
+    ...undatedTodo,
+    id: "late",
+    title: "관리비 내기",
+    due_on: "2026-11-18",
+  };
+  const older = {
+    ...overdue,
+    id: "older",
+    title: "청소하기",
+    due_on: "2026-11-17",
+  };
+  const items = [undatedTodo, dueToday, overdue, older];
+  useTodos.mockReturnValue({ data: { userId: "me", items } });
+  const { rerender } = render(<CalendarPage />);
+  const today = within(
+    screen.getByRole("region", { name: "11월 20일 금요일" }),
+  );
+  const titles = () =>
+    within(today.getByRole("list"))
+      .getAllByRole("button")
+      .map((row) => row.textContent);
+  expect(titles()).toEqual([
+    "청소하기",
+    "관리비 내기",
+    "세탁하기",
+    "택배 반품",
+  ]);
+  expect(today.getByText("4일째")).toBeVisible();
+
+  const tomorrow = () =>
+    screen.getByRole("button", { name: /^11월 21일 토요일/ });
+  const todayButton = () =>
+    screen.getByRole("button", { name: /^11월 20일 금요일,/ });
+  fireEvent.click(tomorrow());
+  expect(
+    screen.queryByRole("button", { name: "택배 반품" }),
+  ).not.toBeInTheDocument();
+  fireEvent.click(todayButton());
+
+  const currentDay = within(
+    screen.getByRole("region", { name: "11월 20일 금요일" }),
+  );
+  fireEvent.click(
+    currentDay.getByRole("checkbox", { name: "관리비 내기 완료" }),
+  );
+  expect(mutateTodo).toHaveBeenCalledWith({
+    action: "set_done",
+    id: overdue.id,
+    done: true,
+  });
+  const completed = { ...overdue, completed_at: "2026-11-20T03:00:00Z" };
+  useTodos.mockReturnValue({
+    data: { userId: "me", items: [undatedTodo, dueToday, completed, older] },
+  });
+  rerender(<CalendarPage />);
+  expect(
+    currentDay.getByRole("checkbox", { name: "관리비 내기 완료" }),
+  ).toBeChecked();
+  const completedButton = currentDay.getByRole("button", {
+    name: "관리비 내기",
+  });
+  const completedTitle = within(completedButton).getByText("관리비 내기");
+  expect(completedTitle).toHaveClass("line-through");
+  const rows = within(currentDay.getByRole("list")).getAllByRole("listitem");
+  expect(rows.at(-1)).toContainElement(completedButton);
+});
+
+afterEach(cleanup);
+
 describe("CAL-01~05 SCN-CAL-1~3 일정 목록", () => {
   beforeEach(() => {
     navigation.search = "date=2026-10-16&view=day";
@@ -77,7 +235,6 @@ describe("CAL-01~05 SCN-CAL-1~3 일정 목록", () => {
       data: [],
     });
   });
-  afterEach(cleanup);
   it("로딩을 표시해요", () => {
     useEvents.mockReturnValue({ isPending: true, isError: false });
     render(<CalendarPage />);
@@ -189,7 +346,6 @@ describe("CAL-12 CAL-14 SCN-CAL-7 밀기와 홈 삭제", () => {
     deleteEvent.mockResolvedValue(null);
     navigation.search = "date=2026-10-16&view=month";
   });
-  afterEach(cleanup);
   it.each(["error", "missing", "forbidden", "private"])(
     "CAL-12 삭제 진입 %s는 알림만 보여 주고 닫아요",
     (state) => {

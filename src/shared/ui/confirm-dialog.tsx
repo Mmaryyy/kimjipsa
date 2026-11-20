@@ -5,6 +5,7 @@ import { cn } from "@/shared/lib";
 import { AlertDialog } from "radix-ui";
 import { Button } from "./button";
 import type { OverlayProps } from "./overlay.types";
+import { useTopSheetLayer } from "./use-sheet-layer";
 type ConfirmDialogProps = OverlayProps & {
   onCloseAutoFocus?: ComponentProps<
     typeof AlertDialog.Content
@@ -36,19 +37,23 @@ export function ConfirmDialog({
   children,
   onCloseAutoFocus,
 }: ConfirmDialogProps) {
+  const layer = Math.max(84, useTopSheetLayer() + 1);
   return (
     <AlertDialog.Root open={open} onOpenChange={onOpenChange}>
       {trigger && <AlertDialog.Trigger asChild>{trigger}</AlertDialog.Trigger>}
       <AlertDialog.Portal>
-        {/* Above every sheet (z-81, date sheet z-83) so a confirm opened from a sheet dims it too. */}
-        <AlertDialog.Overlay className="kj-overlay z-84" />
+        <AlertDialog.Overlay
+          className="kj-overlay z-84"
+          style={{ zIndex: layer }}
+        />
         <AlertDialog.Content
+          style={{ zIndex: layer + 1 }}
           onCloseAutoFocus={onCloseAutoFocus}
           onEscapeKeyDown={(event) => {
             if (pending) event.preventDefault();
           }}
           className={cn([
-            "fixed top-1/2 left-1/2 z-85 w-[min(calc(var(--sp-10)*7.5),calc(100%-var(--sp-6)*2))]",
+            "fixed top-1/2 left-1/2 w-[min(calc(var(--sp-10)*7.5),calc(100%-var(--sp-6)*2))]",
             "surface-edge rounded-[var(--r-dialog)] border border-[var(--glass-border)]",
             "-translate-1/2 bg-popover p-4 text-center text-foreground",
             "[overflow-wrap:anywhere] [&_p]:mt-1",

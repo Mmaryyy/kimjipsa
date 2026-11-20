@@ -214,6 +214,68 @@ const timelineEvent: CalendarEvent = {
   },
 };
 
+it.each(["month", "week"])(
+  "CAL-18 SCN-CAL-11 %s 보기에서 날짜를 다시 누르면 그날 일정과 할 일이 열린다",
+  (view) => {
+    location.search = `view=${view}&date=2026-10-13`;
+    const date = "2026-10-14";
+    const todo = {
+      id: "todo",
+      owner_id: "me",
+      title: "택배 반품",
+      due_on: "2026-10-12",
+      visibility: "shared" as const,
+      completed_at: "2026-10-14T03:00:00Z",
+      completed_by: "me",
+      created_at: "2026-10-12T03:00:00Z",
+      updated_at: "2026-10-14T03:00:00Z",
+    };
+    const onOpen = vi.fn();
+    const onToggle = vi.fn();
+    render(
+      <CalendarView
+        {...props}
+        events={[timelineEvent]}
+        onOpen={onOpen}
+        todosByDate={new Map([[date, [{ todo, overdueDays: 3 }]]])}
+        todoActions={{ onToggle, onEdit: vi.fn(), onDelete: vi.fn() }}
+      />,
+    );
+    const dayButton = () =>
+      screen.getByRole("button", { name: /^10월 14일 수요일/ });
+    fireEvent.click(dayButton());
+    expect(dayButton()).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    const listTitles = (list: HTMLElement) =>
+      within(list)
+        .getAllByRole("button")
+        .map((button) => button.textContent);
+    const selectedTitles =
+      view === "month"
+        ? listTitles(
+            within(
+              screen.getByRole("region", { name: "10월 14일 수요일" }),
+            ).getByRole("list"),
+          )
+        : ["택배 반품", "치과 정기검진"];
+
+    fireEvent.click(dayButton());
+    const sheet = within(
+      screen.getByRole("dialog", { name: "10월 14일 수요일" }),
+    );
+    const event = sheet.getByRole("button", { name: "치과 정기검진" });
+    const checkbox = sheet.getByRole("checkbox", { name: "택배 반품 완료" });
+    expect(listTitles(sheet.getByRole("list"))).toEqual(selectedTitles);
+    expect(selectedTitles).toEqual(["택배 반품", "치과 정기검진"]);
+    expect(checkbox).toBeChecked();
+    expect(sheet.getByText("3일째")).toBeVisible();
+    fireEvent.click(checkbox);
+    expect(onToggle).toHaveBeenCalledWith(todo, false);
+    fireEvent.click(event);
+    expect(onOpen).toHaveBeenCalledWith("dentist");
+  },
+);
+
 describe("CAL-07 SCN-CAL-8 날짜별 목록 머리", () => {
   beforeEach(() => {
     location.search = "view=month&date=2026-10-14";
@@ -526,3 +588,47 @@ describe("CAL-07 P4.12 SCN-CAL-8 달력 섹션 로딩", () => {
     expect(screen.queryByText("등록된 일정이 없어요")).not.toBeInTheDocument();
   });
 });
+
+it.each(["month", "week", "day"])(
+  "CAL-18 SCN-CAL-11 %s 보기에서 마감이 지난 할 일을 오늘 칸에서 완료해요",
+  (view) => {
+    location.search = `view=${view}&date=${props.today}`;
+    const todo = {
+      id: "todo",
+      owner_id: "me",
+      title: "택배 반품",
+      due_on: "2026-12-29",
+      visibility: "shared" as const,
+      completed_at: null,
+      completed_by: null,
+      created_at: "2026-12-29",
+      updated_at: "2026-12-29",
+    };
+    const onToggleTodo = vi.fn();
+    const { container } = render(
+      <CalendarView
+        {...props}
+        todosByDate={new Map([[props.today, [{ todo, overdueDays: 3 }]]])}
+        onToggleTodo={onToggleTodo}
+      />,
+    );
+    const checkbox = screen.getByRole("checkbox", {
+      name: "택배 반품 3일째 완료",
+    });
+    if (view === "month") {
+      expect(
+        container.querySelector('[data-od-id="month-cell-2026-12-31"]'),
+      ).toContainElement(checkbox);
+    } else if (view === "day") {
+      expect(
+        container.querySelector('[data-od-id="all-day"]'),
+      ).toContainElement(checkbox);
+    } else {
+      expect(
+        screen.getByRole("region", { name: props.today }),
+      ).toContainElement(checkbox);
+    }
+    fireEvent.click(checkbox);
+    expect(onToggleTodo).toHaveBeenCalledWith(todo, true);
+  },
+);

@@ -1,13 +1,15 @@
 "use client";
 
 import { useWatch, type Control, type UseFormSetValue } from "react-hook-form";
-import type { EventInput } from "@/entities/event";
 import { FormField, type FieldRenderProps } from "@/shared/ui";
 import { DateTimeInput, type DateTimeRange } from "@/shared/ui/date-time-input";
-import type { EventFormInput } from "../model/event-form.schema";
+import type {
+  CalendarFormOutput,
+  EventFormInput,
+} from "../model/event-form.schema";
 
 type DateFieldsProps = {
-  control: Control<EventFormInput, unknown, EventInput>;
+  control: Control<EventFormInput, unknown, CalendarFormOutput>;
   setValue: UseFormSetValue<EventFormInput>;
   dateOnly: boolean;
   singleDate: boolean;
