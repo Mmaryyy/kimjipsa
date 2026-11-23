@@ -1,12 +1,13 @@
 import { z } from "zod";
 
 export class CloudError extends Error {
-  constructor(
-    code: string,
-    readonly detail?: string,
-    readonly field?: string,
-  ) {
+  readonly detail?: string;
+  readonly field?: string;
+
+  constructor(code: string, detail?: string, field?: string) {
     super(code);
+    this.detail = detail;
+    this.field = field;
   }
 }
 

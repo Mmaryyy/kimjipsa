@@ -17,9 +17,11 @@ SOURCE = Path(__file__).resolve().parents[2]
 RUNTIME = Path.home() / 'Library/Application Support/kimjipsa'
 LABELS = ['com.kimjipsa.local-app', 'com.kimjipsa.ai-gateway']
 DOMAIN = f'gui/{os.getuid()}'
+STOP_TIMEOUT_SECONDS = 30
 DIRECTORIES = ['app', 'pages', 'src', 'public', 'mocks', 'node_modules', 'ai-gateway']
 FILES = ['package.json', 'yarn.lock', 'tsconfig.json', 'next-env.d.ts',
-         'next.config.ts', 'postcss.config.mjs', 'proxy.ts', '.env.local']
+         'next.config.ts', 'postcss.config.mjs', 'proxy.ts', '.env.local',
+         'instrumentation.ts', 'instrumentation-client.ts']
 
 
 def copy_directory(name):
@@ -32,8 +34,10 @@ def copy_directory(name):
         if cloned.returncode == 0:
             return
     target.mkdir(exist_ok=True)
+    # Dependency packages can require vendor files; only skip the old gateway bundle.
+    excludes = ['--exclude=/vendor/'] if name == 'ai-gateway' else []
     subprocess.run(['/usr/bin/rsync', '-a', '--delete', '--exclude=.runtime/',
-                    '--exclude=vendor/', '--exclude=.git/',
+                    '--exclude=.git/', *excludes,
                     f'{source}/', f'{target}/'], check=True)
 
 
@@ -45,6 +49,33 @@ def replace_paths(value, template_root):
     if isinstance(value, dict):
         return {key: replace_paths(item, template_root) for key, item in value.items()}
     return value
+
+
+def stop_service(label):
+    service = f'{DOMAIN}/{label}'
+    print(f'Stopping {label}...', flush=True)
+    stopped = subprocess.run(['launchctl', 'bootout', service],
+                             capture_output=True, text=True, timeout=10)
+    deadline = time.monotonic() + STOP_TIMEOUT_SECONDS
+    # bootout can return before launchd finishes removing the service.
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise RuntimeError(
+                f'Timed out waiting for {label} to be removed; '
+                'services were not re-registered')
+        status = subprocess.run(['launchctl', 'print', service],
+                                capture_output=True, text=True,
+                                timeout=min(5, remaining))
+        if status.returncode == 113 and (
+            f'Could not find service "{label}"' in status.stderr
+        ):
+            print(f'Stopped {label}', flush=True)
+            return
+        if stopped.returncode != 0 or status.returncode != 0:
+            detail = (stopped.stderr + status.stderr).strip()
+            raise RuntimeError(f'Could not stop or inspect {label}: {detail}')
+        time.sleep(min(0.2, max(0, deadline - time.monotonic())))
 
 
 def main():
@@ -64,8 +95,7 @@ def main():
     RUNTIME.chmod(0o700)
     marker.write_text(str(SOURCE) + '\n')
     for label in reversed(LABELS):
-        subprocess.run(['launchctl', 'bootout', f'{DOMAIN}/{label}'],
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        stop_service(label)
     for name in DIRECTORIES:
         print(f'Preparing {name}...', flush=True)
         copy_directory(name)
