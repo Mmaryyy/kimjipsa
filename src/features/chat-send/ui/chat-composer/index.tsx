@@ -12,7 +12,9 @@ import {
 } from "@/shared/ui";
 
 import type { useChatSend } from "../../model/use-chat-send";
-import { useRef } from "react";
+import { useRef, useState } from "react";
+
+const maxPhotos = 4;
 
 interface Props {
   reply: ReturnType<typeof useChatSend>;
@@ -21,7 +23,10 @@ interface Props {
 const ChatComposer = ({ disabled = false, reply }: Props) => {
   const { text, photos, onText, onRemove, send, upload } = reply;
   const fileInput = useRef<HTMLInputElement>(null);
+  const [photoLimitExceeded, setPhotoLimitExceeded] = useState(false);
   const pending = send.isPending || upload.isPending;
+  const remainingPhotos = maxPhotos - photos.length;
+  const canAttach = !disabled && !pending && remainingPhotos > 0;
   const canSend = !disabled && !pending && (!!text.trim() || photos.length > 0);
   const error = send.error ?? upload.error;
   return (
@@ -31,7 +36,10 @@ const ChatComposer = ({ disabled = false, reply }: Props) => {
       className="space-y-2 rounded-[36px]!"
       onSubmit={(event) => {
         event.preventDefault();
-        if (canSend) send.mutate();
+        if (canSend) {
+          setPhotoLimitExceeded(false);
+          send.mutate();
+        }
       }}
     >
       {photos.length > 0 && (
@@ -48,7 +56,10 @@ const ChatComposer = ({ disabled = false, reply }: Props) => {
                 size="icon-sm"
                 aria-label={`사진 ${index + 1} 빼기`}
                 disabled={pending}
-                onClick={() => onRemove(id)}
+                onClick={() => {
+                  setPhotoLimitExceeded(false);
+                  onRemove(id);
+                }}
               >
                 <X aria-hidden="true" />
               </Button>
@@ -86,21 +97,25 @@ const ChatComposer = ({ disabled = false, reply }: Props) => {
           ref={fileInput}
           className="sr-only"
           tabIndex={-1}
-          aria-label="영수증 사진 선택"
+          aria-label="사진 선택"
           type="file"
           accept="image/jpeg,image/png,image/webp"
-          disabled={disabled || pending || photos.length >= 4}
+          multiple
+          disabled={!canAttach}
           onChange={(event) => {
-            const file = event.target.files?.[0];
-            if (file) upload.mutate(file);
-            event.target.value = "";
+            const files = Array.from(event.currentTarget.files ?? []);
+            event.currentTarget.value = "";
+            if (!canAttach || files.length === 0) return;
+            setPhotoLimitExceeded(files.length > remainingPhotos);
+            upload.mutate(files.slice(0, remainingPhotos));
           }}
         />
         <Button
           variant="gray"
           size="icon-sm"
-          disabled={disabled || pending || photos.length >= 4}
+          disabled={!canAttach}
           aria-label="사진 첨부"
+          data-od-id="chat-attach"
           onClick={() => fileInput.current?.click()}
         >
           {upload.isPending ? (
@@ -122,6 +137,11 @@ const ChatComposer = ({ disabled = false, reply }: Props) => {
           )}
         </PromptInputSubmit>
       </PromptInputFooter>
+      {photoLimitExceeded && (
+        <Text as="p" role="status">
+          사진은 한 번에 {maxPhotos}장까지 보낼 수 있어요.
+        </Text>
+      )}
       {error && (
         <Text as="p" role="alert" className="text-error-text">
           {error.message}

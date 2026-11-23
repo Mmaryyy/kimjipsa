@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { Search } from "lucide-react";
+import { useChatNavigation } from "@/features/chat-navigation";
 import { markHistoryBack, cn, normalizeItemName } from "@/shared/lib";
 import { inventoryRoutes, inventoryListPath } from "@/shared/config";
 import { ShoppingNavigation } from "@/widgets/shopping-navigation";
@@ -73,6 +74,11 @@ const InventoryPage = () => {
   const meta = useInventoryMeta();
   const router = useRouter();
   const search = useSearchParams();
+  const { ready: chatReady, onOpen } = useChatNavigation();
+  const [registrationOpen, setRegistrationOpen] = useState(false);
+  const registrationButton = useRef<HTMLButtonElement>(null);
+  const registrationTrigger = useRef<HTMLButtonElement | null>(null);
+  const afterRegistrationClose = useRef<(() => void) | null>(null);
   const [afterUsed, setAfterUsed] = useState<InventoryItem | null>(null);
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [manage, setManage] = useState(false);
@@ -91,7 +97,8 @@ const InventoryPage = () => {
     setQuery(urlQuery);
   }, [urlQuery]);
   useEffect(() => {
-    if (editor !== null || composing || query === urlQuery) return;
+    if (registrationOpen || editor !== null || composing || query === urlQuery)
+      return;
     const timer = setTimeout(() => {
       const next = new URLSearchParams(search?.toString());
       if (query) next.set("q", query);
@@ -100,7 +107,7 @@ const InventoryPage = () => {
       router.replace(`${inventoryRoutes.inventory}?${next}`, { scroll: false });
     }, 250);
     return () => clearTimeout(timer);
-  }, [query, urlQuery, composing, router, search, editor]);
+  }, [query, urlQuery, composing, router, search, editor, registrationOpen]);
   const updateSearch = (changes: Record<string, string>) => {
     const next = new URLSearchParams(search?.toString());
     for (const [key, value] of Object.entries(changes)) {
@@ -110,6 +117,22 @@ const InventoryPage = () => {
     router.replace(`${inventoryRoutes.inventory}?${next.toString()}`, {
       scroll: false,
     });
+  };
+  const openRegistration = (trigger: HTMLButtonElement | null) => {
+    registrationTrigger.current = trigger;
+    setRegistrationOpen(true);
+  };
+  const chooseRegistration = (onChoose: () => void) => {
+    const sheetHistory = window.history.state;
+    afterRegistrationClose.current = () => {
+      // 시트의 기록을 닫은 뒤에 다음 시트나 대화 기록을 추가해요.
+      if (window.history.state === sheetHistory) {
+        window.addEventListener("popstate", onChoose, { once: true });
+      } else {
+        onChoose();
+      }
+    };
+    setRegistrationOpen(false);
   };
   const notify = (value: string) => setMessage(value);
   const { actions, remove, confirmUsedUp } = useItemActions({
@@ -306,7 +329,8 @@ const InventoryPage = () => {
               action={
                 <TextButton
                   data-od-id="inv-empty-add"
-                  onClick={() => setEditor("new")}
+                  aria-haspopup="dialog"
+                  onClick={(event) => openRegistration(event.currentTarget)}
                 >
                   새 품목으로 추가
                 </TextButton>
@@ -357,8 +381,15 @@ const InventoryPage = () => {
   return (
     <PullToAdd
       action="재고 등록하기"
-      onAdd={() => setEditor("new")}
-      disabled={!meta.data || !items.data || !!editor || manage || !!afterUsed}
+      onAdd={() => openRegistration(registrationButton.current)}
+      disabled={
+        !meta.data ||
+        !items.data ||
+        !!editor ||
+        registrationOpen ||
+        manage ||
+        !!afterUsed
+      }
     >
       <PageLayout
         width="narrow"
@@ -374,10 +405,12 @@ const InventoryPage = () => {
             actions={
               <>
                 <Button
+                  ref={registrationButton}
                   variant="glass"
                   data-od-id="inv-add"
                   disabled={!meta.data || !items.data}
-                  onClick={() => setEditor("new")}
+                  aria-haspopup="dialog"
+                  onClick={(event) => openRegistration(event.currentTarget)}
                 >
                   등록
                 </Button>
@@ -395,6 +428,34 @@ const InventoryPage = () => {
       >
         <ShoppingNavigation current={inventoryRoutes.inventory} />
         {content}
+        <Sheet
+          open={registrationOpen}
+          onOpenChange={setRegistrationOpen}
+          title="재고 등록"
+          description="재고 등록 방법을 선택해요."
+          odId="inv-registration-sheet"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            registrationTrigger.current?.focus({ preventScroll: true });
+            registrationTrigger.current = null;
+            const onChoose = afterRegistrationClose.current;
+            afterRegistrationClose.current = null;
+            onChoose?.();
+          }}
+        >
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              variant="gray"
+              disabled={!chatReady}
+              onClick={() => chooseRegistration(onOpen)}
+            >
+              영수증 등록
+            </Button>
+            <Button onClick={() => chooseRegistration(() => setEditor("new"))}>
+              직접 등록
+            </Button>
+          </div>
+        </Sheet>
         <Sheet
           historyManaged
           open={manage}

@@ -105,7 +105,9 @@ vi.mock("@/entities/event", async (original) => ({
 }));
 vi.mock("@/entities/inventory-item", async (original) => ({
   ...(await original<typeof InventoryEntity>()),
-  useInventory: () => ({ data: [] }),
+  useInventory: () => ({
+    data: [{ id: "milk", name: "서울우유", mode: "quantity", unit_id: "pack" }],
+  }),
   useInventoryMeta: () => ({
     data: {
       categories: [
@@ -113,7 +115,7 @@ vi.mock("@/entities/inventory-item", async (original) => ({
         { id: "other", name: "기타" },
       ],
       locations: [],
-      units: [],
+      units: [{ id: "pack", name: "팩" }],
     },
     isError: false,
   }),
@@ -265,5 +267,32 @@ describe("BOT-08 SCN-BOT-6 영수증 확인 응답", () => {
     expect(
       screen.getAllByRole("button").map((button) => button.textContent),
     ).toEqual(["재고에 반영하기", "취소하기"]);
+  });
+  it("INV-17 수정한 수량과 연결할 재고는 확인한 뒤 반영 요청에 포함돼요", () => {
+    render(<ReceiptCard receipt={receipt} now={now} />);
+    fireEvent.change(screen.getByRole("spinbutton", { name: "품목 1 수량" }), {
+      target: { value: "3" },
+    });
+    expect(
+      screen.getByRole("option", { name: "서울우유 · 이름이 비슷해요" }),
+    ).toBeInTheDocument();
+    fireEvent.change(
+      screen.getByRole("combobox", { name: "품목 1 기존 재고 연결" }),
+      { target: { value: "milk" } },
+    );
+    expect(mutate).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "재고에 반영하기" }));
+    expect(mutate).toHaveBeenCalledExactlyOnceWith({
+      id: receipt.id,
+      version: receipt.version,
+      items: [
+        {
+          ...receipt.items[0],
+          quantity: 3,
+          inventory_item_id: "milk",
+          unit_id: "pack",
+        },
+      ],
+    });
   });
 });

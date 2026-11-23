@@ -49,6 +49,11 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: navigation.replace }),
 }));
 
+const chat = vi.hoisted(() => ({ onOpen: vi.fn() }));
+vi.mock("@/features/chat-navigation", () => ({
+  useChatNavigation: () => ({ ready: true, onOpen: chat.onOpen }),
+}));
+
 const milk = (inventoryItems as InventoryItem[])[0]!;
 const InventoryRowExample = () => {
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
@@ -299,6 +304,47 @@ describe("INV-01 INV-06 INV-08 SCN-INV-1 재고 추가와 목록 관리", () => 
   );
 });
 
+it.each([
+  { trigger: "등록", items: [milk], choice: "영수증 등록" },
+  { trigger: "등록", items: [milk], choice: "직접 등록" },
+  { trigger: "새 품목으로 추가", items: [], choice: "영수증 등록" },
+])(
+  "INV-17 $trigger 버튼에서 $choice 경로를 열어요",
+  async ({ trigger, items, choice }) => {
+    chat.onOpen.mockClear();
+    navigation.search = new URLSearchParams();
+    const client = new QueryClient({
+      defaultOptions: { queries: { staleTime: Infinity } },
+    });
+    client.setQueryData(["inventory"], items);
+    client.setQueryData(["inventory-meta"], inventoryMeta);
+    const { unmount } = render(
+      <QueryClientProvider client={client}>
+        <InventoryPage />
+      </QueryClientProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: trigger }));
+    const sheet = screen.getByRole("dialog", { name: "재고 등록" });
+    expect(screen.queryByRole("dialog", { name: "새 품목" })).toBeNull();
+    expect(chat.onOpen).not.toHaveBeenCalled();
+    fireEvent.click(within(sheet).getByRole("button", { name: choice }));
+
+    if (choice === "영수증 등록") {
+      await waitFor(() => expect(chat.onOpen).toHaveBeenCalledOnce());
+      expect(screen.queryByRole("dialog", { name: "새 품목" })).toBeNull();
+    } else {
+      expect(
+        await screen.findByRole("dialog", { name: "새 품목" }),
+      ).toBeVisible();
+      expect(chat.onOpen).not.toHaveBeenCalled();
+    }
+    expect(screen.queryByRole("dialog", { name: "재고 등록" })).toBeNull();
+    unmount();
+    client.clear();
+  },
+);
+
 describe("INV-03 INV-15 SCN-INV-2 상태와 수량 캡슐", () => {
   it("한 행만 펼치고 상태 선택·바깥·Escape로 접으며 포커스를 돌려요", async () => {
     const meta = inventoryMeta as InventoryMeta;
@@ -418,7 +464,7 @@ it("INV-01 SCN-INV-1 모바일 당기기는 기존 재고 등록을 열어요", 
   expect(arrow).toHaveClass("rotate-180");
   fireEvent.touchEnd(surface, { touches: [] });
 
-  expect(screen.getByRole("dialog", { name: "새 품목" })).toBeVisible();
+  expect(screen.getByRole("dialog", { name: "재고 등록" })).toBeVisible();
   unmount();
   client.clear();
 });
@@ -440,12 +486,15 @@ it("검색 직후 연 등록 시트가 닫힐 때까지 검색 URL 갱신을 미
   fireEvent.compositionStart(search);
   fireEvent.change(search, { target: { value: "없는 두부" } });
   fireEvent.compositionEnd(search);
-  fireEvent.click(screen.getByRole("button", { name: "새 품목으로 추가" }));
+  const add = screen.getByRole("button", { name: "새 품목으로 추가" });
+  fireEvent.click(add);
+  const sheet = screen.getByRole("dialog", { name: "재고 등록" });
   await act(async () => {
     await new Promise((resolve) => setTimeout(resolve, 300));
   });
   expect(navigation.replace).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole("button", { name: "취소" }));
+  fireEvent.keyDown(sheet, { key: "Escape" });
+  await waitFor(() => expect(add).toHaveFocus());
   await waitFor(() =>
     expect(navigation.replace).toHaveBeenCalledWith(
       "/inventory?q=%EC%97%86%EB%8A%94+%EB%91%90%EB%B6%80",

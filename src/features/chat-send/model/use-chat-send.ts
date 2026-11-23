@@ -36,10 +36,18 @@ export function useChatSend(sessionVersion: number) {
     },
   });
   const upload = useMutation({
-    mutationFn: async (file: File) => uploadPhoto(await compressPhoto(file)),
-    onSuccess: (id) => {
-      setPhotos((current) => [...current, id]);
-      requestId.current = null;
+    mutationFn: async (files: File[]) => {
+      let failure: { error: unknown } | undefined;
+      for (const file of files) {
+        try {
+          const id = await uploadPhoto(await compressPhoto(file));
+          setPhotos((current) => [...current, id]);
+          requestId.current = null;
+        } catch (error) {
+          failure ??= { error };
+        }
+      }
+      if (failure) throw failure.error;
     },
   });
   const onText = useCallback((value: string) => {
