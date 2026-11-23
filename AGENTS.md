@@ -6,7 +6,7 @@
 
 충돌하면 위에 있는 것이 이긴다. 코드와 문서가 어긋나면 한쪽을 임의로 고치지 말고 원인을 확인해 사용자에게 묻는다.
 
-1. 사용자가 직접 전달한 최신 요구사항
+1. 사용자가 직접 전달한 최신 요구사항 — 기록된 사용자 결정은 `docs/00-standards/`(화면·디자인 시스템·관례, relay CLI 로만 수정)
 2. 승인된 기획서·기능명세: `docs/기획서.html`, `docs/기능명세.html` (원본은 claude.ai 아티팩트, URL은 `docs/README.md`)
 3. 승인된 기술 결정: `docs/02-architecture/ADR/`
 4. 개발 가이드라인: `docs/03-guidelines/`
@@ -22,6 +22,7 @@
 
 | 작업                                          | 읽을 문서                                                                                                       |
 | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| 화면·UI·관례에 관한 모든 작업 (먼저 확인)     | `docs/00-standards/README.md` 에서 해당 화면 영역 문서(`calendar.md`, `ui.md` 등)                               |
 | 신규 기능                                     | `docs/01-project/REQUIREMENTS.md`, 명세 원문, `docs/02-architecture/ARCHITECTURE.md`                            |
 | 파일 생성·이동, 코드 위치 결정                | `docs/02-architecture/FSD.md`                                                                                   |
 | 코드 작성·수정 (기획·문서 작업에는 읽지 않음) | `docs/03-guidelines/CODING_STANDARDS.md`                                                                        |

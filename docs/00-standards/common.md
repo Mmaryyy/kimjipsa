@@ -1,0 +1,23 @@
+<!-- relay:project-decisions -->
+# 화면 영역 결정: common
+
+- g005: yarn format: 인자 없음=바뀐·새 파일만(기존 규칙 유지), 경로 인자=그 파일만, format:check --all=전체 검사(CI용). (원래 kimjipsa-build d005)
+- g017: 코드·테스트 제목 등 모든 산출물에 한자를 쓰지 않는다(한글 또는 영문만) (원래 kimjipsa-build d020)
+- g020: 목업 JSON 파일 모양의 스키마는 shared 계층의 목업 모듈로 옮겨 entity들이 함께 쓴다. entity 간 런타임 참조 예외는 허용하지 않는다 (원래 kimjipsa-build d025)
+- g025: 개발용 목업 배너는 아이콘 버튼을 눌러 absolute 패널로 열고, 닫힌 상태에서는 레이아웃에 영향이 없다 (원래 kimjipsa-build d030)
+- g048: FSD 규칙: shared 레이어에 한해 shared/<세그먼트>/<모듈>/index.ts 를 공개 진입점으로 허용한다. 무거운 공용 모듈(서드파티·CSS 부수 효과)은 세그먼트 배럴에 넣지 않고 이 방식으로 둔다(첫 사례 shared/ui/wheel-picker). 하위 모듈 내부 파일 직접 import 는 금지 (사용자 결정 2026-10-21, r113-f1) (원래 kimjipsa-build d073)
+- g054: 변경 즉시 저장하는 폼은 저장된 값과 달라졌을 때만 저장 요청을 보낸다(시트를 열었다 그대로 닫으면 요청 없음). 앱의 모든 자동 저장 폼에 적용 (사용자 지시 2026-10-22, r118-f2) (원래 kimjipsa-build d084)
+- g057: 닉네임 뒤 호칭은 '닉네임 님'처럼 한 칸 띄워 붙인다. 닉네임이 '님'으로 끝나는지 검사하지 않는다(r121-f1 상세의 '님님' 처리 문구를 대체) (사용자 결정 2026-10-22) (원래 kimjipsa-build d088)
+- g142: 할 일 미루기(CAL-18): 마감일이 지난 미완료 할 일은 오늘 칸으로 미뤄 보이고 옆에 'n일째'를 작게 표시(마감일=1일째, 다음 날=2일째, KST). due_on은 바꾸지 않고 화면·서버에서 계산. 마감일 없는 할 일은 해당 없음. 밀린 할 일을 완료하면 원래 마감일 칸으로 돌아가지 않고 완료한 날(completed_at의 KST 날짜) 칸에 완료 상태로 남는다(표시일 = max(due_on, 완료일)) (사용자 2026-11-20) (원래 kimjipsa-build d258)
+- g143: 일정 달력에서 이미 선택된 날짜를 한 번 더 누르면 그날의 일정과 할 일을 모은 시트가 열린다. 시트에서 일정을 눌러 보기·수정으로 가고, 할 일은 완료 토글·수정(등록 폼 종류 '할 일')을 할 수 있다(월·주 보기) (사용자 2026-11-20, CAL-18) (원래 kimjipsa-build d259)
+- g145: PRJ-14 챗봇 변경도 현행 BOT-07(모든 변경 확인 메시지)을 따른다 (원래 snuggly-snacking-meerkat d001)
+- g146: 프로젝트 구성 요소를 끄면 데이터는 숨김(삭제 안 함) (원래 snuggly-snacking-meerkat d002)
+- g147: 세그먼트 모양은 shared/ui 공용 하나로 관리한다: 화면 안 전환은 SegmentedControl, 페이지 전환은 링크형 공용 컴포넌트(높이 --ctl-h, 선택 칸 더 진하게) (원래 snuggly-snacking-meerkat d004)
+- g148: 페이지 전환 세그먼트(SegmentedNavigation) 선택 칸은 --accent-soft 배경 + 강조색 글자(d004 수정) (원래 snuggly-snacking-meerkat d005)
+- g149: ADR-0023 프로젝트 데이터 구조와 projects.html 시안 승인(CONFIRMED, PJ2~PJ6 화면 기준) (원래 snuggly-snacking-meerkat d006)
+- g150: 페이지 제목 아래 안내·소개 문구(구구절절한 설명)를 넣지 않는다. 날짜·가정 이름·상위 항목 이름처럼 정보인 부제만 허용 (사용자 2026-11-19) (원래 snuggly-snacking-meerkat d007)
+- g151: 프로젝트 목록 순서는 만든 순서(sort_order 최대값+1), 설명·메모·선행 조건 상한 1000자, 영역·마일스톤 편집은 시안대로 한 시트 (원래 snuggly-snacking-meerkat d009)
+- g152: 프로젝트 공유 범위 표시는 하지 않는다(개인 프로젝트 없음, PRJ-01) (원래 snuggly-snacking-meerkat d010)
+- g153: 셀렉트 같은 기본 컴포넌트는 shared/ui 공용 컴포넌트(공용 스타일 포함)로 만들고 모든 화면이 그것을 쓴다. 화면마다 네이티브 요소에 스타일을 따로 붙이지 않는다. (원래 snuggly-snacking-meerkat d011)
+- g156: 새 화면을 구현하기 전에 프로토타입의 data-od-id 대조 체크리스트를 만든다. (원래 kimjipsa-build d023의 규칙 부분)
+- g172: AI 기본 연결은 집 맥미니의 Hermes를 사용한다. 등록한 AI 키는 서버의 Node crypto에서 AES-256-GCM으로 암호화하고, 32바이트 마스터 키는 base64로 인코딩해 서버의 SECRET_ENCRYPTION_KEY에 둔다. (원래 kimjipsa-build d251의 규칙 부분)

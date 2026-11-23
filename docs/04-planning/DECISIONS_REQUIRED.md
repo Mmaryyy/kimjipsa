@@ -14,7 +14,7 @@
 | DEC-008 | 알림 요구사항의 마일스톤 배치 | 중간 | ROADMAP, M1 범위 | CONFIRMED |
 | DEC-009 | 데이터 모델 공백 | 중간 | 스키마 확정 | CONFIRMED (제안안 승인, 차후 수정 가능) |
 | DEC-010 | 판정 기준 모호 항목 | 낮음 | INV-16, CART-05, CART-12 | CONFIRMED |
-| DEC-011 | 영수증 이미지 저장 | 낮음(M3) | INV-17 | PENDING |
+| DEC-011 | 영수증 이미지 저장 | 낮음(M3) | INV-17 | CONFIRMED (Storage 24시간 후 삭제, 초안 7일) |
 | DEC-012 | AI 어댑터 구현 방식 | 낮음(M2) | 챗봇 | CONFIRMED (Hermes, ADR-0017) |
 | DEC-013 | 도메인·약관·모니터링·백업 | 중간 | 베타 | 도구·주기 CONFIRMED, 백업 보관 기간 PENDING·운영 적용 대기 |
 | DEC-014 | 재고 카테고리 아이콘 | 낮음(M2, P6) | INV-07 스키마·화면 | CONFIRMED |
