@@ -1,0 +1,496 @@
+{
+  "id": "kimjipsa-acc-invite",
+  "title": "김집사 초대·가정 합류",
+  "goal": "관리자가 우리 집을 만들고 초대 링크를 보내면, 배우자가 링크로 로그인해 합류하고 두 사람 모두 관리자로 표시된다.",
+  "source": "docs/기능명세.html ACC-03·04·05·06, SCN-ACC-1·2·3 + 현재 구현(src/pages/invite, src/pages/onboarding, src/features/family/ui/invite-share.tsx, 2026-11-23 기준)",
+  "device": "mobile",
+  "start": "create-home",
+  "entries": ["invite-open", "members-admin"],
+  "stages": ["우리 집 만들기 (관리자)", "초대 열기 (배우자)", "링크를 쓸 수 없을 때", "합류 결과"],
+  "vars": {
+    "familyName": "",
+    "displayName": "",
+    "agree": false,
+    "copied": false,
+    "linkCount": 0,
+    "joined": false
+  },
+  "screens": [
+    {
+      "id": "create-home",
+      "number": "01.01",
+      "title": "우리 집 이름 정하기",
+      "stage": 0,
+      "origin": "source",
+      "brief": "첫 로그인 뒤 “우리 집 만들기”에서 가정 이름을 입력한다. 이 이름이 일정의 첫 번째 기본 카테고리 이름이 된다(ACC-03).",
+      "uxConditions": [
+        "로그인·약관 동의(온보딩 1·2단계)는 이 흐름에서 생략했어요.",
+        "SCN-ACC-1: “데비네”를 입력하면 초대 링크 공유 화면까지 3분 안에 도달한다."
+      ],
+      "ui": {
+        "heading": "우리 집 이름을 정해 주세요",
+        "blocks": [
+          { "type": "text", "label": "이 이름은 일정의 첫 카테고리로도 쓰여요." },
+          { "type": "input", "label": "우리 집 이름", "field": "familyName", "required": true }
+        ]
+      },
+      "actions": [
+        { "id": "create", "label": "우리 집 만들기", "to": "invite-new", "validate": true, "inc": { "linkCount": 1 } },
+        { "id": "sim-create-fail", "label": "초대 링크 만들기 실패", "kind": "simulation", "to": "invite-error" }
+      ]
+    },
+    {
+      "id": "invite-new",
+      "number": "01.02",
+      "title": "초대 링크 공유",
+      "stage": 0,
+      "origin": "source",
+      "brief": "초대 링크를 만들어 카카오톡 등으로 공유할 수 있다(ACC-04). 한 번 쓰면 무효, 3일 뒤 만료(ACC-05).",
+      "uxConditions": [
+        "온보딩에서는 화면에 들어오면 링크를 자동으로 만들어요.",
+        "‘카카오톡으로 보내기’는 기기가 공유 기능을 지원할 때만 보여요(navigator.share).",
+        "링크 값과 만료 시각은 검토용 예시예요."
+      ],
+      "preview": { "familyName": "데비네", "linkCount": 1 },
+      "ui": {
+        "heading": "{{familyName}}에 함께할 사람을 초대해 주세요",
+        "blocks": [
+          { "type": "text", "label": "링크를 받은 사람이 로그인하고 수락하면 바로 합류해요." },
+          {
+            "type": "rows",
+            "rows": [
+              { "label": "초대 링크", "value": "kimjipsa.app/invite/ab12 ({{linkCount}}번째)" },
+              { "label": "사용", "value": "한 번 사용하면 링크가 닫혀요" },
+              { "label": "만료", "value": "11월 26일 14:00 (3일)" },
+              { "label": "대상", "value": "다른 가정에 속한 사람은 합류할 수 없어요" }
+            ]
+          }
+        ]
+      },
+      "actions": [
+        { "id": "share-kakao", "label": "카카오톡으로 보내기 → 배우자가 받음", "to": "invite-open" },
+        { "id": "copy", "label": "복사", "kind": "secondary", "to": "invite-new", "set": { "copied": true } },
+        { "id": "later", "label": "나중에 할게요", "kind": "secondary", "to": "today-admin" }
+      ]
+    },
+    {
+      "id": "invite-error",
+      "number": "01.03",
+      "title": "링크 만들기 실패",
+      "stage": 0,
+      "origin": "source",
+      "tone": "error",
+      "brief": "초대 링크 생성이 실패하면 오류 문구와 함께 ‘새 초대 링크 만들기’로 다시 시도한다(현재 구현).",
+      "preview": { "familyName": "데비네" },
+      "ui": {
+        "heading": "{{familyName}}에 함께할 사람을 초대해 주세요",
+        "blocks": [{ "type": "notice", "label": "네트워크 오류예요. 새 초대 링크 만들기로 다시 시도해 주세요." }]
+      },
+      "actions": [
+        { "id": "retry-create", "label": "새 초대 링크 만들기", "to": "invite-new", "inc": { "linkCount": 1 } },
+        { "id": "later-from-error", "label": "나중에 할게요", "kind": "secondary", "to": "today-admin" }
+      ]
+    },
+    {
+      "id": "members-admin",
+      "number": "01.04",
+      "title": "설정 · 우리 집",
+      "stage": 0,
+      "origin": "source",
+      "brief": "관리자는 새 링크를 다시 만들 수 있고, 한 명을 초대할 때마다 새 링크를 발급한다(ACC-05). 만료된 뒤에도 여기서 새로 만든다(SCN-ACC-3).",
+      "uxConditions": ["‘새 초대 링크 만들기’는 관리자에게만 보여요."],
+      "preview": { "familyName": "데비네" },
+      "ui": {
+        "bar": "{{familyName}}",
+        "blocks": [
+          { "type": "rows", "rows": [{ "label": "데비", "value": "관리자" }] },
+          { "type": "text", "label": "함께 쓰는 사람" }
+        ]
+      },
+      "actions": [
+        { "id": "new-link", "label": "새 초대 링크 만들기", "to": "invite-new", "inc": { "linkCount": 1 } }
+      ]
+    },
+    {
+      "id": "today-admin",
+      "number": "01.05",
+      "title": "오늘 (관리자)",
+      "stage": 0,
+      "origin": "inferred",
+      "end": true,
+      "brief": "‘나중에 할게요’를 누르면 오늘 화면으로 간다(현재 구현).",
+      "ui": { "bar": "오늘", "blocks": [{ "type": "visual", "label": "오늘 일정 요약" }] },
+      "actions": [{ "id": "to-settings", "label": "설정", "kind": "tab", "to": "members-admin" }]
+    },
+    {
+      "id": "invite-open",
+      "number": "02.01",
+      "title": "초대 받은 링크 열기",
+      "stage": 1,
+      "origin": "source",
+      "brief": "초대받은 사람은 링크를 열고 로그인한 뒤 합류를 수락한다(ACC-04).",
+      "uxConditions": [
+        "로그인 전이라 카카오·구글 로그인 버튼이 보여요.",
+        "카카오톡 인앱 브라우저에서는 외부 브라우저로 열라는 안내가 같이 떠요.",
+        "이미 로그인했고 약관·표시 이름이 있으면 바로 ‘초대 수락하고 합류하기’가 보여요."
+      ],
+      "preview": { "familyName": "데비네" },
+      "ui": {
+        "bar": "우리 집 초대",
+        "heading": "{{familyName}}",
+        "blocks": [{ "type": "text", "label": "함께 관리할 우리 집에 초대받았어요. 합류하면 동등한 관리자가 돼요." }]
+      },
+      "actions": [
+        { "id": "login-google", "label": "Google로 계속", "to": "terms" },
+        { "id": "login-kakao", "label": "카카오로 계속", "kind": "secondary", "to": "terms" },
+        { "id": "sim-used", "label": "이미 사용된 링크", "kind": "simulation", "to": "link-used" },
+        { "id": "sim-expired", "label": "3일이 지난 링크", "kind": "simulation", "to": "link-expired" },
+        { "id": "sim-not-found", "label": "없는 링크", "kind": "simulation", "to": "link-not-found" },
+        { "id": "sim-other-home", "label": "다른 가정에 속한 사람", "kind": "simulation", "to": "already-member" }
+      ]
+    },
+    {
+      "id": "terms",
+      "number": "02.02",
+      "title": "약관 동의·표시 이름",
+      "stage": 1,
+      "origin": "source",
+      "brief": "가입할 때 약관에 동의하고(ACC-02) 표시 이름을 정한다(ACC-07). 저장하면 초대 화면으로 돌아온다(현재 구현).",
+      "uxConditions": ["표시 이름은 일정 작성자·체크한 사람·챗봇의 “OO님”에 쓰여요."],
+      "ui": {
+        "heading": "약관에 동의해 주세요",
+        "blocks": [
+          { "type": "checkbox", "label": "이용약관·개인정보 처리방침에 동의해요", "field": "agree", "required": true },
+          { "type": "input", "label": "표시 이름", "field": "displayName", "required": true }
+        ]
+      },
+      "actions": [{ "id": "save-profile", "label": "동의하고 계속", "to": "invite-accept", "validate": true }]
+    },
+    {
+      "id": "invite-accept",
+      "number": "02.03",
+      "title": "합류 수락",
+      "stage": 1,
+      "origin": "source",
+      "brief": "링크를 열고 로그인한 뒤 합류를 수락한다(ACC-04). 합류한 사람은 모두 관리자다(ACC-06).",
+      "preview": { "familyName": "데비네", "displayName": "민준" },
+      "ui": {
+        "bar": "우리 집 초대",
+        "heading": "{{familyName}}",
+        "blocks": [
+          { "type": "text", "label": "함께 관리할 우리 집에 초대받았어요. 합류하면 동등한 관리자가 돼요." },
+          { "type": "rows", "rows": [{ "label": "내 표시 이름", "value": "{{displayName}}" }] }
+        ]
+      },
+      "actions": [
+        { "id": "accept", "label": "초대 수락하고 합류하기", "to": "today", "set": { "joined": true } },
+        { "id": "sim-accept-fail", "label": "합류 요청 실패", "kind": "simulation", "to": "accept-error" }
+      ]
+    },
+    {
+      "id": "accept-error",
+      "number": "02.04",
+      "title": "합류 실패",
+      "stage": 1,
+      "origin": "source",
+      "tone": "error",
+      "brief": "합류 요청이 실패하면 같은 화면에 ‘합류하지 못했어요’ 배너가 뜨고 수락 버튼이 남는다(현재 구현).",
+      "uxConditions": ["실패 사이에 링크가 사용·만료됐으면 다시 불러온 결과에 따라 안내 화면으로 바뀌어요."],
+      "preview": { "familyName": "데비네", "displayName": "민준" },
+      "ui": {
+        "bar": "우리 집 초대",
+        "heading": "{{familyName}}",
+        "blocks": [
+          { "type": "notice", "label": "합류하지 못했어요. 네트워크 오류예요." },
+          { "type": "rows", "rows": [{ "label": "내 표시 이름", "value": "{{displayName}}" }] }
+        ]
+      },
+      "actions": [
+        { "id": "accept-retry", "label": "초대 수락하고 합류하기", "to": "today", "set": { "joined": true } }
+      ]
+    },
+    {
+      "id": "link-used",
+      "number": "03.01",
+      "title": "이미 사용된 링크",
+      "stage": 2,
+      "origin": "source",
+      "tone": "error",
+      "brief": "같은 링크를 다른 사람이 다시 열면 이미 사용된 링크라는 안내가 나온다(SCN-ACC-2).",
+      "ui": {
+        "bar": "초대 링크 안내",
+        "blocks": [{ "type": "notice", "label": "이미 사용된 초대 링크예요. 가정 관리자에게 새 링크를 요청해 주세요." }]
+      },
+      "actions": [{ "id": "used-home", "label": "우리 집으로 가기", "to": "no-home" }]
+    },
+    {
+      "id": "link-expired",
+      "number": "03.02",
+      "title": "만료된 링크",
+      "stage": 2,
+      "origin": "source",
+      "tone": "error",
+      "brief": "3일이 지난 링크를 열면 만료되었다는 안내가 나오고, 관리자가 새 링크를 만들 수 있다(SCN-ACC-3).",
+      "uxConditions": ["새 링크는 관리자가 ‘설정 · 우리 집’(01.04)에서 만들어요. 받은 사람 화면에는 만들기 버튼이 없어요."],
+      "ui": {
+        "bar": "초대 링크 안내",
+        "blocks": [{ "type": "notice", "label": "만료된 초대 링크예요. 가정 관리자에게 새 링크를 요청해 주세요." }]
+      },
+      "actions": [{ "id": "expired-home", "label": "우리 집으로 가기", "to": "no-home" }]
+    },
+    {
+      "id": "link-not-found",
+      "number": "03.03",
+      "title": "찾을 수 없는 링크",
+      "stage": 2,
+      "origin": "source",
+      "tone": "error",
+      "brief": "링크가 잘못됐으면 받은 링크를 다시 확인하라고 안내한다(현재 구현).",
+      "ui": {
+        "bar": "초대 링크 안내",
+        "blocks": [{ "type": "notice", "label": "초대 링크를 찾을 수 없어요. 받은 링크를 다시 확인해 주세요." }]
+      },
+      "actions": [{ "id": "not-found-home", "label": "우리 집으로 가기", "to": "no-home" }]
+    },
+    {
+      "id": "already-member",
+      "number": "03.04",
+      "title": "다른 가정에 속함",
+      "stage": 2,
+      "origin": "source",
+      "tone": "error",
+      "brief": "이미 다른 가정에 속한 사람은 합류할 수 없다고 안내한다(ACC-04 비고, 한 사용자는 한 가정).",
+      "ui": {
+        "bar": "우리 집 초대",
+        "heading": "데비네",
+        "blocks": [{ "type": "notice", "label": "이미 가정에 속해 있어 합류할 수 없어요." }]
+      },
+      "actions": [{ "id": "my-family", "label": "내 가정 보기", "to": "own-family" }]
+    },
+    {
+      "id": "no-home",
+      "number": "03.05",
+      "title": "가정 없이 도착한 곳",
+      "stage": 2,
+      "origin": "inferred",
+      "end": true,
+      "brief": "‘우리 집으로 가기’는 오늘(/)로 간다. 가정이 없는 사람은 결국 온보딩으로 가서 자기 집을 만들게 될 것으로 추정(코드에서 리다이렉트 경로를 끝까지 확인하지 않음).",
+      "uxConditions": ["새 링크를 기다리는 배우자가 실수로 자기 집을 만들면, 나중에 받은 새 링크로 합류할 수 없어요(한 사람 한 가정)."],
+      "ui": {
+        "heading": "우리 집 이름을 정해 주세요",
+        "blocks": [{ "type": "text", "label": "이 이름은 일정의 첫 카테고리로도 쓰여요." }]
+      },
+      "actions": []
+    },
+    {
+      "id": "today",
+      "number": "04.01",
+      "title": "합류 후 오늘 화면",
+      "stage": 3,
+      "origin": "source",
+      "tone": "success",
+      "end": true,
+      "brief": "수락하면 같은 가정에 합류한다(SCN-ACC-2). 현재 구현은 합류 후 오늘 화면으로 바로 이동한다.",
+      "uxConditions": ["합류했다는 별도 완료 문구는 현재 없어요."],
+      "preview": { "joined": true },
+      "ui": { "bar": "오늘", "blocks": [{ "type": "visual", "label": "데비네 오늘 일정 요약" }] },
+      "actions": [{ "id": "open-members", "label": "설정", "kind": "tab", "to": "members-joined" }]
+    },
+    {
+      "id": "members-joined",
+      "number": "04.02",
+      "title": "구성원 확인",
+      "stage": 3,
+      "origin": "source",
+      "tone": "success",
+      "end": true,
+      "brief": "합류하면 둘 다 관리자로 표시된다(SCN-ACC-2).",
+      "preview": { "displayName": "민준", "joined": true },
+      "ui": {
+        "bar": "데비네",
+        "blocks": [
+          { "type": "text", "label": "함께 쓰는 사람" },
+          { "type": "rows", "rows": [{ "label": "데비", "value": "관리자" }, { "label": "{{displayName}}", "value": "관리자" }] }
+        ]
+      },
+      "actions": [{ "id": "members-back", "label": "오늘", "kind": "back", "to": "today" }]
+    },
+    {
+      "id": "own-family",
+      "number": "04.03",
+      "title": "내 가정",
+      "stage": 3,
+      "origin": "source",
+      "end": true,
+      "brief": "다른 가정 소속인 사람은 자기 가정 화면으로 간다(현재 구현).",
+      "ui": { "bar": "우리 가정", "blocks": [{ "type": "rows", "rows": [{ "label": "나", "value": "관리자" }] }] },
+      "actions": []
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "admin-onboarding",
+      "title": "우리 집 만들고 초대 링크 보내기",
+      "steps": [
+        { "action": "create", "screen": "invite-new", "vars": { "linkCount": 1 }, "hint": "우리 집 이름에 ‘데비네’를 입력해요." },
+        { "action": "copy", "screen": "invite-new", "vars": { "copied": true } },
+        { "action": "share-kakao", "screen": "invite-open" }
+      ]
+    },
+    {
+      "id": "spouse-join",
+      "title": "배우자가 링크로 합류",
+      "start": "invite-open",
+      "initial": { "familyName": "데비네" },
+      "steps": [
+        { "action": "login-google", "screen": "terms" },
+        { "action": "save-profile", "screen": "invite-accept", "hint": "약관에 동의하고 표시 이름 ‘민준’을 입력해요." },
+        { "action": "accept", "screen": "today", "vars": { "joined": true } },
+        { "action": "open-members", "screen": "members-joined", "vars": { "joined": true } }
+      ]
+    },
+    {
+      "id": "accept-retry",
+      "title": "합류 실패 후 다시 시도",
+      "start": "invite-accept",
+      "initial": { "familyName": "데비네", "displayName": "민준" },
+      "steps": [
+        { "action": "sim-accept-fail", "screen": "accept-error", "vars": { "joined": false, "displayName": "민준" } },
+        { "action": "accept-retry", "screen": "today", "vars": { "joined": true, "displayName": "민준" } }
+      ]
+    },
+    {
+      "id": "expired-reissue",
+      "title": "만료된 링크 뒤 관리자가 새 링크 만들기",
+      "start": "members-admin",
+      "initial": { "familyName": "데비네", "linkCount": 1 },
+      "steps": [{ "action": "new-link", "screen": "invite-new", "vars": { "linkCount": 2 } }]
+    },
+    {
+      "id": "used-link",
+      "title": "이미 사용된 링크를 다시 열기",
+      "start": "invite-open",
+      "steps": [
+        { "action": "sim-used", "screen": "link-used" },
+        { "action": "used-home", "screen": "no-home" }
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "screen": "no-home",
+      "question": "쓸 수 없는 링크(사용됨·만료·없음) 화면의 ‘우리 집으로 가기’가 가정 없는 사람을 우리 집 만들기로 보내요. 새 링크를 기다리는 배우자에게는 ‘새 링크를 받으면 다시 열어 주세요’ 같은 대기 안내가 맞을까요, 지금처럼 둘까요?"
+    },
+    {
+      "screen": "today",
+      "question": "합류 직후 오늘 화면으로 바로 가요. ‘데비네에 합류했어요’ 같은 완료 안내가 필요할까요?"
+    }
+  ],
+  "review": {
+    "locale": "ko",
+    "source": "기능명세 ACC-03·04·05·06과 SCN-ACC-1·2·3, 그리고 2026-11-23 현재 구현을 옮겼어요. 링크 값·만료 시각·이름(데비, 민준)은 검토용 예시예요. 로그인 단계(OAuth)는 버튼 하나로 줄였어요.",
+    "stateLabels": {
+      "familyName": "우리 집 이름",
+      "displayName": "표시 이름",
+      "agree": "약관 동의",
+      "copied": "링크 복사",
+      "linkCount": "만든 링크 수",
+      "joined": "합류 여부"
+    },
+    "requirements": [
+      { "id": "create-home", "group": "우리 집 만들기", "screen": "create-home", "action": "create", "origin": "source", "title": "가정 이름으로 우리 집 만들기", "expected": "‘데비네’를 입력하면 초대 링크 공유 화면으로 가고 제목에 데비네가 보여요(ACC-03, SCN-ACC-1)." },
+      { "id": "create-empty", "group": "우리 집 만들기", "screen": "create-home", "action": "create", "origin": "inferred", "title": "빈 이름 막기", "expected": "이름이 비었거나 공백뿐이면 만들어지지 않아요." },
+      { "id": "share-link", "group": "우리 집 만들기", "screen": "invite-new", "action": "share-kakao", "origin": "source", "title": "초대 링크 공유", "expected": "링크와 복사·카카오톡 보내기가 있고, 1회용·3일 만료 안내가 보여요(ACC-04·05)." },
+      { "id": "create-retry", "group": "우리 집 만들기", "screen": "invite-error", "action": "retry-create", "origin": "inferred", "title": "링크 만들기 실패 후 다시 시도", "expected": "실패 안내 뒤 ‘새 초대 링크 만들기’로 링크 화면에 도달해요." },
+      { "id": "spouse-join", "group": "배우자 합류", "screen": "invite-accept", "action": "accept", "origin": "source", "title": "링크 → 로그인 → 수락 → 합류", "expected": "배우자가 구글로 로그인하고 약관·이름을 정한 뒤 수락하면 합류하고, 구성원에 둘 다 관리자로 보여요(SCN-ACC-2)." },
+      { "id": "accept-retry", "group": "배우자 합류", "screen": "accept-error", "action": "accept-retry", "origin": "inferred", "title": "합류 실패 후 다시 시도", "expected": "실패해도 입력한 표시 이름 ‘민준’이 남고, 다시 누르면 합류해요." },
+      { "id": "used-link", "group": "쓸 수 없는 링크", "screen": "link-used", "origin": "source", "title": "이미 사용된 링크 안내", "expected": "같은 링크를 다시 열면 이미 사용된 링크라는 안내가 나와요(SCN-ACC-2)." },
+      { "id": "expired-link", "group": "쓸 수 없는 링크", "screen": "link-expired", "origin": "source", "title": "만료 안내와 새 링크", "expected": "3일이 지난 링크는 만료 안내가 나오고, 관리자는 설정에서 새 링크를 만들 수 있어요(SCN-ACC-3)." },
+      { "id": "other-home", "group": "쓸 수 없는 링크", "screen": "already-member", "origin": "source", "title": "다른 가정 소속은 합류 불가", "expected": "이미 다른 가정에 속한 사람은 합류할 수 없다는 안내가 나와요(ACC-04)." },
+      { "id": "dead-link-exit", "group": "쓸 수 없는 링크", "screen": "link-used", "action": "used-home", "origin": "inferred", "title": "쓸 수 없는 링크에서 나가는 곳", "expected": "새 링크를 기다리는 배우자가 실수로 자기 집을 만들지 않아요.", "suggestedScreens": ["no-home"] }
+    ],
+    "audit": {
+      "explore": true,
+      "journeys": [
+        {
+          "title": "데비네 만들고 링크 공유",
+          "start": "create-home",
+          "steps": [
+            { "action": "create", "blocked": true, "requirement": "create-empty" },
+            { "field": "familyName", "type": "input", "value": "   " },
+            { "action": "create", "blocked": true, "requirement": "create-empty" },
+            { "field": "familyName", "type": "input", "value": "데비네" },
+            { "action": "create", "screen": "invite-new", "vars": { "familyName": "데비네", "linkCount": 1 }, "requirement": "create-home" },
+            { "inspect": { "title": "1회용·3일 만료 안내", "selector": ".info-rows", "text": ["한 번 사용하면", "3일"] }, "requirement": "share-link" },
+            { "action": "copy", "screen": "invite-new", "vars": { "copied": true }, "requirement": "share-link" },
+            { "action": "share-kakao", "screen": "invite-open", "requirement": "share-link" }
+          ]
+        },
+        {
+          "title": "배우자 민준이 구글로 합류",
+          "start": "invite-open",
+          "initial": { "familyName": "데비네" },
+          "steps": [
+            { "action": "login-google", "screen": "terms", "requirement": "spouse-join" },
+            { "field": "displayName", "type": "input", "value": "민준" },
+            { "action": "save-profile", "blocked": true, "requirement": "spouse-join" },
+            { "field": "agree", "type": "click" },
+            { "action": "save-profile", "screen": "invite-accept", "vars": { "displayName": "민준", "agree": true }, "requirement": "spouse-join" },
+            { "action": "accept", "screen": "today", "vars": { "joined": true }, "requirement": "spouse-join" },
+            { "action": "open-members", "screen": "members-joined", "requirement": "spouse-join" },
+            { "inspect": { "title": "둘 다 관리자", "selector": ".info-rows", "text": ["데비", "민준", "관리자"] }, "requirement": "spouse-join" }
+          ]
+        },
+        {
+          "title": "만료 뒤 관리자가 새 링크 만들기",
+          "start": "members-admin",
+          "initial": { "familyName": "데비네", "linkCount": 1 },
+          "steps": [
+            { "action": "new-link", "screen": "invite-new", "vars": { "linkCount": 2 }, "requirement": "expired-link" }
+          ]
+        }
+      ],
+      "recovery": [
+        {
+          "title": "합류 실패 후 같은 이름으로 다시 시도",
+          "start": "invite-accept",
+          "initial": { "familyName": "데비네", "displayName": "민준", "agree": true },
+          "steps": [
+            { "action": "sim-accept-fail", "screen": "accept-error", "keep": ["displayName"], "vars": { "joined": false }, "requirement": "accept-retry" },
+            { "action": "accept-retry", "screen": "today", "keep": ["displayName"], "vars": { "joined": true }, "requirement": "accept-retry" }
+          ]
+        },
+        {
+          "title": "링크 만들기 실패 후 다시 시도",
+          "start": "create-home",
+          "initial": { "familyName": "데비네" },
+          "steps": [
+            { "action": "sim-create-fail", "screen": "invite-error", "requirement": "create-retry" },
+            { "action": "retry-create", "screen": "invite-new", "vars": { "linkCount": 1 }, "requirement": "create-retry" }
+          ]
+        },
+        {
+          "title": "쓸 수 없는 링크 세 가지",
+          "start": "invite-open",
+          "steps": [
+            { "action": "sim-used", "screen": "link-used", "requirement": "used-link" },
+            { "action": "used-home", "screen": "no-home", "requirement": "dead-link-exit" }
+          ]
+        },
+        {
+          "title": "만료된 링크 안내",
+          "start": "invite-open",
+          "steps": [{ "action": "sim-expired", "screen": "link-expired", "requirement": "expired-link" }]
+        },
+        {
+          "title": "다른 가정 소속",
+          "start": "invite-open",
+          "steps": [
+            { "action": "sim-other-home", "screen": "already-member", "requirement": "other-home" },
+            { "action": "my-family", "screen": "own-family", "requirement": "other-home" }
+          ]
+        }
+      ]
+    }
+  }
+}

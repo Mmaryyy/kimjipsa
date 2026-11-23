@@ -24,6 +24,7 @@ export default defineConfig([
     "coverage/**",
     "ai-gateway/vendor/**",
     "ai-gateway/.runtime/**",
+    ".agents/skills/wireflow-review/**",
   ]),
   {
     files: ["app/**/*.{ts,tsx}", "src/**/*.{ts,tsx}"],
