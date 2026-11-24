@@ -52,3 +52,4 @@
 - [0020. 카테고리 직접 색 선택](0020-react-colorful-color-picker.md) — CONFIRMED (2026-11-09)
 
 - [0022. 폼 시트 컴포넌트와 전역 확인창](0022-form-sheet-and-global-confirm.md) — CONFIRMED (2026-11-12)
+- [0024. 가정 공유 데이터 변경 신호](0024-realtime-change-signals.md) — CONFIRMED (2026-11-24)

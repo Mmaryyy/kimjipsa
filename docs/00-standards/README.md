@@ -7,10 +7,10 @@
 | --- | ---: |
 | [calendar](calendar.md) | 45 |
 | [cart](cart.md) | 21 |
-| [chat](chat.md) | 24 |
-| [common](common.md) | 20 |
+| [chat](chat.md) | 26 |
+| [common](common.md) | 22 |
 | [home](home.md) | 19 |
 | [infra](infra.md) | 43 |
-| [inventory](inventory.md) | 22 |
+| [inventory](inventory.md) | 24 |
 | [settings](settings.md) | 20 |
 | [ui](ui.md) | 69 |
