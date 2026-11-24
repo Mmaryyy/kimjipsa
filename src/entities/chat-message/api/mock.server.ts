@@ -1,13 +1,168 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { ApiError } from "@/shared/api";
-import { mockContext, mockJson } from "@/shared/server";
-import type { Chat, AiSettings, AgentAction } from "../model/chat.schema";
+import { compareItemNames } from "@/shared/lib";
+import { mockContext, mockJson, type MockData } from "@/shared/server";
+import { mockReceiptPhotoId } from "../model/chat.constants";
+import type {
+  Chat,
+  AiSettings,
+  AgentAction,
+  ReceiptItem,
+} from "../model/chat.schema";
 
 interface MockChatState {
   chat: Chat;
   settings: AiSettings;
   retryRequests: Map<string, { messageId: string; runId: string }>;
+}
+
+function receiptItems(
+  inventory: MockData["inventory-items"],
+  meta: MockData["inventory-meta"],
+): ReceiptItem[] {
+  const samples = [
+    {
+      name: "우유",
+      quantity: 2,
+      unit: "팩",
+      category: "유제품·계란",
+      location: "냉장실",
+    },
+    {
+      name: "달걀",
+      quantity: 6,
+      unit: "개",
+      category: "유제품·계란",
+      location: "냉장실",
+    },
+    {
+      name: "두부",
+      quantity: 1,
+      unit: "모",
+      category: "가공식품",
+      location: "냉장실",
+    },
+    {
+      name: "바나나",
+      quantity: 1,
+      unit: "봉지",
+      category: "채소·과일",
+      location: "실온 식품장·팬트리",
+    },
+    {
+      name: "방울토마토",
+      quantity: 1,
+      unit: "팩",
+      category: "채소·과일",
+      location: "냉장실",
+    },
+    {
+      name: "플레인 요구르트",
+      quantity: 2,
+      unit: "개",
+      category: "유제품·계란",
+      location: "냉장실",
+      reason: "맛과 종류를 확인해 주세요.",
+    },
+    {
+      name: "감자",
+      quantity: 1,
+      unit: null,
+      category: "채소·과일",
+      location: "실온 식품장·팬트리",
+    },
+    {
+      name: "생수",
+      quantity: 1,
+      unit: "번들",
+      category: "음료",
+      location: "실온 식품장·팬트리",
+    },
+    {
+      name: "종이봉투",
+      quantity: 1,
+      unit: "개",
+      category: "기타",
+      selected: false,
+    },
+  ];
+  return samples.map((sample) => {
+    const linked = inventory.find(
+      (item) =>
+        item.mode === "quantity" &&
+        sample.unit !== null &&
+        item.unit_id &&
+        compareItemNames(item.name, sample.name) === "same",
+    );
+    return {
+      name: sample.name,
+      original_name: sample.name,
+      quantity: sample.quantity,
+      selected: sample.selected ?? true,
+      unit_id:
+        linked?.unit_id ??
+        meta.units.find(({ name }) => name === sample.unit)?.id ??
+        null,
+      inventory_item_id: linked?.id ?? null,
+      category_id:
+        meta.categories.find(({ name }) => name === sample.category)?.id ??
+        null,
+      location_id:
+        meta.locations.find(
+          ({ name, enabled }) => enabled && name === sample.location,
+        )?.id ?? null,
+      expires_on: null,
+      reason: sample.reason ?? "",
+    };
+  });
+}
+
+function applyReceiptItems(
+  inventory: MockData["inventory-items"],
+  meta: MockData["inventory-meta"],
+  items: ReceiptItem[],
+) {
+  const invalid = () =>
+    new ApiError("invalid_inventory", "품목의 수량과 단위를 확인해 주세요.");
+  const selected = items.filter((item) => item.selected);
+  if (!selected.length) throw invalid();
+  const next = structuredClone(inventory);
+  for (const item of selected) {
+    const { name, quantity, unit_id, category_id, location_id, expires_on } =
+      item;
+    if (!unit_id || !meta.units.some((unit) => unit.id === unit_id))
+      throw invalid();
+    if (item.inventory_item_id) {
+      const linked = next.find((stock) => stock.id === item.inventory_item_id);
+      if (linked?.mode !== "quantity" || linked.unit_id !== unit_id)
+        throw invalid();
+      linked.quantity += quantity;
+    } else {
+      if (
+        (category_id &&
+          !meta.categories.some((entry) => entry.id === category_id)) ||
+        (location_id &&
+          !meta.locations.some(
+            (entry) => entry.id === location_id && entry.enabled,
+          ))
+      )
+        throw invalid();
+      next.push({
+        id: randomUUID(),
+        name,
+        quantity,
+        unit_id,
+        category_id,
+        location_id,
+        expires_on,
+        mode: "quantity",
+        status: "enough",
+        min_quantity: null,
+      });
+    }
+  }
+  inventory.splice(0, inventory.length, ...next);
 }
 
 async function mockState() {
@@ -17,7 +172,10 @@ async function mockState() {
   const key = `chat:private:${context.perspective}`;
   let state = context.values.get(key) as MockChatState | undefined;
   if (!state) {
-    const meta = await mockJson("inventory-meta");
+    const [meta, inventory] = await Promise.all([
+      mockJson("inventory-meta"),
+      context.stage === "ready" ? mockJson("inventory-items") : null,
+    ]);
     const dairy = meta.categories.find(({ name }) => name === "유제품·계란");
     const created_at = new Date().toISOString();
     const message = (
@@ -64,7 +222,56 @@ async function mockState() {
         { label: "개인 일정", value: "private" },
       ],
     });
+    const attachments: Chat["attachments"] = [];
+    const receipts: Chat["receipts"] = [];
     const runId = randomUUID();
+    const runs: Chat["runs"] = [
+      {
+        id: runId,
+        input_message_id: messages[2].id,
+        created_at,
+        status: "completed",
+        progress: "",
+        version: 1,
+        error_code: null,
+      },
+    ];
+    if (inventory) {
+      const receiptMessage = {
+        ...message("user", "영수증 등록해줘", 7),
+        attachment_ids: [mockReceiptPhotoId],
+      };
+      messages.push(
+        receiptMessage,
+        message("assistant", "영수증에서 찾은 품목을 확인해 주세요.", 8),
+      );
+      attachments.push({
+        id: mockReceiptPhotoId,
+        status: "ready",
+        expires_at: new Date(Date.parse(created_at) + 86400000).toISOString(),
+      });
+      const receiptRunId = randomUUID();
+      runs.push({
+        id: receiptRunId,
+        input_message_id: receiptMessage.id,
+        created_at,
+        status: "completed",
+        progress: "",
+        version: 1,
+        error_code: null,
+      });
+      receipts.push({
+        id: randomUUID(),
+        run_id: receiptRunId,
+        kind: "receipt",
+        items: receiptItems(inventory, meta),
+        status: "draft",
+        version: 1,
+        expires_at: new Date(
+          Date.parse(created_at) + 7 * 86400000,
+        ).toISOString(),
+      });
+    }
     const settings = (context.values.get("chat:settings") as
       AiSettings | undefined) ?? {
       name: "집사",
@@ -74,7 +281,8 @@ async function mockState() {
       memories: [],
     };
     context.values.set("chat:settings", settings);
-    state = {
+    // Concurrent requests can initialize the same conversation together.
+    state = (context.values.get(key) as MockChatState | undefined) ?? {
       settings,
       retryRequests: new Map(),
       chat: {
@@ -85,19 +293,9 @@ async function mockState() {
         workerOnline: true,
         nextBefore: null,
         messages,
-        attachments: [],
-        receipts: [],
-        runs: [
-          {
-            id: runId,
-            input_message_id: messages[2].id,
-            created_at,
-            status: "completed",
-            progress: "",
-            version: 1,
-            error_code: null,
-          },
-        ],
+        attachments,
+        receipts,
+        runs,
         proposals: [
           {
             id: randomUUID(),
@@ -220,6 +418,41 @@ export async function mockChatCommand(operation: string, raw: unknown) {
     state.settings.name = input.name as string;
     state.settings.memoryEnabled = input.memoryEnabled as boolean;
     state.settings.version++;
+    return { data: null };
+  }
+  if (operation === "confirm" || operation === "cancel-receipt") {
+    const [inventory, meta] =
+      operation === "confirm"
+        ? await Promise.all([
+            mockJson("inventory-items"),
+            mockJson("inventory-meta"),
+          ])
+        : [null, null];
+    const receipt = state.chat.receipts.find((entry) => entry.id === input.id);
+    if (!receipt)
+      throw new ApiError("not_found", "내용을 찾을 수 없어요.", 404);
+    if (operation === "confirm" && receipt.status === "applied")
+      return { data: null };
+    if (
+      receipt.status !== "draft" ||
+      receipt.version !== input.version ||
+      Date.parse(receipt.expires_at) <= Date.now()
+    )
+      throw new ApiError(
+        "state_conflict",
+        "내용이 바뀌었거나 만료되었어요.",
+        409,
+      );
+    if (inventory && meta) {
+      const items = input.items as ReceiptItem[];
+      applyReceiptItems(inventory, meta, items);
+      context.values.delete("cart-restock-undo");
+      receipt.items = items;
+      receipt.status = "applied";
+    } else {
+      receipt.status = "cancelled";
+    }
+    receipt.version++;
     return { data: null };
   }
   if (operation === "send") {

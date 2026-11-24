@@ -1,5 +1,17 @@
 import { cva } from "class-variance-authority";
 
+export const chatAvatarStyles = cva("shrink-0 rounded-full object-contain", {
+  variants: {
+    size: { default: "size-12", compact: "mt-1 size-4" },
+    framed: { true: "bg-[var(--bot-avatar-bg)]" },
+  },
+  compoundVariants: [
+    { size: "default", framed: true, class: "p-1" },
+    { size: "compact", framed: true, class: "p-0.5" },
+  ],
+  defaultVariants: { size: "default" },
+});
+
 export const chatHeaderButtonStyles = cva("bg-transparent text-primary");
 export const chatAnswerChoiceStyles = cva([
   "rounded-full border border-[var(--separator)] bg-transparent py-1 text-foreground",
@@ -9,9 +21,6 @@ export const chatProposalChoiceStyles = cva([
   "rounded-full bg-muted text-caption text-foreground",
   "aria-pressed:bg-accent-soft aria-pressed:text-primary",
 ]);
-export const chatReceiptSelectStyles = cva(
-  "bg-muted py-2 pl-2 text-body-sm leading-[1.4]",
-);
 export const chatFaqButtonStyles = cva(
   "min-h-8 justify-start p-0 text-left text-body-sm font-normal text-[var(--link)]",
 );

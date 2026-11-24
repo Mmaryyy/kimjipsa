@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
@@ -38,6 +39,8 @@ export const ChatNavigationProvider = ({
   const [minimized, setMinimized] = useState(false);
   const [toast, setToast] = useState(false);
   const opener = useRef<HTMLElement | null>(null);
+  const currentPath = useRef(pathname);
+  const hasChatHistory = useRef(false);
   const redirecting = useRef(false);
   const closingHistory = useRef(false);
   useEffect(() => {
@@ -53,16 +56,32 @@ export const ChatNavigationProvider = ({
         setMinimized(event.newValue === "1");
       }
     };
-    const onPopState = () => {
-      closingHistory.current = false;
-      setOpen(window.history.state?.[historyKey] === true);
-    };
     window.addEventListener("storage", sync);
-    window.addEventListener("popstate", onPopState);
-    return () => {
-      window.removeEventListener("storage", sync);
-      window.removeEventListener("popstate", onPopState);
+    return () => window.removeEventListener("storage", sync);
+  }, []);
+  useLayoutEffect(() => {
+    currentPath.current = pathname;
+  }, [pathname]);
+  useEffect(() => {
+    const onPopState = (event: PopStateEvent) => {
+      closingHistory.current = false;
+      const hadChatHistory = hasChatHistory.current;
+      const nextHasChatHistory = event.state?.[historyKey] === true;
+      hasChatHistory.current = nextHasChatHistory;
+      // 데스크톱 대화에는 같은 주소의 중첩 시트 기록만 추가돼요.
+      if (
+        !hadChatHistory &&
+        !nextHasChatHistory &&
+        !window.matchMedia("(max-width: 767px)").matches &&
+        window.location.pathname === currentPath.current
+      ) {
+        return;
+      }
+      setOpen(nextHasChatHistory);
     };
+    // 라우터가 목적지 경로를 반영하기 전에 현재 경로와 비교해요.
+    window.addEventListener("popstate", onPopState, true);
+    return () => window.removeEventListener("popstate", onPopState, true);
   }, []);
   const onOpen = useCallback(() => {
     if (closingHistory.current) return;
@@ -77,6 +96,7 @@ export const ChatNavigationProvider = ({
         window.location.href,
       );
     }
+    hasChatHistory.current = window.history.state?.[historyKey] === true;
     setOpen(true);
   }, []);
   useEffect(() => {

@@ -1,5 +1,6 @@
 export { Text } from "./text";
 export { BrandLogo } from "./brand-logo";
+export { AiGradientIcon } from "./ai-gradient-icon";
 export { Button } from "./button";
 export { TextButton } from "./text-button";
 export { StatusBadge } from "./status-badge";

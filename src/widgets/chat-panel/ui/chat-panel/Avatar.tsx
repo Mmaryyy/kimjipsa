@@ -1,18 +1,21 @@
-import { useBotCharacter } from "@/features/account";
-import { cn } from "@/shared/lib";
+import type { VariantProps } from "class-variance-authority";
 import Image from "next/image";
-const ChatAvatar = () => {
+import { useBotCharacter } from "@/features/account";
+import { chatAvatarStyles } from "./chat-panel.variants";
+
+type Props = Pick<VariantProps<typeof chatAvatarStyles>, "size">;
+
+const ChatAvatar = ({ size }: Props) => {
   const character = useBotCharacter();
+  const dimension = size === "compact" ? 16 : 48;
   return (
     <Image
       src={character.avatar}
       alt=""
-      width={48}
-      height={48}
-      className={cn(
-        "size-12 shrink-0 rounded-full object-contain",
-        character.avatarFramed && "bg-[var(--bot-avatar-bg)] p-1",
-      )}
+      aria-hidden
+      width={dimension}
+      height={dimension}
+      className={chatAvatarStyles({ size, framed: character.avatarFramed })}
     />
   );
 };

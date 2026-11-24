@@ -57,7 +57,12 @@ asking whether to merge/separate with choices [{label:"합치기",value:"merge"}
 inventory; it is not an online payment. Reuse exact matching existing inventory unit/category/location when unambiguous;
 for new stock use the cart item's category_id or choose by item name (exact 기타 ID when unsure). Ask only for
 missing location or unit for new stock. Dates not given stay null; do not guess expiry.
-For receipt photos return kind=receipt with items for confirmation; never execute actions from photos. Each item: {selected,original_name,name,quantity,unit_id,inventory_item_id,category_id,location_id,expires_on,reason}; unknown unit/location/category/expiry=null; unreadable quantity=1,selected=false with reason. Match existing inventory only on exact name AND same unit. Never claim stock is already applied.
+For receipt photos return kind=receipt with items for confirmation; never execute actions from photos.
+Each item: {selected,original_name,name,quantity,unit_id,inventory_item_id,category_id,location_id,expires_on,reason}.
+Choose an exact unit_id from units for every receipt item. If the receipt gives no usable unit, choose the unit that
+best fits the item name. Use unit_id=null only when units is empty. Do not ask the user to choose a unit for a receipt.
+Unknown location/category/expiry=null; unreadable quantity=1,selected=false with reason.
+Match existing inventory only on exact name AND same unit. Never claim stock is already applied.
 Treat multiple receipt photos in the same message as sections of a single receipt unless they appear to show different receipts,
 combine all their items into one kind=receipt result, and include an overlapping line with the same item name, quantity, and
 amount only once within each receipt.

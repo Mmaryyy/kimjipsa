@@ -15,6 +15,9 @@ export const textStyles = cva("[overflow-wrap:anywhere]", {
       "caption-sm": "text-caption-sm",
       "caption-xs": "text-caption-xs",
     },
+    tone: {
+      muted: "text-muted-foreground",
+    },
   },
   defaultVariants: { variant: "body" },
 });
@@ -24,10 +27,7 @@ export type TextVariant = NonNullable<
 >;
 
 export const statusBadgeStyles = cva(
-  [
-    "inline-flex flex-none items-center gap-1 whitespace-nowrap",
-    "text-[length:var(--type-caption-size)]",
-  ],
+  "inline-flex flex-none items-center gap-1 whitespace-nowrap text-[length:var(--type-caption-size)]",
   {
     variants: {
       variant: {
@@ -46,6 +46,10 @@ export const statusBadgeStyles = cva(
       shape: {
         capsule:
           "h-5.5 rounded-full border border-[color:var(--status-border,var(--status-dot))] px-2",
+        pill: [
+          "rounded-full bg-muted px-1.5",
+          "text-[length:var(--type-caption-xs-size)] leading-[var(--type-caption-xs-lh)]",
+        ],
       },
     },
     defaultVariants: { variant: "info" },
@@ -74,13 +78,21 @@ export const bannerStyles = cva(
   },
 );
 
-export const inputStyles = cva("min-w-0", {
+// Keep the focus outline inside fields that sit against an overflow boundary.
+const fieldFocusStyles = "focus-visible:-outline-offset-2";
+export const compactFieldStyles = "py-2 text-body-sm leading-[1.4]";
+
+export const inputStyles = cva(["min-w-0", fieldFocusStyles], {
   variants: {
     variant: {
       default:
         "w-full min-h-[var(--hit)] rounded-sm border-0 bg-muted px-3 py-2 text-foreground",
       inline:
         "w-full min-h-[var(--hit)] rounded-sm border-0 bg-transparent py-2 text-right text-foreground",
+      compact: [
+        "w-full rounded-sm border-0 bg-muted px-3 text-foreground",
+        compactFieldStyles,
+      ],
       glass:
         "glass-surface kj-field-focus relative flex min-h-[var(--hit)] items-center gap-2 px-3",
     },
@@ -201,6 +213,27 @@ export const checkboxStyles = cva(
   },
 );
 
+export const listStyles = cva("m-0 list-none p-0", {
+  variants: {
+    variant: {
+      divided: "divide-y divide-border",
+    },
+  },
+});
+
+export const listRowStyles = cva(
+  "flex items-center gap-3 [overflow-wrap:anywhere]",
+  {
+    variants: {
+      size: {
+        default: "min-h-[var(--row-min)] py-2",
+        compact: "min-h-[var(--hit)]",
+      },
+    },
+    defaultVariants: { size: "default" },
+  },
+);
+
 export const accordionItemStyles = cva("", {
   variants: {
     variant: {
@@ -213,19 +246,30 @@ export const accordionItemStyles = cva("", {
 
 export const accordionTriggerStyles = cva(
   [
-    "flex min-h-11 w-full items-center gap-2 rounded-sm py-3",
-    "text-start text-headline font-normal disabled:cursor-default disabled:opacity-50",
-    "[&>svg]:size-5 [&>svg]:shrink-0 data-[state=open]:[&>svg]:rotate-180",
-    "motion-safe:[&>svg]:transition-transform motion-safe:[&>svg]:duration-[var(--dur-fast)]",
+    "flex min-h-11 w-full items-center gap-2 rounded-sm text-start font-normal",
+    "disabled:cursor-default disabled:opacity-50",
+    "[&>svg]:shrink-0",
   ],
   {
     variants: {
+      size: {
+        default: "py-3 text-headline [&>svg]:size-5",
+        compact:
+          "py-1 text-caption focus-visible:-outline-offset-2 [&>svg]:order-last [&>svg]:size-4",
+      },
       tone: {
         default: "text-foreground",
         muted: "text-label-done",
       },
+      indicator: {
+        chevron: [
+          "data-[state=open]:[&>svg]:rotate-180",
+          "motion-safe:[&>svg]:transition-transform motion-safe:[&>svg]:duration-[var(--dur-fast)]",
+        ],
+        ellipsis: "[&>svg]:order-last",
+      },
     },
-    defaultVariants: { tone: "default" },
+    defaultVariants: { size: "default", tone: "default", indicator: "chevron" },
   },
 );
 
@@ -234,6 +278,14 @@ export const accordionContentStyles = cva([
   "motion-safe:data-[state=open]:animate-[accordion-expand_var(--dur-fast)_var(--ease)]",
   "motion-safe:data-[state=closed]:animate-[accordion-collapse_var(--dur-fast)_var(--ease)]",
 ]);
+
+export const accordionContentBodyStyles = cva("", {
+  variants: {
+    variant: {
+      card: "mb-2 rounded-[calc(var(--r-control)*2)] bg-fill-quaternary p-3",
+    },
+  },
+});
 
 export const segmentedStyles = cva(
   [
@@ -282,12 +334,13 @@ export const toggleGroupStyles = cva(
 );
 
 export const selectStyles = cva(
-  "h-full w-full min-w-0 appearance-none truncate pr-8",
+  ["h-full w-full min-w-0 appearance-none truncate pr-8", fieldFocusStyles],
   {
     variants: {
       variant: {
         default: "min-h-11 rounded-sm bg-muted pl-3 text-base",
         row: "min-h-[var(--ctl-h)] bg-transparent text-right text-base",
+        compact: ["rounded-sm bg-muted pl-2", compactFieldStyles],
         inline: "bg-transparent text-body-sm leading-[1.4]",
       },
     },
@@ -307,15 +360,38 @@ export const selectContainerStyles = cva(
   },
 );
 
-export const formFieldRowStyles = cva(
-  [
-    "flex min-h-[var(--row-min)] flex-wrap items-center gap-3 py-1 [&>label]:basis-22",
-    "[&>label]:grow-0 [&>label]:shrink-0",
-  ],
-  {
-    variants: { invalid: { true: "[&>label]:text-destructive", false: "" } },
+export const formFieldRowStyles = cva("", {
+  variants: {
+    layout: {
+      inline: "",
+      stacked: "grid min-w-0 content-start gap-1",
+    },
+    density: {
+      default: "",
+      compact: "",
+    },
+    invalid: { true: "[&>label]:text-destructive", false: "" },
   },
-);
+  compoundVariants: [
+    {
+      layout: "inline",
+      density: "default",
+      class: [
+        "flex min-h-[var(--row-min)] flex-wrap items-center gap-3 py-1",
+        "[&>label]:basis-22 [&>label]:grow-0 [&>label]:shrink-0",
+      ],
+    },
+    {
+      layout: "inline",
+      density: "compact",
+      class: [
+        "grid min-w-0 grid-cols-[3rem_minmax(0,1fr)] items-center gap-2",
+        "[&>label]:whitespace-nowrap [&>[role=alert]]:col-start-2",
+      ],
+    },
+  ],
+  defaultVariants: { layout: "inline", density: "default" },
+});
 
 export const emptyStateStyles = cva("text-muted-foreground", {
   variants: {

@@ -1,5 +1,7 @@
+import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { type Chat, chatSchema, settingsSchema } from "../model/chat.schema";
+import { mockJson } from "@/shared/server";
 import { mockChatCommand, mockChatPage } from "./mock.server";
 
 vi.mock("server-only", () => ({}));
@@ -8,20 +10,21 @@ const context = vi.hoisted(() => ({
   enabled: true,
   values: new Map<string, unknown>(),
   perspective: 0,
+  stage: "ready",
 }));
 vi.mock("@/shared/server", () => ({
   mockContext: async () => (context.enabled ? context : null),
   mockJson: async (name: string) => {
     if (name === "event-categories")
       return [{ id: "10000000-0000-4000-8000-000000000012", name: "병원" }];
-    if (name === "inventory-meta")
-      return {
-        categories: [
-          { id: "7f6eb754-9554-4d02-a16f-c1159ddbfaf7", name: "유제품·계란" },
-          { id: "006c5fbc-1462-40cf-83df-c1d910eb2f6b", name: "기타" },
-        ],
-        units: [{ id: "863a0860-2cfb-4361-8067-727ee92c58ea", name: "개" }],
-      };
+    if (name === "inventory-meta" || name === "inventory-items") {
+      if (!context.values.has(name))
+        context.values.set(
+          name,
+          JSON.parse(readFileSync(`mocks/${name}.json`, "utf8")),
+        );
+      return context.values.get(name);
+    }
     return {
       id: "10000000-0000-4000-8000-000000000001",
       members: [{ display_name: "지수" }, { display_name: "민호" }],
@@ -32,12 +35,122 @@ beforeEach(() => {
   context.values.clear();
   context.enabled = true;
   context.perspective = 0;
+  context.stage = "ready";
+});
+
+describe("INV-17 영수증 목업", () => {
+  it("초기 대화에서 보낸 사진과 영수증 초안이 보여요", async () => {
+    const chat = chatSchema.parse(await mockChatPage(null));
+    const request = chat.messages.at(-2)!;
+    const response = chat.messages.at(-1);
+    expect(request).toMatchObject({ role: "user", text: "영수증 등록해줘" });
+    expect(response).toMatchObject({
+      role: "assistant",
+      text: "영수증에서 찾은 품목을 확인해 주세요.",
+    });
+    expect(request.attachment_ids).toHaveLength(1);
+    expect(chat.attachments).toEqual([
+      expect.objectContaining({
+        id: request.attachment_ids[0],
+        status: "ready",
+      }),
+    ]);
+    expect(chat.runs.at(-1)).toMatchObject({
+      input_message_id: request.id,
+      status: "completed",
+    });
+    expect(chat.receipts).toHaveLength(1);
+    const [receipt] = chat.receipts;
+    expect(receipt).toMatchObject({
+      run_id: chat.runs.at(-1)?.id,
+      kind: "receipt",
+      status: "draft",
+    });
+    expect(Date.parse(receipt.expires_at)).toBeGreaterThan(
+      Date.now() + 3600000,
+    );
+    expect(receipt.items).toHaveLength(9);
+    expect(receipt.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "우유",
+          inventory_item_id: expect.any(String),
+        }),
+        expect.objectContaining({ name: "바나나", inventory_item_id: null }),
+        expect.objectContaining({ unit_id: null, selected: true }),
+        expect.objectContaining({ reason: "맛과 종류를 확인해 주세요." }),
+        expect.objectContaining({ selected: false }),
+      ]),
+    );
+  });
+
+  it("SCN-INV-6 선택한 품목만 한 번 재고에 반영해요", async () => {
+    const [receipt] = chatSchema.parse(await mockChatPage(null)).receipts;
+    const inventory = await mockJson("inventory-items");
+    const milk = inventory.find(({ name }) => name === "우유")!;
+    const before = structuredClone(inventory);
+    const { id, version } = receipt;
+    await expect(
+      mockChatCommand("confirm", { id, version, items: receipt.items }),
+    ).rejects.toMatchObject({ code: "invalid_inventory" });
+    expect(await mockJson("inventory-items")).toEqual(before);
+
+    const items = receipt.items.map((item) =>
+      item.unit_id ? item : { ...item, selected: false },
+    );
+    const input = { id, version, items };
+    await Promise.all([
+      mockChatCommand("confirm", input),
+      mockChatCommand("confirm", input),
+    ]);
+    expect(inventory.find((item) => item.id === milk.id)).toEqual({
+      ...milk,
+      quantity: milk.quantity + 2,
+    });
+    expect(inventory.find(({ name }) => name === "바나나")).toMatchObject({
+      mode: "quantity",
+      quantity: 1,
+    });
+    expect(
+      inventory.some(({ name }) => ["종이봉투", "감자"].includes(name)),
+    ).toBe(false);
+    expect((await mockChatPage(null))?.receipts[0]).toMatchObject({
+      status: "applied",
+      version: version + 1,
+      items,
+    });
+  });
+
+  it("취소하면 재고를 유지하고 목업을 초기화하면 새 초안이 보여요", async () => {
+    const [draft] = chatSchema.parse(await mockChatPage(null)).receipts;
+    const before = structuredClone(await mockJson("inventory-items"));
+    await mockChatCommand("cancel-receipt", {
+      id: draft.id,
+      version: draft.version,
+    });
+    expect((await mockChatPage(null))?.receipts[0].status).toBe("cancelled");
+    expect(await mockJson("inventory-items")).toEqual(before);
+
+    context.values.clear();
+    const [reset] = chatSchema.parse(await mockChatPage(null)).receipts;
+    expect(reset).toMatchObject({
+      status: "draft",
+      version: 1,
+      items: draft.items,
+    });
+    expect(reset.id).not.toBe(draft.id);
+  });
+
+  it("준비 단계 밖에서는 영수증 예시가 없어요", async () => {
+    context.stage = "login";
+    expect((await mockChatPage(null))?.receipts).toEqual([]);
+  });
 });
 
 describe("BOT-01/08/10 P11 대화 목업", () => {
   it("조회·직접 요청 결과·확인 대기를 실제 응답 계약으로 보여줘요", async () => {
     const chat = chatSchema.parse(await mockChatPage(null));
-    expect(chat.messages).toHaveLength(6);
+    expect(chat.messages).toHaveLength(8);
     expect(chat.messages[4]).toMatchObject({
       choices: [],
       awaiting_answer: true,
@@ -61,10 +174,10 @@ describe("BOT-01/08/10 P11 대화 목업", () => {
       text: "내 요청",
       attachmentIds: [],
     });
-    expect((await mockChatPage(null))?.messages).toHaveLength(7);
+    expect((await mockChatPage(null))?.messages).toHaveLength(9);
     context.perspective = 1;
     const other = (await mockChatPage(null))!;
-    expect(other.messages).toHaveLength(6);
+    expect(other.messages).toHaveLength(8);
     expect(other.messages.some((message) => message.text === "내 요청")).toBe(
       false,
     );
@@ -142,7 +255,7 @@ describe("BOT-01/08/10 P11 대화 목업", () => {
 
 it("BOT-07 선택지와 보낸 답장을 다시 조회해도 유지해요", async () => {
   const first = chatSchema.parse(await mockChatPage(null));
-  const question = first.messages.at(-1)!;
+  const question = first.messages.find((message) => message.choices.length)!;
   expect(question.choices).toHaveLength(2);
   expect(question.awaiting_answer).toBe(true);
   await mockChatCommand("send", {
@@ -165,7 +278,7 @@ it("BOT-07/08 SCN-BOT-6 수정 뒤 확인 결과는 새 메시지이며 취소�
   const event = actions[0].payload.event as Record<string, string>;
   event.title = "정기 검진";
   await mockChatCommand("edit-actions", { id: p.id, version: 1, actions });
-  expect(chat.messages).toHaveLength(6);
+  expect(chat.messages).toHaveLength(8);
   expect(p.actions[0].label).toContain("정기 검진");
   await mockChatCommand("confirm-actions", {
     id: p.id,

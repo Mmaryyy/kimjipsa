@@ -17,7 +17,7 @@ const statusIcons = {
 } satisfies Record<StatusVariant, LucideIcon>;
 type BannerProps = ComponentProps<"div"> & {
   variant?: StatusVariant;
-  title: string;
+  title?: string;
   icon?: ReactNode;
 };
 export function Banner({
@@ -35,7 +35,7 @@ export function Banner({
         {icon ?? <Icon size={16} />}
       </span>
       <div className="min-w-0">
-        <strong>{title}</strong>
+        {title !== undefined && <strong>{title}</strong>}
         {children && <div>{children}</div>}
       </div>
     </div>
