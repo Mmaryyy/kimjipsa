@@ -8,7 +8,7 @@
 | [calendar](calendar.md) | 45 |
 | [cart](cart.md) | 21 |
 | [chat](chat.md) | 26 |
-| [common](common.md) | 23 |
+| [common](common.md) | 24 |
 | [home](home.md) | 19 |
 | [infra](infra.md) | 43 |
 | [inventory](inventory.md) | 24 |
