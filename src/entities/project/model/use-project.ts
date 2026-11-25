@@ -17,6 +17,9 @@ const tables = [
   "project_decision_opinions",
   "project_reservations",
   "project_itinerary",
+  "project_lists",
+  "project_list_items",
+  "project_photos",
 ];
 const recoveryInterval = () => (isMockDataEnabled() ? false : 30_000);
 

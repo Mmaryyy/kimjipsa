@@ -103,7 +103,10 @@ function ProjectOverview({ id }: { id: string }) {
     .filter((module) => project.modules.includes(module))
     .flatMap<{ label: string; href?: string }>((module) => {
       if (module === "lists")
-        return [{ label: "후보 목록" }, { label: "명단" }];
+        return [
+          { label: "후보 목록", href: `/projects/${id}/lists?kind=candidates` },
+          { label: "명단", href: `/projects/${id}/lists?kind=people` },
+        ];
       const label = projectModuleLabels[module];
       if (module === "budget") return [{ label }];
       return [{ label, href: `/projects/${id}/${module}` }];

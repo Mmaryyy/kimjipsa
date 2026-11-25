@@ -1,5 +1,9 @@
 import { z } from "zod";
 import {
+  projectListInput,
+  projectListItemInput,
+} from "../model/project-list.schema";
+import {
   areaInput,
   areaSortOrder,
   decisionInput,
@@ -60,6 +64,23 @@ export type ProjectListEntry = {
   next: Pick<ProjectTask, "title" | "due_on"> | undefined;
 };
 export type ProjectList = { familyId: string; entries: ProjectListEntry[] };
+export const projectListRow = projectListInput.safeExtend({
+  ...childIdentity,
+  sort_order: areaSortOrder,
+});
+export const projectListItemRow = projectListItemInput.safeExtend({
+  ...identity,
+  list_id: projectId,
+  sort_order: areaSortOrder,
+});
+export const projectPhotoRow = z.object({
+  ...identity,
+  item_id: projectId,
+});
+export type ProjectListDefinition = z.infer<typeof projectListRow>;
+export type ProjectListItem = z.infer<typeof projectListItemRow>;
+export type ProjectPhoto = z.infer<typeof projectPhotoRow>;
+
 export type ProjectDetail = {
   familyId: string;
   project: Project;
@@ -70,4 +91,7 @@ export type ProjectDetail = {
   decisions: ProjectDecision[];
   reservations: ProjectReservation[];
   itinerary: ProjectItinerary[];
+  lists: ProjectListDefinition[];
+  listItems: ProjectListItem[];
+  photos: ProjectPhoto[];
 };

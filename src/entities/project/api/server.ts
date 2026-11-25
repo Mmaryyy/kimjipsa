@@ -1,5 +1,10 @@
 import "server-only";
 import { z } from "zod";
+import {
+  projectListCommand,
+  type ProjectListCommand,
+} from "../model/project-list.schema";
+import { readMockLists, writeMockList } from "./list-mock.server";
 import { ApiError } from "@/shared/api";
 import {
   createServerSupabaseClient,
@@ -30,26 +35,34 @@ import {
   itineraryRow,
   milestoneRow,
   projectRow,
+  projectListRow,
+  projectListItemRow,
+  projectPhotoRow,
   taskRow,
   type ProjectDetail,
   type ProjectList,
 } from "./type";
 
-const errors = {
+export const projectWriteErrors = {
   unauthorized: [401, "로그인이 필요해요."],
   family_required: [403, "가정에 먼저 참여해 주세요."],
   project_not_found: [404, "프로젝트 항목을 찾을 수 없어요."],
+  photo_upload_failed: [502, "사진을 올리지 못했어요. 다시 시도해 주세요."],
+  project_columns_in_use: [
+    400,
+    "입력된 칸 값과 맞지 않는 옵션이나 유형이에요.",
+  ],
   invalid_project: [400, "프로젝트 항목의 입력을 확인해 주세요."],
 } as const;
 
-async function projectContext() {
+export async function projectContext() {
   const client = await createServerSupabaseClient();
   const {
     data: { user },
     error,
   } = await client.auth.getUser();
   if (error || !user)
-    throw new ApiError("unauthorized", errors.unauthorized[1], 401);
+    throw new ApiError("unauthorized", projectWriteErrors.unauthorized[1], 401);
   const membership = await client
     .from("memberships")
     .select("family_id")
@@ -57,7 +70,11 @@ async function projectContext() {
     .maybeSingle();
   throwDatabaseError(membership.error);
   if (!membership.data)
-    throw new ApiError("family_required", errors.family_required[1], 403);
+    throw new ApiError(
+      "family_required",
+      projectWriteErrors.family_required[1],
+      403,
+    );
   return { client, familyId: membership.data.family_id };
 }
 
@@ -150,9 +167,14 @@ export async function readProject(rawId: string): Promise<ProjectDetail> {
     await clearMockProjectLinks(store);
     const project = store.projects.find((row) => row.id === id);
     if (!project)
-      throw new ApiError("project_not_found", errors.project_not_found[1], 404);
+      throw new ApiError(
+        "project_not_found",
+        projectWriteErrors.project_not_found[1],
+        404,
+      );
     return {
       familyId: family.id,
+      ...readMockLists(store, id),
       project,
       areas: store.areas
         .filter((row) => row.project_id === id)
@@ -181,7 +203,11 @@ export async function readProject(rawId: string): Promise<ProjectDetail> {
     .maybeSingle();
   throwDatabaseError(project.error);
   if (!project.data)
-    throw new ApiError("project_not_found", errors.project_not_found[1], 404);
+    throw new ApiError(
+      "project_not_found",
+      projectWriteErrors.project_not_found[1],
+      404,
+    );
   const parsedProject = projectRow.parse(project.data);
   const modules = parsedProject.modules;
   const [
@@ -192,6 +218,9 @@ export async function readProject(rawId: string): Promise<ProjectDetail> {
     decisions,
     reservations,
     itinerary,
+    lists,
+    listItems,
+    photos,
   ] = await Promise.all([
     allRows((from, to) =>
       client
@@ -257,6 +286,45 @@ export async function readProject(rawId: string): Promise<ProjectDetail> {
             .range(from, to),
         )
       : [],
+    modules.includes("lists")
+      ? allRows((from, to) =>
+          client
+            .from("project_lists")
+            .select("*")
+            .eq("family_id", familyId)
+            .eq("project_id", id)
+            .order("sort_order")
+            .order("id")
+            .range(from, to),
+        )
+      : [],
+    modules.includes("lists")
+      ? allRows((from, to) =>
+          client
+            .from("project_list_items")
+            .select("*,project_lists!inner(project_id)")
+            .eq("family_id", familyId)
+            .eq("project_lists.project_id", id)
+            .order("sort_order")
+            .order("id")
+            .range(from, to),
+        )
+      : [],
+    modules.includes("lists")
+      ? allRows((from, to) =>
+          client
+            .from("project_photos")
+            .select(
+              "id,item_id,project_list_items!inner(project_lists!inner(project_id))",
+            )
+            .eq("family_id", familyId)
+            .eq("project_list_items.project_lists.project_id", id)
+            .eq("is_ready", true)
+            .order("created_at")
+            .order("id")
+            .range(from, to),
+        )
+      : [],
   ]);
   throwDatabaseError(members.error);
   return {
@@ -269,6 +337,9 @@ export async function readProject(rawId: string): Promise<ProjectDetail> {
     decisions: decisionRow.array().parse(decisions),
     reservations: reservationRow.array().parse(reservations),
     itinerary: itineraryRow.array().parse(itinerary),
+    lists: projectListRow.array().parse(lists),
+    listItems: projectListItemRow.array().parse(listItems),
+    photos: projectPhotoRow.array().parse(photos),
   };
 }
 
@@ -276,6 +347,10 @@ function isModuleCommand(
   command: ProjectCommand,
 ): command is ProjectModuleCommand {
   return projectModuleCommand.safeParse(command).success;
+}
+
+function isListCommand(command: ProjectCommand): command is ProjectListCommand {
+  return projectListCommand.safeParse(command).success;
 }
 
 export async function writeProject(
@@ -287,6 +362,7 @@ export async function writeProject(
   if (mock) {
     const { members } = await mockJson("family");
     const store = projectMock(mock.values, members);
+    if (isListCommand(command)) return { id: writeMockList(store, command) };
     if (isModuleCommand(command))
       return {
         id: await writeProjectModuleMock(
@@ -307,12 +383,23 @@ export async function writeProject(
     };
   }
   const { client } = await projectContext();
-  const { data, error } = await client.rpc(
-    isModuleCommand(command) ? "write_project_module" : "write_project",
-    {
-      payload: command,
-    },
-  );
-  throwDatabaseError(error, errors);
+  const rpc = isListCommand(command)
+    ? "write_project_list"
+    : isModuleCommand(command)
+      ? "write_project_module"
+      : "write_project";
+  const { data, error } = await client.rpc(rpc, { payload: command });
+  if (
+    rpc === "write_project_list" &&
+    error?.message === "project_columns_in_use" &&
+    error.details
+  ) {
+    throw new ApiError(
+      error.message,
+      `기존 칸 값을 먼저 수정해 주세요. 해당 항목은 ${error.details}예요.`,
+      400,
+    );
+  }
+  throwDatabaseError(error, projectWriteErrors);
   return { id: projectId.parse(data) };
 }

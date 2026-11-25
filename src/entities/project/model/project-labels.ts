@@ -58,3 +58,9 @@ export const reservationStatusLabels: Record<
   booked: "예약 완료",
   cancelled: "취소",
 };
+
+export const candidateStatusLabels = {
+  candidate: "후보",
+  selected: "선택",
+  excluded: "제외",
+};

@@ -4,6 +4,8 @@ import { ApiError } from "@/shared/api";
 import {
   listProjects,
   readProject,
+  readProjectPhoto,
+  saveProjectPhoto,
   writeProject,
 } from "@/entities/project/index.server";
 import { handleRoute, readJson } from "@/shared/server";
@@ -35,3 +37,26 @@ export const projectsPOST = (request: Request) =>
       });
     }),
   );
+
+export const projectPhotosPOST = (request: Request) =>
+  handleRoute(request, () => saveProjectPhoto(request));
+
+export async function projectPhotosGET(request: Request) {
+  const headers = { "Cache-Control": "private, no-store" };
+  try {
+    const photo = await readProjectPhoto(request);
+    return new Response(photo, {
+      headers: {
+        ...headers,
+        "Content-Type": "image/jpeg",
+        "X-Content-Type-Options": "nosniff",
+      },
+    });
+  } catch (error) {
+    if (error instanceof ApiError && error.status < 500)
+      return new Response(null, { status: error.status, headers });
+    return handleRoute(request, () => {
+      throw error;
+    });
+  }
+}

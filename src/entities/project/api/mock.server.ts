@@ -1,13 +1,16 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { ApiError } from "@/shared/api";
+import { listFixtures, removeMockListItems } from "./list-mock.server";
 import { moduleFixtures } from "./module-mock.server";
 import type {
   ProjectCommand,
   ProjectModuleCommand,
 } from "../model/project.schema";
+import type { ProjectListCommand } from "../model/project-list.schema";
 import type {
   Project,
+  ProjectDetail,
   ProjectArea,
   ProjectMilestone,
   ProjectTask,
@@ -17,7 +20,11 @@ import type {
   ProjectMember,
 } from "./type";
 
-export type ProjectStore = {
+export type ProjectStore = Pick<
+  ProjectDetail,
+  "lists" | "listItems" | "photos"
+> & {
+  photoFiles: Map<string, [Blob, Blob]>;
   projects: Project[];
   areas: ProjectArea[];
   milestones: ProjectMilestone[];
@@ -31,7 +38,7 @@ export function projectMock(
   values: Map<string, unknown>,
   members: ProjectMember[],
 ): ProjectStore {
-  const key = "project-store-pj3";
+  const key = "project-store-pj4";
   const existing = values.get(key) as ProjectStore | undefined;
   if (existing) return existing;
   const id = "2fc2341a-62cb-4b1a-8bdc-de35bbd2e0fa";
@@ -138,6 +145,8 @@ export function projectMock(
     milestones,
     tasks,
     ...moduleFixtures(id, areas[0].id, members),
+    ...listFixtures(id),
+    photoFiles: new Map(),
   };
   values.set(key, store);
   return store;
@@ -145,7 +154,7 @@ export function projectMock(
 
 export function writeProjectMock(
   store: ProjectStore,
-  command: Exclude<ProjectCommand, ProjectModuleCommand>,
+  command: Exclude<ProjectCommand, ProjectModuleCommand | ProjectListCommand>,
   actor: string,
   members: string[],
 ) {
@@ -170,6 +179,20 @@ export function writeProjectMock(
   }
   if (command.action === "delete_project") {
     remove(store.projects);
+    const removedLists = new Set(
+      store.lists
+        .filter((list) => list.project_id === id)
+        .map((list) => list.id),
+    );
+    store.lists = store.lists.filter((list) => !removedLists.has(list.id));
+    removeMockListItems(
+      store,
+      new Set(
+        store.listItems
+          .filter((item) => removedLists.has(item.list_id))
+          .map((item) => item.id),
+      ),
+    );
     store.areas = store.areas.filter((row) => row.project_id !== id);
     store.milestones = store.milestones.filter((row) => row.project_id !== id);
     store.tasks = store.tasks.filter((row) => row.project_id !== id);

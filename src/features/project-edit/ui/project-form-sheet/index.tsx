@@ -18,6 +18,7 @@ type Props<T extends FieldValues> = {
   submitLabel?: string;
   children: ReactNode;
   onClose: () => void;
+  afterSave?: (id: string, item: T) => Promise<void> | void;
   savedPath?: (id: string) => string;
   command: (item: T) => ProjectCommand;
   deletion?: {
@@ -38,6 +39,7 @@ function ProjectFormSheet<T extends FieldValues>({
   children,
   onClose,
   savedPath,
+  afterSave,
   command,
   deletion,
 }: Props<T>) {
@@ -86,6 +88,7 @@ function ProjectFormSheet<T extends FieldValues>({
               setError("");
               try {
                 const { id } = await write.mutateAsync(command(item));
+                await afterSave?.(id, item);
                 // Replace the temporary sheet history entry when saving opens a page.
                 if (savedPath) window.location.replace(savedPath(id));
                 else finish();

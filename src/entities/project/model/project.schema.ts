@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { projectListCommand } from "./project-list.schema";
 
 export const projectStatuses = ["active", "completed", "archived"] as const;
 export const projectModules = [
@@ -217,6 +218,7 @@ export const projectModuleCommand = z.discriminatedUnion("action", [
 ]);
 export const projectCommand = z.discriminatedUnion("action", [
   projectModuleCommand,
+  projectListCommand,
   z.object({
     action: z.literal("save_project"),
     id: projectId.optional(),
