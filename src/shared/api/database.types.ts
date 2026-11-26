@@ -199,6 +199,7 @@ type UserRow<Provider extends string> = {
   amount_format: string;
   home_view: string;
   upcoming_enabled: boolean;
+  project_deadlines_enabled: boolean;
   upcoming_count: number;
 };
 type FamilyRow = { id: string; name: string; expiry_days: number };
@@ -529,6 +530,7 @@ export type Database<
           | "amount_format"
           | "home_view"
           | "upcoming_enabled"
+          | "project_deadlines_enabled"
           | "upcoming_count"
           | "push_enabled"
           | "morning_summary_time"
@@ -539,6 +541,7 @@ export type Database<
               | "amount_format"
               | "home_view"
               | "upcoming_enabled"
+              | "project_deadlines_enabled"
               | "upcoming_count"
               | "push_enabled"
               | "morning_summary_time"
@@ -642,10 +645,15 @@ export type Database<
         Args: { amount_format: string };
         Returns: undefined;
       };
+      home_project_deadlines: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
       save_home_settings: {
         Args: {
           home_view: string;
           upcoming_enabled: boolean;
+          project_deadlines_enabled?: boolean;
           upcoming_count: number;
         };
         Returns: undefined;

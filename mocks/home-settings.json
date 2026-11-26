@@ -1,5 +1,6 @@
 {
   "homeView": "week",
+  "projectDeadlinesEnabled": true,
   "upcomingEnabled": true,
   "upcomingCount": 5
 }

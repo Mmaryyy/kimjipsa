@@ -1,9 +1,26 @@
 "use client";
 import { useState } from "react";
 import { type ActionProposal, useChatActions } from "@/entities/chat-message";
-import { cn } from "@/shared/lib";
+import { useAccount } from "@/features/account";
+import { cn, formatAmount } from "@/shared/lib";
 import { Button, Text, TextButton } from "@/shared/ui";
 import ChatProposalForm from "./ProposalForm";
+
+function ExpenseAmount({
+  amount,
+  estimated,
+}: {
+  amount: number;
+  estimated: boolean;
+}) {
+  const { data: account } = useAccount();
+  return (
+    <Text as="span" variant="caption" className="block text-muted-foreground">
+      {estimated ? "예상 " : ""}
+      {formatAmount(amount, account?.amountFormat)}
+    </Text>
+  );
+}
 interface Props {
   proposal: ActionProposal;
   now: number;
@@ -53,6 +70,17 @@ const ChatActionProposal = ({ proposal }: Props) => {
             {shownActions.map((action, index) => {
               const included = selected.includes(index);
               const toggleLabel = included ? "빼기" : "되돌리기";
+              const item = action.payload.item;
+              const expense =
+                action.domain === "project" &&
+                action.payload.action === "save_expense" &&
+                item &&
+                typeof item === "object" &&
+                !Array.isArray(item)
+                  ? item
+                  : null;
+              const amount =
+                expense?.actual_amount ?? expense?.estimated_amount;
               return (
                 <li
                   key={index}
@@ -66,6 +94,12 @@ const ChatActionProposal = ({ proposal }: Props) => {
                     )}
                   >
                     {action.label}
+                    {typeof amount === "number" && (
+                      <ExpenseAmount
+                        amount={amount}
+                        estimated={expense?.actual_amount == null}
+                      />
+                    )}
                   </Text>
                   {editable && proposal.actions.length > 1 && (
                     <TextButton

@@ -246,7 +246,9 @@ export const mockDataSchemas = {
     pushEnabled: z.boolean(),
     morningSummaryTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
   }),
-  "home-settings": homeSettingsSchema,
+  "home-settings": homeSettingsSchema.extend({
+    projectDeadlinesEnabled: z.boolean().default(true),
+  }),
   invites: invitesSchema,
 };
 

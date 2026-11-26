@@ -38,7 +38,14 @@ def register(ctx):
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "resource": {"type": "string", "enum": ["memories", "inventory", "cart", "calendar"]},
+                    "resource": {
+                        "type": "string",
+                        "enum": ["memories", "inventory", "cart", "calendar", "projects"],
+                    },
+                    "projectId": {
+                        "type": "string",
+                        "description": "Projects only: omit to list projects, or use an exact project UUID for details.",
+                    },
                     "start": {"type": "string", "description": "Calendar only: inclusive YYYY-MM-DD in Asia/Seoul; provide end too."},
                     "end": {"type": "string", "description": "Calendar only: inclusive YYYY-MM-DD; range at most 366 days."},
                 },

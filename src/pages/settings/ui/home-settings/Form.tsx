@@ -133,6 +133,22 @@ const HomeSettingsForm = ({ settings }: { settings: Settings }) => {
               )}
             />
           )}
+          <Field
+            label="다가오는 프로젝트 마감"
+            name="projectDeadlinesEnabled"
+            render={(field) => (
+              <Switch
+                {...field}
+                value={undefined}
+                data-od-id="prj-home-setting"
+                checked={field.value}
+                onCheckedChange={(value) => {
+                  field.onChange(value);
+                  void handleSubmit(onSubmit)();
+                }}
+              />
+            )}
+          />
         </fieldset>
         <Toast
           open={toastOpen}

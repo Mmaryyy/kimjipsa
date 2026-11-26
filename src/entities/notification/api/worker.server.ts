@@ -2,11 +2,7 @@ import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database, Json } from "@/shared/api";
-import {
-  getSupabaseConfig,
-  eventRoutes,
-  notificationsPath,
-} from "@/shared/config";
+import { getSupabaseConfig, notificationsPath } from "@/shared/config";
 import { throwDatabaseError } from "@/shared/server";
 import { notificationSchema } from "../model/notification.schema";
 import { pushSubscriptionSchema } from "../model/push-subscription.schema";
@@ -18,7 +14,7 @@ import {
 } from "../lib/schedule.utils";
 import {
   notificationMessage,
-  notificationEventId,
+  notificationTarget,
 } from "../lib/notification.utils";
 import { sendWebPush, vapidConfigured } from "./web-push.server";
 
@@ -51,15 +47,7 @@ export async function dispatchPendingPush() {
     .parse(await rpc("claim_push"));
   await Promise.all(
     entries.map(async (entry) => {
-      const eventId = entry.payload.eventId;
-      const url =
-        entry.kind === "morning_summary"
-          ? `${eventRoutes.calendar}?date=${entry.payload.date}&view=day`
-          : eventId &&
-              entry.kind !== "event_deleted" &&
-              !entry.payload.eventDeleted
-            ? `${eventRoutes.calendar}?event=${encodeURIComponent(notificationEventId(entry.payload)!)}`
-            : notificationsPath;
+      const url = notificationTarget(entry) ?? notificationsPath;
       const body = notificationMessage(entry);
       await Promise.all(
         entry.subscriptions.map(async (subscription) => {

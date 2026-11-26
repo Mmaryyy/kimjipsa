@@ -27,7 +27,7 @@ const actions = [
     payload: { action: "delete", id: jobId },
   },
 ];
-const request = (kind: string) =>
+const request = (kind: string, proposedActions: unknown = actions) =>
   new Request("http://localhost/api/agent/complete", {
     method: "POST",
     headers: { origin: "http://localhost", "Content-Type": "application/json" },
@@ -37,13 +37,44 @@ const request = (kind: string) =>
       kind,
       text: "확인해 주세요",
       requestQuote: "우유 삭제",
-      actions,
+      actions: proposedActions,
       items: [item],
     }),
   });
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(agentRequest).mockResolvedValue(null);
+});
+
+it("PRJ-14 SCN-PRJ-5 할 일 완료는 확인 제안으로만 RPC에 전달해요", async () => {
+  const proposedActions = [
+    {
+      domain: "project",
+      label: "여행 루트 결정 완료",
+      payload: {
+        action: "set_task_done",
+        projectId: jobId,
+        id: leaseToken,
+        done: true,
+      },
+    },
+  ];
+  expect(
+    (await agentCompletePOST(request("actions", proposedActions))).status,
+  ).toBe(400);
+  expect(agentRequest).not.toHaveBeenCalled();
+  expect(
+    (await agentCompletePOST(request("action_proposal", proposedActions)))
+      .status,
+  ).toBe(200);
+  expect(agentRequest).toHaveBeenCalledWith(
+    expect.any(Request),
+    "complete",
+    expect.objectContaining({
+      kind: "action_proposal",
+      actions: [expect.objectContaining(proposedActions[0])],
+    }),
+  );
 });
 describe("BOT-07/08 SCN-BOT-5 대화 완료 경계", () => {
   it.each(["actions", "add", "proposal"])(

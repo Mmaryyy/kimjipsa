@@ -1,4 +1,10 @@
 import { z } from "zod";
+export const projectDeadlineKind = z.enum([
+  "task",
+  "decision",
+  "reservation_cancel",
+  "reservation_payment",
+]);
 export const notificationSchema = z.object({
   id: z.uuid(),
   user_id: z.uuid(),
@@ -10,6 +16,9 @@ export const notificationSchema = z.object({
     "event_participants_changed",
     "event_reminder",
     "morning_summary",
+    "project_task_due",
+    "project_decision_due",
+    "project_reservation_due",
   ]),
   payload: z.object({
     eventId: z.uuid().optional(),
@@ -24,6 +33,12 @@ export const notificationSchema = z.object({
     count: z.number().int().optional(),
     eventTitle: z.string().optional(),
     startTime: z.string().optional(),
+    projectItemId: z.uuid().optional(),
+    projectId: z.uuid().optional(),
+    projectTitle: z.string().optional(),
+    deadlineKind: projectDeadlineKind.optional(),
+    projectDeadlineTitle: z.string().optional(),
+    projectCount: z.number().int().positive().optional(),
     eventDeleted: z.boolean().optional(),
   }),
   read_at: z.string().nullable(),
