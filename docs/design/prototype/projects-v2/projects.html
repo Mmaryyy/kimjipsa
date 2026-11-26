@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>프로젝트 · 김집사</title>
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/app.css" />
+  <style>
+    /* 목록 행: 제목(L3 strong) + 목표일 D-day 오른쪽, 진행 막대, 한 줄 메타(L4) */
+    .prj-row { display: block; padding: var(--sp-4) 0; }
+    .prj-row + .prj-row { border-top: 1px solid var(--separator); }
+    .prj-top { display: flex; align-items: baseline; gap: var(--sp-3); }
+    .prj-top .row-title { flex: 1; }
+    .prj-bar { display: flex; align-items: center; gap: var(--sp-3); margin-top: var(--sp-3); }
+    .prj-bar .bar { flex: 1; }
+    .prj-bar b { font-size: var(--type-caption-size); font-weight: var(--fw-semibold); font-variant-numeric: tabular-nums; }
+    .prj-next { display: flex; align-items: center; gap: var(--sp-2); margin-top: var(--sp-2); font-size: var(--type-caption-size); color: var(--label-secondary); }
+    .prj-next strong { color: var(--label); font-weight: var(--fw-medium); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <main class="page" data-od-id="prj-projects">
+      <header class="ph">
+        <h1 class="t-title-lg" data-od-id="prj-projects-title">프로젝트</h1>
+        <div class="ph-actions"><button class="glass-btn glass-surface" id="create" data-od-id="prj-create-open">새 프로젝트</button></div>
+      </header>
+      <div class="filters" role="tablist" aria-label="프로젝트 상태" data-od-id="prj-status-filter">
+        <button role="tab" data-s="active" aria-selected="true">진행 중</button>
+        <button role="tab" data-s="completed" aria-selected="false">완료</button>
+        <button role="tab" data-s="archived" aria-selected="false">보관</button>
+      </div>
+      <ul id="list" data-od-id="prj-project-list"></ul>
+    </main>
+  </div>
+  <script src="js/app.js"></script>
+  <script>
+    const { db, save, esc, md, ddayChip, days, progress, icon, shell, sheet, toast, field, TODAY, ymd } = KJ;
+    shell();
+    let status = "active";
+
+    function stats(p) {
+      if (p.id === "p1") {
+        const tasks = db().tasks;
+        const open = tasks.filter((t) => t.status !== "done" && t.due_on).sort((a, b) => a.due_on.localeCompare(b.due_on));
+        return { ...progress(tasks), late: open.filter((t) => days(t.due_on) < 0).length, next: open.find((t) => days(t.due_on) >= 0) };
+      }
+      const s = db().summary[p.id] || { done: 0, total: 0, next: null };
+      return { ...s, percent: s.total ? Math.round((s.done / s.total) * 100) : 0, late: 0 };
+    }
+
+    function render() {
+      const items = db().projects.filter((p) => p.status === status);
+      document.getElementById("list").innerHTML = items.length ? items.map((p) => {
+        const s = stats(p);
+        const when = p.target_on ? `${ymd(p.target_on)}까지` : p.starts_on ? `${ymd(p.starts_on)} 시작 · 목표일 미정` : "기간 미정";
+        return `<li class="prj-row" data-od-id="prj-row-${p.id}">
+          <a href="project.html?id=${p.id}" class="row" style="display:block;padding:0">
+            <div class="prj-top"><h2 class="row-title strong">${esc(p.title)}</h2>${p.status === "active" ? ddayChip(p.target_on) : ""}</div>
+            <p class="row-meta">${when}</p>
+            ${s.total ? `<div class="prj-bar"><div class="bar" role="img" aria-label="할 일 ${s.done}/${s.total} 완료"><i style="width:${s.percent}%"></i></div><b>${s.done}/${s.total}</b></div>` : `<p class="row-meta">아직 할 일이 없어요</p>`}
+            ${s.late ? `<p class="prj-next"><span class="badge" data-v="warning">늦어진 할 일 ${s.late}개</span></p>` : ""}
+            ${s.next && p.status === "active" ? `<p class="prj-next"><span>다음</span><strong>${esc(s.next.title)}</strong>${s.next.due_on ? `<span class="num">${md(s.next.due_on)}</span>` : ""}</p>` : ""}
+          </a></li>`;
+      }).join("") : `<li class="empty">${{ active: "진행 중인", completed: "완료한", archived: "보관한" }[status]} 프로젝트가 없어요</li>`;
+    }
+
+    document.querySelectorAll(".filters button").forEach((b) => b.onclick = () => {
+      status = b.dataset.s;
+      document.querySelectorAll(".filters button").forEach((x) => x.setAttribute("aria-selected", x === b));
+      render();
+    });
+
+    const MODULES = [["decisions", "결정"], ["lists", "목록 (후보·명단)"], ["reservations", "예약"], ["itinerary", "일정표"], ["budget", "예산·지출"]];
+    document.getElementById("create").onclick = () => sheet({
+      title: "새 프로젝트",
+      body: field("title", "이름", `<input name="title" maxlength="100" placeholder="예: 이사 준비" autofocus>`)
+        + field("description", "설명", `<textarea name="description" maxlength="1000"></textarea>`)
+        + `<div class="field-2">${field("starts_on", "시작일", `<input type="date" name="starts_on">`)}${field("target_on", "목표일", `<input type="date" name="target_on">`)}</div>`
+        + `<div class="field"><span>함께 쓸 구성 요소</span><p class="row-meta" style="margin:0 0 var(--sp-1)">할 일과 마일스톤은 항상 켜져요.</p><div class="opt-group">${MODULES.map(([v, l]) => `<label class="chip" style="display:inline-flex;align-items:center;gap:6px"><input type="checkbox" name="m-${v}">${l}</label>`).join("")}</div></div>`,
+      submit: "만들기",
+      onSubmit(data) {
+        const errors = {};
+        if (!data.title.trim()) errors.title = true;
+        if (data.starts_on && data.target_on && data.starts_on > data.target_on) errors.target_on = true;
+        if (Object.keys(errors).length) return errors;
+        const p = { id: "p" + KJ.id(), title: data.title.trim(), description: data.description, starts_on: data.starts_on || null, target_on: data.target_on || null, status: "active", modules: MODULES.map(([v]) => v).filter((v) => data["m-" + v]) };
+        db().projects.unshift(p); save(); render(); toast(`'${p.title}'을 만들었어요`);
+      },
+    });
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>일정표 · 결혼 준비 · 김집사</title>
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/app.css" />
+  <style>
+    /* 세로 타임라인 (앱 MilestoneTimeline 과 같은 문법): [날짜 2.5rem] [점·세로선 1rem] [그날 카드]
+       일정표만 예외: 목록 구분선 없음 (사용자 2026-11-25) */
+    .tl { list-style: none; margin-top: var(--sp-4); }
+    .tl > li { display: grid; grid-template-columns: 2.5rem 1rem minmax(0, 1fr); column-gap: var(--sp-2); padding-bottom: var(--sp-3); }
+    .tl > li:last-child { padding-bottom: 0; }
+    .tl-date { padding-top: 10px; text-align: center; font-size: var(--type-caption-sm-size); color: var(--label-secondary); font-variant-numeric: tabular-nums; }
+    .tl-date b { display: block; font-size: var(--type-title-sm-size); line-height: 1; font-weight: var(--fw-semibold); color: var(--label); }
+    .tl-date span { display: block; margin-top: 4px; }
+    .tl-rail { position: relative; display: flex; justify-content: center; }
+    .tl-rail::before { content: ""; position: absolute; top: 0; bottom: calc(var(--sp-3) * -1); width: 1px; background: var(--separator-opaque); }
+    .tl > li:first-child .tl-rail::before { top: 20px; }
+    .tl > li:last-child .tl-rail::before { bottom: auto; height: 20px; }
+    .tl-dot { position: absolute; top: 20px; width: 10px; height: 10px; translate: 0 -50%; border-radius: var(--r-round); border: 2px solid var(--label-secondary); background: var(--label-secondary); }
+    .tl-dot.hollow { background: var(--bg); }
+    .tl-dot.now { width: 12px; height: 12px; border-color: var(--accent); background: var(--accent); }
+    .tl-card { min-width: 0; padding: 10px var(--sp-3); border-radius: var(--r-control); box-shadow: inset 0 0 0 1px var(--separator); }
+    .tl > li[aria-current] .tl-card { background: var(--fill-tertiary); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent); }
+    /* 빈 날: 카드 없이 한 줄 caption. 날짜·점·글자 세로 가운데, 글자 시작선은 다른 날 카드 안쪽 글자와 맞춤 */
+    .tl > li.blank { align-items: center; }
+    .tl > li.blank .tl-date { padding-top: 0; }
+    .tl > li.blank .tl-date b { font-size: var(--type-headline-size); color: var(--label-tertiary); }
+    .tl > li.blank .tl-date span { margin-top: 2px; }
+    .tl > li.blank .tl-rail { align-self: stretch; }
+    .tl > li.blank .tl-dot { top: 50%; }
+    .tl-blank { padding-left: var(--sp-3); font-size: var(--type-caption-size); color: var(--label-tertiary); }
+    .tl-head { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--type-caption-sm-size); font-weight: var(--fw-medium); color: var(--label-secondary); }
+    .tl-item { display: block; width: 100%; text-align: left; padding: var(--sp-1) 0; }
+    .tl-item + .tl-item { margin-top: 2px; }
+    .tl-item .row-title { font-weight: var(--fw-semibold); }
+    .rsv { margin-top: var(--sp-1); font-size: var(--type-caption-size); color: var(--label-secondary); }
+    .rsv a { color: var(--label); font-weight: var(--fw-medium); }
+    .trip { margin-top: var(--sp-2); font-size: var(--type-caption-size); color: var(--label-secondary); font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <main class="page" data-od-id="prj-itinerary">
+      <aside class="od-diff" aria-label="원래 OD 시안과 달라진 점"><b>원래 OD 시안과 달라진 점</b><ul><li>날짜 칸 목록 → 세로 타임라인(앱 개요의 MilestoneTimeline 모양): 왼쪽 날짜, 점, 날짜 사이 세로선, 오른쪽 그날 카드</li><li>일정 없는 날도 빈 점으로 이어져 n일차가 끊기지 않음. 여행 중 오늘은 강조색 점 + 옅은 면 카드 + ‘오늘’ (<a href="?today=2027-04-29" style="color:var(--info-text)">예시 보기</a>)</li><li>머리 아래는 기간 요약 한 줄. 구분선은 이 화면만 쓰지 않음</li></ul></aside>
+      <header class="ph">
+        <a class="ph-back" href="project.html" aria-label="프로젝트 개요"></a>
+        <div style="flex:1;min-width:0"><h1 class="t-title-lg" data-od-id="prj-itinerary-title">일정표</h1><p class="ph-sub t-caption">결혼 준비</p></div>
+        <div class="ph-actions"><button class="glass-btn glass-surface" id="add" data-od-id="prj-itinerary-add">추가</button></div>
+      </header>
+      <div id="body" class="no-sep"></div>
+    </main>
+  </div>
+  <script src="js/app.js"></script>
+  <script>
+    const K = KJ, { db, save, esc, md, icon, sheet, toast, field } = K;
+    K.shell();
+    document.querySelector(".ph-back").innerHTML = icon("back");
+    const DOW = ["일", "월", "화", "수", "목", "금", "토"];
+
+    const TODAY = new URLSearchParams(location.search).get("today") || K.TODAY; // 시안: ?today= 로 여행 중 모습 보기
+    const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const covering = (day) => db().itinerary.find((x) => x.ends_on && x.starts_on < day && x.ends_on >= day);
+
+    function render() {
+      const items = [...db().itinerary].sort((a, b) => a.starts_on.localeCompare(b.starts_on));
+      if (!items.length) { document.getElementById("body").innerHTML = `<p class="empty">아직 일정이 없어요</p>`; return; }
+      const first = new Date(items[0].starts_on + "T00:00:00");
+      const last = items.reduce((m, x) => ((x.ends_on || x.starts_on) > m ? x.ends_on || x.starts_on : m), items[0].starts_on);
+      const days = [];
+      for (let d = new Date(first); iso(d) <= last; d.setDate(d.getDate() + 1)) days.push(iso(d));
+      const stays = db().reservations.filter((r) => r.status !== "cancelled" && r.starts_on && r.starts_on >= days[0] && r.starts_on <= last);
+      document.getElementById("body").innerHTML = `
+        <p class="trip">${md(days[0])} – ${md(last)} · ${days.length}일 · 예약 ${stays.length}건</p>
+        <ol class="tl" role="list" data-od-id="prj-itinerary-timeline">${days.map((day, i) => {
+          const dt = new Date(day + "T00:00:00"), list = items.filter((x) => x.starts_on === day);
+          const stay = stays.filter((r) => r.starts_on === day), empty = !list.length && !stay.length, now = day === TODAY;
+          const cont = covering(day);
+          if (empty) return `<li class="blank"${now ? ' aria-current="step"' : ""} data-od-id="prj-day-${day}">
+            <div class="tl-date"><time datetime="${day}"><b>${dt.getDate()}</b><span>${dt.getMonth() + 1}월</span></time></div>
+            <div class="tl-rail" aria-hidden="true"><span class="tl-dot${now ? " now" : " hollow"}"></span></div>
+            <p class="tl-blank">${i + 1}일차 · ${DOW[dt.getDay()]} · ${cont ? `${esc(cont.title)} 이어서` : "일정 없음"}</p></li>`;
+          return `<li${now ? ' aria-current="step"' : ""} data-od-id="prj-day-${day}">
+            <div class="tl-date"><time datetime="${day}"><b>${dt.getDate()}</b><span>${dt.getMonth() + 1}월</span></time></div>
+            <div class="tl-rail" aria-hidden="true"><span class="tl-dot${now ? " now" : ""}"></span></div>
+            <div class="tl-card">
+              <p class="tl-head">${i + 1}일차 · ${DOW[dt.getDay()]}${now ? ` <span class="badge" data-v="progress">오늘</span>` : ""}</p>
+              ${list.map((x) => `<button class="tl-item" data-edit="${x.id}" data-od-id="prj-itinerary-${x.id}"><span class="row-title" style="display:block">${esc(x.title)}</span><span class="row-meta" style="display:block">${esc(x.place)}${x.ends_on ? `<span class="sep"></span>${md(x.ends_on)}까지` : ""}${x.memo ? `<span class="sep"></span>${esc(x.memo)}` : ""}</span></button>`).join("")}
+              ${stay.map((r) => `<p class="rsv">예약 <a href="project-reservations.html">${esc(r.title)}</a> ${r.ends_on ? `${md(r.starts_on)} – ${md(r.ends_on)}` : ""}</p>`).join("")}
+            </div></li>`;
+        }).join("")}</ol>`;
+      document.querySelectorAll("[data-edit]").forEach((b) => b.onclick = () => edit(db().itinerary.find((x) => x.id === b.dataset.edit)));
+    }
+
+    function edit(src) {
+      const x = src || { starts_on: null, ends_on: null, place: "", title: "", links: [], memo: "" };
+      sheet({ title: src ? "일정" : "새 일정",
+        body: field("title", "내용", `<input name="title" maxlength="100" value="${esc(x.title)}">`)
+          + `<div class="field-2">${field("starts_on", "날짜", `<input type="date" name="starts_on" value="${x.starts_on ?? ""}">`)}${field("ends_on", "종료일", `<input type="date" name="ends_on" value="${x.ends_on ?? ""}">`)}</div>`
+          + field("place", "장소", `<input name="place" maxlength="1000" value="${esc(x.place)}">`)
+          + field("memo", "메모", `<textarea name="memo">${esc(x.memo)}</textarea>`)
+          + (src ? `<button type="button" class="text-btn" style="min-height:var(--hit)" id="to-cal">일정에 추가</button>` : ""),
+        onSubmit(d) {
+          const e = {};
+          if (!d.title.trim()) e.title = true;
+          if (!d.starts_on) e.starts_on = true;
+          if (d.ends_on && d.starts_on && d.ends_on < d.starts_on) e.ends_on = true;
+          if (Object.keys(e).length) return e;
+          Object.assign(x, { title: d.title.trim(), starts_on: d.starts_on, ends_on: d.ends_on || null, place: d.place.trim(), memo: d.memo.trim() });
+          if (!src) db().itinerary.push({ id: "i" + K.id(), ...x });
+          save(); render(); toast(src ? "저장했어요" : "일정을 추가했어요");
+        },
+        danger: src && { label: "일정 삭제", confirm: `'${x.title}' 일정을 삭제할까요?`, run: () => { db().itinerary = db().itinerary.filter((y) => y !== src); save(); render(); } } });
+      document.getElementById("to-cal")?.addEventListener("click", () => toast(`'${x.title}'을 공유 일정에 추가했어요`));
+    }
+    document.getElementById("add").onclick = () => edit();
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>예산·지출 · 결혼 준비 · 김집사</title>
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/app.css" />
+  <style>
+    .sum-top { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-3); }
+    .sum-cap { margin-top: 2px; font-size: var(--type-caption-size); color: var(--label-secondary); font-variant-numeric: tabular-nums; }
+    .legend-rows { margin-top: var(--sp-3); display: grid; gap: var(--sp-1); }
+    .legend-rows li { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--type-caption-size); color: var(--label-secondary); }
+    .legend-rows li i { width: 10px; height: 10px; border-radius: var(--r-bar); flex: none; }
+    .legend-rows li .v { margin-left: auto; color: var(--label); font-variant-numeric: tabular-nums; }
+    .legend-rows li .v.warn { color: var(--warning-text); font-weight: var(--fw-semibold); }
+    .grp { display: flex; justify-content: space-between; align-items: baseline; }
+    .grp .num { font-size: var(--type-caption-sm-size); color: var(--label-secondary); font-weight: var(--fw-medium); }
+    /* g200: 모든 지출 행은 같은 높이의 2줄 */
+    .exp { display: grid; width: 100%; gap: 2px; text-align: left; padding: var(--sp-2) 0; min-height: 56px; }
+    .exp .l1, .exp .l2 { display: flex; align-items: center; gap: var(--sp-2); min-height: 22px; }
+    .exp .l1 .row-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .exp .date { flex: none; font-size: var(--type-caption-size); color: var(--label-secondary); font-variant-numeric: tabular-nums; }
+    .exp .end { margin-left: auto; flex: none; }
+    .exp .l2 .row-meta { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .amt { margin-left: auto; flex: none; font-size: var(--type-body-size); font-weight: var(--fw-medium); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    /* 월별: 왼쪽 [연.월] 아래 [예상], 오른쪽 실제 금액은 두 줄 높이 세로 가운데 */
+    .mon { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-2) 0; min-height: 56px; }
+    .mon .ym { font-size: var(--type-body-size); font-weight: var(--fw-semibold); font-variant-numeric: tabular-nums; }
+    .mon .amt.zero { color: var(--label-tertiary); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <main class="page" data-od-id="prj-budget">
+      <aside class="od-diff" aria-label="원래 OD 시안과 달라진 점"><b>원래 OD 시안과 달라진 점</b>
+        <ul><li>지출 행: 1줄 [항목명][상태 배지] … [결제일], 2줄 [영역 · 결제자(결제한 것만)] … [금액]</li><li>큰 숫자: 지금까지 쓴 돈 → 예상 총액 / 상한, 바는 실제 · 남은 예상 · 여유 누적 + 범례 금액 (g204)</li>
+        <li>월별: 세로 막대 → 목록, 금액을 글자로 (g195)</li>
+        <li>지출: 결제 예정 / 결제함 묶음에 건수·합계, 2줄 행, 공동·개인·미정 삭제 (g200·g203)</li></ul></aside>
+      <header class="ph">
+        <a class="ph-back" href="project.html" aria-label="프로젝트 개요"></a>
+        <div style="flex:1;min-width:0"><h1 class="t-title-lg" data-od-id="prj-budget-title">예산·지출</h1><p class="ph-sub t-caption">결혼 준비</p></div>
+        <div class="ph-actions">
+          <button class="glass-btn glass-surface" id="add" data-od-id="prj-expense-add">추가</button>
+          <button class="glass-btn glass-surface" id="cap" data-od-id="prj-budget-cap">설정</button>
+        </div>
+      </header>
+      <div id="body"></div>
+    </main>
+  </div>
+  <script src="js/app.js"></script>
+  <script>
+    const K = KJ, { db, save, esc, won, dateShort, days, ddayChip, icon, sheet, toast, field, options, areaName, memberName, members } = K;
+    K.shell();
+    document.querySelector(".ph-back").innerHTML = icon("back");
+    const pct = (n, base) => `${(n / base) * 100}%`;
+
+    function summary(actual, planned, cap) {
+      const total = actual + planned;
+      const legend = (color, label, v, warn) => `<li><i style="background:${color}"></i>${label}<span class="v${warn ? " warn" : ""}">${won(v)}</span></li>`;
+      if (!cap) { // g204: 상한이 없으면 두 조각 + 상한 정하기
+        return `<div class="sum-top"><p class="t-caption-sm muted">예상 총액</p><button class="text-btn sm kj-hit" id="cap-set">상한 정하기</button></div>
+          <div class="kpi"><span class="kpi-num">${total.toLocaleString("ko-KR")}</span><span class="kpi-unit">원</span></div>
+          <div class="budget-bar" role="img" aria-label="예상 총액 ${won(total)} 중 실제 결제 ${won(actual)}, 남은 예상 ${won(planned)}"><i class="actual" style="width:${pct(actual, total || 1)}"></i><i class="planned" style="width:${pct(planned, total || 1)}"></i></div>
+          <ul class="legend-rows">${legend("var(--label-secondary)", "실제 결제", actual)}${legend("var(--sys-gray3)", "남은 예상", planned)}</ul>`;
+      }
+      const over = total > cap, base = over ? total : cap;
+      return `<div class="sum-top"><p class="t-caption-sm muted">예상 총액</p><p class="t-caption-sm muted">상한 대비 실제 <b class="num" style="color:var(--label)">${((actual / cap) * 100).toFixed(1)}%</b></p></div>
+        <div class="kpi"><span class="kpi-num">${total.toLocaleString("ko-KR")}</span><span class="kpi-unit">원</span></div>
+        <p class="sum-cap">/ 상한 ${won(cap)}</p>
+        <div class="budget-bar" role="img" aria-label="상한 ${won(cap)} 기준: 실제 결제 ${won(actual)}, 남은 예상 ${won(planned)}, ${over ? `상한 초과 예상 ${won(total - cap)}` : `여유 ${won(cap - total)}`}">
+          <i class="actual" style="width:${pct(actual, base)}"></i><i class="planned" style="width:${pct(over ? cap - actual : planned, base)}"></i>${over ? `<i class="over" style="width:${pct(total - cap, base)}"></i><b class="limit" style="left:${pct(cap, base)}"></b>` : ""}
+        </div>
+        <ul class="legend-rows">${legend("var(--label-secondary)", "실제 결제", actual)}${legend("var(--sys-gray3)", "남은 예상", planned)}${over ? legend("var(--warning)", "상한 초과 예상", total - cap, true) : legend("var(--fill-tertiary)", "상한까지 여유", cap - total)}</ul>`;
+    }
+
+    function render() {
+      const ex = db().expenses, cap = db().budget.cap;
+      const paidList = ex.filter((e) => e.actual != null).sort((a, b) => b.paid_on.localeCompare(a.paid_on));
+      const upList = ex.filter((e) => e.actual == null).sort((a, b) => (a.planned_on ?? "9").localeCompare(b.planned_on ?? "9"));
+      const actual = paidList.reduce((s, e) => s + e.actual, 0);
+      const planned = upList.reduce((s, e) => s + (e.planned ?? 0), 0);
+
+      /* g200 행: 1줄 [항목명] [결제일 또는 예상 결제일] … [상태: 14일 안 D-day 또는 지난 마감], 2줄 [영역 · 결제자] … [금액] */
+      const row = (e) => {
+        const paid = e.actual != null, on = paid ? e.paid_on : e.planned_on;
+        const status = !paid && e.planned_on && days(e.planned_on) <= 14 ? ddayChip(e.planned_on) : "";
+        return `<li><button class="exp" data-edit="${e.id}" data-od-id="prj-expense-${e.id}">
+          <span class="l1"><span class="row-title">${esc(e.title)}</span>${status}<span class="date end">${on ? dateShort(on) : "날짜 미정"}</span></span>
+          <span class="l2"><span class="row-meta">${esc(areaName(e.area_id))}${paid ? `<span class="sep"></span>${esc(e.payer_id ? memberName(e.payer_id) : "탈퇴한 구성원")}` : ""}</span><span class="amt">${won(paid ? e.actual : e.planned)}</span></span>
+        </button></li>`;
+      };
+      const group = (label, list, empty) => `<div class="grp group-label"><span>${label} · <span class="num">${list.length}건</span></span><span class="num">${won(list.reduce((s, e) => s + ((e.actual ?? e.planned) ?? 0), 0))}</span></div>
+        ${list.length ? `<ul class="list">${list.map(row).join("")}</ul>` : `<p class="empty">${empty}</p>`}`;
+
+      const keys = [...new Set(ex.map((e) => (e.paid_on || e.planned_on || "none").slice(0, 7)))].sort();
+      const months = keys.map((m) => ({
+        m,
+        p: ex.filter((e) => (e.planned_on || "none").slice(0, 7) === m).reduce((s, e) => s + (e.planned ?? 0), 0),
+        a: ex.filter((e) => e.actual != null && e.paid_on.slice(0, 7) === m).reduce((s, e) => s + e.actual, 0),
+      }));
+
+      document.getElementById("body").innerHTML = `
+        <section class="summary" aria-label="예산 요약" data-od-id="prj-budget-summary">${summary(actual, planned, cap)}</section>
+
+        <section class="sec" aria-labelledby="h-ex" data-od-id="prj-budget-expenses">
+          <div class="sec-head"><h2 id="h-ex">지출</h2></div>
+          ${group("결제 예정", upList, "결제할 지출이 없어요")}
+          ${group("결제함", paidList, "아직 결제한 지출이 없어요")}
+        </section>
+
+        <section class="sec" aria-labelledby="h-month" data-od-id="prj-budget-monthly">
+          <div class="sec-head"><h2 id="h-month">월별</h2></div>
+          <ul class="list">${months.map((x) => `<li class="mon">
+            <div class="row-main"><p class="ym">${x.m === "none" ? "예상 결제일 미정" : x.m.replace("-", ".")}</p><p class="row-meta num">예상 ${won(x.p)}</p></div>
+            <span class="amt${x.a ? "" : " zero"}">${won(x.a)}</span></li>`).join("")}</ul>
+        </section>`;
+      document.querySelectorAll("[data-edit]").forEach((b) => b.onclick = () => edit(ex.find((e) => e.id === b.dataset.edit)));
+      document.getElementById("cap-set")?.addEventListener("click", openSettings);
+    }
+
+    const num = (v) => (v.trim() === "" ? null : Number(v.replaceAll(",", "")));
+    function edit(src) {
+      const e = src || { title: "", area_id: null, planned: null, planned_on: null, actual: null, paid_on: null, payer_id: null, memo: "" };
+      sheet({ title: src ? "지출" : "새 지출",
+        body: field("title", "제목", `<input name="title" maxlength="100" value="${esc(e.title)}">`)
+          + field("area_id", "영역", `<select name="area_id"><option value="">영역 없음</option>${options(db().areas.map((a) => [a.id, a.name]), e.area_id)}</select>`)
+          + `<p class="group-label">예상</p><div class="field-2" style="margin-top:calc(var(--sp-4) * -1)">${field("planned", "예상액 (원)", `<input inputmode="numeric" name="planned" value="${e.planned ?? ""}">`)}${field("planned_on", "예상 결제일", `<input type="date" name="planned_on" value="${e.planned_on ?? ""}">`)}</div>`
+          + `<p class="group-label">실제</p><div class="field-2" style="margin-top:calc(var(--sp-4) * -1)">${field("actual", "실제액 (원)", `<input inputmode="numeric" name="actual" value="${e.actual ?? ""}">`)}${field("paid_on", "결제일", `<input type="date" name="paid_on" value="${e.paid_on ?? ""}">`)}</div>`
+          + field("payer_id", "결제자", `<select name="payer_id"><option value="">선택 안 함</option>${options(members.map((m) => [m.user_id, m.display_name]), e.payer_id)}</select>`)
+          + field("memo", "메모", `<textarea name="memo">${esc(e.memo)}</textarea>`),
+        onSubmit(d) {
+          const err = {}, planned = num(d.planned), actual = num(d.actual);
+          if (!d.title.trim()) err.title = true;
+          if (planned != null && (isNaN(planned) || planned < 0)) err.planned = true;
+          if (actual != null && (isNaN(actual) || actual < 0)) err.actual = true;
+          if (actual != null && !d.paid_on) err.paid_on = true; // PRJ-10: 실제액이 있으면 결제일·결제자 필수
+          if (actual != null && !d.payer_id && !(src && src.actual != null && !src.payer_id)) err.payer_id = true; // g193: 탈퇴로 비어 있던 기록은 그대로 저장 허용
+          if (Object.keys(err).length) return err;
+          Object.assign(e, { title: d.title.trim(), area_id: d.area_id || null, planned, planned_on: d.planned_on || null, actual, paid_on: d.paid_on || null, payer_id: d.payer_id || null, memo: d.memo.trim() });
+          if (!src) db().expenses.push({ id: "e" + K.id(), ...e });
+          save(); render(); toast(src ? "저장했어요" : "지출을 기록했어요");
+        },
+        danger: src && { label: "지출 삭제", confirm: `'${e.title}' 지출을 삭제할까요?`, run: () => { db().expenses = db().expenses.filter((x) => x !== src); save(); render(); } } });
+    }
+
+    /* 머리 [설정]: 예산 상한 (관리 값은 머리에서 연다, DESIGN_SYSTEM §2-2) */
+    function openSettings() {
+      sheet({ title: "예산 설정",
+        body: field("cap", "예산 상한 (원)", `<input inputmode="numeric" name="cap" value="${db().budget.cap ?? ""}" placeholder="비워 두면 상한 없음">`),
+        onSubmit(d) { const v = num(d.cap); if (v != null && (isNaN(v) || v < 0)) return { cap: true }; db().budget.cap = v; save(); render(); toast("예산 상한을 저장했어요"); } });
+    }
+    document.getElementById("add").onclick = () => edit();
+    document.getElementById("cap").onclick = openSettings;
+    render();
+  </script>
+</body>
+</html>

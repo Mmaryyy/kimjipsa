@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="224" viewBox="0 0 240 224" fill="none">
+  <title>KIM JIPSA 판자집</title>
+  <desc>주황색 판자집과 잉크로 그린 풀. 조금씩 흔들리는 윤곽과 손글씨 간판.</desc>
+  <g stroke="#242321" stroke-linecap="round" stroke-linejoin="round">
+    <!-- 짧은 곡선을 이어 그린 외곽: 자와 도형 없이 그린 잉크 선 -->
+    <path d="M135 98 Q164 96 188 96 L218 97 Q217 125 219 150 L218 203 Q197 207 172 209 L135 211Z" fill="#EF6429" stroke-width="4"/>
+    <path d="M31 102 Q48 81 65 62 L79 45 Q97 65 114 84 L139 111 L139 211 Q122 214 102 212 L75 214 Q51 212 30 212 Q32 189 30 166 L32 134Z" fill="#FA712F" stroke-width="4.2"/>
+    <path d="M78 43 Q107 42 131 44 Q152 43 173 46 Q187 61 197 77 L224 110 Q200 114 177 113 L140 115 Q122 91 104 72Z" fill="#F5521C" stroke-width="4.6"/>
+    <path d="M19 108 Q36 87 53 68 L77 40 Q94 57 110 77 L145 113 L137 120 Q121 102 108 85 L78 51 Q64 67 51 84 L28 114Z" fill="#FB6524" stroke-width="3.8"/>
+    <path d="M141 115 Q160 117 177 116 Q202 118 226 114 L225 121 Q201 124 178 123 L140 124" fill="#DF4A18" stroke-width="3.3"/>
+    <!-- 지붕과 벽의 판자 이음: 길이와 굵기를 달리한 끊긴 선 -->
+    <path d="M98 67 Q115 66 130 68 L152 68 Q166 70 184 69 M117 91 Q141 89 162 92 Q180 91 205 94" stroke-width="2.5"/>
+    <path d="M148 147 Q161 145 176 147 L197 146 M202 146l13 1 M145 174 Q161 176 179 174 Q199 176 217 173 M147 198l19-1 M174 198 Q192 200 214 197" stroke-width="2.6"/>
+    <path d="M41 113l13-1 M115 116l13 2 M34 145l20 1 M116 146l20-1 M34 173l17-1 M121 174l15 1 M33 197l19 1 M121 199l14-1" stroke-width="2.3"/>
+    <path d="M34 105 Q49 84 62 71 M68 64l7-8 M112 81l12 16" stroke-width="1.6"/>
+    <!-- 입구에 남은 짧은 빗금 질감 -->
+    <path d="M58 213 Q60 194 59 178 Q58 162 67 151 Q75 140 86 141 Q102 141 109 157 Q115 172 112 189 L113 214" fill="#2C2A28" stroke-width="4"/>
+    <path d="M65 169l7-12 M65 179l15-25 M67 186l16-27 M72 188l15-24 M76 192l13-21" stroke="#FA712F" stroke-width="1.7"/>
+    <path d="M57 211 Q56 192 57 177 Q56 164 63 153" stroke-width="1.3"/>
+    <!-- 풀은 바닥에서 위로 휘어지는 독립적인 펜 획 -->
+    <path d="M9 210q9-1 19 3 M19 211q-8-10-8-18 M23 211q-1-15 5-22 M26 212q7-15 14-19 M30 212l11-8 M13 212l-6-5 M40 215l7-9 M44 215l9-4 M121 215q6-10 6-18 M125 215l10-10 M132 216l7-15 M139 214q6-5 9-11 M152 214l5-7 M163 214q-1-8 3-12 M168 213l9-9 M181 212l6-6 M198 209q9-12 9-21 M205 209l10-16 M213 208q8-4 15-13 M220 206l13-4" stroke-width="2.5"/>
+    <path d="M48 218l8-1 M146 217l5-1 M187 215l7-2 M225 210l7-2" stroke-width="1.5"/>
+  </g>
+  <!-- 글자마다 기울기와 높이를 달리한 집 이름 -->
+  <g fill="#242321" font-family="'Chalkboard SE','Comic Sans MS',cursive" font-weight="700" text-anchor="middle">
+    <text x="83" y="105" font-size="18" letter-spacing="1.3" transform="rotate(-5 83 105)">KIM</text>
+    <text x="84" y="129" font-size="18" letter-spacing="1.2"><tspan rotate="-9 3 -5 4 -3">JIPSA</tspan></text>
+  </g>
+</svg>

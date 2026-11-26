@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>할 일 · 결혼 준비 · 김집사</title>
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/app.css" />
+  <style>
+    .filters-box { display: grid; gap: var(--sp-2); margin-top: var(--sp-3); }
+    .task-open { flex: 1; min-width: 0; text-align: left; }
+    .dep { color: var(--label-secondary); }
+    .late-label::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: var(--r-round); background: var(--warning); vertical-align: middle; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <main class="page" data-od-id="prj-tasks">
+      <header class="ph">
+        <a class="ph-back" href="project.html" aria-label="프로젝트 개요"></a>
+        <div style="flex:1;min-width:0"><h1 class="t-title-lg" data-od-id="prj-tasks-title">할 일</h1><p class="ph-sub t-caption">결혼 준비</p></div>
+        <div class="ph-actions"><button class="glass-btn glass-surface" id="add" data-od-id="prj-task-add">추가</button></div>
+      </header>
+
+      <div class="filters-box" data-od-id="prj-task-filters">
+        <label class="search glass-surface"><span id="search-icon"></span><span class="sr-only">할 일 검색</span><input type="search" id="q" placeholder="할 일 검색" data-od-id="prj-task-search"></label>
+        <div class="filters" role="tablist" aria-label="담당">
+          <button role="tab" aria-selected="true" data-a="">전체</button>
+          <button role="tab" aria-selected="false" data-a="mine">내 일</button>
+          <button role="tab" aria-selected="false" data-a="together">함께</button>
+          <button role="tab" aria-selected="false" data-a="u-minho">민호</button>
+          <button role="tab" aria-selected="false" data-a="unassigned">담당 미정</button>
+        </div>
+        <div class="inline-row" style="margin-top:calc(var(--sp-2) * -1)">
+          <label class="inl">영역<select id="area"></select></label>
+          <label class="inl">상태<select id="status"><option value="">전체</option><option value="todo">미시작</option><option value="in_progress">진행 중</option><option value="on_hold">보류</option></select></label>
+        </div>
+      </div>
+
+      <div id="groups"></div>
+      <details class="fold sec" id="done-fold" data-od-id="prj-task-done"><summary></summary><ul class="list" id="done"></ul></details>
+    </main>
+  </div>
+  <script src="js/app.js"></script>
+  <script>
+    const K = KJ, { db, save, esc, md, days, ddayChip, icon, sheet, toast, field, options, assigneeLabel, areaName, TODAY, ME, members } = K;
+    K.shell();
+    document.querySelector(".ph-back").innerHTML = icon("back");
+    document.getElementById("search-icon").outerHTML = icon("search");
+    const STATUS = [["todo", "미시작"], ["in_progress", "진행 중"], ["done", "완료"], ["on_hold", "보류"]];
+    const f = { q: "", a: "", area: "", status: "" };
+
+    document.getElementById("area").innerHTML = `<option value="">전체</option>` + db().areas.map((a) => `<option value="${a.id}">${esc(a.name)}</option>`).join("") + `<option value="none">영역 없음</option>`;
+
+    const match = (t) =>
+      (!f.q || [t.title, t.memo, t.depends_note].some((s) => s.toLowerCase().includes(f.q))) &&
+      (!f.area || (t.area_id ?? "none") === f.area) &&
+      (!f.status || t.status === f.status) &&
+      (!f.a || (f.a === "mine" ? t.assignee_id === ME || t.assignee_kind === "together" : f.a.startsWith("u-") ? t.assignee_id === f.a : t.assignee_kind === f.a));
+
+    const row = (t) => {
+      const badge = t.status === "in_progress" ? `<span class="badge" data-v="progress">진행 중</span>` : t.status === "on_hold" ? `<span class="badge" data-v="warning">보류</span>` : "";
+      return `<li class="row${t.status === "done" ? " is-done" : ""}" data-od-id="prj-task-${t.id}">
+        <button class="check" role="checkbox" aria-checked="${t.status === "done"}" aria-label="${esc(t.title)} 완료" data-t="${t.id}">${icon("check")}</button>
+        <button class="task-open" data-edit="${t.id}">
+          <p class="row-title">${esc(t.title)}</p>
+          <p class="row-meta">${esc(areaName(t.area_id))}<span class="sep"></span>${esc(assigneeLabel(t))}${t.status === "done" && t.completed_at ? `<span class="sep"></span>${md(t.completed_at)} 완료` : ""}</p>
+          ${t.depends_note && t.status !== "done" ? `<p class="row-meta dep">선행: ${esc(t.depends_note)}</p>` : ""}
+        </button>
+        <div class="row-end">${badge}${t.status !== "done" ? ddayChip(t.due_on) : ""}</div>
+      </li>`;
+    };
+
+    function render() {
+      const vis = db().tasks.filter(match);
+      const open = vis.filter((t) => t.status !== "done").sort((a, b) => (a.due_on ?? "9").localeCompare(b.due_on ?? "9"));
+      const groups = [
+        ["늦어진 일", open.filter((t) => t.due_on && days(t.due_on) < 0), "late-label"],
+        ["이번 주", open.filter((t) => t.due_on && days(t.due_on) >= 0 && days(t.due_on) <= 7)],
+        ["그다음", open.filter((t) => t.due_on && days(t.due_on) > 7)],
+        ["날짜 없음", open.filter((t) => !t.due_on)],
+      ].filter(([, ts]) => ts.length);
+      document.getElementById("groups").innerHTML = groups.length
+        ? groups.map(([label, ts, cls], i) => `<section data-od-id="prj-task-group-${i}"><h2 class="group-label ${cls || ""}">${label} <span class="num">${ts.length}</span></h2><ul class="list">${ts.map(row).join("")}</ul></section>`).join("")
+        : `<p class="empty">${vis.length ? "남은 할 일이 없어요" : "조건에 맞는 할 일이 없어요"}</p>`;
+      const done = vis.filter((t) => t.status === "done").sort((a, b) => (b.completed_at ?? "").localeCompare(a.completed_at ?? ""));
+      const fold = document.getElementById("done-fold");
+      fold.hidden = !done.length;
+      fold.querySelector("summary").innerHTML = `${icon("chev")} 완료 <span class="num">${done.length}</span>`;
+      document.getElementById("done").innerHTML = done.map(row).join("");
+      bind();
+    }
+
+    function bind() {
+      document.querySelectorAll("[data-t]").forEach((b) => b.onclick = () => {
+        const t = db().tasks.find((x) => x.id === b.dataset.t), was = t.status;
+        t.status = was === "done" ? "todo" : "done"; t.completed_at = t.status === "done" ? TODAY : null; save(); render();
+        if (t.status === "done") toast(`'${t.title}' 완료`, { label: "되돌리기", run: () => { t.status = was; t.completed_at = null; save(); render(); } });
+      });
+      document.querySelectorAll("[data-edit]").forEach((b) => b.onclick = () => edit(db().tasks.find((x) => x.id === b.dataset.edit)));
+    }
+
+    function edit(task) {
+      const t = task || { title: "", area_id: null, assignee_kind: "unassigned", assignee_id: null, status: "todo", starts_on: null, due_on: null, depends_note: "", memo: "" };
+      const who = t.assignee_id ?? t.assignee_kind;
+      sheet({
+        title: task ? "할 일" : "새 할 일",
+        body: field("title", "제목", `<input name="title" maxlength="100" value="${esc(t.title)}">`)
+          + `<div class="field-2">${field("area_id", "영역", `<select name="area_id"><option value="">영역 없음</option>${options(db().areas.map((a) => [a.id, a.name]), t.area_id)}</select>`)}${field("status", "상태", `<select name="status">${options(STATUS, t.status)}</select>`)}</div>`
+          + field("assignee", "담당", `<select name="assignee">${options([["unassigned", "미정"], ["together", "함께"], ...members.map((m) => [m.user_id, m.display_name])], who)}</select>`)
+          + `<div class="field-2">${field("starts_on", "시작일", `<input type="date" name="starts_on" value="${t.starts_on ?? ""}">`)}${field("due_on", "마감일", `<input type="date" name="due_on" value="${t.due_on ?? ""}">`)}</div>`
+          + field("depends_note", "선행 조건", `<input name="depends_note" maxlength="1000" value="${esc(t.depends_note)}" placeholder="예: 여행 루트 결정 뒤">`)
+          + field("memo", "메모", `<textarea name="memo" maxlength="1000">${esc(t.memo)}</textarea>`),
+        onSubmit(d) {
+          const e = {};
+          if (!d.title.trim()) e.title = true;
+          if (d.starts_on && d.due_on && d.due_on < d.starts_on) e.due_on = true;
+          if (Object.keys(e).length) return e;
+          const member = d.assignee.startsWith("u-");
+          Object.assign(t, { title: d.title.trim(), area_id: d.area_id || null, status: d.status, assignee_kind: member ? "member" : d.assignee, assignee_id: member ? d.assignee : null, starts_on: d.starts_on || null, due_on: d.due_on || null, depends_note: d.depends_note.trim(), memo: d.memo.trim(), completed_at: d.status === "done" ? (t.completed_at || TODAY) : null });
+          if (!task) db().tasks.push({ id: "t" + K.id(), ...t });
+          save(); render(); toast(task ? "저장했어요" : "할 일을 추가했어요");
+        },
+        danger: task && { label: "할 일 삭제", confirm: `'${t.title}' 할 일을 삭제할까요?`, run: () => { db().tasks = db().tasks.filter((x) => x !== task); save(); render(); } },
+      });
+    }
+
+    document.getElementById("add").onclick = () => edit();
+    document.getElementById("q").oninput = (e) => { f.q = e.target.value.trim().toLowerCase(); render(); };
+    document.querySelectorAll("[data-a]").forEach((b) => b.onclick = () => { f.a = b.dataset.a; document.querySelectorAll("[data-a]").forEach((x) => x.setAttribute("aria-selected", x === b)); render(); });
+    ["area", "status"].forEach((k) => document.getElementById(k).onchange = (e) => { f[k] = e.target.value; render(); });
+    render();
+  </script>
+</body>
+</html>
