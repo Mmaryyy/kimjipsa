@@ -53,3 +53,4 @@
 
 - [0022. 폼 시트 컴포넌트와 전역 확인창](0022-form-sheet-and-global-confirm.md) — CONFIRMED (2026-11-12)
 - [0024. 가정 공유 데이터 변경 신호](0024-realtime-change-signals.md) — CONFIRMED (2026-11-24)
+- [0025. 차트 라이브러리(shadcn/ui Chart, recharts)](0025-chart-library.md) — CONFIRMED (2026-11-25)

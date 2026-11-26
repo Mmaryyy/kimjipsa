@@ -8,9 +8,9 @@
 | [calendar](calendar.md) | 45 |
 | [cart](cart.md) | 21 |
 | [chat](chat.md) | 26 |
-| [common](common.md) | 24 |
+| [common](common.md) | 29 |
 | [home](home.md) | 19 |
 | [infra](infra.md) | 43 |
 | [inventory](inventory.md) | 24 |
-| [settings](settings.md) | 20 |
-| [ui](ui.md) | 69 |
+| [settings](settings.md) | 21 |
+| [ui](ui.md) | 70 |
