@@ -6,8 +6,6 @@ import { useId, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import {
-  candidateStatuses,
-  candidateStatusLabels,
   projectListItemInput,
   projectListLinks,
   uploadProjectPhoto,
@@ -95,12 +93,10 @@ function ListItemEditor({
   list,
   item,
   onClose,
-  onSaved,
 }: {
   list: ProjectListDefinition;
   item?: ProjectListItem;
   onClose: () => void;
-  onSaved: (id: string) => void;
 }) {
   const projectId = list.project_id;
   const listId = list.id;
@@ -159,6 +155,7 @@ function ListItemEditor({
         projectId,
         listId,
         id: savedId.current,
+        preserveStatus: candidate ? true : undefined,
         item: {
           links: splitLinks(links),
           values: itemValues(values),
@@ -185,7 +182,6 @@ function ListItemEditor({
           form.setValue("files", files.slice(index + 1), { shouldDirty: true });
           void query.invalidateQueries({ queryKey: ["projects", projectId] });
         }
-        onSaved(id);
       }}
       deletion={
         item && {
@@ -196,6 +192,7 @@ function ListItemEditor({
             id: item.id,
           },
           name: item.title,
+          blockLabel: candidate ? "후보 삭제" : undefined,
           description: candidate
             ? "후보와 사진을 삭제해요."
             : "명단에서 이 사람을 삭제해요.",
@@ -216,16 +213,6 @@ function ListItemEditor({
             parse={(value) => (Number.isNaN(value) ? null : value)}
             format={(value) => value ?? NaN}
             inputProps={{ min: 0, step: "any", className: "text-left!" }}
-          />
-          <Field
-            name="status"
-            label="상태"
-            type="select"
-            inputProps={variant}
-            options={candidateStatuses.map((value) => ({
-              value,
-              label: candidateStatusLabels[value],
-            }))}
           />
           <Field
             name="links"

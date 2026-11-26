@@ -13,12 +13,20 @@ import {
 import ProjectBackLink from "../project-header";
 import ProjectDecisions from "../project-decisions";
 import ProjectReservations from "../project-reservations";
+import ProjectBudget, { budgetLimitEditorId } from "../project-budget";
 import ProjectItinerary from "../project-itinerary";
+
+const addIds: Partial<Record<keyof typeof pages, string>> = {
+  decisions: "prj-decision-add",
+  budget: "prj-expense-add",
+  itinerary: "prj-itinerary-add",
+};
 
 const pages = {
   decisions: ProjectDecisions,
   reservations: ProjectReservations,
   itinerary: ProjectItinerary,
+  budget: ProjectBudget,
 };
 
 function ProjectModules({
@@ -48,13 +56,32 @@ function ProjectModules({
       odId={`prj-${module}`}
       header={{
         title,
+        titleOdId:
+          module === "budget" || module === "itinerary"
+            ? `prj-${module}-title`
+            : undefined,
         navigation,
         subtitle: data?.project.title,
-        subtitleVariant: "context",
+        subtitleVariant: module === "decisions" ? "context-muted" : "context",
         actions: data && (
-          <Button variant="glass" onClick={() => setEditor("")}>
-            추가
-          </Button>
+          <>
+            <Button
+              variant="glass"
+              data-od-id={addIds[module]}
+              onClick={() => setEditor("")}
+            >
+              추가
+            </Button>
+            {module === "budget" && (
+              <Button
+                variant="glass"
+                data-od-id="prj-budget-cap"
+                onClick={() => setEditor(budgetLimitEditorId)}
+              >
+                설정
+              </Button>
+            )}
+          </>
         ),
       }}
     >

@@ -3,6 +3,9 @@ import type { ProjectListDefinition, ProjectListItem } from "../api/type";
 import { projectListCommand, validProjectValues } from "./project-list.schema";
 import {
   projectCandidateEstimate,
+  projectCandidateStatus,
+  projectCandidateSummary,
+  projectCandidates,
   projectQuantitySource,
   projectTagCounts,
 } from "./project-list.utils";
@@ -56,7 +59,12 @@ describe("PRJ-06·07 / SCN-PRJ-3", () => {
       { ...person, list_id: other.id },
     ];
     const source = projectQuantitySource(candidate, [roster, other], items);
-    expect(source).toEqual({ roster: "가족 명단", tag: "답례품", count: 2 });
+    expect(source).toEqual({
+      roster: "가족 명단",
+      tag: "답례품",
+      count: 2,
+      people: items.slice(0, 2),
+    });
     expect(projectCandidateEstimate(12000, source?.count ?? null)).toBe(24000);
     expect(projectTagCounts(items.slice(0, 2), tag.key)).toEqual({
       total: 2,
@@ -87,4 +95,90 @@ describe("PRJ-06·07 / SCN-PRJ-3", () => {
       }).success,
     ).toBe(false);
   });
+});
+
+it("PRJ-06 / g205 현재 구성원 만장일치와 직접 정한 상태를 반영한다", () => {
+  const members = [
+    { user_id: "owner", display_name: "하나" },
+    { user_id: "member", display_name: "둘" },
+  ];
+  const up = { candidate_id: "tea", user_id: "owner", vote: "up" } as const;
+  const down = {
+    candidate_id: "tea",
+    user_id: "member",
+    vote: "down",
+  } as const;
+  expect(projectCandidateStatus("candidate", [], [])).toBe("candidate");
+  expect(projectCandidateStatus("candidate", [up], members)).toBe("candidate");
+  expect(projectCandidateStatus("candidate", [up, down], members)).toBe(
+    "candidate",
+  );
+  expect(projectCandidateStatus("candidate", [up, down], [members[0]])).toBe(
+    "selected",
+  );
+  expect(projectCandidateStatus("candidate", [down], [members[1]])).toBe(
+    "excluded",
+  );
+  expect(projectCandidateStatus("excluded", [up], [members[0]])).toBe(
+    "excluded",
+  );
+});
+
+it("PRJ-06 / r034-f1 선택된 후보의 지정 인원만 예상 총액에 반영한다", () => {
+  const tea = {
+    ...person,
+    id: "tea",
+    list_id: candidate.id,
+    status: "candidate",
+    price: 11000,
+  } as const;
+  const cookie = { ...tea, id: "cookie", status: "selected" } as const;
+  const towel = { ...tea, id: "towel", status: "excluded" } as const;
+  const mug = { ...tea, id: "mug" };
+  const people = Array.from({ length: 7 }, (_, index) => ({
+    ...person,
+    id: `person-${index}`,
+  }));
+  const members = [
+    { user_id: "owner", display_name: "하나" },
+    { user_id: "member", display_name: "둘" },
+  ];
+  const { candidates } = projectCandidates(candidate, {
+    lists: [candidate, roster],
+    listItems: [tea, cookie, towel, mug, ...people],
+    members,
+    candidateVotes: members.flatMap(({ user_id }) => [
+      { candidate_id: tea.id, user_id, vote: "up" },
+      { candidate_id: cookie.id, user_id, vote: "down" },
+      { candidate_id: towel.id, user_id, vote: "up" },
+      { candidate_id: mug.id, user_id, vote: "down" },
+    ]),
+    candidateRecipients: people.slice(0, 6).map(({ id }, index) => ({
+      list_id: candidate.id,
+      candidate_id: [tea, tea, tea, cookie, cookie, towel][index].id,
+      person_id: id,
+    })),
+  });
+
+  expect(candidates.map(({ status, total }) => [status, total])).toEqual([
+    ["selected", 33000],
+    ["selected", 22000],
+    ["excluded", 11000],
+    ["excluded", null],
+  ]);
+  expect(projectCandidateSummary(candidates)).toEqual({
+    selected: 2,
+    estimate: 55000,
+  });
+});
+
+it("PRJ-06 / r034-f1 계산할 수 없는 금액과 0원을 구분한다", () => {
+  const unpriced = { status: "selected", total: null } as const;
+  expect(projectCandidateSummary([unpriced])).toEqual({
+    selected: 1,
+    estimate: null,
+  });
+  expect(
+    projectCandidateSummary([unpriced, { status: "selected", total: 0 }]),
+  ).toEqual({ selected: 2, estimate: 0 });
 });

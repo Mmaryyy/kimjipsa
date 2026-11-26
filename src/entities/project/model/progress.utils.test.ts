@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { milestoneInput, projectCommand } from "./project.schema";
 import {
+  projectOverdue,
   projectProgress,
   projectTimeline,
   upcomingTasks,
@@ -69,6 +70,23 @@ describe("PRJ-01~04 · SCN-PRJ-1", () => {
         "2026-11-20",
       ).map((task) => task.status),
     ).toEqual(["on_hold", "todo"]);
+  });
+
+  it("마감일이 지난 미완료 할 일의 개수와 가장 오래 밀린 일수를 센다", () => {
+    const today = "2026-12-01";
+    expect(projectOverdue([], today)).toEqual({ count: 0, oldestDays: 0 });
+    expect(
+      projectOverdue(
+        [
+          { status: "on_hold", due_on: "2026-11-30" },
+          { status: "todo", due_on: "2026-11-28" },
+          { status: "done", due_on: "2026-11-25" },
+          { status: "todo", due_on: today },
+          { status: "todo", due_on: null },
+        ],
+        today,
+      ),
+    ).toEqual({ count: 2, oldestDays: 3 });
   });
 
   it("구성원 담당에는 구성원 ID가 필요하다", () => {

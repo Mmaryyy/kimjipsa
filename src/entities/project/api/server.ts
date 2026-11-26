@@ -14,31 +14,45 @@ import {
 } from "@/shared/server";
 import {
   projectCommand,
+  projectBudgetCommand,
+  type ProjectBudgetCommand,
   projectId,
   projectModuleCommand,
   type ProjectCommand,
   type ProjectModuleCommand,
   taskStatuses,
 } from "../model/project.schema";
-import { projectProgress, upcomingTasks } from "../model/progress.utils";
+import {
+  projectOverdue,
+  projectProgress,
+  upcomingTasks,
+} from "../model/progress.utils";
 import { projectToday } from "../model/project-date.utils";
 import {
   clearMockProjectLinks,
   writeProjectModuleMock,
   type CreateProjectMockEvent,
 } from "./module-mock.server";
-import { projectMock, writeProjectMock } from "./mock.server";
+import {
+  projectMock,
+  writeProjectMock,
+  writeProjectBudgetMock,
+} from "./mock.server";
 import {
   areaRow,
+  candidateRecipientRow,
+  candidateVoteRow,
   decisionRow,
   reservationRow,
   itineraryRow,
   milestoneRow,
   projectRow,
+  projectListEntry,
   projectListRow,
   projectListItemRow,
   projectPhotoRow,
   taskRow,
+  expenseRow,
   type ProjectDetail,
   type ProjectList,
 } from "./type";
@@ -121,11 +135,12 @@ export async function listProjects(): Promise<ProjectList> {
     entries: projects.map((project) => {
       const items = byProject.get(project.id) ?? [];
       const next = upcomingTasks(items, today)[0];
-      return {
+      return projectListEntry.parse({
         project,
         progress: projectProgress(items),
+        overdue: projectOverdue(items, today),
         next: next && { title: next.title, due_on: next.due_on },
-      };
+      });
     }),
   };
 }
@@ -176,12 +191,17 @@ export async function readProject(rawId: string): Promise<ProjectDetail> {
       familyId: family.id,
       ...readMockLists(store, id),
       project,
+      expenses: project.modules.includes("budget")
+        ? store.expenses.filter((row) => row.project_id === id)
+        : [],
       areas: store.areas
         .filter((row) => row.project_id === id)
         .sort((a, b) => a.sort_order - b.sort_order),
       milestones: store.milestones.filter((row) => row.project_id === id),
       tasks: store.tasks.filter((row) => row.project_id === id),
-      members: family.members,
+      members: family.members.filter(
+        ({ user_id }) => !mock.values.has(`withdrawn:${user_id}`),
+      ),
       decisions: project.modules.includes("decisions")
         ? store.decisions.filter((row) => row.project_id === id)
         : [],
@@ -220,7 +240,10 @@ export async function readProject(rawId: string): Promise<ProjectDetail> {
     itinerary,
     lists,
     listItems,
+    candidateRecipients,
+    candidateVotes,
     photos,
+    expenses,
   ] = await Promise.all([
     allRows((from, to) =>
       client
@@ -255,7 +278,13 @@ export async function readProject(rawId: string): Promise<ProjectDetail> {
       ? allRows((from, to) =>
           client
             .from("project_decisions")
-            .select("*,opinions:project_decision_opinions(id,user_id,opinion)")
+            .select(
+              `
+              *,
+              opinions:project_decision_opinions(id,user_id,opinion,
+                reactions:project_decision_opinion_reactions(user_id,reaction))
+            `,
+            )
             .eq("family_id", familyId)
             .eq("project_id", id)
             .order("id")
@@ -313,6 +342,34 @@ export async function readProject(rawId: string): Promise<ProjectDetail> {
     modules.includes("lists")
       ? allRows((from, to) =>
           client
+            .from("project_candidate_recipients")
+            .select(
+              "list_id,candidate_id,person_id,candidate:project_list_items!project_candidate_recipients_candidate_fkey!inner(project_lists!inner(project_id))",
+            )
+            .eq("family_id", familyId)
+            .eq("candidate.project_lists.project_id", id)
+            .order("list_id")
+            .order("person_id")
+            .range(from, to),
+        )
+      : [],
+    modules.includes("lists")
+      ? allRows((from, to) =>
+          client
+            .from("project_candidate_votes")
+            .select(
+              "candidate_id,user_id,vote,candidate:project_list_items!project_candidate_votes_candidate_fkey!inner(project_lists!inner(project_id))",
+            )
+            .eq("family_id", familyId)
+            .eq("candidate.project_lists.project_id", id)
+            .order("candidate_id")
+            .order("user_id")
+            .range(from, to),
+        )
+      : [],
+    modules.includes("lists")
+      ? allRows((from, to) =>
+          client
             .from("project_photos")
             .select(
               "id,item_id,project_list_items!inner(project_lists!inner(project_id))",
@@ -321,6 +378,19 @@ export async function readProject(rawId: string): Promise<ProjectDetail> {
             .eq("project_list_items.project_lists.project_id", id)
             .eq("is_ready", true)
             .order("created_at")
+            .order("id")
+            .range(from, to),
+        )
+      : [],
+    modules.includes("budget")
+      ? allRows((from, to) =>
+          client
+            .from("project_expenses")
+            .select("*")
+            .eq("family_id", familyId)
+            .eq("project_id", id)
+            .order("paid_on", { nullsFirst: true })
+            .order("planned_on")
             .order("id")
             .range(from, to),
         )
@@ -339,7 +409,12 @@ export async function readProject(rawId: string): Promise<ProjectDetail> {
     itinerary: itineraryRow.array().parse(itinerary),
     lists: projectListRow.array().parse(lists),
     listItems: projectListItemRow.array().parse(listItems),
+    candidateRecipients: candidateRecipientRow
+      .array()
+      .parse(candidateRecipients),
+    candidateVotes: candidateVoteRow.array().parse(candidateVotes),
     photos: projectPhotoRow.array().parse(photos),
+    expenses: expenseRow.array().parse(expenses),
   };
 }
 
@@ -353,6 +428,12 @@ function isListCommand(command: ProjectCommand): command is ProjectListCommand {
   return projectListCommand.safeParse(command).success;
 }
 
+function isBudgetCommand(
+  command: ProjectCommand,
+): command is ProjectBudgetCommand {
+  return projectBudgetCommand.safeParse(command).success;
+}
+
 export async function writeProject(
   raw: unknown,
   createMockEvent: CreateProjectMockEvent,
@@ -362,17 +443,29 @@ export async function writeProject(
   if (mock) {
     const { members } = await mockJson("family");
     const store = projectMock(mock.values, members);
-    if (isListCommand(command)) return { id: writeMockList(store, command) };
+    if (isBudgetCommand(command))
+      return {
+        id: writeProjectBudgetMock(
+          store,
+          command,
+          members.map((member) => member.user_id),
+        ),
+      };
+    const actor = members[mock.perspective]!.user_id;
+    if (isListCommand(command))
+      return { id: writeMockList(store, command, actor) };
     if (isModuleCommand(command))
       return {
         id: await writeProjectModuleMock(
           store,
           command,
-          members,
+          members.filter(
+            ({ user_id }) => !mock.values.has(`withdrawn:${user_id}`),
+          ),
+          actor,
           createMockEvent,
         ),
       };
-    const actor = members[mock.perspective]!.user_id;
     return {
       id: writeProjectMock(
         store,
@@ -383,12 +476,27 @@ export async function writeProject(
     };
   }
   const { client } = await projectContext();
-  const rpc = isListCommand(command)
-    ? "write_project_list"
-    : isModuleCommand(command)
-      ? "write_project_module"
-      : "write_project";
-  const { data, error } = await client.rpc(rpc, { payload: command });
+  const candidateCommand =
+    command.action === "set_candidate_recipient" ||
+    command.action === "set_candidate_vote" ||
+    command.action === "set_candidate_status" ||
+    (command.action === "save_list_item" && command.preserveStatus);
+  const rpc = candidateCommand
+    ? "write_project_candidate"
+    : isBudgetCommand(command)
+      ? "write_project_budget"
+      : isListCommand(command)
+        ? "write_project_list"
+        : isModuleCommand(command)
+          ? "write_project_module"
+          : "write_project";
+  const opinionCommand =
+    command.action === "save_decision_opinion" ||
+    command.action === "set_decision_opinion_reaction";
+  const { data, error } = await client.rpc(
+    opinionCommand ? "write_project_decision_opinion" : rpc,
+    { payload: command },
+  );
   if (
     rpc === "write_project_list" &&
     error?.message === "project_columns_in_use" &&

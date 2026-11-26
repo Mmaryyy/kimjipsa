@@ -15,11 +15,15 @@ const tables = [
   "project_tasks",
   "project_decisions",
   "project_decision_opinions",
+  "project_decision_opinion_reactions",
   "project_reservations",
   "project_itinerary",
   "project_lists",
   "project_list_items",
+  "project_candidate_recipients",
+  "project_candidate_votes",
   "project_photos",
+  "project_expenses",
 ];
 const recoveryInterval = () => (isMockDataEnabled() ? false : 30_000);
 

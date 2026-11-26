@@ -1,14 +1,10 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
-import Image from "next/image";
+import { Check, ChevronRight } from "lucide-react";
 import Link from "next/link";
-import { useId, useRef, useState, type Ref } from "react";
+import { useState } from "react";
 import {
-  candidateStatusLabels,
-  projectCandidateEstimate,
-  projectPhotoUrl,
-  projectQuantitySource,
+  ProjectProgressBar,
   projectTagCounts,
   useProject,
   useProjectWrite,
@@ -16,34 +12,24 @@ import {
   type ProjectListDefinition,
   type ProjectListItem,
   type ProjectListInput,
-  type ProjectPhoto,
 } from "@/entities/project";
 import { ListEditor, ListItemEditor } from "@/features/project-edit";
 import { ApiError } from "@/shared/api";
+import { cn } from "@/shared/lib";
 import {
   Button,
-  Checkbox,
   EmptyState,
   ErrorState,
   List,
   ListRow,
   ListSkeleton,
   PageLayout,
-  SectionHeader,
-  StatusBadge,
   TextButton,
-  useConfirm,
 } from "@/shared/ui";
+import CandidateList from "./CandidateList";
 import ProjectBackLink from "../project-header";
 
-const money = (value: number) => `${value.toLocaleString("ko-KR")}원`;
 const kindLabels = { candidates: "후보 목록", people: "명단" };
-const tones = {
-  candidate: "info",
-  selected: "success",
-  excluded: "info",
-} as const;
-
 function ListIndex({
   kind,
   data,
@@ -104,186 +90,60 @@ function ListIndex({
   );
 }
 
-function columnFacts(list: ProjectListDefinition, item: ProjectListItem) {
-  return list.columns.flatMap(({ key, label, type }) => {
-    const value = item.values[key];
-    if (value === undefined) return [];
-    return [
-      {
-        key,
-        label,
-        value:
-          type === "money" && typeof value === "number" ? money(value) : value,
-      },
-    ];
-  });
-}
-
-function PhotoGallery({
-  projectId,
-  photos,
-  onDelete,
+function PeopleSummary({
+  tags,
+  items,
 }: {
-  projectId: string;
-  photos: ProjectPhoto[];
-  onDelete: (photo: ProjectPhoto) => void;
-}) {
-  return (
-    <div data-od-id="prj-candidate-photo">
-      {photos.length === 0 ? (
-        <p className="grid min-h-25 place-items-center bg-muted text-muted-foreground">
-          사진 미등록
-        </p>
-      ) : (
-        <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {photos.map((photo, index) => (
-            <li key={photo.id} className="min-w-0">
-              <a
-                href={projectPhotoUrl(projectId, photo.id)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <Image
-                  unoptimized
-                  src={projectPhotoUrl(projectId, photo.id, true)}
-                  alt={`후보 사진 ${index + 1}`}
-                  width={320}
-                  height={320}
-                  className="aspect-square w-full rounded-lg object-cover"
-                />
-              </a>
-              <TextButton
-                type="button"
-                className="text-destructive"
-                aria-label={`사진 ${index + 1} 삭제`}
-                onClick={() => onDelete(photo)}
-              >
-                삭제
-              </TextButton>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-function CandidateDetail({
-  list,
-  item,
-  photos,
-  edit,
-  removePhoto,
-  sectionRef,
-}: {
-  list: ProjectListDefinition;
-  item: ProjectListItem;
-  photos: ProjectPhoto[];
-  edit: () => void;
-  removePhoto: (photo: ProjectPhoto) => void;
-  sectionRef: Ref<HTMLElement>;
+  tags: ProjectListDefinition["tags"];
+  items: ProjectListItem[];
 }) {
   return (
     <section
-      ref={sectionRef}
-      className="my-4 space-y-3 pt-3"
-      aria-label={`${item.title} 상세`}
+      aria-label="태그별 진행"
+      data-od-id="prj-people-summary"
+      className="mt-4 rounded-control bg-fill-quaternary p-4"
     >
-      <SectionHeader title={item.title} />
-      <PhotoGallery
-        projectId={list.project_id}
-        photos={photos}
-        onDelete={removePhoto}
-      />
-      <dl className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-x-3 gap-y-2 text-sm wrap-anywhere">
-        {columnFacts(list, item).map(({ key, label, value }) => (
-          <div key={key} className="contents">
-            <dt className="text-muted-foreground">{label}</dt>
-            <dd className="text-right whitespace-pre-wrap">{value}</dd>
-          </div>
-        ))}
-        {item.memo && (
-          <div className="contents">
-            <dt className="text-muted-foreground">메모</dt>
-            <dd className="text-right whitespace-pre-wrap">{item.memo}</dd>
-          </div>
-        )}
-      </dl>
-      {item.links.length > 0 && (
-        <ul className="flex flex-wrap gap-x-3 text-sm">
-          {item.links.map((link, index) => (
-            <li key={`${index}-${link}`}>
-              <a
-                href={link}
-                target="_blank"
-                rel="noreferrer"
-                className="text-primary underline"
+      <p className="text-caption-sm text-muted-foreground tabular-nums">
+        {items.length}명
+      </p>
+      {tags.length > 0 && (
+        <ul className="mt-2 grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2">
+          {tags.map(({ key, label }) => {
+            const { total, done } = projectTagCounts(items, key);
+            return (
+              <li
+                key={key}
+                className="grid min-h-18 content-center gap-0.5 rounded-control bg-background px-3 py-2"
               >
-                링크 {index + 1} ↗
-              </a>
-            </li>
-          ))}
+                <span
+                  className="truncate text-caption-sm font-medium text-muted-foreground"
+                  title={label}
+                >
+                  {label}
+                </span>
+                <span className="text-headline font-semibold tabular-nums">
+                  {done}
+                  <span className="text-caption font-normal text-muted-foreground">
+                    {" / "}
+                    {total}
+                  </span>
+                </span>
+                <ProjectProgressBar
+                  label={`${label} ${total}명 중 ${done}명 완료`}
+                  done={done}
+                  total={total}
+                  className={cn(
+                    "mt-1 h-1 w-full overflow-hidden rounded-[var(--r-bar)] bg-[var(--fill-tertiary)]",
+                    "[&::-webkit-progress-bar]:bg-transparent [&::-webkit-progress-value]:bg-success",
+                    "[&::-moz-progress-bar]:bg-success",
+                  )}
+                />
+              </li>
+            );
+          })}
         </ul>
       )}
-      <TextButton type="button" onClick={edit}>
-        후보 수정
-      </TextButton>
     </section>
-  );
-}
-
-function CandidateRows({
-  items,
-  count,
-  photos,
-  selectedId,
-  select,
-}: {
-  items: ProjectListItem[];
-  count: number | null;
-  photos: ProjectPhoto[];
-  selectedId: string | undefined;
-  select: (id: string) => void;
-}) {
-  return (
-    <List data-od-id="prj-candidate-list" className="divide-y divide-border/45">
-      {items.map((item) => {
-        const estimate = projectCandidateEstimate(item.price, count);
-        const hasPhoto = photos.some((photo) => photo.item_id === item.id);
-        let price = "가격 미정";
-        if (item.price !== null) {
-          price = money(item.price);
-          if (estimate !== null)
-            price += ` × ${count}명 · 예상 ${money(estimate)}`;
-        }
-        const summary = [price, item.memo, hasPhoto ? "" : "사진 없음"]
-          .filter(Boolean)
-          .join(" · ");
-        const selected = item.id === selectedId;
-        return (
-          <ListRow
-            key={item.id}
-            description={summary}
-            className={selected ? "bg-accent-soft" : undefined}
-            trailing={
-              item.status && (
-                <StatusBadge shape="capsule" variant={tones[item.status]}>
-                  {candidateStatusLabels[item.status]}
-                </StatusBadge>
-              )
-            }
-          >
-            <TextButton
-              onClick={() => select(item.id)}
-              aria-current={selected || undefined}
-              className="h-auto p-0 text-left text-base font-semibold text-foreground"
-            >
-              {item.title}
-            </TextButton>
-          </ListRow>
-        );
-      })}
-    </List>
   );
 }
 
@@ -300,73 +160,123 @@ function PeopleRows({
   setDone: (itemId: string, key: string, done: boolean) => void;
   pending: boolean;
 }) {
-  const checkId = useId();
+  const [tagFilter, setTagFilter] = useState("");
+  const { tags } = list;
+  const activeTag = tags.find(({ key }) => key === tagFilter)?.key ?? "";
+  const visibleItems = activeTag
+    ? items.filter((item) => item.tags.includes(activeTag))
+    : items;
+  const relationshipKey = list.columns.find(
+    ({ label }) => label === "관계",
+  )?.key;
+  const columns = ["minmax(5.5rem,1fr)", ...tags.map(() => "max-content")];
+
   return (
     <>
-      {list.tags.map(({ key, label }) => {
-        const { total, done } = projectTagCounts(items, key);
-        return (
-          <div
+      <PeopleSummary tags={tags} items={items} />
+      <div
+        role="group"
+        aria-label="태그로 보기"
+        className="mt-3 flex flex-wrap gap-x-2 gap-y-3 py-2"
+      >
+        {[{ key: "", label: "모두" }, ...tags].map(({ key, label }) => (
+          <Button
             key={key}
-            data-od-id="prj-people-tag-summary"
-            className="flex items-center justify-between gap-2 border-b border-border/45 py-2 text-sm wrap-anywhere"
+            variant="gray"
+            size="sm"
+            aria-pressed={key === activeTag}
+            className={cn(
+              "h-8 min-w-11 max-w-full rounded-full px-3 font-medium",
+              "bg-[var(--fill-tertiary)] text-muted-foreground",
+              "aria-pressed:bg-foreground aria-pressed:text-background",
+            )}
+            onClick={() => setTagFilter(key)}
           >
-            <strong>
-              {label} · 대상 {total}명
-            </strong>
-            <span className="shrink-0 text-muted-foreground">
-              완료 {done} / {total}
+            <span className="truncate" title={label}>
+              {label}
             </span>
-          </div>
-        );
-      })}
-      <List data-od-id="prj-people-list" className="divide-y divide-border/45">
-        {items.map((item) => {
-          const facts = columnFacts(list, item);
-          return (
-            <ListRow key={item.id}>
-              <TextButton
-                onClick={() => edit(item.id)}
-                className="h-auto p-0 text-left text-base font-semibold text-foreground"
-              >
-                {item.title}
-              </TextButton>
-              {facts.length > 0 && (
-                <p className="text-sm text-muted-foreground">
-                  {facts
-                    .map(({ label, value }) => `${label}: ${value}`)
-                    .join(" · ")}
-                </p>
-              )}
-              <div className="flex flex-wrap gap-x-4">
-                {list.tags
-                  .filter(({ key }) => item.tags.includes(key))
-                  .map(({ key, label }) => {
-                    const id = `${checkId}-${item.id}-${key}`;
+          </Button>
+        ))}
+      </div>
+      {visibleItems.length === 0 ? (
+        <EmptyState
+          layout="row"
+          icon={null}
+          message={
+            activeTag ? "이 태그가 붙은 사람이 없어요." : "명단이 비어 있어요."
+          }
+        />
+      ) : (
+        <div className="mt-1 overflow-x-auto">
+          <List
+            variant="divided"
+            data-od-id="prj-people-list"
+            className="grid gap-x-1"
+            style={{ gridTemplateColumns: columns.join(" ") }}
+          >
+            {visibleItems.map((item) => {
+              const relationship = relationshipKey
+                ? item.values[relationshipKey]
+                : undefined;
+              return (
+                <li
+                  key={item.id}
+                  data-od-id={`prj-person-${item.id}`}
+                  className="col-span-full grid min-h-13 grid-cols-subgrid items-center"
+                >
+                  <TextButton
+                    size="touch"
+                    tone="neutral"
+                    aria-haspopup="dialog"
+                    onClick={() => edit(item.id)}
+                    className="min-w-0 justify-start gap-1.5 text-left"
+                  >
+                    <span
+                      className="truncate text-body font-semibold"
+                      title={item.title}
+                    >
+                      {item.title}
+                    </span>
+                    {relationship !== undefined && (
+                      <span className="max-w-2/5 shrink-0 truncate text-caption text-muted-foreground">
+                        {relationship}
+                      </span>
+                    )}
+                  </TextButton>
+                  {tags.map(({ key, label }) => {
+                    const assigned = item.tags.includes(key);
+                    const done = assigned && item.done_tags.includes(key);
                     return (
-                      <label
+                      <Button
                         key={key}
-                        htmlFor={id}
-                        className="flex min-h-11 items-center gap-2 text-sm"
+                        variant="gray"
+                        size="sm"
+                        aria-pressed={assigned ? done : undefined}
+                        aria-label={`${item.title} ${label}${assigned ? "" : " 대상 아님"}`}
+                        disabled={!assigned || pending}
+                        onClick={() => setDone(item.id, key, !done)}
+                        className={cn(
+                          "h-7 min-w-11 max-w-20 rounded-control px-2 text-caption-sm font-medium",
+                          "bg-[var(--fill-tertiary)] aria-pressed:bg-success-soft aria-pressed:text-success-text",
+                          !assigned &&
+                            "bg-transparent text-label-quaternary ring-1 ring-border ring-inset disabled:opacity-100",
+                        )}
                       >
-                        <Checkbox
-                          id={id}
-                          checked={item.done_tags.includes(key)}
-                          disabled={pending}
-                          aria-label={`${item.title} ${label} 완료`}
-                          onCheckedChange={(checked) =>
-                            setDone(item.id, key, checked === true)
-                          }
-                        />
-                        {label} 완료
-                      </label>
+                        {done && (
+                          <Check size={12} className="shrink-0" aria-hidden />
+                        )}
+                        <span className="truncate" title={label}>
+                          {label}
+                        </span>
+                      </Button>
                     );
                   })}
-              </div>
-            </ListRow>
-          );
-        })}
-      </List>
+                </li>
+              );
+            })}
+          </List>
+        </div>
+      )}
     </>
   );
 }
@@ -380,43 +290,12 @@ function ListDetail({
 }) {
   const [settings, setSettings] = useState(false);
   const [editor, setEditor] = useState<string>();
-  const [selection, setSelection] = useState<string>();
-  const detailRef = useRef<HTMLElement>(null);
   const write = useProjectWrite();
-  const confirm = useConfirm();
   const candidate = list.kind === "candidates";
   const projectId = list.project_id;
   const listId = list.id;
   const items = data.listItems.filter((item) => item.list_id === listId);
-  const source = candidate
-    ? projectQuantitySource(list, data.lists, data.listItems)
-    : null;
-  const focused = items.find((item) => item.id === selection) ?? items[0];
   const editing = items.find((item) => item.id === editor);
-
-  function selectCandidate(id: string) {
-    setSelection(id);
-    requestAnimationFrame(() =>
-      detailRef.current?.scrollIntoView({ block: "start" }),
-    );
-  }
-
-  async function removePhoto(photo: ProjectPhoto) {
-    await confirm({
-      title: "사진 삭제",
-      description: "삭제한 사진은 되돌릴 수 없어요.",
-      confirmLabel: "삭제",
-      destructive: true,
-      onConfirm: () =>
-        write.mutateAsync({
-          action: "delete_list_photo",
-          projectId,
-          listId,
-          id: photo.item_id,
-          photoId: photo.id,
-        }),
-    });
-  }
 
   return (
     <PageLayout
@@ -425,71 +304,37 @@ function ListDetail({
       header={{
         title: list.name,
         subtitle: data.project.title,
-        subtitleVariant: "context",
+        subtitleVariant: candidate ? "context-muted" : "context",
         navigation: (
           <ProjectBackLink
             href={`/projects/${projectId}/lists?kind=${list.kind}`}
             label={kindLabels[list.kind]}
           />
         ),
+        titleOdId: candidate ? "prj-candidates-title" : "prj-lists-title",
         actions: (
-          <Button variant="glass" onClick={() => setEditor("")}>
-            추가
-          </Button>
+          <>
+            <Button
+              variant="glass"
+              data-od-id={candidate ? undefined : "prj-list-add"}
+              onClick={() => setEditor("")}
+            >
+              추가
+            </Button>
+            <Button
+              variant="glass"
+              aria-haspopup="dialog"
+              data-od-id="prj-list-settings"
+              onClick={() => setSettings(true)}
+            >
+              설정
+            </Button>
+          </>
         ),
       }}
     >
       {candidate ? (
-        <>
-          <div
-            className="mb-3 flex flex-wrap items-center justify-between gap-x-2 text-sm"
-            data-od-id="prj-quantity-source"
-          >
-            {source ? (
-              <>
-                <p>
-                  수량 기준 ·{" "}
-                  <strong>
-                    {source.roster} → {source.tag} · {source.count}명
-                  </strong>
-                </p>
-                <TextButton
-                  disabled={write.isPending}
-                  onClick={() =>
-                    write.mutate({
-                      action: "disconnect_list_quantity",
-                      projectId,
-                      id: listId,
-                    })
-                  }
-                >
-                  연결 해제
-                </TextButton>
-              </>
-            ) : (
-              <p>수량 기준 없음</p>
-            )}
-          </div>
-          <CandidateRows
-            items={items}
-            count={source?.count ?? null}
-            photos={data.photos}
-            selectedId={focused?.id}
-            select={selectCandidate}
-          />
-          {focused && (
-            <CandidateDetail
-              list={list}
-              item={focused}
-              photos={data.photos.filter(
-                (photo) => photo.item_id === focused.id,
-              )}
-              edit={() => setEditor(focused.id)}
-              removePhoto={(photo) => void removePhoto(photo)}
-              sectionRef={detailRef}
-            />
-          )}
-        </>
+        <CandidateList list={list} data={data} onEdit={setEditor} />
       ) : (
         <PeopleRows
           list={list}
@@ -508,19 +353,11 @@ function ListDetail({
           }
         />
       )}
-      {items.length === 0 && (
-        <EmptyState
-          message={candidate ? "아직 후보가 없어요." : "명단이 비어 있어요."}
-        />
-      )}
       {write.error && (
         <p role="alert" className="text-sm text-destructive">
           {write.error.message}
         </p>
       )}
-      <TextButton onClick={() => setSettings(true)}>
-        목록·사용자 정의 칸 설정
-      </TextButton>
       {settings && (
         <ListEditor
           projectId={projectId}
@@ -536,7 +373,6 @@ function ListDetail({
           list={list}
           item={editing}
           onClose={() => setEditor(undefined)}
-          onSaved={setSelection}
         />
       )}
     </PageLayout>

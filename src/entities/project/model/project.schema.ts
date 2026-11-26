@@ -116,6 +116,10 @@ export const projectEventSources = [
 ] as const;
 
 export const opinionInput = z.object({ user_id: projectId, opinion: note });
+export const decisionOpinionInput = opinionInput.pick({ opinion: true });
+export const decisionReactions = ["up", "down"] as const;
+export type DecisionReaction = (typeof decisionReactions)[number];
+
 export const decisionInput = z.object({
   question: title,
   status: z.enum(decisionStatuses),
@@ -189,6 +193,41 @@ export const itineraryInput = z
   })
   .refine(endsAfterStart, endDateError);
 
+const won = z.int().nonnegative().nullable();
+export const expenseFields = z.object({
+  title,
+  area_id: projectId.nullable(),
+  estimated_amount: won,
+  planned_on: date,
+  actual_amount: won,
+  paid_on: date,
+  payer_id: projectId.nullable(),
+  links,
+  memo: note,
+});
+
+export const expenseInput = (allowMissingPayer = false) =>
+  expenseFields
+    .refine(
+      ({ actual_amount, paid_on }) =>
+        actual_amount === null || paid_on !== null,
+      {
+        path: ["paid_on"],
+        message: "실제 결제일을 선택해 주세요.",
+      },
+    )
+    .refine(
+      ({ actual_amount, payer_id }) =>
+        allowMissingPayer || actual_amount === null || payer_id !== null,
+      {
+        path: ["payer_id"],
+        message: "결제자를 선택해 주세요.",
+      },
+    );
+
+export const budgetLimitInput = z.object({ budget_limit: won });
+export type ExpenseInput = z.infer<typeof expenseFields>;
+
 const child = { projectId, id: projectId.optional() };
 const existing = { projectId, id: projectId };
 export const projectModuleCommand = z.discriminatedUnion("action", [
@@ -198,6 +237,17 @@ export const projectModuleCommand = z.discriminatedUnion("action", [
     item: decisionInput,
   }),
   z.object({ action: z.literal("delete_decision"), ...existing }),
+  z.object({
+    action: z.literal("save_decision_opinion"),
+    ...existing,
+    item: decisionOpinionInput,
+  }),
+  z.object({
+    action: z.literal("set_decision_opinion_reaction"),
+    ...existing,
+    opinionId: projectId,
+    reaction: z.enum(decisionReactions).nullable(),
+  }),
   z.object({
     action: z.literal("save_reservation"),
     ...child,
@@ -216,8 +266,33 @@ export const projectModuleCommand = z.discriminatedUnion("action", [
     source: z.enum(projectEventSources),
   }),
 ]);
+export const projectBudgetCommand = z.discriminatedUnion("action", [
+  z
+    .object({
+      action: z.literal("save_expense"),
+      ...child,
+      item: expenseInput(true),
+      budget_limit: won.optional(),
+    })
+    .refine(
+      ({ id, item }) =>
+        id !== undefined ||
+        item.actual_amount === null ||
+        item.payer_id !== null,
+      { path: ["item", "payer_id"], message: "결제자를 선택해 주세요." },
+    ),
+  z.object({ action: z.literal("delete_expense"), ...existing }),
+  z.object({
+    action: z.literal("set_budget_limit"),
+    projectId,
+    ...budgetLimitInput.shape,
+  }),
+]);
+export type ProjectBudgetCommand = z.infer<typeof projectBudgetCommand>;
+
 export const projectCommand = z.discriminatedUnion("action", [
   projectModuleCommand,
+  projectBudgetCommand,
   projectListCommand,
   z.object({
     action: z.literal("save_project"),

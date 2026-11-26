@@ -1,50 +1,50 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import {
   decisionInput,
+  decisionOpinionInput,
   decisionStatusLabels,
   decisionStatuses,
   type DecisionInput,
   type ProjectDecision,
-  type ProjectMember,
 } from "@/entities/project";
 import { FormField } from "@/shared/ui";
 import ProjectDateControl from "../project-date-control";
 import ProjectFormSheet from "../project-form-sheet";
 
-const Field = FormField<DecisionInput>;
-const emptyDecision: DecisionInput = {
+const decisionFields = decisionInput.omit({ opinions: true });
+type DecisionFields = Omit<DecisionInput, "opinions">;
+const Field = FormField<DecisionFields>;
+const emptyDecision: DecisionFields = {
   question: "",
   status: "discussing",
   due_on: null,
   options: "",
   final_choice: "",
-  opinions: [],
 };
 
 function DecisionEditor({
   projectId,
-  members: currentMembers,
   decision,
   onClose,
 }: {
   projectId: string;
-  members: ProjectMember[];
   decision?: ProjectDecision;
   onClose: () => void;
 }) {
-  const [members] = useState(() => currentMembers);
-  const opinions = members.map(({ user_id }) => ({
-    user_id,
-    opinion:
-      decision?.opinions.find((row) => row.user_id === user_id)?.opinion ?? "",
-  }));
-  const form = useForm<DecisionInput>({
-    resolver: zodResolver(decisionInput),
-    defaultValues: { ...(decision ?? emptyDecision), opinions },
+  const form = useForm<DecisionFields>({
+    resolver: zodResolver(decisionFields),
+    defaultValues: decision
+      ? {
+          question: decision.question,
+          status: decision.status,
+          due_on: decision.due_on,
+          options: decision.options,
+          final_choice: decision.final_choice,
+        }
+      : emptyDecision,
   });
 
   return (
@@ -57,13 +57,7 @@ function DecisionEditor({
         action: "save_decision",
         projectId,
         id: decision?.id,
-        item: {
-          ...item,
-          opinions: item.opinions.filter(
-            (_, index) =>
-              form.getFieldState(`opinions.${index}.opinion`).isDirty,
-          ),
-        },
+        item: { ...item, opinions: [] },
       })}
       deletion={
         decision && {
@@ -91,21 +85,50 @@ function DecisionEditor({
       />
       <Field
         name="options"
-        label="후보"
+        label="후보 (줄마다 하나)"
         type="textarea"
         inputProps={{ maxLength: 1000 }}
       />
-      {members.map(({ user_id, display_name }, index) => (
-        <Field
-          key={user_id}
-          name={`opinions.${index}.opinion`}
-          label={`${display_name} 의견`}
-          inputProps={{ maxLength: 1000 }}
-        />
-      ))}
       <Field
         name="final_choice"
         label="최종 선택"
+        inputProps={{ maxLength: 1000 }}
+      />
+    </ProjectFormSheet>
+  );
+}
+
+export function DecisionOpinionEditor({
+  decision,
+  opinion,
+  onClose,
+}: {
+  decision: ProjectDecision;
+  opinion: string;
+  onClose: () => void;
+}) {
+  const form = useForm({
+    resolver: zodResolver(decisionOpinionInput),
+    defaultValues: { opinion },
+  });
+  return (
+    <ProjectFormSheet
+      form={form}
+      title="내 의견"
+      odId="prj-decision-opinion-editor"
+      onClose={onClose}
+      command={(item) => ({
+        action: "save_decision_opinion",
+        projectId: decision.project_id,
+        id: decision.id,
+        item,
+      })}
+    >
+      <p className="font-semibold wrap-anywhere">{decision.question}</p>
+      <FormField<{ opinion: string }>
+        name="opinion"
+        label="의견"
+        type="textarea"
         inputProps={{ maxLength: 1000 }}
       />
     </ProjectFormSheet>

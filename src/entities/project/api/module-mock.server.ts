@@ -2,116 +2,213 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { ApiError } from "@/shared/api";
 import { mockJson } from "@/shared/server";
-import { itineraryRow, type ProjectMember } from "./type";
+import { itineraryRow, type ProjectDecision, type ProjectMember } from "./type";
 import type { ProjectModuleCommand } from "../model/project.schema";
 import type { ProjectStore } from "./mock.server";
 
 export function moduleFixtures(
   project_id: string,
-  area_id: string,
+  areas: { travel: string; photos: string; meeting: string },
   members: ProjectMember[],
+  date: (offset: number) => string,
 ) {
-  const decisionId = randomUUID();
-  const hotel = {
+  const [first, second] = members;
+  function opinion(
+    member: ProjectMember | undefined,
+    text: string,
+    reactions: ProjectDecision["opinions"][number]["reactions"] = [],
+  ): ProjectDecision["opinions"] {
+    return member
+      ? [
+          {
+            id: randomUUID(),
+            user_id: member.user_id,
+            opinion: text,
+            reactions,
+          },
+        ]
+      : [];
+  }
+  const reservation = {
     project_id,
-    area_id,
+    area_id: areas.travel,
     kind: "lodging",
-    status: "booked",
-    title: "파리 작은 호텔",
-    starts_on: "2027-04-28",
-    ends_on: "2027-05-02",
-    reference_no: "DEMO-0428",
-    links: ["https://example.com/reservation"],
-    cancel_deadline: "2027-04-20",
-    payment_deadline: "2027-04-21",
-    total_amount: 800000,
-    paid_amount: 200000,
-    memo: "도착 시간 확인하기",
+    starts_on: null,
+    ends_on: null,
+    reference_no: "",
+    links: [],
+    cancel_deadline: null,
+    payment_deadline: null,
+    total_amount: null,
+    paid_amount: null,
+    memo: "",
     event_id: null,
-  } as const;
+  } satisfies Partial<ProjectStore["reservations"][number]>;
   return {
     decisions: [
       {
-        id: decisionId,
+        id: randomUUID(),
         project_id,
         question: "상견례 날짜를 언제로 할까?",
         status: "discussing",
-        due_on: "2026-11-21",
-        options: "2027.03.27 / 2027.04.03",
+        due_on: date(-2),
+        options: "토요일 점심\n다음 주 토요일 저녁",
         final_choice: "",
-        opinions: members.slice(0, 2).map(({ user_id }, index) => ({
-          id: randomUUID(),
-          user_id,
-          opinion:
-            index === 0
-              ? "3월 말이면 가족들이 이동하기 좋을 것 같아."
-              : "4월 첫 주도 괜찮아. 부모님 일정 확인할게.",
-        })),
+        opinions: opinion(first, "첫 토요일이 부모님 일정상 더 편해요."),
       },
       {
         id: randomUUID(),
         project_id,
-        question: "웨딩스냅 장소",
+        question: "예식 시간대는?",
+        status: "discussing",
+        due_on: date(3),
+        options: "11시\n13시 30분",
+        final_choice: "",
+        opinions: [
+          ...opinion(
+            first,
+            "멀리서 오는 친척을 생각하면 13시 30분.",
+            second ? [{ user_id: second.user_id, reaction: "up" }] : [],
+          ),
+          ...opinion(second, "식대가 싼 11시도 괜찮아."),
+        ],
+      },
+      {
+        id: randomUUID(),
+        project_id,
+        question: "폐백을 할까?",
+        status: "on_hold",
+        due_on: null,
+        options: "한다\n안 한다",
+        final_choice: "",
+        opinions: [],
+      },
+      {
+        id: randomUUID(),
+        project_id,
+        question: "신혼여행지",
         status: "decided",
         due_on: null,
-        options: "",
-        final_choice: "제주",
-        opinions: [],
+        options: "파리 + 로마\n포르투갈 일주",
+        final_choice: "파리 4박 + 로마 4박",
+        opinions: [
+          ...opinion(first, "파리는 꼭 가고 싶어요."),
+          ...opinion(second, "로마도 넣자."),
+        ],
       },
     ],
     reservations: [
-      { ...hotel, links: [...hotel.links], id: randomUUID() },
       {
-        ...hotel,
+        ...reservation,
         id: randomUUID(),
-        status: "planned",
+        status: "booked",
         title: "파리 강변 숙소",
-        starts_on: "2027-04-30",
-        ends_on: "2027-05-03",
-        links: [],
+        starts_on: date(153),
+        ends_on: date(157),
+        reference_no: "HX-29481",
+        links: ["https://example.com/reservation"],
+        cancel_deadline: date(-2),
+        payment_deadline: date(145),
+        total_amount: 1840000,
+        paid_amount: 600000,
+        memo: "도착 시간 확인하기",
       },
       {
-        ...hotel,
+        ...reservation,
+        id: randomUUID(),
+        status: "reviewing",
+        title: "파리 작은 호텔",
+        starts_on: date(155),
+        ends_on: date(157),
+        total_amount: 980000,
+        memo: "강변 숙소 대신 후보",
+      },
+      {
+        ...reservation,
         id: randomUUID(),
         kind: "transport",
         status: "planned",
-        title: "파리 → 로마",
-        starts_on: "2027-05-02",
-        ends_on: null,
-        links: [],
+        title: "파리 → 로마 기차",
+        starts_on: date(157),
+        payment_deadline: date(14),
+        total_amount: 312000,
+        paid_amount: 100000,
       },
       {
-        ...hotel,
+        ...reservation,
+        id: randomUUID(),
+        status: "planned",
+        title: "로마 숙소",
+        starts_on: date(157),
+        ends_on: date(161),
+        cancel_deadline: date(5),
+        payment_deadline: date(126),
+        total_amount: 1260000,
+        paid_amount: 260000,
+      },
+      {
+        ...reservation,
+        id: randomUUID(),
+        area_id: areas.photos,
+        kind: "activity",
+        status: "booked",
+        title: "웨딩스냅 스튜디오",
+        starts_on: date(93),
+        reference_no: "SN-0227",
+        payment_deadline: date(86),
+        total_amount: 1500000,
+        paid_amount: 300000,
+      },
+      {
+        ...reservation,
+        id: randomUUID(),
+        area_id: areas.meeting,
+        kind: "restaurant",
+        status: "reviewing",
+        title: "상견례 한정식집",
+        memo: "날짜 정해지면 예약",
+      },
+      {
+        ...reservation,
         id: randomUUID(),
         status: "cancelled",
         title: "이전 숙소",
-        links: [],
+        starts_on: date(153),
+        ends_on: date(156),
+        total_amount: 1520000,
+        paid_amount: 0,
       },
     ],
     itinerary: [
+      { title: "파리 도착", starts_on: date(153), place: "샤를 드골 공항" },
       {
-        id: randomUUID(),
-        project_id,
-        title: "파리 도착",
-        starts_on: "2027-04-28",
-        ends_on: null,
-        place: "샤를 드골 공항",
-        memo: "숙소로 이동",
-        links: [],
-        event_id: null,
+        title: "체크인 후 센강 산책",
+        starts_on: date(153),
+        place: "파리 강변 숙소",
       },
       {
-        id: randomUUID(),
-        project_id,
         title: "오르세미술관",
-        starts_on: "2027-04-29",
-        ends_on: null,
-        place: "파리",
-        memo: "관람 후 강변 산책",
-        links: [],
-        event_id: null,
+        starts_on: date(154),
+        place: "오르세미술관",
+        memo: "온라인 예매",
       },
-    ],
+      { title: "몽마르트르 언덕", starts_on: date(155), place: "몽마르트르" },
+      { title: "로마로 이동", starts_on: date(157), place: "파리 리옹역" },
+      {
+        title: "바티칸 투어",
+        starts_on: date(158),
+        ends_on: date(159),
+        place: "바티칸",
+      },
+    ].map((row) => ({
+      id: randomUUID(),
+      project_id,
+      ends_on: null,
+      memo: "",
+      links: [],
+      event_id: null,
+      ...row,
+    })),
   } satisfies Pick<ProjectStore, "decisions" | "reservations" | "itinerary">;
 }
 
@@ -144,6 +241,7 @@ export async function writeProjectModuleMock(
   store: ProjectStore,
   command: ProjectModuleCommand,
   members: ProjectMember[],
+  actor: string,
   createEvent: CreateProjectMockEvent,
 ) {
   const project_id = command.projectId;
@@ -151,7 +249,9 @@ export async function writeProjectModuleMock(
   const section =
     command.action === "add_project_event"
       ? command.source
-      : command.action.endsWith("_decision")
+      : command.action.endsWith("_decision") ||
+          command.action === "save_decision_opinion" ||
+          command.action === "set_decision_opinion_reaction"
         ? "decisions"
         : command.action.endsWith("_reservation")
           ? "reservations"
@@ -198,14 +298,53 @@ export async function writeProjectModuleMock(
     return id;
   }
   switch (command.action) {
+    case "save_decision_opinion":
+    case "set_decision_opinion_reaction": {
+      if (!members.some(({ user_id }) => user_id === actor))
+        throw new ApiError(
+          "family_required",
+          "가정에 먼저 참여해 주세요.",
+          403,
+        );
+      const { opinions } = store.decisions[index];
+      if (command.action === "save_decision_opinion") {
+        const { opinion } = command.item;
+        const prior = opinions.findIndex((entry) => entry.user_id === actor);
+        if (opinion) {
+          if (prior < 0)
+            opinions.push({
+              id: randomUUID(),
+              user_id: actor,
+              opinion,
+              reactions: [],
+            });
+          else opinions[prior].opinion = opinion;
+        } else if (prior >= 0) {
+          opinions.splice(prior, 1);
+        }
+      } else {
+        const target = opinions.find((entry) => entry.id === command.opinionId);
+        if (!target?.user_id || target.user_id === actor) throw invalid();
+        target.reactions = target.reactions.filter(
+          ({ user_id }) => user_id !== actor,
+        );
+        if (command.reaction)
+          target.reactions.push({ user_id: actor, reaction: command.reaction });
+      }
+      break;
+    }
     case "save_decision": {
       const opinions = [...(store.decisions[index]?.opinions ?? [])];
       for (const { user_id, opinion } of command.item.opinions) {
         if (!members.some((member) => member.user_id === user_id))
           throw invalid();
         const prior = opinions.findIndex((entry) => entry.user_id === user_id);
-        if (prior >= 0) opinions.splice(prior, 1);
-        if (opinion) opinions.push({ id: randomUUID(), user_id, opinion });
+        if (prior >= 0) {
+          if (opinion) opinions[prior] = { ...opinions[prior], opinion };
+          else opinions.splice(prior, 1);
+        } else if (opinion) {
+          opinions.push({ id: randomUUID(), user_id, opinion, reactions: [] });
+        }
       }
       store.decisions.splice(
         index < 0 ? store.decisions.length : index,

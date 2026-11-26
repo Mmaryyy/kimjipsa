@@ -12,7 +12,7 @@ interface Props {
   children?: ReactNode;
   titleOdId?: string;
   subtitle?: string;
-  subtitleVariant?: "default" | "context";
+  subtitleVariant?: "default" | "context" | "context-muted";
   odId?: string;
 }
 const PageHeader = ({
@@ -28,7 +28,7 @@ const PageHeader = ({
   titleId,
   headingLevel = 1,
 }: Props) => {
-  const contextual = subtitleVariant === "context" && Boolean(subtitle);
+  const contextual = subtitleVariant !== "default" && Boolean(subtitle);
   const subtitleText = subtitle && (
     <Text
       as="p"

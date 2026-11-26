@@ -4,6 +4,8 @@ export const listKinds = ["candidates", "people"] as const;
 export const columnTypes = ["text", "number", "money", "select"] as const;
 export const candidateStatuses = ["candidate", "selected", "excluded"] as const;
 
+export const candidateVotes = ["up", "down"] as const;
+
 const id = z.uuid();
 const name = z.string().trim().min(1, "이름을 입력해 주세요.").max(100);
 const label = z.object({ key: id, label: name });
@@ -121,6 +123,23 @@ export const projectListCommand = z.discriminatedUnion("action", [
     ...list,
     id: id.optional(),
     item: projectListItemInput,
+    preserveStatus: z.literal(true).optional(),
+  }),
+  z.object({
+    action: z.literal("set_candidate_recipient"),
+    ...item,
+    personId: id,
+    assigned: z.boolean(),
+  }),
+  z.object({
+    action: z.literal("set_candidate_vote"),
+    ...item,
+    vote: z.enum(candidateVotes).nullable(),
+  }),
+  z.object({
+    action: z.literal("set_candidate_status"),
+    ...item,
+    status: z.enum(candidateStatuses),
   }),
   z.object({ action: z.literal("delete_list_item"), ...item }),
   z.object({

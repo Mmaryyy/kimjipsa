@@ -6,6 +6,12 @@ const seoul = tz("Asia/Seoul");
 export const projectToday = () =>
   format(new Date(), "yyyy-MM-dd", { in: seoul });
 
+export function projectExpenseDate(date: string, today = projectToday()) {
+  const pattern =
+    date.slice(0, 4) === today.slice(0, 4) ? "MM.dd" : "yyyy.MM.dd";
+  return format(parseISO(date, { in: seoul }), pattern);
+}
+
 export const formatProjectDeadline = (date: string) =>
   format(parseISO(date, { in: seoul }), "M/d");
 

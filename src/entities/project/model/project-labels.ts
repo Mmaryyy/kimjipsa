@@ -16,7 +16,7 @@ export const projectModuleLabels: Record<Project["modules"][number], string> = {
   lists: "목록 (후보·명단)",
   reservations: "예약",
   itinerary: "일정표",
-  budget: "예산·지출·정산",
+  budget: "예산·지출",
 };
 export const taskStatusLabels: Record<ProjectTask["status"], string> = {
   todo: "미시작",

@@ -2,15 +2,17 @@
 import { useState, type ComponentProps } from "react";
 import { Search } from "lucide-react";
 import {
+  projectDeadlineDays,
+  projectToday,
   taskAssignees,
   taskStatuses,
   taskStatusLabels,
-  TaskRow,
   type ProjectArea,
   useProject,
   useProjectWrite,
   type ProjectTask,
 } from "@/entities/project";
+import { useAccount } from "@/features/account";
 import { TaskEditor } from "@/features/project-edit";
 import {
   Accordion,
@@ -19,6 +21,8 @@ import {
   AccordionTrigger,
   Button,
   ErrorState,
+  FilterTabs,
+  GroupLabel,
   Input,
   List,
   ListSkeleton,
@@ -28,7 +32,30 @@ import {
 import { getOptionLabel } from "@/shared/lib";
 import { ApiError } from "@/shared/api";
 import ProjectBackLink from "../project-header";
-import { taskFilterStyles } from "./project-tasks.variants";
+import TaskRow from "./TaskRow";
+import {
+  taskAssigneeTabsStyles,
+  taskFilterStyles,
+  taskWarningDot,
+} from "./project-tasks.variants";
+
+type DatedTask = { task: ProjectTask; days: number | null };
+
+const taskGroups = [
+  {
+    label: "늦어진 일",
+    matches: (days: number | null) => days !== null && days < 0,
+  },
+  {
+    label: "이번 주",
+    matches: (days: number | null) => days !== null && days >= 0 && days <= 7,
+  },
+  {
+    label: "그다음",
+    matches: (days: number | null) => days !== null && days > 7,
+  },
+  { label: "날짜 없음", matches: (days: number | null) => days === null },
+];
 
 function TaskFilter({
   label,
@@ -36,9 +63,14 @@ function TaskFilter({
   ...props
 }: ComponentProps<typeof Select> & { label: string }) {
   return (
-    <label className="grid min-w-0 gap-1">
-      <span className="sr-only">{label}</span>
-      <Select {...props} controlClassName={taskFilterStyles()}>
+    <label className="flex min-w-0 items-center gap-1 whitespace-nowrap text-caption text-muted-foreground">
+      {label}
+      <Select
+        {...props}
+        variant="inline"
+        className="min-w-0 [&>svg]:right-0 [&>svg]:size-3"
+        controlClassName={taskFilterStyles()}
+      >
         {children}
       </Select>
     </label>
@@ -56,9 +88,8 @@ function TaskList({
   pending,
   onEdit,
   onToggleTask,
-  ...props
-}: ComponentProps<typeof List> & {
-  tasks: ProjectTask[];
+}: {
+  tasks: DatedTask[];
   areas: ProjectArea[];
   assignees: ReturnType<typeof taskAssignees>;
   pending: boolean;
@@ -66,16 +97,21 @@ function TaskList({
   onToggleTask: (taskId: string, done: boolean) => void;
 }) {
   return (
-    <List {...props}>
-      {tasks.map((task) => (
+    <List variant="divided">
+      {tasks.map(({ task, days }) => (
         <TaskRow
           key={task.id}
           task={task}
+          days={days}
           area={
             areas.find((entry) => entry.id === task.area_id)?.name ??
             "영역 없음"
           }
-          assignee={getOptionLabel(taskAssigneeKey(task), assignees, "미정")}
+          assignee={getOptionLabel(
+            taskAssigneeKey(task),
+            assignees,
+            "탈퇴한 구성원",
+          )}
           pending={pending}
           onEdit={() => onEdit(task)}
           onToggle={(done) => onToggleTask(task.id, done)}
@@ -88,10 +124,11 @@ function TaskList({
 function ProjectTasks({ id }: { id: string }) {
   const query = useProject(id);
   const write = useProjectWrite();
+  const { data: account } = useAccount();
   const [editor, setEditor] = useState<ProjectTask | "new">();
   const [area, setArea] = useState("");
   const [status, setStatus] = useState("");
-  const [assignee, setAssignee] = useState("");
+  const [assignee, setAssignee] = useState("all");
   const [search, setSearch] = useState("");
   const navigation = (
     <ProjectBackLink href={`/projects/${id}`} label="프로젝트 개요" />
@@ -104,7 +141,7 @@ function ProjectTasks({ id }: { id: string }) {
       <PageLayout
         width="narrow"
         odId="prj-tasks"
-        header={{ title: "할 일", navigation }}
+        header={{ title: "할 일", titleOdId: "prj-tasks-title", navigation }}
       >
         {query.isPending ? (
           <ListSkeleton />
@@ -118,21 +155,48 @@ function ProjectTasks({ id }: { id: string }) {
     );
 
   const { project, areas, tasks, members } = query.data;
-  const assignees = taskAssignees(members);
+  const assignees = taskAssignees(members).map((option) =>
+    option.value === "unassigned" ? { ...option, label: "담당 미정" } : option,
+  );
+  const assigneeTabs = [
+    { value: "all", label: "전체" },
+    { value: "mine", label: "내 일" },
+    ...assignees.filter(
+      ({ value }) => value !== "unassigned" && value !== account?.userId,
+    ),
+    { value: "unassigned", label: "담당 미정" },
+  ];
+  const matchesAssignee = (task: ProjectTask) => {
+    if (assignee === "all") return true;
+    if (assignee === "mine")
+      return (
+        task.assignee_kind === "together" ||
+        task.assignee_id === account?.userId
+      );
+    return taskAssigneeKey(task) === assignee;
+  };
   const term = search.trim().toLocaleLowerCase();
   const visible = tasks.filter(
     (task) =>
       (!area || (task.area_id ?? "none") === area) &&
       (!status || task.status === status) &&
-      (!assignee || taskAssigneeKey(task) === assignee) &&
+      matchesAssignee(task) &&
       [task.title, task.memo, task.depends_note].some((text) =>
         text.toLocaleLowerCase().includes(term),
       ),
   );
-  const incomplete = visible.filter((task) => task.status !== "done");
+  const today = projectToday();
+  const incomplete = visible
+    .filter((task) => task.status !== "done")
+    .sort((a, b) => (a.due_on ?? "9").localeCompare(b.due_on ?? "9"))
+    .map((task) => ({
+      task,
+      days: task.due_on ? projectDeadlineDays(task.due_on, today) : null,
+    }));
   const completed = visible
     .filter((task) => task.status === "done")
-    .sort((a, b) => (b.completed_at ?? "").localeCompare(a.completed_at ?? ""));
+    .sort((a, b) => (b.completed_at ?? "").localeCompare(a.completed_at ?? ""))
+    .map((task) => ({ task, days: null }));
 
   const taskListProps = {
     areas,
@@ -154,22 +218,23 @@ function ProjectTasks({ id }: { id: string }) {
       odId="prj-tasks"
       header={{
         title: "할 일",
+        titleOdId: "prj-tasks-title",
         subtitle: project.title,
         subtitleVariant: "context",
         navigation,
         actions: (
-          <Button variant="glass" onClick={() => setEditor("new")}>
+          <Button
+            variant="glass"
+            data-od-id="prj-task-add"
+            onClick={() => setEditor("new")}
+          >
             추가
           </Button>
         ),
       }}
     >
-      <div
-        className="mt-2 mb-5 grid grid-cols-3 gap-2"
-        data-od-id="prj-task-filters"
-      >
+      <div className="mt-1" data-od-id="prj-task-filters">
         <Input
-          className="col-span-3"
           variant="glass"
           type="search"
           data-od-id="prj-task-search"
@@ -179,43 +244,40 @@ function ProjectTasks({ id }: { id: string }) {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
-        <TaskFilter
-          label="영역"
-          value={area}
-          onChange={(event) => setArea(event.target.value)}
-        >
-          <option value="">모든 영역</option>
-          <option value="none">영역 없음</option>
-          {areas.map((entry) => (
-            <option key={entry.id} value={entry.id}>
-              {entry.name}
-            </option>
-          ))}
-        </TaskFilter>
-        <TaskFilter
-          label="상태"
-          value={status}
-          onChange={(event) => setStatus(event.target.value)}
-        >
-          <option value="">모든 상태</option>
-          {taskStatuses.map((value) => (
-            <option key={value} value={value}>
-              {taskStatusLabels[value]}
-            </option>
-          ))}
-        </TaskFilter>
-        <TaskFilter
+        <FilterTabs
           label="담당"
+          className={taskAssigneeTabsStyles}
+          options={assigneeTabs}
           value={assignee}
-          onChange={(event) => setAssignee(event.target.value)}
-        >
-          <option value="">모든 담당</option>
-          {assignees.map((entry) => (
-            <option key={entry.value} value={entry.value}>
-              {entry.label}
-            </option>
-          ))}
-        </TaskFilter>
+          onValueChange={setAssignee}
+        />
+        <div className="flex items-center gap-4">
+          <TaskFilter
+            label="영역"
+            value={area}
+            onChange={(event) => setArea(event.target.value)}
+          >
+            <option value="">전체</option>
+            {areas.map((entry) => (
+              <option key={entry.id} value={entry.id}>
+                {entry.name}
+              </option>
+            ))}
+            <option value="none">영역 없음</option>
+          </TaskFilter>
+          <TaskFilter
+            label="상태"
+            value={status}
+            onChange={(event) => setStatus(event.target.value)}
+          >
+            <option value="">전체</option>
+            {taskStatuses.map((value) => (
+              <option key={value} value={value}>
+                {taskStatusLabels[value]}
+              </option>
+            ))}
+          </TaskFilter>
+        </div>
       </div>
 
       {write.isError && (
@@ -223,34 +285,61 @@ function ProjectTasks({ id }: { id: string }) {
           {write.error.message}
         </p>
       )}
-      <TaskList
-        data-od-id="prj-task-list"
-        tasks={incomplete}
-        {...taskListProps}
-      />
+      <div data-od-id="prj-task-list">
+        {taskGroups.map(({ label, matches }, index) => {
+          const group = incomplete.filter(({ days }) => matches(days));
+          if (group.length === 0) return null;
+          return (
+            <section
+              key={label}
+              aria-labelledby={`prj-task-group-title-${index}`}
+              data-od-id={`prj-task-group-${index}`}
+            >
+              <GroupLabel
+                id={`prj-task-group-title-${index}`}
+                className={
+                  index === 0
+                    ? "flex items-center gap-1.5 text-foreground"
+                    : undefined
+                }
+              >
+                {index === 0 && <span aria-hidden className={taskWarningDot} />}
+                <span>
+                  {label} <span className="tabular-nums">{group.length}</span>
+                </span>
+              </GroupLabel>
+              <TaskList tasks={group} {...taskListProps} />
+            </section>
+          );
+        })}
+        {incomplete.length === 0 && (
+          <p className="py-4 text-sm text-muted-foreground">
+            {visible.length
+              ? "남은 할 일이 없어요."
+              : "조건에 맞는 할 일이 없어요."}
+          </p>
+        )}
+      </div>
       {completed.length > 0 && (
         <Accordion
           type="single"
           collapsible
-          className="mt-10"
-          data-od-id="prj-task-completed"
+          className="mt-5"
+          data-od-id="prj-task-done"
         >
           <AccordionItem value="completed" variant="plain">
-            <AccordionTrigger heading="h2" tone="muted">
-              <span>
-                <span className="font-semibold">완료</span>({completed.length})
-              </span>
+            <AccordionTrigger
+              heading="h2"
+              tone="muted"
+              className="text-label font-semibold"
+            >
+              완료 <span className="tabular-nums">{completed.length}</span>
             </AccordionTrigger>
             <AccordionContent>
               <TaskList tasks={completed} {...taskListProps} />
             </AccordionContent>
           </AccordionItem>
         </Accordion>
-      )}
-      {visible.length === 0 && (
-        <p className="py-4 text-sm text-muted-foreground">
-          조건에 맞는 할 일이 없어요.
-        </p>
       )}
       {editor && (
         <TaskEditor
