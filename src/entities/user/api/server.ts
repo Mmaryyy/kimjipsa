@@ -6,6 +6,7 @@ import { profileSchema } from "../model/profile.schema";
 import type { User } from "@supabase/supabase-js";
 import { z } from "zod";
 import { ApiError } from "@/shared/api";
+import { amountFormats } from "@/shared/lib";
 import {
   mockContext,
   mockJson,
@@ -16,8 +17,10 @@ import { botTypeOptions } from "../model/bot-character.constants";
 import type { Account } from "./type";
 import { providers, type LoginProvider } from "../model/providers.constants";
 import type { FamilyRole } from "@/entities/family/@x/user";
+const amountFormatSchema = z.enum(amountFormats);
 const botTypeSchema = z.enum(botTypeOptions.map(({ value }) => value));
 const databaseErrors = {
+  invalid_amount_format: [400, "금액 표시 방식을 확인해 주세요."],
   invalid_notification_settings: [400, "알림 설정을 확인해 주세요."],
   unauthorized: [401, "로그인이 필요해요."],
   identity_policy_violation: [
@@ -72,6 +75,9 @@ async function mockAccount(): Promise<Account | null> {
     return { userId: null, profile: null, membership: null };
   const displayName = context.values.get(`display-name:${member.user_id}`);
   return {
+    amountFormat: amountFormatSchema.parse(
+      context.values.get(`amount-format:${member.user_id}`) ?? "won",
+    ),
     botType: botTypeSchema.parse(
       context.values.get(`bot-type:${member.user_id}`) ?? "butler",
     ),
@@ -154,7 +160,7 @@ export async function getAccount(): Promise<Account> {
   const [profile, membership, character] = await Promise.all([
     client
       .from("users")
-      .select("display_name, terms_version")
+      .select("display_name, terms_version, amount_format")
       .eq("id", user.id)
       .maybeSingle(),
     client
@@ -172,6 +178,9 @@ export async function getAccount(): Promise<Account> {
   throwDatabaseError(profile.error);
   throwDatabaseError(membership.error);
   return {
+    amountFormat: amountFormatSchema.parse(
+      profile.data?.amount_format ?? "won",
+    ),
     botType: botTypeSchema.parse(character.data?.bot_type ?? "butler"),
     loginProvider: z.enum(providers).parse(user.identities?.[0]?.provider),
     userId: user.id,
@@ -349,6 +358,26 @@ export async function saveBotType(raw: unknown) {
   const { error } = await client
     .from("user_bot_settings")
     .upsert({ user_id: user.id, bot_type: botType });
+  throwDatabaseError(error);
+  return null;
+}
+
+export async function saveAmountFormat(input: unknown) {
+  const { amountFormat } = z
+    .object({ amountFormat: amountFormatSchema })
+    .parse(input);
+  const context = await mockContext();
+  if (context) {
+    const account = await mockAccount();
+    if (!account?.userId)
+      throw new ApiError("unauthorized", "로그인이 필요해요.", 401);
+    context.values.set(`amount-format:${account.userId}`, amountFormat);
+    return null;
+  }
+  const { client } = await authenticatedClient();
+  const { error } = await client.rpc("save_amount_format", {
+    amount_format: amountFormat,
+  });
   throwDatabaseError(error);
   return null;
 }

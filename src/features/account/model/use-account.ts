@@ -7,7 +7,13 @@ import {
 import { ApiError } from "@/shared/api";
 import { useCallback, useEffect, useSyncExternalStore } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchAccount, signIn, updateProfile, updateBotType } from "../api/api";
+import {
+  fetchAccount,
+  signIn,
+  updateProfile,
+  updateBotType,
+  updateAmountFormat,
+} from "../api/api";
 const subscribeBrowser = () => () => {};
 const getKakaoBrowser = () => /KAKAOTALK/i.test(navigator.userAgent);
 const getServerBrowser = () => false;
@@ -122,5 +128,13 @@ export function useSaveBotType() {
         (account) => (account ? { ...account, botType } : account),
       );
     },
+  });
+}
+
+export function useSaveAmountFormat() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: updateAmountFormat,
+    onSuccess: () => client.invalidateQueries({ queryKey: accountQueryKey }),
   });
 }

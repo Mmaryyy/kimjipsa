@@ -2,6 +2,7 @@
 
 import { EmptyState, ErrorState } from "@/shared/ui";
 
+import AmountFormatSettings from "./AmountFormat";
 import AccountSettingsSkeleton from "./Skeleton";
 import MemberSettings from "./Members";
 import ProfileSettings from "./Profile";
@@ -36,10 +37,13 @@ const AccountSettings = ({ section = "profile" }: Props) => {
   return (
     <>
       {section === "profile" && (
-        <ProfileSettings
-          profile={account.data.profile}
-          loginProvider={account.data.loginProvider}
-        />
+        <>
+          <ProfileSettings
+            profile={account.data.profile}
+            loginProvider={account.data.loginProvider}
+          />
+          <AmountFormatSettings format={account.data.amountFormat ?? "won"} />
+        </>
       )}
       {section === "members" && (
         <MemberSettings family={family.data} account={account.data} />

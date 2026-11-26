@@ -9,4 +9,4 @@ export {
 
 export { withdrawAccount } from "./api/withdraw";
 
-export { saveBotType } from "./api/server";
+export { saveAmountFormat, saveBotType } from "./api/server";
