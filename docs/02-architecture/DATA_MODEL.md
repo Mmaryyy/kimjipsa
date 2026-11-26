@@ -41,6 +41,8 @@ DEC-009 ① 처리(2026-10-16 제안안 승인, 2026-10-21 P5a 구현): `push_su
 
 사용자별 알림 설정은 기존 홈 설정과 같은 `users`의 `push_enabled`(boolean, 기본 true), `morning_summary_time`(time, 기본 10:00)에 저장한다. `save_notification_settings` RPC는 본인 설정만 갱신하며 분 단위 HH:mm만 허용한다. P5a에서는 푸시 구독이나 발송을 하지 않는다.
 
+금액 표시 방식(ACC-19)은 `users.amount_format`(won | number | korean | symbol, 기본 won)에 사용자별로 저장하고 `save_amount_format` RPC 로 본인 것만 바꾼다.
+
 ### families
 | 필드 | 설명 | 출처 |
 | --- | --- | --- |
@@ -259,8 +261,11 @@ RPC는 요청자 가정을 사용하고 같은 가정의 카테고리·단위, h
 | `project_list_items` | list_id, title, status, price, links(text[]), values(jsonb), tags(text[]), done_tags(text[]), memo, sort_order |
 | `project_reservations` | project_id, area_id, title, kind, status, starts_on, ends_on, reference_no, links, cancel_deadline, payment_deadline, total_amount, paid_amount, memo, event_id |
 | `project_itinerary` | project_id, starts_on, ends_on, place, title, links, memo, event_id |
-| `project_expenses` | project_id, area_id, title, estimated_amount, planned_on, actual_amount, paid_on, payer_id, cost_type, links, memo |
+| `project_expenses` | project_id, area_id, title, estimated_amount, planned_on, actual_amount, paid_on, payer_id, links, memo |
 | `project_photos` | item_id, storage_path, thumb_path, created_by |
+| `project_candidate_recipients` | list_id, candidate_id, person_id (같은 후보 목록에서 사람당 하나, g205) |
+| `project_candidate_votes` | candidate_id, user_id, vote(up/down), 탈퇴 시 삭제 |
+| `project_decision_opinion_reactions` | opinion_id, user_id, reaction(up/down), 자기 의견 불가 |
 
 `project_decisions`의 물리 열 이름은 계획 §4에 없어 PJ3에서 PRJ-05의 의미를 유지해 정의한다.
 
