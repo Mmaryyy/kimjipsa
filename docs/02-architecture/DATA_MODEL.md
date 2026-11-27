@@ -41,6 +41,8 @@ DEC-009 ① 처리(2026-10-16 제안안 승인, 2026-10-21 P5a 구현): `push_su
 
 사용자별 알림 설정은 기존 홈 설정과 같은 `users`의 `push_enabled`(boolean, 기본 true), `morning_summary_time`(time, 기본 10:00)에 저장한다. `save_notification_settings` RPC는 본인 설정만 갱신하며 분 단위 HH:mm만 허용한다. P5a에서는 푸시 구독이나 발송을 하지 않는다.
 
+금액 표시 방식(ACC-19)은 `users.amount_format`(won | number | korean | symbol, 기본 won)에 사용자별로 저장하고 `save_amount_format` RPC 로 본인 것만 바꾼다.
+
 ### families
 | 필드 | 설명 | 출처 |
 | --- | --- | --- |
@@ -259,9 +261,11 @@ RPC는 요청자 가정을 사용하고 같은 가정의 카테고리·단위, h
 | `project_list_items` | list_id, title, status, price, links(text[]), values(jsonb), tags(text[]), done_tags(text[]), memo, sort_order |
 | `project_reservations` | project_id, area_id, title, kind, status, starts_on, ends_on, reference_no, links, cancel_deadline, payment_deadline, total_amount, paid_amount, memo, event_id |
 | `project_itinerary` | project_id, starts_on, ends_on, place, title, links, memo, event_id |
-| `project_expenses` | project_id, area_id, title, estimated_amount, planned_on, actual_amount, paid_on, payer_id, cost_type, links, memo |
-| `project_shares` | project_id, user_id, ratio |
+| `project_expenses` | project_id, area_id, title, estimated_amount, planned_on, actual_amount, paid_on, payer_id, links, memo |
 | `project_photos` | item_id, storage_path, thumb_path, created_by |
+| `project_candidate_recipients` | list_id, candidate_id, person_id (같은 후보 목록에서 사람당 하나, g205) |
+| `project_candidate_votes` | candidate_id, user_id, vote(up/down), 탈퇴 시 삭제 |
+| `project_decision_opinion_reactions` | opinion_id, user_id, reaction(up/down), 자기 의견 불가 |
 
 `project_decisions`의 물리 열 이름은 계획 §4에 없어 PJ3에서 PRJ-05의 의미를 유지해 정의한다.
 
@@ -287,24 +291,17 @@ RPC는 요청자 가정을 사용하고 같은 가정의 카테고리·단위, h
 
 예상 총액은 `가격 × 지정 명단의 태그 인원`이다. 가격 null은 **가격 미정**, 가격 0은 0원으로 구분한다. 연결이 없으면 수량을 추측하지 않는다.
 
-### 탈퇴·지출 보존·정산 보류 (r001-f2)
+### 탈퇴·지출 보존 (r001-f2)
 
-ACC-15 탈퇴 처리에서 해당 구성원의 할 일 담당은 사용자 삭제 전에 같은 트랜잭션에서 `assignee_kind = unassigned`, `assignee_id = null`로 함께 바꾼다. `member`일 때만 assignee_id가 필수이고 나머지는 null이라는 제약을 유지한다. 결제자·의견 작성자는 `on delete set null`, 분담 비율 행은 삭제한다. 사용자 삭제로 실제 지출 행·금액을 삭제하지 않는다. 작성자 등 다른 사용자 참조도 탈퇴를 막거나 공유 데이터를 연쇄 삭제하지 않도록 기존 공유 일정의 null 표시 원칙을 따른다.
+ACC-15 탈퇴 처리에서 해당 구성원의 할 일 담당은 사용자 삭제 전에 같은 트랜잭션에서 `assignee_kind = unassigned`, `assignee_id = null`로 함께 바꾼다. `member`일 때만 assignee_id가 필수이고 나머지는 null이라는 제약을 유지한다. 결제자·의견 작성자는 `on delete set null`로 둔다. 사용자 삭제로 실제 지출 행·금액을 삭제하지 않는다. 작성자 등 다른 사용자 참조도 탈퇴를 막거나 공유 데이터를 연쇄 삭제하지 않도록 기존 공유 일정의 null 표시 원칙을 따른다.
 
-실제액을 새로 입력할 때 결제일·현재 구성원 결제자는 필수다. 탈퇴로 결제자만 null이 된 기존 지출은 그대로 유지한다. 정산은 다음 중 하나 이상이면 금액 송금 안내 대신 **정산 보류**와 해당 이유를 모두 표시한다.
-
-1. 분담 비율 없음.
-2. 분담 비율 합이 100%가 아님(탈퇴로 비율 행이 지워진 경우 포함).
-3. 결제한 지출에 공동/개인 미정이 있음.
-4. 결제한 공동 지출의 결제자가 없음(탈퇴).
-
-분담 비율은 구성원별 %이며 합은 100이어야 한다. 복지카드 칸·별도 정산 방식은 추가하지 않고 이전 시 메모로 보존한다. 예약 paid_amount는 total_amount 이하다.
+실제액을 새로 입력할 때 결제일·현재 구성원 결제자는 필수다. 탈퇴로 결제자만 null이 된 기존 지출은 그대로 유지하고, 빈 채로 다른 칸을 고쳐 저장할 수 있다('탈퇴한 구성원' 표시). 정산(구성원별 분담 비율·정산 보류)은 2026-11-25 사용자 결정(g193)으로 제공하지 않으며 `project_shares` 테이블도 만들지 않는다. 복지카드 칸·별도 정산 방식은 추가하지 않고 이전 시 메모로 보존한다. 예약 paid_amount는 total_amount 이하다.
 
 ### 사진과 계산
 
 사진은 기존 집사 첨부와 같이 브라우저에서 줄여 Supabase Storage 가정 경로에 올린다. 메타데이터·원본·썸네일 조회/쓰기는 요청자 가정 권한으로 제한한다. `project_photos` 행 삭제 트리거에서 원본 `storage_path`와 썸네일 `thumb_path`의 두 경로를 모두 `private.agent_file_deletions` 방식 파일 삭제 큐에 넣는다. 항목 직접 삭제뿐 아니라 목록·프로젝트·가정 연쇄 삭제에도 같은 트리거를 적용한다. PJ0에서는 버킷을 만들거나 외부 파일을 올리지 않는다.
 
-진행률·다가오는 마감·예산 합계/상한 대비·월별·정산·후보 예상 총액·태그 집계·예약 겹침은 저장하지 않는다. 계획대로 `entities/project/model/*.utils.ts` 순수 함수와 테스트로 일반화한다. wedd의 settlement·conflicts·contactDoneTags·giftEstimate 의미를 이식하되 예약 겹침은 같은 프로젝트·같은 종류만 비교하고 취소는 제외한다. 고정 날짜·고정 구성원·복지카드 규칙을 옮기지 않는다.
+진행률·다가오는 마감·예산 합계/상한 대비·월별·후보 예상 총액·태그 집계·예약 겹침은 저장하지 않는다. 계획대로 `entities/project/model/*.utils.ts` 순수 함수와 테스트로 일반화한다. wedd의 conflicts·contactDoneTags·giftEstimate 의미를 이식하되(settlement 는 g193 으로 이식하지 않음) 예약 겹침은 같은 프로젝트·같은 종류만 비교하고 취소는 제외한다. 고정 날짜·고정 구성원·복지카드 규칙을 옮기지 않는다.
 
 ### source_ref와 이전 (r001-f3)
 

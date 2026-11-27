@@ -47,7 +47,19 @@ export const contextSchema = z.object({
   locations: z.array(z.record(z.string(), z.unknown())),
   attachments: z.array(z.object({ path: z.string(), mime_type: z.string() })),
 });
-export type AgentContext = z.infer<typeof contextSchema>;
+export const projectSnapshotSchema = z.union([
+  z.object({
+    projects: z.array(z.record(z.string(), z.json())),
+    deadlines: z.array(z.record(z.string(), z.json())).optional(),
+  }),
+  z.looseObject({
+    project: z.looseObject({ id: z.uuid() }),
+    tasks: z.array(z.looseObject({ id: z.uuid(), revision: z.string() })),
+  }),
+]);
+export type AgentContext = z.infer<typeof contextSchema> & {
+  projectSnapshots?: z.infer<typeof projectSnapshotSchema>[];
+};
 export function requiresIsolatedRuntime(
   context: AgentContext,
   hasImages: boolean,
@@ -401,6 +413,7 @@ export class HermesRuntime {
           units: context.units,
           categories: context.categories,
           locations: context.locations,
+          projectSnapshots: context.projectSnapshots,
         };
     const content: Array<Record<string, unknown>> = [
       { type: "text", text: JSON.stringify(safeContext) },

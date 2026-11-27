@@ -1,13 +1,19 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
+import { addDays, format, parseISO } from "date-fns";
+import { projectToday } from "../model/project-date.utils";
 import { ApiError } from "@/shared/api";
+import { listFixtures, removeMockListItems } from "./list-mock.server";
 import { moduleFixtures } from "./module-mock.server";
 import type {
   ProjectCommand,
   ProjectModuleCommand,
+  ProjectBudgetCommand,
 } from "../model/project.schema";
+import type { ProjectListCommand } from "../model/project-list.schema";
 import type {
   Project,
+  ProjectDetail,
   ProjectArea,
   ProjectMilestone,
   ProjectTask,
@@ -15,9 +21,19 @@ import type {
   ProjectReservation,
   ProjectItinerary,
   ProjectMember,
+  ProjectExpense,
 } from "./type";
 
-export type ProjectStore = {
+export type ProjectStore = Pick<
+  ProjectDetail,
+  | "lists"
+  | "listItems"
+  | "photos"
+  | "expenses"
+  | "candidateRecipients"
+  | "candidateVotes"
+> & {
+  photoFiles: Map<string, [Blob, Blob]>;
   projects: Project[];
   areas: ProjectArea[];
   milestones: ProjectMilestone[];
@@ -31,33 +47,54 @@ export function projectMock(
   values: Map<string, unknown>,
   members: ProjectMember[],
 ): ProjectStore {
-  const key = "project-store-pj3";
+  const key = "project-store-r029-candidates";
   const existing = values.get(key) as ProjectStore | undefined;
-  if (existing) return existing;
+  if (existing) {
+    for (const { opinions } of existing.decisions) {
+      for (const opinion of opinions) {
+        if (opinion.user_id && values.has(`withdrawn:${opinion.user_id}`))
+          opinion.user_id = null;
+        opinion.reactions = opinion.user_id
+          ? opinion.reactions.filter(
+              ({ user_id }) => !values.has(`withdrawn:${user_id}`),
+            )
+          : [];
+      }
+    }
+    existing.candidateVotes = existing.candidateVotes.filter(
+      ({ user_id }) => !values.has(`withdrawn:${user_id}`),
+    );
+    return existing;
+  }
+  const today = parseISO(projectToday());
+  const date = (offset: number) => format(addDays(today, offset), "yyyy-MM-dd");
   const id = "2fc2341a-62cb-4b1a-8bdc-de35bbd2e0fa";
-  const areas = ["신혼여행", "웨딩스냅", "상견례"].map((name, sort_order) => ({
-    id: randomUUID(),
-    project_id: id,
-    name,
-    sort_order,
-  }));
+  const movingId = randomUUID();
+  const areas = ["신혼여행", "웨딩스냅", "상견례", "예식", "신혼집"].map(
+    (name, sort_order) => ({
+      id: randomUUID(),
+      project_id: id,
+      name,
+      sort_order,
+    }),
+  );
   const milestones: ProjectMilestone[] = [
     {
       title: "큰 틀 정하기",
-      starts_on: "2026-11-01",
-      ends_on: "2026-11-30",
+      starts_on: date(-25),
+      ends_on: date(19),
       memo: "예산·휴가·전체 일정 확인",
     },
     {
       title: "웨딩스냅",
-      starts_on: "2027-02-27",
-      ends_on: "2027-03-01",
+      starts_on: date(93),
+      ends_on: date(95),
       memo: "",
     },
     {
       title: "신혼여행",
-      starts_on: "2027-04-28",
-      ends_on: "2027-05-16",
+      starts_on: date(153),
+      ends_on: date(171),
       memo: "",
     },
     {
@@ -74,29 +111,95 @@ export function projectMock(
     is_tentative: row.starts_on === null,
     event_id: null,
   }));
+  const [travel, photos, meeting, ceremony, home] = areas;
   const taskFixtures: (Partial<ProjectTask> & Pick<ProjectTask, "title">)[] = [
     {
-      title: "여행 루트 결정",
-      area_id: areas[0].id,
-      status: "in_progress",
-      starts_on: "2026-11-18",
-      due_on: "2026-11-20",
-      depends_note: "두 사람 휴가 확인",
+      title: "양가 인사 날짜 조율",
+      area_id: meeting.id,
+      due_on: date(-4),
       assignee_kind: "together",
     },
-    { title: "가족 일정 확인", area_id: areas[2].id, status: "todo" },
+    {
+      title: "여행 루트 결정",
+      area_id: travel.id,
+      status: "in_progress",
+      starts_on: date(-8),
+      due_on: date(1),
+      assignee_kind: "together",
+    },
+    {
+      title: "예식장 투어 예약",
+      area_id: ceremony.id,
+      status: "in_progress",
+      due_on: date(4),
+    },
+    {
+      title: "예식장 견적 비교표 만들기",
+      area_id: ceremony.id,
+      due_on: date(7),
+    },
+    {
+      title: "상견례 식당 후보 3곳 찾기",
+      area_id: meeting.id,
+      due_on: date(9),
+    },
+    { title: "신혼집 대출 상담", area_id: home.id, due_on: date(14) },
     {
       title: "항공권 결제",
-      area_id: areas[0].id,
+      area_id: travel.id,
       status: "on_hold",
-      due_on: "2027-01-15",
+      due_on: date(50),
+      depends_note: "여행 루트 결정 뒤",
+    },
+    {
+      title: "스냅 촬영 의상 정하기",
+      area_id: photos.id,
+      due_on: date(67),
+      assignee_kind: "together",
+    },
+    { title: "청첩장 문구 정하기", area_id: ceremony.id, due_on: date(76) },
+    { title: "가족 일정 확인", area_id: meeting.id },
+    { title: "가전 목록 정리", area_id: home.id },
+    {
+      title: "이사 날짜 정하기",
+      area_id: home.id,
+      status: "on_hold",
+      depends_note: "대출 상담 결과 보고",
     },
     {
       title: "휴가 확인",
-      area_id: areas[0].id,
+      area_id: travel.id,
       status: "done",
-      completed_at: "2026-11-18T03:00:00Z",
+      due_on: date(-6),
+      completed_at: `${date(-7)}T03:00:00Z`,
     },
+    {
+      title: "스냅 작가 포트폴리오 보기",
+      area_id: photos.id,
+      status: "done",
+      completed_at: `${date(-14)}T03:00:00Z`,
+    },
+    {
+      title: "스냅 작가 계약금 송금",
+      area_id: photos.id,
+      status: "done",
+      completed_at: `${date(-12)}T03:00:00Z`,
+    },
+    {
+      title: "예물 매장 방문",
+      area_id: ceremony.id,
+      status: "done",
+      completed_at: `${date(-3)}T03:00:00Z`,
+    },
+    ...[
+      "이사 업체 견적 받기",
+      "안 쓰는 물건 나누기",
+      "포장 상자 준비",
+      "주소 변경할 곳 정리",
+    ].map((title) => ({
+      title,
+      project_id: movingId,
+    })),
   ];
   const tasks: ProjectTask[] = taskFixtures.map((row) => ({
     id: randomUUID(),
@@ -113,6 +216,67 @@ export function projectMock(
     completed_at: null,
     ...row,
   }));
+  const expenseFixtures: (Partial<ProjectExpense> &
+    Pick<ProjectExpense, "title">)[] = [
+    {
+      title: "예식장 계약금",
+      area_id: ceremony.id,
+      estimated_amount: 2_000_000,
+      planned_on: "2026-11-20",
+      actual_amount: 2_000_000,
+      paid_on: "2026-11-20",
+      payer_id: members[0]?.user_id ?? null,
+    },
+    {
+      title: "스냅 계약금",
+      area_id: photos.id,
+      estimated_amount: 300_000,
+      planned_on: "2026-11-14",
+      actual_amount: 300_000,
+      paid_on: "2026-11-14",
+      payer_id: members[0]?.user_id ?? null,
+    },
+    {
+      title: "예물",
+      area_id: ceremony.id,
+      estimated_amount: 3_500_000,
+      planned_on: "2026-11-23",
+      actual_amount: 3_200_000,
+      paid_on: "2026-11-23",
+      payer_id: (members[1] ?? members[0])?.user_id ?? null,
+    },
+    {
+      title: "파리 숙소 선금",
+      estimated_amount: 600_000,
+      planned_on: "2026-10-30",
+      actual_amount: 600_000,
+      paid_on: "2026-10-30",
+    },
+    {
+      title: "파리 → 로마 기차",
+      estimated_amount: 312_000,
+      planned_on: date(7),
+    },
+    { title: "항공권", estimated_amount: 2_400_000, planned_on: date(50) },
+    {
+      title: "예식장 중도금",
+      area_id: ceremony.id,
+      estimated_amount: 6_000_000,
+      planned_on: date(81),
+    },
+    {
+      title: "청첩장",
+      area_id: ceremony.id,
+      estimated_amount: 250_000,
+      planned_on: date(-4),
+    },
+    {
+      title: "한복 대여",
+      area_id: ceremony.id,
+      estimated_amount: 600_000,
+      planned_on: date(114),
+    },
+  ];
   const store: ProjectStore = {
     projects: [
       {
@@ -120,24 +284,45 @@ export function projectMock(
         title: "결혼 준비",
         description: "함께 준비하는 우리의 다음 계절",
         status: "active",
-        starts_on: "2026-11-18",
-        target_on: "2027-04-15",
+        starts_on: date(-25),
+        target_on: date(161),
         modules: ["decisions", "lists", "reservations", "itinerary", "budget"],
+        budget_limit: 30_000_000,
       },
       {
-        id: randomUUID(),
+        id: movingId,
         title: "이사 준비",
         description: "",
         status: "active",
-        starts_on: "2027-06-01",
+        starts_on: date(187),
         target_on: null,
         modules: [],
+        budget_limit: null,
       },
     ],
     areas,
     milestones,
     tasks,
-    ...moduleFixtures(id, areas[0].id, members),
+    ...moduleFixtures(
+      id,
+      { travel: travel.id, photos: photos.id, meeting: meeting.id },
+      members,
+      date,
+    ),
+    ...listFixtures(id, members),
+    expenses: expenseFixtures.map((row) => ({
+      id: randomUUID(),
+      project_id: id,
+      area_id: travel.id,
+      estimated_amount: null,
+      planned_on: null,
+      actual_amount: null,
+      paid_on: null,
+      payer_id: null,
+      links: [],
+      memo: "",
+      ...row,
+    })),
   };
   values.set(key, store);
   return store;
@@ -145,7 +330,10 @@ export function projectMock(
 
 export function writeProjectMock(
   store: ProjectStore,
-  command: Exclude<ProjectCommand, ProjectModuleCommand>,
+  command: Exclude<
+    ProjectCommand,
+    ProjectModuleCommand | ProjectListCommand | ProjectBudgetCommand
+  >,
   actor: string,
   members: string[],
 ) {
@@ -165,11 +353,27 @@ export function writeProjectMock(
     rows.splice(index, 1);
   }
   if (command.action === "save_project") {
-    save(store.projects, { ...command.item, id });
+    const budget_limit =
+      store.projects.find((row) => row.id === id)?.budget_limit ?? null;
+    save(store.projects, { ...command.item, id, budget_limit });
     return id;
   }
   if (command.action === "delete_project") {
     remove(store.projects);
+    const removedLists = new Set(
+      store.lists
+        .filter((list) => list.project_id === id)
+        .map((list) => list.id),
+    );
+    store.lists = store.lists.filter((list) => !removedLists.has(list.id));
+    removeMockListItems(
+      store,
+      new Set(
+        store.listItems
+          .filter((item) => removedLists.has(item.list_id))
+          .map((item) => item.id),
+      ),
+    );
     store.areas = store.areas.filter((row) => row.project_id !== id);
     store.milestones = store.milestones.filter((row) => row.project_id !== id);
     store.tasks = store.tasks.filter((row) => row.project_id !== id);
@@ -178,6 +382,7 @@ export function writeProjectMock(
       (row) => row.project_id !== id,
     );
     store.itinerary = store.itinerary.filter((row) => row.project_id !== id);
+    store.expenses = store.expenses.filter((row) => row.project_id !== id);
     return id;
   }
   const project_id = command.projectId;
@@ -239,6 +444,7 @@ export function writeProjectMock(
         ...store.milestones,
         ...store.tasks,
         ...store.reservations,
+        ...store.expenses,
       ]) {
         if (row.area_id === id) row.area_id = null;
       }
@@ -297,5 +503,55 @@ export function writeProjectMock(
       remove(store.tasks);
       break;
   }
+  return id;
+}
+
+export function writeProjectBudgetMock(
+  store: ProjectStore,
+  command: ProjectBudgetCommand,
+  members: string[],
+) {
+  const project_id = command.projectId;
+  const project = store.projects.find((row) => row.id === project_id);
+  const missing = () =>
+    new ApiError("project_not_found", "프로젝트 항목을 찾을 수 없어요.", 404);
+  if (!project?.modules.includes("budget")) throw missing();
+
+  if (command.action === "set_budget_limit") {
+    project.budget_limit = command.budget_limit;
+    return project_id;
+  }
+  const index = store.expenses.findIndex(
+    (row) => row.id === command.id && row.project_id === project_id,
+  );
+  if (command.id && index === -1) throw missing();
+  if (command.action === "delete_expense") {
+    store.expenses.splice(index, 1);
+    return command.id;
+  }
+
+  const { item, budget_limit } = command;
+  const previous = store.expenses[index];
+  const payerMissing =
+    previous?.payer_id === null && previous.actual_amount !== null;
+  if (item.actual_amount !== null && item.payer_id === null && !payerMissing)
+    throw new ApiError("invalid_project", "결제자를 선택해 주세요.");
+  if (
+    (item.payer_id && !members.includes(item.payer_id)) ||
+    (item.area_id &&
+      !store.areas.some(
+        (area) => area.id === item.area_id && area.project_id === project_id,
+      ))
+  )
+    throw new ApiError(
+      "invalid_project",
+      "영역과 결제자를 다시 확인해 주세요.",
+    );
+
+  const id = command.id ?? randomUUID();
+  const row = { ...item, id, project_id };
+  if (index === -1) store.expenses.push(row);
+  else store.expenses[index] = row;
+  if (budget_limit !== undefined) project.budget_limit = budget_limit;
   return id;
 }

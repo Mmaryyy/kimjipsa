@@ -1,7 +1,9 @@
+import type { AmountFormat } from "@/shared/lib";
 import type { FamilyRole } from "@/entities/family/@x/user";
 import type { LoginProvider } from "../model/providers.constants";
 import type { BotType } from "../model/bot-character.constants";
 export type Account = {
+  amountFormat?: AmountFormat;
   botType?: BotType;
   loginProvider?: LoginProvider;
   userId: string | null;

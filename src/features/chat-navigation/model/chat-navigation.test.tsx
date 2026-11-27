@@ -92,6 +92,36 @@ it("BOT-01 모바일 닫기 버튼은 시트가 넣은 이력만 정리해요", 
   expect(back).toHaveBeenCalledOnce();
   expect(screen.getByText("대화 닫힘")).toBeVisible();
 });
+it("BOT-01 데스크톱에서 이동한 화면의 중첩 시트만 뒤로가기로 닫아요", () => {
+  router.pathname = "/calendar";
+  window.history.replaceState({}, "", "/calendar");
+  const view = mount();
+  fireEvent.click(screen.getByText("열기"));
+  router.pathname = "/inventory";
+  window.history.pushState({}, "", "/inventory");
+  view.rerender(
+    <ToastProvider>
+      <ChatNavigationProvider>
+        <Controls />
+      </ChatNavigationProvider>
+    </ToastProvider>,
+  );
+  fireEvent(window, new PopStateEvent("popstate"));
+  expect(screen.getByText("대화 열림")).toBeVisible();
+
+  window.history.replaceState({}, "", "/calendar");
+  fireEvent(window, new PopStateEvent("popstate"));
+  expect(screen.getByText("대화 닫힘")).toBeVisible();
+});
+it("BOT-01 모바일에서 열고 화면을 넓혀도 뒤로가기로 대화가 닫혀요", () => {
+  vi.stubGlobal("matchMedia", () => ({ matches: true }));
+  mount();
+  fireEvent.click(screen.getByText("열기"));
+  vi.stubGlobal("matchMedia", () => ({ matches: false }));
+  window.history.replaceState({}, "", "/");
+  fireEvent(window, new PopStateEvent("popstate"));
+  expect(screen.getByText("대화 닫힘")).toBeVisible();
+});
 it("BOT-01 /chat 링크는 홈으로 replace한 뒤 시트를 열어요", () => {
   router.pathname = "/chat";
   const view = mount();

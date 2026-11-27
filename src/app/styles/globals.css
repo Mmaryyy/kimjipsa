@@ -188,8 +188,6 @@
   --color-status-info-text: var(--status-info-text);
   --color-status-private: var(--status-private);
   --color-status-private-text: var(--status-private-text);
-  --color-bot: var(--bot);
-  --color-bot-text: var(--bot-text);
   --color-celebrate: var(--celebrate);
   --color-celebrate-text: var(--celebrate-text);
   --color-cat-home: var(--cat-home);

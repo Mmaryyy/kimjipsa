@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { request } from "@/shared/api";
-import { chatRoutes } from "@/shared/config";
+import { chatRoutes, isMockDataEnabled } from "@/shared/config";
+import { mockReceiptPhotoId } from "../model/chat.constants";
 import {
   chatSchema,
   settingsSchema,
@@ -73,6 +74,8 @@ export async function uploadPhoto(blob: Blob) {
   return upload.id;
 }
 export async function photoUrl(id: string) {
+  if (isMockDataEnabled() && id === mockReceiptPhotoId)
+    return { url: "/images/mock-receipt.svg" };
   return z
     .object({ url: z.url() })
     .parse(await request(chatRoutes.attachment(id)));

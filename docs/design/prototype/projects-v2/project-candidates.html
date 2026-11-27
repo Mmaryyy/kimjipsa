@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>답례품 후보 · 결혼 준비 · 김집사</title>
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/app.css" />
+  <style>
+    /* 모든 행 같은 열: [사진 44] [항목명 / 대상·투표] [단가] [총 금액] */
+    .cgrid { display: grid; grid-template-columns: 44px minmax(0, 1fr) max-content max-content; column-gap: var(--sp-3); }
+    .cgrid > * { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; }
+    .chead { margin-top: var(--sp-6); padding-bottom: var(--sp-1); font-size: var(--type-caption-sm-size); font-weight: var(--fw-medium); color: var(--label-secondary); }
+    .chead span:nth-child(3), .chead span:nth-child(4) { text-align: right; }
+    .crow { min-height: 64px; padding: var(--sp-2) 0; width: 100%; text-align: left; border-top: 1px solid var(--separator); }
+    .chead + .crow { border-top: 0; }
+    .crow img { width: 44px; height: 44px; border-radius: var(--r-control); object-fit: cover; }
+    .crow .ph { width: 44px; height: 44px; border-radius: var(--r-control); background: var(--fill-tertiary); }
+    .crow .name { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; }
+    .crow .name .row-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .crow .row-meta { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+    .crow .unit, .crow .total { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .crow .unit { font-size: var(--type-caption-size); color: var(--label-secondary); }
+    .crow .total { font-size: var(--type-body-size); font-weight: var(--fw-medium); }
+    .crow .total.none { color: var(--label-tertiary); }
+    .crow.excluded .row-title, .crow.excluded .total { color: var(--label-done); }
+    .crow.excluded img { opacity: 0.5; }
+    .votes { display: inline-flex; gap: var(--sp-2); }
+    .warn-line { margin-top: var(--sp-1); }
+    .warn-line .badge { --b-text: var(--label); }
+    .group-row, .person-row { display: flex; align-items: center; gap: var(--sp-3); min-height: 52px; }
+    .sheet-photo { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; margin-top: var(--sp-2); border-radius: var(--r-control); }
+    .detail-rows li { display: flex; justify-content: space-between; gap: var(--sp-3); min-height: var(--hit); align-items: center; }
+    .detail-rows li > span:first-child { color: var(--label-secondary); flex: none; }
+    .detail-rows li > span:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+    .pick-list label { display: flex; align-items: center; gap: var(--sp-3); min-height: var(--hit); }
+    .pick-list input { width: 20px; height: 20px; }
+    .pick-list .other { margin-left: auto; font-size: var(--type-caption-size); color: var(--label-secondary); }
+    .links { display: flex; flex-wrap: wrap; gap: var(--sp-4); }
+    .links a { color: var(--accent-text); font-weight: var(--fw-semibold); min-height: var(--hit); display: inline-flex; align-items: center; gap: 4px; }
+    .links svg { width: 14px; height: 14px; }
+    .tagline{display:block;margin-bottom:2px;line-height:1}
+  .badge.capsule.mini{height:18px;padding:0 6px;font-size:11px;gap:4px}
+  .badge.capsule.mini::before{width:5px;height:5px}
+</style>
+</head>
+<body>
+  <div class="app">
+    <main class="page" data-od-id="prj-candidates">
+      <aside class="od-diff" id="diff" aria-label="이 안의 설명과 원래 OD 시안과 달라진 점"></aside>
+      <header class="ph">
+        <a class="ph-back" href="project.html" aria-label="프로젝트 개요"></a>
+        <div style="flex:1;min-width:0"><h1 class="t-title-lg" data-od-id="prj-candidates-title">답례품 후보</h1><p class="ph-sub t-caption">결혼 준비</p></div>
+        <div class="ph-actions">
+          <button class="glass-btn glass-surface" id="add">추가</button>
+          <button class="glass-btn glass-surface" id="settings">설정</button>
+        </div>
+      </header>
+      <div id="body"></div>
+    </main>
+  </div>
+  <script src="js/app.js"></script>
+  <script>
+    const K = KJ, { db, save, esc, won, icon, sheet, toast, field, members, memberName, ME, candStatus } = K;
+    K.shell();
+    document.querySelector(".ph-back").innerHTML = icon("back");
+    const cand = db().lists.find((l) => l.id === "l1"), ppl = db().lists.find((l) => l.id === "l2");
+    const items = () => db().listItems.filter((x) => x.list_id === cand.id);
+    const people = () => db().listItems.filter((x) => x.list_id === ppl.id && x.tags.includes(cand.quantity_tag_key));
+    const tagLabel = ppl.tags.find((t) => t.key === cand.quantity_tag_key)?.label ?? "";
+    const domain = (u) => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch (_) { return u; } };
+
+    document.getElementById("diff").innerHTML = `<b>원래 OD 시안과 달라진 점</b>
+      <ul><li>후보마다 받을 사람을 지정(상세 시트에서 ${esc(ppl.name)} 사람 체크). 총 금액 = 단가 × 받을 사람 수, 아직 정하지 않은 사람은 요약에 경고</li>
+      <li>선택·후보·제외 묶음 없음. 등록하면 ‘후보’, 구성원 모두 👍 = ‘선택’, 모두 👎 = ‘제외’, 상세 시트 [선택][제외]로 직접 바꿀 수 있음</li>
+      <li>모든 행 [사진] [항목명] [단가] [총 금액], 상세 시트에 링크·메모</li></ul>`;
+
+    /* 받을 사람 = recipients (한 사람은 후보 하나만) */
+    const targets = (x) => x.recipients ?? [];
+    const targetLabel = (x) => {
+      const ids = targets(x);
+      if (!ids.length) return "받는 사람 없음";
+      const names = ids.map((id) => db().listItems.find((p) => p.id === id)?.title).filter(Boolean);
+      return `${names[0]}${names.length > 1 ? ` 외 ${names.length - 1}명` : ""}`;
+    };
+    const voteRead = (x) => `<span class="votes">${members.map((m) => { const r = x.votes?.[m.user_id]; return r ? `<span class="react-read ${r}">${icon(r)}${m.display_name}</span>` : `<span class="react-read">${m.display_name} –</span>`; }).join("")}</span>`;
+    const statusBadge = (s) => s === "selected" ? `<span class="badge" data-v="success">선택</span>` : s === "excluded" ? `<span class="badge" data-v="neutral">제외</span>` : "";
+
+    function render() {
+      const list = items(), all = people();
+      const selected = list.filter((x) => candStatus(x) === "selected");
+      const total = selected.reduce((t, x) => t + (x.price ?? 0) * targets(x).length, 0);
+      const assigned = new Set(selected.flatMap(targets));
+      const missing = all.filter((p) => !assigned.has(p.id));
+      const row = (x) => {
+        const s = candStatus(x), n = targets(x).length;
+        return `<button class="crow ${s}" data-open="${x.id}" data-od-id="prj-candidate-${x.id}">
+          ${x.photo ? `<img src="${esc(x.photo)}" alt="">` : `<span class="ph" aria-hidden="true"></span>`}
+          <span class="row-main">${s !== "candidate" && statusBadge(s) ? `<span class="tagline">${statusBadge(s).replace('class="badge"', 'class="badge capsule mini"')}</span>` : ""}<span class="name"><span class="row-title strong">${esc(x.title)}</span></span>
+            <span class="row-meta"><span>${targetLabel(x)}</span></span>
+            <span class="row-meta" style="margin-top:0">${voteRead(x)}</span></span>
+          <span class="unit">${x.price != null ? won(x.price) : "가격 미정"}</span>
+          <span class="total${x.price == null || !n ? " none" : ""}">${x.price != null && n ? won(x.price * n) : "—"}</span>
+        </button>`;
+      };
+      document.getElementById("body").innerHTML = `
+        <section class="summary" aria-label="예상 총액">
+          <p class="t-caption-sm muted">선택한 후보 ${selected.length}개 기준 예상 총액</p>
+          <div class="kpi"><span class="kpi-num">${total.toLocaleString("ko-KR")}</span><span class="kpi-unit">원</span></div>
+          <p class="row-meta" style="margin-top:var(--sp-1)">${esc(ppl.name)} › ${esc(tagLabel)} ${all.length}명 중 ${all.length - missing.length}명 배정</p>
+          ${missing.length ? `<p class="warn-line"><span class="badge" data-v="warning">아직 정하지 않은 사람 ${missing.map((p) => esc(p.title)).join(", ")}</span></p>` : ""}
+        </section>
+        <div class="cgrid" role="list">
+          <div class="chead" aria-hidden="true"><span></span><span>후보</span><span>단가</span><span>총 금액</span></div>
+          ${list.map(row).join("")}
+        </div>`;
+      document.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => openCandidate(items().find((x) => x.id === b.dataset.open)));
+    }
+
+    function setManual(x, status) { x.manual = status; save(); render(); toast(status === "selected" ? `‘${x.title}’을 선택했어요` : status === "excluded" ? `‘${x.title}’을 제외했어요` : "후보로 되돌렸어요"); }
+
+    /* 상세 시트: [닫기] 이름 [수정] · 사진 · 상태와 투표 · 단가/대상/총 금액 · 배송일 · 메모 · 링크 · [제외][선택] */
+    function openCandidate(x) {
+      const s = candStatus(x), n = targets(x).length, myV = x.votes?.[ME];
+      const all = people();
+      const targetEditor = `<p class="group-label">받을 사람 · ${n}명</p><div class="pick-list">${all.map((p) => { const other = items().find((y) => y !== x && (y.recipients ?? []).includes(p.id));
+            return `<label><input type="checkbox" data-rcpt="${p.id}" ${(x.recipients ?? []).includes(p.id) ? "checked" : ""}>${esc(p.title)} <span class="row-meta" style="margin:0">${esc(p.values.c2 || "")}</span>${other ? `<span class="other">${esc(other.title)}</span>` : ""}</label>`; }).join("")}</div>`;
+      const foot = s === "excluded"
+        ? `<div class="sheet-foot"><button type="button" class="btn gray block" data-act="candidate">후보로 되돌리기</button></div>`
+        : `<div class="sheet-foot two"><button type="button" class="btn gray" data-act="excluded">제외</button>${s === "selected" ? `<button type="button" class="btn gray" data-act="candidate">선택 취소</button>` : `<button type="button" class="btn" data-act="selected">선택</button>`}</div>`;
+      const dlg = sheet({ title: x.title, submit: "수정", onSubmit() { setTimeout(() => edit(x)); },
+        body: `${x.photo ? `<img class="sheet-photo" src="${esc(x.photo)}" alt="${esc(x.title)} 사진">` : ""}
+          <div style="display:flex;align-items:center;gap:var(--sp-3);margin-top:var(--sp-3)">${statusBadge(s) || `<span class="badge" data-v="neutral">후보</span>`}
+            <span class="row-meta" style="margin:0;flex:1">${members.filter((m) => m.user_id !== ME).map((m) => { const r = x.votes?.[m.user_id]; return r ? `<span class="react-read ${r}">${icon(r)}${m.display_name}</span>` : `${m.display_name} 아직`; }).join(" ")}</span>
+            <span class="react" role="group" aria-label="내 투표">${["up", "down"].map((r) => `<button type="button" data-r="${r}" data-vote="${r}" aria-pressed="${myV === r}" aria-label="${r === "up" ? "선택에 찬성" : "제외에 찬성"}">${icon(r)}</button>`).join("")}</span></div>
+          <ul class="list detail-rows" style="margin-top:var(--sp-2)">
+            <li><span>단가</span><span>${x.price != null ? won(x.price) : "가격 미정"}</span></li>
+            <li><span>총 금액</span><span>${x.price != null && n ? `${won(x.price * n)} <span class="muted">(${n}명)</span>` : "—"}</span></li>
+            ${cand.columns.map((c) => `<li><span>${esc(c.label)}</span><span>${esc(x.values[c.key]) || "—"}</span></li>`).join("")}
+            <li><span>메모</span><span>${esc(x.memo) || "—"}</span></li>
+            <li><span>링크</span><span class="links">${x.links?.length ? x.links.map((u) => `<a href="${esc(u)}" target="_blank" rel="noopener">${icon("link")}${esc(domain(u))}</a>`).join("") : "—"}</span></li>
+          </ul>
+          ${targetEditor}${foot}` });
+      dlg.querySelector("[data-cancel]").textContent = "닫기";
+      dlg.querySelectorAll("[data-act]").forEach((b) => b.onclick = () => { dlg.close(); setManual(x, b.dataset.act === "candidate" ? null : b.dataset.act); });
+      dlg.querySelectorAll("[data-vote]").forEach((b) => b.onclick = () => { x.votes = x.votes || {}; x.votes[ME] = x.votes[ME] === b.dataset.vote ? undefined : b.dataset.vote; x.manual = null; save(); render(); dlg.close(); openCandidate(x); });
+      dlg.querySelectorAll("[data-rcpt]").forEach((c) => c.onchange = () => {
+        const id = c.dataset.rcpt;
+        if (c.checked) { items().forEach((y) => (y.recipients = (y.recipients ?? []).filter((r) => r !== id))); x.recipients.push(id); } // 한 사람은 후보 하나만
+        else x.recipients = x.recipients.filter((r) => r !== id);
+        save(); render(); dlg.close(); openCandidate(x);
+      });
+    }
+
+    function edit(src) {
+      const x = src || { list_id: cand.id, title: "", manual: null, votes: {}, price: null, photo: null, values: {}, memo: "", links: [], recipients: [] };
+      sheet({ title: src ? "후보 수정" : "새 후보",
+        body: field("title", "이름", `<input name="title" maxlength="100" value="${esc(x.title)}">`)
+          + field("price", "단가 (원)", `<input inputmode="numeric" name="price" value="${x.price ?? ""}">`)
+          + `<div class="field"><span>사진</span><button type="button" class="btn gray" style="justify-self:start">${x.photo ? "사진 바꾸기" : "사진 추가"}</button></div>`
+          + cand.columns.map((c) => field("c-" + c.key, c.label, `<input name="c-${c.key}" value="${esc(x.values[c.key])}">`)).join("")
+          + field("links", "링크", `<input type="url" name="links" value="${esc((x.links || []).join(" "))}" placeholder="https://">`)
+          + field("memo", "메모", `<textarea name="memo">${esc(x.memo)}</textarea>`),
+        onSubmit(d) {
+          const e = {}, price = d.price.trim() === "" ? null : Number(d.price.replaceAll(",", ""));
+          if (!d.title.trim()) e.title = true;
+          if (price != null && (isNaN(price) || price < 0)) e.price = true;
+          if (Object.keys(e).length) return e;
+          Object.assign(x, { title: d.title.trim(), price, memo: d.memo.trim(), links: d.links.split(/\s+/).filter(Boolean), values: Object.fromEntries(cand.columns.map((c) => [c.key, d["c-" + c.key].trim()])) });
+          if (!src) db().listItems.push({ id: "li" + K.id(), ...x });
+          save(); render(); toast(src ? "저장했어요" : "후보로 등록했어요");
+        },
+        danger: src && { label: "후보 삭제", confirm: `'${x.title}' 후보를 삭제할까요?`, run: () => { db().listItems = db().listItems.filter((y) => y !== src); save(); render(); } } });
+    }
+
+    document.getElementById("add").onclick = () => edit();
+    document.getElementById("settings").onclick = () => sheet({ title: "목록 설정", onSubmit() {},
+      body: field("name", "목록 이름", `<input name="name" value="${esc(cand.name)}">`)
+        + `<p class="group-label">수량 기준</p><ul class="list"><li class="row"><div class="row-main"><p class="row-title">${esc(ppl.name)} › ${esc(tagLabel)}</p></div>${icon("chev", "chev")}</li></ul>`
+        + `<p class="group-label">사용자 정의 칸</p><ul class="list">${cand.columns.map((c) => `<li class="row"><div class="row-main"><p class="row-title">${esc(c.label)}</p></div>${icon("chev", "chev")}</li>`).join("")}</ul>` });
+    render();
+  </script>
+</body>
+</html>

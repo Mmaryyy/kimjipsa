@@ -10,8 +10,11 @@ type TextProps = ComponentPropsWithoutRef<"span"> &
 export function Text({
   as: Tag = "span",
   variant,
+  tone,
   className,
   ...props
 }: TextProps) {
-  return <Tag className={cn(textStyles({ variant }), className)} {...props} />;
+  return (
+    <Tag className={cn(textStyles({ variant, tone }), className)} {...props} />
+  );
 }

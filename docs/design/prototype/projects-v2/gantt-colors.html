@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ko" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>타임라인 색 3안 · 김집사</title>
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/app.css" />
+  <style>
+    body { background: var(--bg-grouped); }
+    .wrap { max-width: 1240px; margin: 0 auto; padding: var(--sp-8) var(--sp-4); }
+    .wrap > h1 { font-size: var(--type-title-lg-size); font-weight: var(--fw-bold); }
+    .wrap > p { margin-top: var(--sp-2); color: var(--label-secondary); max-width: 70ch; }
+    .opt { margin-top: var(--sp-8); }
+    .opt h2 { font-size: var(--type-title-sm-size); font-weight: var(--fw-bold); }
+    .opt h2 .pick { margin-left: var(--sp-2); font-size: var(--type-caption-size); color: var(--success-text); }
+    .opt .why { margin-top: var(--sp-1); font-size: var(--type-body-sm-size); color: var(--label-secondary); max-width: 80ch; }
+    .opt .why b { color: var(--label); font-weight: var(--fw-semibold); }
+    .pair { display: flex; flex-wrap: wrap; gap: var(--sp-4); margin-top: var(--sp-3); }
+    .card { width: 375px; max-width: 100%; padding: var(--sp-4); background: var(--bg); color: var(--label); border-radius: var(--r-control); }
+    .card .mode { font-size: var(--type-caption-sm-size); color: var(--label-secondary); margin-bottom: var(--sp-2); }
+    .mini { margin-top: var(--sp-4); }
+    .mini .hero-bar { display: flex; align-items: center; gap: var(--sp-3); }
+    .mini .hero-bar .bar { flex: 1; height: 6px; }
+    .mini .hero-bar b { font-size: var(--type-caption-size); font-variant-numeric: tabular-nums; }
+
+    /* 안마다 덮어쓰는 색 변수 (모두 tokens.css 토큰) */
+    .g { --past: var(--sys-gray4); --now: var(--label); --next: var(--sys-gray3); --next-line: none; --track: var(--fill-quaternary); --today: var(--accent); --today-text: var(--accent-text); }
+    .g .gantt-track i.past { background: var(--past); }
+    .g .gantt-track i.now { background: var(--now); }
+    .g .gantt-track i.next { background: var(--next); box-shadow: var(--next-line); }
+    .g .gantt-track { background: var(--track); }
+    .g .gantt-track i { min-width: 10px; }
+    .why b { font-variant-ligatures: none; }
+    .g .gantt-track .today { background: var(--today); }
+    .g .gantt-key i { background: var(--today); }
+    .g .gantt-key { color: var(--today-text); }
+    .g .now-tag { color: var(--now-text, var(--info-text)); }
+
+    /* 안 A: 지금 = 진행 중 시안(칸 차트 '진행 중'과 같은 색), 지난 = 옅은 회색, 앞으로 = 테두리만, 오늘 = 진한 글자색 가는 선 */
+    .g.a { --past: var(--sys-gray4); --now: var(--sys-cyan); --now-text: var(--sys-cyan-ic); --next: transparent; --next-line: inset 0 0 0 1.5px var(--sys-gray3); --today: var(--label); --today-text: var(--label-secondary); }
+    /* 안 B: 상태색 그대로 — 지난 = 완료 초록, 지금 = 진행 시안, 앞으로 = 회색, 오늘 = 진한 글자색 */
+    .g.b { --past: var(--success); --now: var(--sys-cyan); --now-text: var(--sys-cyan-ic); --next: var(--sys-gray5); --today: var(--label); --today-text: var(--label-secondary); }
+    /* 안 C: 단색 명도 — 지난 = 옅은 회색, 지금 = 보조 글자색(검정보다 한 단계 옅게), 앞으로 = 회색 테두리, 오늘 = 강조색(파랑) 유지 */
+    .g.c { --past: var(--sys-gray4); --now: var(--label-secondary); --now-text: var(--label-secondary); --next: transparent; --next-line: inset 0 0 0 1.5px var(--sys-gray3); --today: var(--accent); --today-text: var(--accent-text); }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1>개요 타임라인 색 3안</h1>
+    <p>데이터: 큰 틀 정하기 11.1–12.15(지금) · 웨딩스냅 2.27–3.1 · 신혼여행 4.28–5.16, 오늘 11.26, 눈금 12월·2월·4월. 지금 구현은 지금 막대 = 거의 검정(--label), 오늘 선 = 파랑(--accent), 나머지 연회색/회색입니다. 아래 카드는 개요의 진행 막대(--success)·영역 칸 차트와 함께 놓았습니다.</p>
+    <div id="opts"></div>
+  </main>
+  <script>
+    const START = "2026-11-01", END = "2027-05-16", TODAY = "2026-11-26";
+    const t = (iso) => new Date(iso + "T00:00:00").getTime();
+    const pct = (iso) => ((t(iso) - t(START)) / (t(END) - t(START))) * 100;
+    const MS = [
+      { title: "큰 틀 정하기", s: "2026-11-01", e: "2026-12-15", period: "11.1 – 12.15", state: "now" },
+      { title: "웨딩스냅", s: "2027-02-27", e: "2027-03-01", period: "2.27 – 3.1", state: "next" },
+      { title: "신혼여행", s: "2027-04-28", e: "2027-05-16", period: "4.28 – 5.16", state: "next" },
+    ];
+    const PAST = { title: "상견례 장소 정하기", s: "2026-11-01", e: "2026-11-15", period: "11.1 – 11.15", state: "past" }; // 지난 마일스톤 예시
+    const ticks = [["2026-12-01", "12월"], ["2027-02-01", "2월"], ["2027-04-01", "4월"]];
+    const gantt = (cls) => `<div class="g ${cls}">
+      <div class="sec-head" style="margin-bottom:0"><h2 style="font-size:var(--type-title-sm-size)">타임라인</h2><span class="gantt-key"><i aria-hidden="true"></i>오늘 11.26</span></div>
+      <div class="gantt" role="img" aria-label="마일스톤 타임라인">
+        <div class="gantt-axis" aria-hidden="true">${ticks.map(([d, l]) => `<span style="left:${pct(d)}%">${l}</span>`).join("")}</div>
+        ${[PAST, ...MS].map((m) => `<div class="gantt-row ${m.state === "now" ? "now" : ""}">
+          <div class="gantt-label"><p class="row-title">${m.title}</p><p class="row-meta num">${m.period}${m.state === "now" ? '<span class="sep"></span><span class="now-tag">지금</span>' : m.state === "past" ? '<span class="sep"></span>지남' : ""}</p></div>
+          <div class="gantt-track"><i class="${m.state}" style="left:${pct(m.s)}%;width:${Math.max(pct(m.e) - pct(m.s), 1.5)}%"></i><b class="today" style="left:${pct(TODAY)}%"></b></div></div>`).join("")}
+      </div>
+      <div class="mini"><div class="hero-bar"><div class="bar"><i style="width:25%"></i></div><b>25%</b></div>
+        <div class="cells" style="margin-top:var(--sp-3)"><i data-s="done"></i><i data-s="in_progress"></i><i></i><i data-s="on_hold"></i><i data-s="done"></i><i></i></div>
+        <div class="legend"><span><i style="background:var(--success)"></i>완료</span><span><i style="background:var(--sys-cyan)"></i>진행 중</span><span><i></i>미시작</span><span><i style="background:var(--warning)"></i>보류</span></div></div>
+    </div>`;
+    const OPTS = [
+      ["a", "안 A · 지금 = 진행 중 시안, 앞으로 = 테두리, 오늘 = 진한 선", "권장",
+        "지금 막대를 칸 차트의 ‘진행 중’과 같은 <b>--sys-cyan</b>으로, 지난 것은 <b>--sys-gray4</b> 채움, 앞으로는 <b>--sys-gray3</b> 테두리만, 오늘은 <b>--label</b> 가는 선. 세 상태가 채움/색/테두리로 갈리고 파랑을 쓰지 않아 §10(--accent 는 주 동작·선택에만)과 충돌이 없습니다. 오늘 선이 검정이라 다크에서는 흰 선이 됩니다."],
+      ["b", "안 B · 상태색 그대로 (지난 = 초록, 지금 = 시안, 앞으로 = 회색)", "",
+        "칸 차트 범례(완료 초록 · 진행 중 시안 · 미시작 회색)와 1:1로 같은 색. 다만 ‘날짜가 지났다’를 ‘완료’ 초록으로 칠하면 할 일이 남은 지난 마일스톤도 끝난 것처럼 읽힙니다. 진행 막대(--success)와 초록이 겹쳐 화면에 초록이 많아집니다. §10 충돌 없음."],
+      ["c", "안 C · 단색 명도 + 오늘만 파랑", "",
+        "지금 막대를 <b>--label-secondary</b>(검정보다 한 단계 옅게)로 낮추고 지난 = 옅은 회색, 앞으로 = 테두리. 오늘 선은 지금처럼 <b>--accent</b>. 가장 차분하지만, 오늘 선 파랑은 §10 ‘--accent 는 주 동작·선택 표시에만’과 <b>충돌</b>합니다(지금 DESIGN.md 사본은 ‘오늘 표시’를 예외로 적어 둠). 지금 막대와 지난 막대의 차이가 명도뿐이라 다크에서 약합니다."],
+    ];
+    document.getElementById("opts").innerHTML = OPTS.map(([k, h, pick, why]) => `<section class="opt"><h2>${h}${pick ? `<span class="pick">● ${pick}</span>` : ""}</h2><p class="why">${why}</p>
+      <div class="pair"><div class="card" data-theme="light"><p class="mode">라이트</p>${gantt(k)}</div><div class="card" data-theme="dark"><p class="mode">다크</p>${gantt(k)}</div></div></section>`).join("");
+  </script>
+</body>
+</html>

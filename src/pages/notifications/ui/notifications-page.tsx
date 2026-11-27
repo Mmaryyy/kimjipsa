@@ -8,10 +8,9 @@ import {
   useNotifications,
   useMarkNotificationsRead,
   notificationMessage,
-  notificationEventId,
+  notificationTarget,
   type Notification,
 } from "@/entities/notification";
-import { eventRoutes } from "@/shared/config";
 import {
   Sheet,
   GroupLabel,
@@ -76,7 +75,7 @@ function NotificationRow({
             />
           )}
           <div className="flex min-w-0 flex-row flex-1 items-start justify-between">
-            <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">
+            <span className="min-w-0 flex-1 whitespace-pre-line [overflow-wrap:anywhere]">
               {unread && <span className="sr-only">안 읽음: </span>}
               {notificationMessage(notification)}
             </span>
@@ -109,20 +108,7 @@ function NotificationsList({
     setFailure("");
     try {
       await mark.mutateAsync(notification ? { id: notification.id } : {});
-      if (notification && notification.kind === "morning_summary")
-        onNavigate(
-          `${eventRoutes.calendar}?date=${notification.payload.date}&view=day`,
-        );
-      else if (
-        notification &&
-        notification.payload.eventId &&
-        notification.kind !== "event_deleted" &&
-        !notification.payload.eventDeleted
-      )
-        onNavigate(
-          `${eventRoutes.calendar}?event=${encodeURIComponent(notificationEventId(notification.payload)!)}`,
-        );
-      else if (notification) onNavigate();
+      if (notification) onNavigate(notificationTarget(notification));
     } catch (error) {
       busy.current = false;
       setPendingId(null);

@@ -7,7 +7,7 @@
    Layers
      1. Raw Apple palette        --sys-*            (light / dark)
      2. Apple semantic colors    --label-*, --bg-*, --fill-*, --separator-*
-     3. 김집사 semantic aliases   --accent, --status-*, --cat-*, --bot
+     3. 김집사 semantic aliases   --accent, --status-*, --cat-*, --ai-gradient-*
    Mode switching
      - default: follows prefers-color-scheme
      - html[data-theme="light" | "dark"] forces a mode (설정 > 화면 모드)
@@ -85,6 +85,8 @@
 :root,
 [data-theme="light"] {
   color-scheme: light;
+  --ai-gradient-from: #b57bee;
+  --ai-gradient-to: #5b8fe8;
 
   /* System colors — iOS light */
   --sys-red: #ff3b30;
@@ -149,7 +151,7 @@
   --fill-quaternary: rgba(116, 116, 128, 0.08);
 
   /* Separators */
-  --separator: rgba(60, 60, 67, 0.29);
+  --separator: rgba(60, 60, 67, 0.1);
   --separator-opaque: #c6c6c8;
 
   /* Materials (bars, sheets) */
@@ -183,6 +185,8 @@
 /* ---------- 1+2. DARK ----------------------------------------------- */
 [data-theme="dark"] {
   color-scheme: dark;
+  --ai-gradient-from: #c69af5;
+  --ai-gradient-to: #82afff;
 
   --sys-red: #ff453a;
   --sys-orange: #ff9f0a;
@@ -274,6 +278,8 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
+    --ai-gradient-from: #c69af5;
+    --ai-gradient-to: #82afff;
     --sys-red: #ff453a;
     --sys-orange: #ff9f0a;
     --sys-yellow: #ffd60a;
@@ -396,8 +402,11 @@
   --status-private-text: var(--label-secondary);
 
   /* Product roles */
-  --bot: var(--sys-indigo); /* 집사 챗봇 */
-  --bot-text: var(--sys-indigo-ic);
+  --ai-gradient-soft: linear-gradient(
+    135deg in srgb,
+    color-mix(in srgb, var(--ai-gradient-from) 12%, transparent),
+    color-mix(in srgb, var(--ai-gradient-to) 12%, transparent)
+  );
   --bot-avatar-bg: #7bc5e8;
   --celebrate: var(--sys-pink); /* 축하 D-day */
   --celebrate-text: var(--sys-pink-ic);

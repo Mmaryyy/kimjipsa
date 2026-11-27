@@ -6,6 +6,7 @@ import {
   getAccount,
   saveProfile,
   saveBotType,
+  saveAmountFormat,
   withdrawAccount,
 } from "@/entities/user/index.server";
 import {
@@ -104,4 +105,10 @@ export function memberRolePOST(request: Request) {
 
 export function botTypePOST(request: Request) {
   return handleRoute(request, async () => saveBotType(await readJson(request)));
+}
+
+export function amountFormatPOST(request: Request) {
+  return handleRoute(request, async () =>
+    saveAmountFormat(await readJson(request)),
+  );
 }

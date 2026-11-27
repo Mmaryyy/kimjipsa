@@ -3,14 +3,19 @@ import { listEventCategories, saveEvent } from "@/entities/event/index.server";
 import { ApiError } from "@/shared/api";
 import {
   listProjects,
+  readHomeDeadlines,
   readProject,
+  readProjectPhoto,
+  saveProjectPhoto,
   writeProject,
 } from "@/entities/project/index.server";
 import { handleRoute, readJson } from "@/shared/server";
 
 export const projectsGET = (request: Request) =>
   handleRoute(request, async () => {
-    const id = new URL(request.url).searchParams.get("id");
+    const params = new URL(request.url).searchParams;
+    if (params.has("home-deadlines")) return readHomeDeadlines();
+    const id = params.get("id");
     return id === null ? listProjects() : readProject(id);
   });
 export const projectsPOST = (request: Request) =>
@@ -35,3 +40,26 @@ export const projectsPOST = (request: Request) =>
       });
     }),
   );
+
+export const projectPhotosPOST = (request: Request) =>
+  handleRoute(request, () => saveProjectPhoto(request));
+
+export async function projectPhotosGET(request: Request) {
+  const headers = { "Cache-Control": "private, no-store" };
+  try {
+    const photo = await readProjectPhoto(request);
+    return new Response(photo, {
+      headers: {
+        ...headers,
+        "Content-Type": "image/jpeg",
+        "X-Content-Type-Options": "nosniff",
+      },
+    });
+  } catch (error) {
+    if (error instanceof ApiError && error.status < 500)
+      return new Response(null, { status: error.status, headers });
+    return handleRoute(request, () => {
+      throw error;
+    });
+  }
+}

@@ -28,17 +28,23 @@ function MilestoneEditor({
   projectId,
   areas,
   milestones,
+  initialMilestoneId,
+  afterSave,
   onClose,
 }: {
   projectId: string;
   areas: ProjectArea[];
   milestones: ProjectMilestone[];
+  initialMilestoneId?: string;
+  afterSave?: (id: string, item: MilestoneInput) => void;
   onClose: () => void;
 }) {
   const ordered = [...milestones].sort((a, b) =>
     (a.starts_on ?? "9999-12-31").localeCompare(b.starts_on ?? "9999-12-31"),
   );
-  const [milestoneId, setMilestoneId] = useState(ordered[0]?.id ?? "");
+  const [milestoneId, setMilestoneId] = useState(
+    initialMilestoneId ?? ordered[0]?.id ?? "",
+  );
   const milestone = milestones.find((entry) => entry.id === milestoneId);
   const confirm = useConfirm();
   const form = useForm<MilestoneInput>({
@@ -71,6 +77,7 @@ function MilestoneEditor({
       description="프로젝트의 마일스톤을 편집해요."
       odId="prj-milestone-editor"
       onClose={onClose}
+      afterSave={afterSave}
       command={(item) => ({
         action: "save_milestone",
         projectId,

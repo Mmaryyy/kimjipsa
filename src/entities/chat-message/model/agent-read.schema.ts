@@ -2,12 +2,14 @@ import { z } from "zod";
 
 export const agentReadSchema = z
   .object({
-    resource: z.enum(["memories", "inventory", "cart", "calendar"]),
+    resource: z.enum(["memories", "inventory", "cart", "calendar", "projects"]),
+    projectId: z.uuid().optional(),
     start: z.iso.date().optional(),
     end: z.iso.date().optional(),
   })
   .strict()
-  .refine(({ start, end, resource }) => {
+  .refine(({ start, end, resource, projectId }) => {
+    if (projectId && resource !== "projects") return false;
     if (!start && !end) return true;
     return (
       resource === "calendar" &&

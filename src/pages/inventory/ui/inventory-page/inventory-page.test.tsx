@@ -53,6 +53,9 @@ const chat = vi.hoisted(() => ({ onOpen: vi.fn() }));
 vi.mock("@/features/chat-navigation", () => ({
   useChatNavigation: () => ({ ready: true, onOpen: chat.onOpen }),
 }));
+vi.mock("@/features/account", () => ({
+  useAccount: () => ({ data: undefined }),
+}));
 
 const milk = (inventoryItems as InventoryItem[])[0]!;
 const InventoryRowExample = () => {

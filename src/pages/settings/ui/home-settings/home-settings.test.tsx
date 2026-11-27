@@ -26,7 +26,12 @@ describe("ACC-12 홈 구성 저장", () => {
     useHomeSettings.mockReturnValue({
       isPending: false,
       isError: false,
-      data: { homeView: "week", upcomingEnabled: true, upcomingCount: 5 },
+      data: {
+        homeView: "week",
+        upcomingEnabled: true,
+        upcomingCount: 5,
+        projectDeadlinesEnabled: true,
+      },
     });
   });
   it("선택된 보기와 표시 개수를 다시 고르면 저장하지 않아요", async () => {
@@ -82,7 +87,11 @@ describe("ACC-12 홈 구성 저장", () => {
     );
     fireEvent.click(screen.getByRole("radio", { name: "10개" }));
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(2));
-    await waitFor(() => expect(screen.getByRole("switch")).toBeEnabled());
+    await waitFor(() =>
+      expect(
+        screen.getByRole("switch", { name: "다가오는 일정" }),
+      ).toBeEnabled(),
+    );
     fireEvent.click(screen.getByRole("switch", { name: "다가오는 일정" }));
     expect(
       screen.queryByRole("radio", { name: "10개" }),
@@ -92,6 +101,7 @@ describe("ACC-12 홈 구성 저장", () => {
         homeView: "month",
         upcomingEnabled: false,
         upcomingCount: 10,
+        projectDeadlinesEnabled: true,
       }),
     );
   });
@@ -124,8 +134,29 @@ describe("ACC-12 홈 구성 저장", () => {
       homeView: "month",
       upcomingEnabled: false,
       upcomingCount: 10,
+      projectDeadlinesEnabled: true,
     });
-    expect(screen.getByRole("switch")).not.toBeChecked();
+    expect(
+      screen.getByRole("switch", { name: "다가오는 일정" }),
+    ).not.toBeChecked();
+  });
+  it("PRJ-13 SCN-PRJ-5 프로젝트 마감 표시만 끌 수 있어요", async () => {
+    render(
+      <ToastProvider>
+        <HomeSettings />
+      </ToastProvider>,
+    );
+    fireEvent.click(
+      screen.getByRole("switch", { name: "다가오는 프로젝트 마감" }),
+    );
+    await waitFor(() =>
+      expect(mutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          projectDeadlinesEnabled: false,
+          upcomingEnabled: true,
+        }),
+      ),
+    );
   });
   it("저장에 실패하면 오류를 알리고 다시 저장할 수 있어요", async () => {
     mutateAsync.mockRejectedValueOnce(new Error("저장 실패"));

@@ -1,5 +1,6 @@
 import { removeCurrentPushSubscription } from "@/entities/notification";
 import type { BotType, LoginProvider } from "@/entities/user";
+import type { AmountFormat } from "@/shared/lib";
 import { isAuthSessionMissingError } from "@supabase/supabase-js";
 import { createBrowserSupabaseClient, request } from "@/shared/api";
 import {
@@ -108,4 +109,8 @@ export async function signIn(
 
 export function updateBotType(botType: BotType) {
   return request<null>(accountApiRoutes.botType, { botType });
+}
+
+export function updateAmountFormat(amountFormat: AmountFormat) {
+  return request<null>(accountApiRoutes.amountFormat, { amountFormat });
 }

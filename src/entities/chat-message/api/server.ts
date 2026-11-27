@@ -28,6 +28,8 @@ const errors = {
   invalid_cart: [400, "구매 품목의 수량·단위·보관 장소를 확인해 주세요."],
   event_not_found: [404, "일정을 찾을 수 없어요."],
   invalid_event: [400, "일정의 날짜와 내용을 확인해 주세요."],
+  project_not_found: [404, "프로젝트나 항목을 찾을 수 없어요."],
+  invalid_project: [400, "프로젝트 변경 내용을 확인해 주세요."],
   unauthorized: [401, "로그인이 필요해요."],
   forbidden: [403, "권한이 없어요."],
   family_required: [403, "가정에 참여해 주세요."],

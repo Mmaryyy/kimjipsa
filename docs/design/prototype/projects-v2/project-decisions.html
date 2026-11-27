@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>결정 · 결혼 준비 · 김집사</title>
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/app.css" />
+  <style>
+    .dec { padding: var(--sp-3) 0; }
+    .dec { padding: var(--sp-4) 0; }
+    .dec + .dec { border-top: 1px solid var(--separator); }
+    .dec-q { display: flex; gap: var(--sp-3); align-items: flex-start; width: 100%; text-align: left; }
+    .dec-q h3 { flex: 1; font-size: var(--type-headline-size); line-height: var(--type-headline-lh); font-weight: var(--fw-semibold); }
+    .opts { margin-top: var(--sp-2); display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); }
+    .opts { font-size: var(--type-caption-size); color: var(--label-secondary); }
+    .opts b { font-weight: var(--fw-medium); color: var(--label); }
+    .ops { margin-top: var(--sp-3); display: grid; gap: var(--sp-2); }
+    .op { display: flex; gap: var(--sp-2); align-items: center; min-height: 40px; }
+    .op .react-read { margin-right: var(--sp-1); }
+    .av { flex: none; min-width: 28px; font-size: var(--type-caption-size); line-height: var(--type-body-sm-lh); font-weight: var(--fw-semibold); color: var(--label-secondary); }
+    .op p { font-size: var(--type-body-sm-size); line-height: var(--type-body-sm-lh); }
+    .op .none { color: var(--label-tertiary); }
+    .final { margin-top: var(--sp-2); font-size: var(--type-body-size); font-weight: var(--fw-semibold); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <main class="page" data-od-id="prj-decisions">
+      <aside class="od-diff" aria-label="원래 OD 시안과 달라진 점"><b>원래 OD 시안과 달라진 점</b><ul><li>상대 의견에 👍/👎 반응, 내 의견의 반응은 작은 엄지로 표시</li><li>‘고치기’·‘의견 쓰기’ 글자 버튼 → 연필 아이콘 버튼(앱 Button icon-sm gray)</li><li>선택지는 칠한 알약 대신 글자, 행 사이 옅은 구분선</li></ul></aside>
+      <header class="ph">
+        <a class="ph-back" href="project.html" aria-label="프로젝트 개요"></a>
+        <div style="flex:1;min-width:0"><h1 class="t-title-lg" data-od-id="prj-decisions-title">결정</h1><p class="ph-sub t-caption">결혼 준비</p></div>
+        <div class="ph-actions"><button class="glass-btn glass-surface" id="add" data-od-id="prj-decision-add">추가</button></div>
+      </header>
+      <div id="body"></div>
+    </main>
+  </div>
+  <script src="js/app.js"></script>
+  <script>
+    const K = KJ, { db, save, esc, md, ddayChip, icon, sheet, toast, field, options, members, memberName, ME } = K;
+    K.shell();
+    document.querySelector(".ph-back").innerHTML = icon("back");
+    const STATUS = [["discussing", "논의 중"], ["decided", "결정 완료"], ["on_hold", "보류"]];
+
+    const block = (x) => {
+      const opts = x.options.split("\n").filter(Boolean);
+      return `<article class="dec" data-od-id="prj-decision-${x.id}">
+        <button class="dec-q" data-edit="${x.id}"><h3>${esc(x.question)}</h3>${x.status === "discussing" ? ddayChip(x.due_on) : x.status === "decided" ? `<span class="badge" data-v="success">결정</span>` : `<span class="badge" data-v="warning">보류</span>`}</button>
+        ${x.status === "decided" ? `<p class="final">${esc(x.final_choice || "—")}</p>` : opts.length ? `<p class="opts">후보 ${opts.map((o) => `<b>${esc(o)}</b>`).join('<span class="sep" style="margin:0 6px">·</span>')}</p>` : ""}
+        ${x.status !== "decided" ? `<div class="ops">${members.map((m) => {
+          const o = x.opinions.find((y) => y.user_id === m.user_id), op = o?.opinion, mine = m.user_id === ME;
+          const myR = o?.reactions?.[ME];
+          const others = mine && o ? Object.entries(o.reactions || {}).filter(([u]) => u !== ME) : [];
+          const end = mine
+            ? `${others.map(([u, r]) => `<span class="react-read ${r}" title="${K.memberName(u)}">${icon(r)}<span class="sr-only">${K.memberName(u)} ${r === "up" ? "좋아요" : "글쎄요"}</span></span>`).join("")}<button class="icon-btn" data-op="${x.id}" aria-label="${op ? "내 의견 고치기" : "의견 쓰기"}">${icon("pencil")}</button>`
+            : op ? `<span class="react" role="group" aria-label="${m.display_name}님 의견에 반응">${["up", "down"].map((r) => `<button data-r="${r}" data-react="${x.id}" data-u="${m.user_id}" aria-pressed="${myR === r}" aria-label="${r === "up" ? "좋아요" : "글쎄요"}">${icon(r)}</button>`).join("")}</span>` : "";
+          return `<div class="op"><span class="av" aria-hidden="true">${m.display_name}</span><div class="row-main"><p class="${op ? "" : "none"}"><span class="sr-only">${m.display_name}의 의견: </span>${op ? esc(op) : mine ? "내 의견을 남겨 보세요" : `${m.display_name}님은 아직 의견이 없어요`}</p></div>${end}</div>`;
+        }).join("")}</div>` : ""}
+      </article>`;
+    };
+
+    function render() {
+      const all = db().decisions;
+      const disc = all.filter((x) => x.status === "discussing").sort((a, b) => (a.due_on ?? "9").localeCompare(b.due_on ?? "9"));
+      const hold = all.filter((x) => x.status === "on_hold"), done = all.filter((x) => x.status === "decided");
+      document.getElementById("body").innerHTML = `
+        ${disc.length ? `<section class="sec" style="margin-top:var(--sp-4)" data-od-id="prj-decisions-open"><div class="sec-head"><h2>논의 중 <span class="num muted">${disc.length}</span></h2></div>${disc.map(block).join("")}</section>` : `<p class="empty">논의 중인 결정이 없어요</p>`}
+        ${hold.length ? `<section class="sec" data-od-id="prj-decisions-hold"><div class="sec-head"><h2>보류 <span class="num muted">${hold.length}</span></h2></div>${hold.map(block).join("")}</section>` : ""}
+        ${done.length ? `<details class="fold sec" data-od-id="prj-decisions-done"><summary>${icon("chev")} 결정 완료 <span class="num">${done.length}</span></summary>${done.map(block).join("")}</details>` : ""}`;
+      document.querySelectorAll("[data-edit]").forEach((b) => b.onclick = () => edit(all.find((x) => x.id === b.dataset.edit)));
+      document.querySelectorAll("[data-op]").forEach((b) => b.onclick = () => opinion(all.find((x) => x.id === b.dataset.op)));
+      document.querySelectorAll("[data-react]").forEach((b) => b.onclick = () => {
+        const o = all.find((x) => x.id === b.dataset.react).opinions.find((y) => y.user_id === b.dataset.u);
+        o.reactions = o.reactions || {};
+        o.reactions[ME] = o.reactions[ME] === b.dataset.r ? undefined : b.dataset.r; save(); render();
+      });
+    }
+
+    function opinion(x) {
+      const cur = x.opinions.find((o) => o.user_id === ME);
+      sheet({ title: "내 의견", body: `<p class="row-title strong" style="margin-top:var(--sp-2)">${esc(x.question)}</p>` + field("opinion", "의견", `<textarea name="opinion" maxlength="1000" autofocus>${esc(cur?.opinion)}</textarea>`),
+        onSubmit(d) {
+          x.opinions = x.opinions.filter((o) => o.user_id !== ME);
+          if (d.opinion.trim()) x.opinions.push({ user_id: ME, opinion: d.opinion.trim() });
+          save(); render(); toast("의견을 남겼어요");
+        } });
+    }
+
+    function edit(src) {
+      const x = src || { question: "", status: "discussing", due_on: null, options: "", final_choice: "", opinions: [] };
+      sheet({ title: src ? "결정" : "새 결정",
+        body: field("question", "질문", `<input name="question" maxlength="100" value="${esc(x.question)}" placeholder="예: 상견례 날짜를 언제로 할까?">`)
+          + `<div class="field-2">${field("status", "상태", `<select name="status">${options(STATUS, x.status)}</select>`)}${field("due_on", "기한", `<input type="date" name="due_on" value="${x.due_on ?? ""}">`)}</div>`
+          + field("options", "후보 (줄마다 하나)", `<textarea name="options" maxlength="1000">${esc(x.options)}</textarea>`)
+          + field("final_choice", "최종 선택", `<input name="final_choice" maxlength="1000" value="${esc(x.final_choice)}">`),
+        onSubmit(d) {
+          const e = {};
+          if (!d.question.trim()) e.question = true;
+          if (d.status === "decided" && !d.final_choice.trim()) e.final_choice = true;
+          if (Object.keys(e).length) return e;
+          Object.assign(x, { question: d.question.trim(), status: d.status, due_on: d.due_on || null, options: d.options.trim(), final_choice: d.final_choice.trim() });
+          if (!src) db().decisions.push({ id: "d" + K.id(), ...x });
+          save(); render(); toast(src ? "저장했어요" : "결정을 추가했어요");
+        },
+        danger: src && { label: "결정 삭제", confirm: `'${x.question}' 결정을 삭제할까요?`, run: () => { db().decisions = db().decisions.filter((y) => y !== src); save(); render(); } } });
+    }
+    document.getElementById("add").onclick = () => edit();
+    render();
+  </script>
+</body>
+</html>

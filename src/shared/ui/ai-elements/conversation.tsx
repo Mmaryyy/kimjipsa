@@ -1,8 +1,7 @@
 "use client";
 
 import { ArrowDownIcon } from "lucide-react";
-import { useCallback, type ComponentProps, type RefObject } from "react";
-import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
+import type { ComponentProps, RefObject } from "react";
 import { cn } from "@/shared/lib";
 import { Button } from "../button";
 
@@ -10,12 +9,12 @@ import { Button } from "../button";
 export const Conversation = ({
   className,
   ...props
-}: ComponentProps<typeof StickToBottom>) => (
-  <StickToBottom
-    initial={false}
-    resize="instant"
-    targetScrollTop={(_, { scrollElement }) => scrollElement.scrollTop}
-    className={cn("relative min-h-0 flex-1 overflow-hidden", className)}
+}: ComponentProps<"div">) => (
+  <div
+    className={cn(
+      "relative flex min-h-0 flex-1 flex-col overflow-hidden",
+      className,
+    )}
     {...props}
   />
 );
@@ -33,37 +32,17 @@ export const ConversationContent = ({
   className,
   children,
   ...props
-}: ConversationContentProps) => {
-  const { scrollRef, contentRef: stickContentRef } = useStickToBottomContext();
-  const setViewport = useCallback(
-    (element: HTMLDivElement | null) => {
-      viewportRef.current = element;
-      scrollRef(element);
-    },
-    [viewportRef, scrollRef],
-  );
-  const setContent = useCallback(
-    (element: HTMLDivElement | null) => {
-      contentRef.current = element;
-      stickContentRef(element);
-    },
-    [contentRef, stickContentRef],
-  );
-  return (
-    <div
-      ref={setViewport}
-      className={cn("h-full overflow-y-auto", scrollClassName)}
-      {...props}
-    >
-      <div
-        ref={setContent}
-        className={cn("flex flex-col gap-4 p-4", className)}
-      >
-        {children}
-      </div>
+}: ConversationContentProps) => (
+  <div
+    ref={viewportRef}
+    className={cn("min-h-0 flex-1 overflow-y-auto", scrollClassName)}
+    {...props}
+  >
+    <div ref={contentRef} className={cn("flex flex-col gap-4 p-4", className)}>
+      {children}
     </div>
-  );
-};
+  </div>
+);
 
 export const ConversationScrollButton = ({
   visible,
@@ -75,10 +54,7 @@ export const ConversationScrollButton = ({
     <Button
       variant="gray"
       size="sm"
-      className={cn(
-        "absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full",
-        className,
-      )}
+      className={cn("mt-1 mb-3 shrink-0 self-center rounded-full", className)}
       {...props}
     >
       <ArrowDownIcon aria-hidden="true" className="size-4" />

@@ -14,7 +14,9 @@ import {
 import {
   HermesRuntime,
   contextSchema,
+  projectSnapshotSchema,
   runtimeConfigSchema,
+  type AgentContext,
 } from "./hermes.mts";
 import { CloudError, readCloudResponse } from "./cloud-response.mts";
 import { searchWeb } from "./search.mts";
@@ -151,7 +153,9 @@ async function runConnected(config: GatewayConfig) {
     if (!result.success) throw new Error("gateway_migration_required");
     return result.data;
   }
-  householdReader = (input) => cloud("/api/agent/read", input);
+  const readHousehold: HouseholdReader = (input) =>
+    cloud("/api/agent/read", input);
+  householdReader = readHousehold;
   async function drain() {
     if (processing) {
       rerun = true;
@@ -230,7 +234,7 @@ async function runConnected(config: GatewayConfig) {
         try {
           if (runtime.version !== job.configVersion)
             throw new Error("configuration_changed");
-          let context = contextSchema.parse(
+          let context: AgentContext = contextSchema.parse(
             await cloud("/api/agent/context", input),
           );
           const images: Array<{ mimeType: string; base64: string }> = [];
@@ -279,6 +283,31 @@ async function runConnected(config: GatewayConfig) {
               },
             );
           }
+          for (let read = 0; result.kind === "projects" && read < 3; read++) {
+            if (context.kind !== "chat" || images.length)
+              throw new Error("invalid_response");
+            const snapshot = projectSnapshotSchema.parse(
+              await readHousehold({
+                resource: "projects",
+                projectId: result.projectId,
+              }),
+            );
+            context = {
+              ...context,
+              projectSnapshots: [...(context.projectSnapshots ?? []), snapshot],
+            };
+            signal.throwIfAborted();
+            result = await hermes.run(
+              `${job.id}-projects-${read}`,
+              runtime,
+              context,
+              [],
+              signal,
+              async (id) => {
+                await rpc("heartbeat", { ...input, hermesRunId: id });
+              },
+            );
+          }
           if (result.kind === "search") {
             if (context.kind !== "chat" || images.length)
               throw new Error("invalid_response");
@@ -308,7 +337,7 @@ async function runConnected(config: GatewayConfig) {
               sources: sources.map(({ title, url }) => ({ title, url })),
             };
           } else result.sources = [];
-          if (["calendar", "search"].includes(result.kind))
+          if (["calendar", "projects", "search"].includes(result.kind))
             throw new Error("invalid_response");
           result.actions = withSnapshotChecks(result.actions, context);
           signal.throwIfAborted();
@@ -345,6 +374,8 @@ async function runConnected(config: GatewayConfig) {
             "invalid_cart",
             "invalid_event",
             "event_not_found",
+            "project_not_found",
+            "invalid_project",
             "validation_failed",
             "confirmation_required",
             "forbidden",

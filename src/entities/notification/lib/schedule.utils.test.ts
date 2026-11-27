@@ -14,6 +14,66 @@ const event = {
   isAllDay: false,
   remindBefore: 30,
 };
+it("PRJ-12 SCN-PRJ-5 내일 마감 수신자를 걸러 오늘 마감 요약과 따로 예약해요", () => {
+  const deadline = {
+    id: "task",
+    familyId: "family",
+    projectId: "project",
+    kind: "task" as const,
+    date: "2026-10-23",
+    assigneeKind: "member" as const,
+    assigneeId: user.id,
+  };
+  const result = scheduledNotifications({
+    now: "2026-10-22T01:00:00Z",
+    users: [
+      user,
+      { ...user, id: "spouse" },
+      { ...user, id: "other", familyId: "other" },
+    ],
+    events: [],
+    deadlines: [
+      deadline,
+      {
+        ...deadline,
+        id: "together",
+        assigneeKind: "together",
+        assigneeId: null,
+      },
+      {
+        ...deadline,
+        id: "decision",
+        kind: "decision",
+        assigneeKind: null,
+        assigneeId: null,
+      },
+      {
+        ...deadline,
+        id: "booking",
+        kind: "reservation_payment",
+        assigneeKind: null,
+        assigneeId: null,
+      },
+      { ...deadline, id: "today", date: "2026-10-22" },
+    ],
+  });
+  expect(
+    result.map(({ userId, kind, payload }) => [
+      userId,
+      kind,
+      payload.projectItemId,
+    ]),
+  ).toEqual([
+    ["owner", "project_task_due", "task"],
+    ["owner", "project_task_due", "together"],
+    ["owner", "project_decision_due", "decision"],
+    ["owner", "project_reservation_due", "booking"],
+    ["owner", "morning_summary", undefined],
+    ["spouse", "project_task_due", "together"],
+    ["spouse", "project_decision_due", "decision"],
+    ["spouse", "project_reservation_due", "booking"],
+  ]);
+});
 describe("CAL-10/11 예약 대상 · SCN-CAL-5~6", () => {
   it("CAL-14 같은 시각으로 옮긴 두 회차도 각각 알림을 예약한다", () => {
     const result = scheduledNotifications({

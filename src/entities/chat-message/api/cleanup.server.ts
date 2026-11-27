@@ -19,22 +19,28 @@ export async function cleanupAgentFiles(request: Request) {
   if (!serviceKey) throw new Error("Storage cleanup credential missing");
   const options = { auth: { persistSession: false, autoRefreshToken: false } };
   const client = createClient<Database>(url, key, options);
-  const storage = createClient(url, serviceKey, options).storage.from(
-    "chat-attachments",
-  );
+  const storage = createClient(url, serviceKey, options).storage;
   const listed = await client.rpc("agent_cleanup", {
     worker_secret: expected.toString(),
     operation: "list",
   });
   throwDatabaseError(listed.error);
   const paths = z.array(z.string()).parse(listed.data);
-  if (paths.length) {
-    const removed = await storage.remove(paths);
+  const projectPrefix = "project-photos:";
+  const byBucket = Map.groupBy(paths, (path) =>
+    path.startsWith(projectPrefix) ? "project-photos" : "chat-attachments",
+  );
+  for (const [bucket, queuedPaths] of byBucket) {
+    const objectPaths =
+      bucket === "project-photos"
+        ? queuedPaths.map((path) => path.slice(projectPrefix.length))
+        : queuedPaths;
+    const removed = await storage.from(bucket).remove(objectPaths);
     if (removed.error) throw new Error("Storage deletion failed");
     const marked = await client.rpc("agent_cleanup", {
       worker_secret: expected.toString(),
       operation: "deleted",
-      input: { paths },
+      input: { paths: queuedPaths },
     });
     throwDatabaseError(marked.error);
   }

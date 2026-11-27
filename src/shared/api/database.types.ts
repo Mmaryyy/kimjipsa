@@ -125,6 +125,51 @@ type ProjectItineraryRow = ProjectChildRow & {
   memo: string;
   event_id: string | null;
 };
+type ProjectExpenseRow = ProjectChildRow & {
+  area_id: string | null;
+  title: string;
+  estimated_amount: number | null;
+  planned_on: string | null;
+  actual_amount: number | null;
+  paid_on: string | null;
+  payer_id: string | null;
+  links: string[];
+  memo: string;
+};
+
+type ProjectListRow = ProjectChildRow & {
+  kind: string;
+  name: string;
+  columns: Json;
+  tags: Json;
+  quantity_list_id: string | null;
+  quantity_tag_key: string | null;
+  sort_order: number;
+};
+type ProjectListItemRow = {
+  id: string;
+  family_id: string;
+  list_id: string;
+  title: string;
+  status: string | null;
+  price: number | null;
+  links: string[];
+  values: Json;
+  tags: string[];
+  done_tags: string[];
+  memo: string;
+  sort_order: number;
+};
+type ProjectPhotoRow = {
+  id: string;
+  family_id: string;
+  item_id: string;
+  storage_path: string;
+  thumb_path: string;
+  created_by: string | null;
+  is_ready: boolean;
+  created_at: string;
+};
 // P2/P3/P4 migration contract. Regenerate with `supabase gen types typescript --local`
 // after applying the migration to a local Supabase instance.
 export type Json =
@@ -151,8 +196,10 @@ type UserRow<Provider extends string> = {
   terms_version: string | null;
   push_enabled: boolean;
   morning_summary_time: string;
+  amount_format: string;
   home_view: string;
   upcoming_enabled: boolean;
+  project_deadlines_enabled: boolean;
   upcoming_count: number;
 };
 type FamilyRow = { id: string; name: string; expiry_days: number };
@@ -200,8 +247,101 @@ export type Database<
           },
         ];
       };
+      project_decision_opinion_reactions: Omit<
+        Table<
+          {
+            family_id: string;
+            opinion_id: string;
+            user_id: string;
+            reaction: "up" | "down";
+          },
+          never
+        >,
+        "Relationships"
+      > & {
+        Relationships: [
+          {
+            foreignKeyName: "project_opinion_reactions_opinion_family_fkey";
+            columns: ["opinion_id", "family_id"];
+            isOneToOne: false;
+            referencedRelation: "project_decision_opinions";
+            referencedColumns: ["id", "family_id"];
+          },
+        ];
+      };
       project_reservations: Table<ProjectReservationRow, never>;
       project_itinerary: Table<ProjectItineraryRow, never>;
+      project_expenses: Table<ProjectExpenseRow, never>;
+      project_lists: Table<ProjectListRow, never>;
+      project_list_items: Omit<
+        Table<ProjectListItemRow, never>,
+        "Relationships"
+      > & {
+        Relationships: [
+          {
+            foreignKeyName: "project_list_items_list_id_family_id_fkey";
+            columns: ["list_id", "family_id"];
+            isOneToOne: false;
+            referencedRelation: "project_lists";
+            referencedColumns: ["id", "family_id"];
+          },
+        ];
+      };
+      project_candidate_recipients: Omit<
+        Table<
+          {
+            family_id: string;
+            candidate_id: string;
+            list_id: string;
+            person_id: string;
+          },
+          never
+        >,
+        "Relationships"
+      > & {
+        Relationships: [
+          {
+            foreignKeyName: "project_candidate_recipients_candidate_fkey";
+            columns: ["candidate_id", "list_id", "family_id"];
+            isOneToOne: false;
+            referencedRelation: "project_list_items";
+            referencedColumns: ["id", "list_id", "family_id"];
+          },
+        ];
+      };
+      project_candidate_votes: Omit<
+        Table<
+          {
+            family_id: string;
+            candidate_id: string;
+            user_id: string;
+            vote: "up" | "down";
+          },
+          never
+        >,
+        "Relationships"
+      > & {
+        Relationships: [
+          {
+            foreignKeyName: "project_candidate_votes_candidate_fkey";
+            columns: ["candidate_id", "family_id"];
+            isOneToOne: false;
+            referencedRelation: "project_list_items";
+            referencedColumns: ["id", "family_id"];
+          },
+        ];
+      };
+      project_photos: Omit<Table<ProjectPhotoRow, never>, "Relationships"> & {
+        Relationships: [
+          {
+            foreignKeyName: "project_photos_item_id_family_id_fkey";
+            columns: ["item_id", "family_id"];
+            isOneToOne: false;
+            referencedRelation: "project_list_items";
+            referencedColumns: ["id", "family_id"];
+          },
+        ];
+      };
       frequent_cart_overrides: Table<
         {
           family_id: string;
@@ -387,8 +527,10 @@ export type Database<
         UserRow<Provider>,
         Omit<
           UserRow<Provider>,
+          | "amount_format"
           | "home_view"
           | "upcoming_enabled"
+          | "project_deadlines_enabled"
           | "upcoming_count"
           | "push_enabled"
           | "morning_summary_time"
@@ -396,8 +538,10 @@ export type Database<
           Partial<
             Pick<
               UserRow<Provider>,
+              | "amount_format"
               | "home_view"
               | "upcoming_enabled"
+              | "project_deadlines_enabled"
               | "upcoming_count"
               | "push_enabled"
               | "morning_summary_time"
@@ -452,7 +596,14 @@ export type Database<
       save_frequent_cart_override: { Args: { payload: Json }; Returns: Json };
       frequent_cart_items: { Args: Record<string, never>; Returns: CartRow[] };
       undo_cart_restock: { Args: { token: string }; Returns: Json };
+      write_project_budget: { Args: { payload: Json }; Returns: string };
+      write_project_candidate: { Args: { payload: Json }; Returns: string };
+      write_project_list: { Args: { payload: Json }; Returns: string };
       write_project_module: { Args: { payload: Json }; Returns: string };
+      write_project_decision_opinion: {
+        Args: { payload: Json };
+        Returns: string;
+      };
       // reorder_areas uses projectId and areaIds, and returns the project ID.
       write_project: { Args: { payload: Json }; Returns: string };
       write_todo: { Args: { payload: Json }; Returns: string };
@@ -490,10 +641,19 @@ export type Database<
         Args: { push_enabled: boolean; morning_summary_time: string };
         Returns: undefined;
       };
+      save_amount_format: {
+        Args: { amount_format: string };
+        Returns: undefined;
+      };
+      home_project_deadlines: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
       save_home_settings: {
         Args: {
           home_view: string;
           upcoming_enabled: boolean;
+          project_deadlines_enabled?: boolean;
           upcoming_count: number;
         };
         Returns: undefined;

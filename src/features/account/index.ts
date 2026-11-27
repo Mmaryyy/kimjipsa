@@ -6,4 +6,8 @@ export { LoginIntroduction } from "./ui/login-introduction";
 
 export { withdrawAccount } from "./api/api";
 
-export { useBotCharacter, useSaveBotType } from "./model/use-account";
+export {
+  useBotCharacter,
+  useSaveBotType,
+  useSaveAmountFormat,
+} from "./model/use-account";

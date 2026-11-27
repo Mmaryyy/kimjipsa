@@ -16,7 +16,7 @@ export const projectModuleLabels: Record<Project["modules"][number], string> = {
   lists: "목록 (후보·명단)",
   reservations: "예약",
   itinerary: "일정표",
-  budget: "예산·지출·정산",
+  budget: "예산·지출",
 };
 export const taskStatusLabels: Record<ProjectTask["status"], string> = {
   todo: "미시작",
@@ -57,4 +57,10 @@ export const reservationStatusLabels: Record<
   planned: "예약 예정",
   booked: "예약 완료",
   cancelled: "취소",
+};
+
+export const candidateStatusLabels = {
+  candidate: "후보",
+  selected: "선택",
+  excluded: "제외",
 };

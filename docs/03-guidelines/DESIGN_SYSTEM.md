@@ -5,6 +5,7 @@
 - **디자인 산출물 (CONFIRMED):** `docs/design/`. 구현 전에 `docs/design/HANDOFF.md`부터 읽는다.
 - **토큰 원본 (CONFIRMED):** `docs/design/tokens.css` (Apple 시스템 컬러, 라이트·다크, 상태 variant `success · info · warning · error`, 타이포 variant 12단계, 간격·모양). 색, 폰트, 간격, 라운드는 이 파일의 토큰만 쓰고 임의로 만들지 않는다.
 - **앱 토큰 파일 경로:** `src/app/styles/tokens.css`. 원본을 옮긴 파일이며, Tailwind 테마 연결은 `src/app/styles/globals.css`에 둔다.
+- **앱 구분선 (CONFIRMED, 2026-11-24):** 라이트 모드의 `--separator`와 공용 border·divide는 아주 밝은 회색(`rgba(60, 60, 67, 0.1)`)이다. 다크 모드 구분선은 `rgba(84, 84, 88, 0.6)`이다.
 
 ### 스타일 구현 기준 (CONFIRMED, 사용자 결정 2026-10-19)
 
@@ -291,6 +292,8 @@ AI Elements의 Chat 구성(Conversation·Message·PromptInput)을 사용하고 F
 인사는 서버에 저장하지 않는 집사 메시지(썸네일·김{이름} 작성자 줄·배경 없는 본문)로 현재 세션의 대화 목록 맨 앞에 항상 둔다. 일정·재고·장바구니 기능 목록은 ‘– ’ 머리표, FAQ는 왼쪽 정렬·최소 높이 32px·링크 색·subhead로 세로 나열한다. FAQ 클릭은 질문 말풍선과 집사 답을 목록 아래에 화면 전용으로 추가하며 시트를 다시 열거나 세션이 바뀌면 초기화한다.
 
 집사가 되묻는 선택형 질문은 메시지 본문 아래 2~6개 토글 버튼(`role=group`, 이름 ‘답 고르기’)으로 보여 주며, 최신 집사 질문에만 답할 수 있다. 선택한 라벨을 메시지로 전송한 뒤 선택 표시와 비활성을 유지하고, 주관식 질문은 입력창 답장으로 이어 간다.
+
+영수증 품목의 집사 코멘트는 `--ai-gradient-from`과 `--ai-gradient-to`로 보라에서 파랑으로 이어지는 AI 그라데이션을 쓴다. 요약의 `BotMessageSquare` 아이콘은 선에 그라데이션을 적용한다. 수정 카드 바로 위 말풍선은 두 색을 각각 12% 섞은 옅은 그라데이션 배경과 기본 글자색을 쓴다.
 
 ### 장바구니 빠른 추가 진행 표시 (CART-01, 2026-11-05)
 

@@ -1,67 +1,245 @@
 "use client";
+
 import { useState } from "react";
-import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { ko } from "date-fns/locale";
 import {
-  MilestoneTimeline,
-  ProjectDeadline,
   ProjectProgressBar,
-  ProjectProgressGauge,
-  projectModuleLabels,
-  projectModules,
   projectDeadlineDays,
+  projectOverdue,
   projectProgress,
+  projectShortPeriod,
   projectToday,
-  taskAssignees,
+  taskStatusLabels,
   upcomingTasks,
   useProject,
+  type ProjectDetail,
+  type ProjectMilestone,
   type ProjectTask,
 } from "@/entities/project";
-import {
-  MilestoneEditor,
-  ProjectEditor,
-  ProjectEventAction,
-} from "@/features/project-edit";
+import { useAccount } from "@/features/account";
+import { MilestoneEditor, ProjectEventAction } from "@/features/project-edit";
+import { ApiError } from "@/shared/api";
 import {
   Button,
   ErrorState,
-  List,
-  ListRow,
   ListSkeleton,
   PageLayout,
   SectionHeader,
-  StatusBadge,
+  Sheet,
   TextButton,
 } from "@/shared/ui";
-import { ApiError } from "@/shared/api";
 import ProjectBackLink from "../project-header";
-import { projectOverviewButtonStyles } from "./project-overview.variants";
+import OverviewDeadlines from "./OverviewDeadlines";
+import OverviewModules from "./OverviewModules";
+import OverviewSettings from "./OverviewSettings";
+import OverviewTimeline from "./OverviewTimeline";
 
-function AreaProgress({ name, tasks }: { name: string; tasks: ProjectTask[] }) {
-  const { done, total, percent } = projectProgress(tasks);
+const statusColors = {
+  done: "bg-success",
+  in_progress: "bg-sys-cyan",
+  todo: "bg-sys-gray5",
+  on_hold: "bg-warning",
+};
+const cellStyle = "inline-block size-3 rounded-[var(--r-bar)]";
+
+function OverviewSummary({
+  project,
+  tasks,
+  today,
+}: Pick<ProjectDetail, "project" | "tasks"> & { today: string }) {
+  const progress = projectProgress(tasks);
+  const { count } = projectOverdue(tasks, today);
+  const soon = upcomingTasks(tasks, today).filter(
+    (task) => task.due_on && projectDeadlineDays(task.due_on, today) <= 7,
+  ).length;
+  let target = "목표일 미정";
+  if (project.target_on) {
+    const days = projectDeadlineDays(project.target_on, today);
+    if (days > 0) target = `D-${days}`;
+    else if (days === 0) target = "오늘";
+    else target = `${-days}일 지남`;
+  }
+
+  const stats = [
+    { label: "남은 할 일", value: progress.total - progress.done },
+    { label: "늦어진 일", value: count, late: count > 0 },
+    { label: "7일 안 마감", value: soon },
+  ];
+
   return (
-    <ListRow
-      className="border-b border-border/60 py-3 last:border-b-0"
-      description={`${done} / ${total} 완료 · ${percent}%`}
-      trailing={
-        <ProjectProgressBar
-          label={`${name} 진행률`}
-          done={done}
-          total={total}
-          className="w-25"
-        />
-      }
+    <section
+      aria-label="전체 준비"
+      data-od-id="prj-overview-summary"
+      className="mt-4 rounded-[var(--r-control)] bg-fill-quaternary p-4"
     >
-      <span className="font-semibold">{name}</span>
-    </ListRow>
+      <div className="flex flex-wrap items-baseline gap-x-2">
+        <strong
+          className={
+            project.target_on
+              ? [
+                  "text-[length:var(--type-display-size)] leading-[var(--type-display-lh)]",
+                  "font-bold tracking-[var(--type-display-tracking)] tabular-nums",
+                ].join(" ")
+              : "text-title"
+          }
+        >
+          {target}
+        </strong>
+        {project.target_on && (
+          <time
+            dateTime={project.target_on}
+            className="text-body-sm text-muted-foreground"
+          >
+            {format(parseISO(project.target_on), "M월 d일 (EEE)", {
+              locale: ko,
+            })}{" "}
+            목표
+          </time>
+        )}
+      </div>
+      <div
+        className="mt-3 flex items-center gap-3"
+        data-od-id="prj-overview-progress"
+      >
+        <ProjectProgressBar
+          done={progress.done}
+          total={progress.total}
+          label={`할 일 ${progress.total}개 중 ${progress.done}개 완료`}
+          className={[
+            "h-1.5 flex-1 overflow-hidden rounded-full bg-fill-tertiary",
+            "[&::-webkit-progress-bar]:bg-transparent",
+            "[&::-webkit-progress-value]:bg-success [&::-moz-progress-bar]:bg-success",
+            "[&::-webkit-progress-value]:rounded-full [&::-moz-progress-bar]:rounded-full",
+          ].join(" ")}
+        />
+        <strong className="text-caption font-semibold tabular-nums">
+          {progress.percent}%
+        </strong>
+      </div>
+      <dl className="mt-5 grid grid-cols-[repeat(auto-fit,minmax(96px,1fr))] gap-x-3 gap-y-3.5">
+        {stats.map(({ label, value, late }) => (
+          <div key={label}>
+            <dt className="text-caption-sm font-medium text-muted-foreground">
+              {label}
+            </dt>
+            <dd className="mt-0.5 flex items-center gap-1.5 text-headline font-semibold tabular-nums">
+              {late && (
+                <span
+                  aria-hidden
+                  className="size-1.5 rounded-full bg-warning"
+                />
+              )}
+              {value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
+}
+
+function AreaProgress({
+  name,
+  tasks,
+  odId,
+}: {
+  name: string;
+  tasks: ProjectTask[];
+  odId: string;
+}) {
+  const { done, total } = projectProgress(tasks);
+  return (
+    <li className="py-2" data-od-id={odId}>
+      <div className="flex items-baseline justify-between gap-3">
+        <h3 className="min-w-0 truncate font-semibold">{name}</h3>
+        <span className="text-caption text-muted-foreground tabular-nums">
+          {done}/{total}
+        </span>
+      </div>
+      {total ? (
+        <ul
+          className="mt-2 flex flex-wrap gap-[3px]"
+          aria-label={`${name} 할 일 상태`}
+        >
+          {tasks.map((task) => (
+            <li
+              key={task.id}
+              className={`${cellStyle} ${statusColors[task.status]}`}
+              title={task.title}
+            >
+              <span className="sr-only">
+                {task.title} · {taskStatusLabels[task.status]}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-2 text-caption text-muted-foreground">할 일 없음</p>
+      )}
+    </li>
+  );
+}
+
+function OverviewAreas({
+  areas,
+  tasks,
+}: Pick<ProjectDetail, "areas" | "tasks">) {
+  const grouped = Map.groupBy(tasks, (task) => task.area_id);
+  const ungrouped = grouped.get(null);
+  return (
+    <section
+      aria-labelledby="prj-area-progress-title"
+      data-od-id="prj-area-cells"
+    >
+      <SectionHeader title="영역별 할 일" id="prj-area-progress-title" />
+      {areas.length || ungrouped ? (
+        <>
+          <ul className="space-y-2" data-od-id="prj-area-progress">
+            {areas.map((area) => (
+              <AreaProgress
+                key={area.id}
+                name={area.name}
+                tasks={grouped.get(area.id) ?? []}
+                odId={`prj-area-${area.id}`}
+              />
+            ))}
+            {ungrouped && (
+              <AreaProgress
+                name="영역 없음"
+                tasks={ungrouped}
+                odId="prj-area-none"
+              />
+            )}
+          </ul>
+          <ul
+            className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-caption-sm text-muted-foreground"
+            aria-label="범례"
+          >
+            {Object.entries(statusColors).map(([status, color]) => (
+              <li className="flex items-center gap-1.5" key={status}>
+                <span aria-hidden className={`${cellStyle} ${color}`} />
+                {taskStatusLabels[status as ProjectTask["status"]]}
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : (
+        <p className="text-caption text-muted-foreground">
+          영역을 나누면 진행을 묶어 볼 수 있어요.
+        </p>
+      )}
+    </section>
   );
 }
 
 function ProjectOverview({ id }: { id: string }) {
   const query = useProject(id);
-  const [editor, setEditor] = useState<"project" | "milestone">();
-  const close = () => setEditor(undefined);
-
+  const { data: account } = useAccount();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [viewing, setViewing] = useState<string>();
+  const [scheduling, setScheduling] = useState<ProjectMilestone>();
+  const navigation = <ProjectBackLink href="/projects" label="프로젝트 목록" />;
   const unavailable =
     query.error instanceof ApiError && [403, 404].includes(query.error.status);
   if (!query.data || unavailable)
@@ -69,12 +247,7 @@ function ProjectOverview({ id }: { id: string }) {
       <PageLayout
         width="narrow"
         odId="prj-overview"
-        header={{
-          title: "프로젝트",
-          navigation: (
-            <ProjectBackLink href="/projects" label="프로젝트 목록" />
-          ),
-        }}
+        header={{ title: "프로젝트", navigation }}
       >
         {query.isPending ? (
           <ListSkeleton />
@@ -87,27 +260,12 @@ function ProjectOverview({ id }: { id: string }) {
       </PageLayout>
     );
 
-  const { project, areas, milestones, tasks, members } = query.data;
-  const progress = projectProgress(tasks);
+  const data = query.data;
+  const { project, areas, milestones, tasks } = data;
   const today = projectToday();
-  const deadlines = upcomingTasks(tasks, today).slice(0, 5);
-  const byArea = new Map<ProjectTask["area_id"], ProjectTask[]>();
-  for (const task of tasks) {
-    const areaTasks = byArea.get(task.area_id);
-    if (areaTasks) areaTasks.push(task);
-    else byArea.set(task.area_id, [task]);
-  }
-  const ungrouped = byArea.get(null);
-  const assignees = taskAssignees(members);
-  const modules = projectModules
-    .filter((module) => project.modules.includes(module))
-    .flatMap<{ label: string; href?: string }>((module) => {
-      if (module === "lists")
-        return [{ label: "후보 목록" }, { label: "명단" }];
-      const label = projectModuleLabels[module];
-      if (module === "budget") return [{ label }];
-      return [{ label, href: `/projects/${id}/${module}` }];
-    });
+  const remaining = tasks.filter((task) => task.status !== "done").length;
+  const amountFormat = account?.amountFormat ?? "won";
+  const milestone = milestones.find((item) => item.id === viewing);
 
   return (
     <PageLayout
@@ -115,170 +273,82 @@ function ProjectOverview({ id }: { id: string }) {
       odId="prj-overview"
       header={{
         title: project.title,
-        navigation: <ProjectBackLink href="/projects" label="프로젝트 목록" />,
+        titleOdId: "prj-overview-title",
+        navigation,
         actions: (
-          <Button variant="glass" onClick={() => setEditor("project")}>
+          <Button
+            variant="glass"
+            data-od-id="prj-settings-open"
+            onClick={() => setSettingsOpen(true)}
+          >
             설정
           </Button>
         ),
       }}
     >
-      <div
-        className="mt-5 flex flex-col items-center gap-2 py-2 text-center"
-        data-od-id="prj-overview-progress"
-      >
-        <p className="text-sm text-muted-foreground" aria-hidden="true">
-          전체 준비
-        </p>
-        <ProjectProgressGauge percent={progress.percent} />
-        <div className="min-w-0 [overflow-wrap:anywhere]">
-          <p>
-            {project.target_on
-              ? `${project.target_on.replaceAll("-", ".")}까지`
-              : "목표일 미정"}
-          </p>
-        </div>
-      </div>
-      <section aria-labelledby="prj-timeline-title">
-        <SectionHeader title="타임라인" id="prj-timeline-title" />
-        <MilestoneTimeline
-          milestones={milestones}
-          areas={areas}
-          today={today}
-          action={(row) => <ProjectEventAction row={row} source="milestones" />}
-        />
-      </section>
-      <section aria-labelledby="prj-area-progress-title">
-        <SectionHeader title="영역별 진행률" id="prj-area-progress-title" />
-        <List data-od-id="prj-area-progress">
-          {areas.map((area) => (
-            <AreaProgress
-              key={area.id}
-              name={area.name}
-              tasks={byArea.get(area.id) ?? []}
-            />
-          ))}
-          {ungrouped && <AreaProgress name="영역 없음" tasks={ungrouped} />}
-        </List>
-        {!areas.length && !ungrouped && (
-          <p className="text-sm text-muted-foreground">아직 영역이 없어요.</p>
-        )}
-      </section>
-      <section aria-labelledby="prj-deadlines-title">
-        <SectionHeader title="다가오는 마감" id="prj-deadlines-title" />
-        <List>
-          {deadlines.map((task) => {
-            if (!task.due_on) return null;
-            const assigneeKey = task.assignee_id ?? task.assignee_kind;
-            const assignee = assignees.find(
-              (entry) =>
-                entry.value === assigneeKey && assigneeKey !== "unassigned",
-            )?.label;
-            const days = projectDeadlineDays(task.due_on, today);
-            return (
-              <ListRow
-                key={task.id}
-                trailing={
-                  <StatusBadge
-                    shape="capsule"
-                    variant={days <= 2 ? "warning" : "info"}
-                  >
-                    {days === 0 ? "오늘" : `D-${days}`}
-                  </StatusBadge>
-                }
-              >
-                <ProjectDeadline
-                  date={task.due_on}
-                  title={task.title}
-                  assignee={assignee}
-                />
-              </ListRow>
-            );
-          })}
-        </List>
-        {!deadlines.length && (
-          <p className="text-sm text-muted-foreground">
-            다가오는 할 일 마감이 없어요.
-          </p>
-        )}
-      </section>
-      <section aria-labelledby="prj-modules-title">
-        <SectionHeader title="구성 요소" id="prj-modules-title" />
-        <List>
-          <li className="border-b border-border/60">
-            <Link
-              href={`/projects/${id}/tasks`}
-              className="flex min-h-11 items-center justify-between gap-3 py-3"
-            >
-              <div>
-                <p className="font-semibold text-primary">할 일</p>
-                <p className="text-sm text-muted-foreground">
-                  {progress.total - progress.done}개 남음
-                </p>
-              </div>
-              <ChevronRight aria-hidden size={16} />
-            </Link>
-          </li>
-          {modules.map(({ label, href }) => (
-            <ListRow
-              key={label}
-              className="border-b border-border/60 text-muted-foreground"
-            >
-              {href ? (
-                <Link
-                  href={href}
-                  className="flex min-h-11 items-center justify-between gap-3 font-semibold text-primary"
-                >
-                  {label}
-                  <ChevronRight aria-hidden size={16} />
-                </Link>
-              ) : (
-                label
-              )}
-            </ListRow>
-          ))}
-          <li>
-            <TextButton
-              asChild
-              size={null}
-              className={projectOverviewButtonStyles()}
-            >
-              <Link href={`/projects/${id}/areas`}>
-                영역 설정
-                <ChevronRight
-                  aria-hidden
-                  size={16}
-                  className="text-foreground"
-                />
-              </Link>
-            </TextButton>
-          </li>
-          <li>
-            <TextButton
-              size={null}
-              className={projectOverviewButtonStyles()}
-              onClick={() => setEditor("milestone")}
-            >
-              마일스톤 설정
-              <ChevronRight aria-hidden size={16} className="text-foreground" />
-            </TextButton>
-          </li>
-        </List>
-      </section>
-
-      {editor === "project" && (
-        <ProjectEditor
-          project={project}
-          onClose={close}
-          deletedPath="/projects"
-        />
+      <OverviewSummary project={project} tasks={tasks} today={today} />
+      <OverviewDeadlines
+        data={data}
+        today={today}
+        amountFormat={amountFormat}
+      />
+      <OverviewTimeline
+        project={project}
+        milestones={milestones}
+        today={today}
+        onView={(item) => setViewing(item.id)}
+        onSchedule={setScheduling}
+      />
+      <OverviewAreas areas={areas} tasks={tasks} />
+      <OverviewModules
+        data={data}
+        remaining={remaining}
+        amountFormat={amountFormat}
+      />
+      {settingsOpen && (
+        <OverviewSettings data={data} onClose={() => setSettingsOpen(false)} />
       )}
-      {editor === "milestone" && (
+      {milestone && !scheduling && (
+        <Sheet
+          open
+          onOpenChange={(open) => {
+            if (!open) setViewing(undefined);
+          }}
+          title={milestone.title}
+          description="마일스톤 상세"
+          leadingAction={() => (
+            <TextButton
+              size="sm"
+              tone="neutral"
+              onClick={() => setViewing(undefined)}
+            >
+              닫기
+            </TextButton>
+          )}
+        >
+          <p className="text-caption text-muted-foreground">
+            {projectShortPeriod(
+              milestone.starts_on,
+              milestone.ends_on,
+              "날짜 미정",
+            )}
+          </p>
+          {milestone.memo && (
+            <p className="mt-2 whitespace-pre-wrap">{milestone.memo}</p>
+          )}
+          <ProjectEventAction row={milestone} source="milestones" />
+        </Sheet>
+      )}
+      {scheduling && (
         <MilestoneEditor
           projectId={id}
           areas={areas}
           milestones={milestones}
-          onClose={close}
+          initialMilestoneId={scheduling.id}
+          afterSave={(milestoneId, item) => {
+            if (item.starts_on) setViewing(milestoneId);
+          }}
+          onClose={() => setScheduling(undefined)}
         />
       )}
     </PageLayout>

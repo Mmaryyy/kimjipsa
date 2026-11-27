@@ -35,6 +35,7 @@ import {
   StatusBadge,
 } from "@/shared/ui";
 import { useItemActions } from "../../model/use-item-actions";
+import { useInventoryChangeSignals } from "../../model/use-inventory-change-signals";
 import InventoryGroup from "./Group";
 import InventoryItemEditor from "../item-editor";
 import { inventoryFilterTabsStyles } from "./inventory-page.variants";
@@ -70,6 +71,7 @@ const InventorySkeleton = ({
   </SkeletonSection>
 );
 const InventoryPage = () => {
+  useInventoryChangeSignals();
   const items = useInventory();
   const meta = useInventoryMeta();
   const router = useRouter();

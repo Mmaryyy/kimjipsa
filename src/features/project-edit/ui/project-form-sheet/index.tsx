@@ -7,7 +7,7 @@ import {
 } from "react-hook-form";
 import { useProjectWrite, type ProjectCommand } from "@/entities/project";
 import { cn } from "@/shared/lib";
-import { FormSheet, TextButton, useConfirm } from "@/shared/ui";
+import { Button, FormSheet, TextButton, useConfirm } from "@/shared/ui";
 import { projectFormFieldStyles } from "./project-form.styles";
 
 type Props<T extends FieldValues> = {
@@ -18,12 +18,14 @@ type Props<T extends FieldValues> = {
   submitLabel?: string;
   children: ReactNode;
   onClose: () => void;
+  afterSave?: (id: string, item: T) => Promise<void> | void;
   savedPath?: (id: string) => string;
   command: (item: T) => ProjectCommand;
   deletion?: {
     command: ProjectCommand;
     name: string;
     description: string;
+    blockLabel?: string;
     deletedPath?: string;
     onDeleted?: () => void;
   };
@@ -38,6 +40,7 @@ function ProjectFormSheet<T extends FieldValues>({
   children,
   onClose,
   savedPath,
+  afterSave,
   command,
   deletion,
 }: Props<T>) {
@@ -86,6 +89,7 @@ function ProjectFormSheet<T extends FieldValues>({
               setError("");
               try {
                 const { id } = await write.mutateAsync(command(item));
+                await afterSave?.(id, item);
                 // Replace the temporary sheet history entry when saving opens a page.
                 if (savedPath) window.location.replace(savedPath(id));
                 else finish();
@@ -101,16 +105,27 @@ function ProjectFormSheet<T extends FieldValues>({
             <fieldset disabled={pending} className="grid min-w-0 gap-4">
               {children}
             </fieldset>
-            {deletion && (
-              <TextButton
-                type="button"
-                className="text-destructive"
-                disabled={pending}
-                onClick={() => void remove()}
-              >
-                {deletion.name} 삭제
-              </TextButton>
-            )}
+            {deletion &&
+              (deletion.blockLabel ? (
+                <Button
+                  size="block"
+                  variant="danger"
+                  className="mt-8"
+                  disabled={pending}
+                  onClick={() => void remove()}
+                >
+                  {deletion.blockLabel}
+                </Button>
+              ) : (
+                <TextButton
+                  type="button"
+                  className="text-destructive"
+                  disabled={pending}
+                  onClick={() => void remove()}
+                >
+                  {deletion.name} 삭제
+                </TextButton>
+              ))}
             {error && (
               <p role="alert" className="text-sm text-destructive">
                 {error}

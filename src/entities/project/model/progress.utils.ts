@@ -1,5 +1,21 @@
 import type { ProjectMilestone, ProjectTask } from "../api/type";
 
+import { projectDeadlineDays } from "./project-date.utils";
+
+export function projectOverdue(
+  tasks: readonly Pick<ProjectTask, "status" | "due_on">[],
+  today: string,
+) {
+  let count = 0;
+  let oldest = today;
+  for (const { status, due_on } of tasks) {
+    if (status === "done" || !due_on || due_on >= today) continue;
+    count++;
+    if (due_on < oldest) oldest = due_on;
+  }
+  return { count, oldestDays: projectDeadlineDays(today, oldest) };
+}
+
 type MilestoneStatus = "past" | "current" | "upcoming" | "tentative";
 
 export function projectProgress(tasks: readonly Pick<ProjectTask, "status">[]) {

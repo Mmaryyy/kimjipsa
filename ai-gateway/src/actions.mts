@@ -3,7 +3,10 @@ import type { AgentContext } from "./hermes.mts";
 // Revisions come from the server snapshot, never from model-generated values.
 export function withSnapshotChecks(
   actions: AgentAction[],
-  context: Pick<AgentContext, "events" | "cart" | "inventory">,
+  context: Pick<
+    AgentContext,
+    "events" | "cart" | "inventory" | "projectSnapshots"
+  >,
 ): AgentAction[] {
   const revisions: Record<string, string> = {};
   for (const item of [
@@ -19,5 +22,23 @@ export function withSnapshotChecks(
     )
       revisions[id] = item.revision;
   }
-  return actions.map((action) => ({ ...action, expected: revisions }));
+  const taskRevisions: Record<string, string> = {};
+  for (const snapshot of context.projectSnapshots ?? []) {
+    if (!("tasks" in snapshot)) continue;
+    for (const task of snapshot.tasks) {
+      if (/^[a-f0-9]{32}$/.test(task.revision))
+        taskRevisions[task.id] = task.revision;
+    }
+  }
+  return actions.map((action) => {
+    if (action.domain !== "project") return { ...action, expected: revisions };
+    const id = action.payload.id;
+    return {
+      ...action,
+      expected:
+        typeof id === "string" && taskRevisions[id]
+          ? { [id]: taskRevisions[id] }
+          : {},
+    };
+  });
 }

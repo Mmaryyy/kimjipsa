@@ -32,8 +32,8 @@ type DateTimeInputProps = {
   pickerOdId?: string;
   onConfirm: (range: DateTimeRange) => void;
 } & (
-  | { variant?: "inline"; onClear?: never }
-  | { variant: "field"; onClear?: () => void }
+  | { variant?: "inline"; size?: never; onClear?: never }
+  | { variant: "field"; size?: "compact"; onClear?: () => void }
 );
 
 export function DateTimeInput({
@@ -47,6 +47,7 @@ export function DateTimeInput({
   pickerOdId,
   onConfirm,
   variant = "inline",
+  size,
   onClear,
 }: DateTimeInputProps) {
   const triggerProps = {
@@ -81,7 +82,9 @@ export function DateTimeInput({
       aria-label={accessibleLabel}
       aria-haspopup="dialog"
       aria-expanded={session !== null}
-      className={cn(dateTimeTriggerStyles({ variant, clearable: !!onClear }))}
+      className={cn(
+        dateTimeTriggerStyles({ variant, size, clearable: !!onClear }),
+      )}
       onClick={() =>
         setSession({
           ...range,
@@ -105,7 +108,7 @@ export function DateTimeInput({
           {onClear && (
             <TextButton
               size="icon"
-              className="absolute end-0 top-0"
+              className="absolute end-0 top-1/2 -translate-y-1/2"
               aria-label={`${label} 지우기`}
               disabled={controlProps.disabled}
               onClick={() => {

@@ -4,7 +4,7 @@ import { inputStyles } from "./ui.variants";
 
 type InputProps = ComponentProps<"input"> & {
   /** glass: 유리 캡슐 안에 입력과 아이콘을 넣고, 포커스 테두리는 캡슐 전체에 그려요. */
-  variant?: "default" | "inline" | "glass";
+  variant?: "default" | "inline" | "compact" | "glass";
   icon?: ReactNode;
   "data-od-id"?: string;
 };

@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>프로젝트 개요 · 김집사</title>
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/app.css" />
+  <style>
+    .hero-bar { display: flex; align-items: center; gap: var(--sp-3); margin-top: var(--sp-3); }
+    .hero-bar .bar { flex: 1; height: 6px; }
+    .hero-bar b { font-size: var(--type-caption-size); font-weight: var(--fw-semibold); font-variant-numeric: tabular-nums; }
+    .late::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: var(--r-round); background: var(--warning); vertical-align: middle; }
+    .kind { color: var(--label); font-weight: var(--fw-medium); }
+    .area-row { padding: var(--sp-2) 0; }
+    .area-row + .area-row { margin-top: var(--sp-2); }
+    .area-head { display: flex; justify-content: space-between; align-items: baseline; }
+    .area-head b { font-weight: var(--fw-semibold); }
+    .area-head span { font-size: var(--type-caption-size); color: var(--label-secondary); font-variant-numeric: tabular-nums; }
+    .menu-btn { display: flex; width: 100%; align-items: center; justify-content: space-between; min-height: var(--hit); font-size: var(--type-body-size); }
+    .ms-edit { display: flex; align-items: center; gap: var(--sp-2); min-height: var(--hit); }
+    .ms-edit .row-main { min-width: 0; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <main class="page" id="page" data-od-id="prj-overview"></main>
+  </div>
+  <script src="js/app.js"></script>
+  <script>
+    const K = KJ, { db, save, esc, md, mdw, ymd, days, ddayChip, progress, icon, sheet, toast, field, options, assigneeLabel, areaName, won, TODAY } = K;
+    K.shell();
+    const pid = new URLSearchParams(location.search).get("id") || "p1";
+    const own = (arr) => (pid === "p1" ? arr : []); // 시안 데이터는 결혼 준비에만 연결
+    const on = (m) => project().modules.includes(m);
+    const project = () => db().projects.find((p) => p.id === pid) || db().projects[0];
+
+    function upcoming() {
+      const out = [];
+      own(db().tasks).forEach((t) => t.status !== "done" && t.due_on && days(t.due_on) <= 7 && out.push({ kind: "할 일", date: t.due_on, title: t.title, meta: [areaName(t.area_id), assigneeLabel(t)], task: t }));
+      if (on("decisions")) own(db().decisions).forEach((x) => x.status === "discussing" && x.due_on && days(x.due_on) <= 14 && out.push({ kind: "결정 기한", date: x.due_on, title: x.question, href: "project-decisions.html" }));
+      if (on("reservations")) own(db().reservations).forEach((r) => {
+        if (r.status === "cancelled") return;
+        if (r.cancel_deadline && days(r.cancel_deadline) >= 0 && days(r.cancel_deadline) <= 14) out.push({ kind: "무료 취소 마감", date: r.cancel_deadline, title: r.title, href: "project-reservations.html" });
+        if (r.payment_deadline && days(r.payment_deadline) >= 0 && days(r.payment_deadline) <= 14 && (r.paid_amount ?? 0) < (r.total_amount ?? 0)) out.push({ kind: "결제 마감", date: r.payment_deadline, title: r.title, meta: [won((r.total_amount ?? 0) - (r.paid_amount ?? 0)) + " 남음"], href: "project-reservations.html" });
+      });
+      return out.sort((a, b) => a.date.localeCompare(b.date));
+    }
+
+    function gantt(ms, start, end) {
+      const s = new Date(start + "T00:00:00"), e = new Date(end + "T00:00:00"), span = e - s;
+      const pct = (iso) => Math.max(0, Math.min(100, ((new Date(iso + "T00:00:00") - s) / span) * 100));
+      const ticks = [];
+      /* 375px: 눈금은 두 달 간격, 연도는 1월 눈금에만 짧게(27.1). 넓은 화면은 매달 */
+      const step = window.innerWidth < 600 ? 2 : 1; // 375px 막대 폭은 약 200px
+      for (let m = new Date(s.getFullYear(), s.getMonth() + 1, 1), i = 0; m <= e; m.setMonth(m.getMonth() + 1), i++) {
+        if (i % step) continue;
+        const iso = `${m.getFullYear()}-${String(m.getMonth() + 1).padStart(2, "0")}-01`;
+        if (pct(iso) > 88) continue; // 오른쪽 끝에서 잘리지 않게
+        ticks.push(`<span style="left:${pct(iso)}%">${m.getMonth() === 0 ? `${String(m.getFullYear()).slice(2)}.1` : `${m.getMonth() + 1}월`}</span>`);
+      }
+      const dated = ms.filter((m) => !m.is_tentative).sort((a, b) => a.starts_on.localeCompare(b.starts_on));
+      return `<div class="gantt" role="img" aria-label="마일스톤 타임라인">
+        <div class="gantt-axis" aria-hidden="true">${ticks.join("")}</div>
+        ${dated.map((m) => {
+          const endIso = m.ends_on || m.starts_on;
+          const state = endIso < TODAY ? "past" : m.starts_on <= TODAY ? "now" : "";
+          return `<div class="gantt-row ${state}" data-od-id="prj-milestone-${m.id}">
+            <div class="gantt-label"><p class="row-title">${esc(m.title)}</p><p class="row-meta num">${K.period(m.starts_on, m.ends_on)}${state === "now" ? `<span class="sep"></span><span style="color:var(--info-text)">지금</span>` : ""}</p></div>
+            <div class="gantt-track"><i style="left:${pct(m.starts_on)}%;width:${Math.max(pct(endIso) - pct(m.starts_on), 1.2)}%"></i><b class="today" style="left:${pct(TODAY)}%" aria-hidden="true"></b></div>
+          </div>`;
+        }).join("")}
+      </div>`;
+    }
+
+    function moduleRows() {
+      const tasks = own(db().tasks), p = progress(tasks);
+      const rows = [["project-tasks.html", "할 일", `${p.total - p.done}개 남음`]];
+      if (on("decisions")) {
+        const open = own(db().decisions).filter((d) => d.status === "discussing");
+        rows.push(["project-decisions.html", "결정", open.length ? `논의 중 ${open.length}개` : "논의 중인 결정 없음"]);
+      }
+      if (on("lists")) {
+        rows.push(["project-candidates.html", "후보 목록", pid === "p1" ? "답례품 후보 · 예상 " + won(estimate()) : "아직 목록이 없어요"]);
+        rows.push(["project-lists.html?kind=people", "명단", pid === "p1" ? `가족 명단 ${db().listItems.filter((x) => x.list_id === "l2").length}명` : "아직 명단이 없어요"]);
+      }
+      if (on("reservations")) {
+        const left = own(db().reservations).filter((r) => r.status !== "cancelled").reduce((s, r) => s + Math.max(0, (r.total_amount ?? 0) - (r.paid_amount ?? 0)), 0);
+        rows.push(["project-reservations.html", "예약", `결제 남음 ${won(left)}`]);
+      }
+      if (on("itinerary")) { const it = own(db().itinerary); rows.push(["project-itinerary.html", "일정표", it.length ? `${md(it[0].starts_on)} – ${md(it.at(-1).ends_on || it.at(-1).starts_on)} · ${it.length}개` : "비어 있어요"]); }
+      if (on("budget")) { const ex = own(db().expenses); const actual = ex.reduce((s, e) => s + (e.actual ?? 0), 0); rows.push(["project-budget.html", "예산·지출", `${won(actual)} 지출 · 상한 ${won(db().budget.cap)}`]); }
+      return rows;
+    }
+    function estimate() {
+      return db().listItems.filter((x) => x.list_id === "l1" && K.candStatus(x) === "selected").reduce((t, x) => t + (x.price ?? 0) * (x.recipients?.length ?? 0), 0);
+    }
+
+    function render() {
+      const p = project(), tasks = own(db().tasks), prog = progress(tasks);
+      const late = tasks.filter((t) => t.status !== "done" && t.due_on && days(t.due_on) < 0).length;
+      const n = p.target_on ? days(p.target_on) : null;
+      const list = upcoming();
+      const areas = own(db().areas).map((a) => ({ a, ts: tasks.filter((t) => t.area_id === a.id) }));
+      const ms = own(db().milestones);
+      document.getElementById("page").innerHTML = `
+        <header class="ph">
+          <a class="ph-back" href="projects.html" aria-label="프로젝트 목록">${icon("back")}</a>
+          <h1 class="t-title-lg" data-od-id="prj-overview-title">${esc(p.title)}</h1>
+          <div class="ph-actions"><button class="glass-btn glass-surface" id="settings" data-od-id="prj-settings-open">설정</button></div>
+        </header>
+
+        <section class="summary" aria-label="전체 준비" data-od-id="prj-overview-summary">
+          <div class="kpi">${n != null ? `<span class="kpi-num">${n > 0 ? "D-" + n : n === 0 ? "오늘" : -n + "일 지남"}</span><span class="muted t-body-sm">${mdw(p.target_on)} 목표</span>` : `<span class="kpi-num" style="font-size:var(--type-title-size)">목표일 미정</span>`}</div>
+          <div class="hero-bar"><div class="bar" role="img" aria-label="할 일 ${prog.done}/${prog.total} 완료"><i style="width:${prog.percent}%"></i></div><b>${prog.percent}%</b></div>
+          <dl class="kpi-row">
+            <div><dt>남은 할 일</dt><dd>${prog.total - prog.done}</dd></div>
+            <div><dt>늦어진 일</dt><dd class="${late ? "late" : ""}">${late}</dd></div>
+            <div><dt>7일 안 마감</dt><dd>${tasks.filter((t) => t.status !== "done" && t.due_on && days(t.due_on) >= 0 && days(t.due_on) <= 7).length}</dd></div>
+          </dl>
+        </section>
+
+        <section class="sec" aria-labelledby="h-up" data-od-id="prj-upcoming">
+          <div class="sec-head"><h2 id="h-up">다가오는 마감</h2><a class="text-btn sm" href="project-tasks.html">할 일 전체</a></div>
+          ${list.length ? `<ul class="list">${list.map((x, i) => x.task ? `
+            <li class="row${x.task.status === "done" ? " is-done" : ""}" data-od-id="prj-upcoming-${i}">
+              <button class="check" role="checkbox" aria-checked="${x.task.status === "done"}" aria-label="${esc(x.title)} 완료" data-t="${x.task.id}">${icon("check")}</button>
+              <div class="row-main"><p class="row-title">${esc(x.title)}</p><p class="row-meta"><span class="kind">${x.kind}</span>${x.meta.map((m) => `<span class="sep"></span>${esc(m)}`).join("")}</p></div>
+              <div class="row-end">${ddayChip(x.date)}</div>
+            </li>` : `
+            <li data-od-id="prj-upcoming-${i}"><a class="row" href="${x.href}">
+              <span class="check" style="box-shadow:none" aria-hidden="true"></span>
+              <div class="row-main"><p class="row-title">${esc(x.title)}</p><p class="row-meta"><span class="kind">${x.kind}</span>${(x.meta || []).map((m) => `<span class="sep"></span>${esc(m)}`).join("")}</p></div>
+              <div class="row-end">${ddayChip(x.date)}</div></a></li>`).join("")}</ul>` : `<p class="empty">2주 안에 마감되는 일이 없어요</p>`}
+        </section>
+
+        <section class="sec" aria-labelledby="h-tl" data-od-id="prj-timeline">
+          <div class="sec-head"><h2 id="h-tl">타임라인</h2><span class="gantt-key"><i aria-hidden="true"></i>오늘 ${md(TODAY)}</span></div>
+          ${ms.some((m) => !m.is_tentative) && p.starts_on && p.target_on ? gantt(ms, p.starts_on, p.target_on) : `<p class="empty">날짜가 있는 마일스톤이 없어요</p>`}
+          ${ms.some((m) => m.is_tentative) ? `<p class="group-label">날짜 미정</p><ul class="list">${ms.filter((m) => m.is_tentative).map((m) => `<li class="row"><div class="row-main"><p class="row-title">${esc(m.title)}</p></div><button class="text-btn sm" data-cal="${m.id}">일정에 추가</button></li>`).join("")}</ul>` : ""}
+        </section>
+
+        <section class="sec" aria-labelledby="h-area" data-od-id="prj-area-cells">
+          <div class="sec-head"><h2 id="h-area">영역별 할 일</h2></div>
+          ${areas.length ? areas.map(({ a, ts }) => { const pr = progress(ts); return `
+            <div class="area-row" data-od-id="prj-area-${a.id}">
+              <div class="area-head"><b>${esc(a.name)}</b><span>${pr.done}/${pr.total}</span></div>
+              <div class="cells" role="img" aria-label="${esc(a.name)} 할 일 ${pr.total}개 중 ${pr.done}개 완료">${ts.map((t) => `<i data-s="${t.status}" title="${esc(t.title)}"></i>`).join("") || `<span class="row-meta">할 일 없음</span>`}</div>
+            </div>`; }).join("") + `<div class="legend"><span><i style="background:var(--success)"></i>완료</span><span><i style="background:var(--sys-cyan)"></i>진행 중</span><span><i></i>미시작</span><span><i style="background:var(--warning)"></i>보류</span></div>` : `<p class="empty">영역을 나누면 진행을 묶어 볼 수 있어요</p>`}
+        </section>
+
+        <section class="sec" aria-labelledby="h-mod" data-od-id="prj-modules">
+          <div class="sec-head"><h2 id="h-mod">구성 요소</h2></div>
+          <ul class="list">${moduleRows().map(([h, l, sub], i) => `<li><a class="row" href="${h}" data-od-id="prj-module-${i}"><div class="row-main"><p class="row-title strong">${l}</p><p class="row-meta">${sub}</p></div>${icon("chev", "chev")}</a></li>`).join("")}</ul>
+        </section>`;
+      bind();
+    }
+
+    function bind() {
+      document.querySelectorAll("[data-t]").forEach((b) => b.onclick = () => {
+        const t = db().tasks.find((x) => x.id === b.dataset.t), was = t.status;
+        t.status = was === "done" ? "todo" : "done"; t.completed_at = t.status === "done" ? TODAY : null; save(); render();
+        toast(t.status === "done" ? `'${t.title}' 완료` : "완료를 취소했어요", t.status === "done" ? { label: "되돌리기", run: () => { t.status = was; save(); render(); } } : null);
+      });
+      document.querySelectorAll("[data-cal]").forEach((b) => b.onclick = () => toast("날짜를 정하면 일정에 추가할 수 있어요"));
+      document.getElementById("settings").onclick = openSettings;
+    }
+
+    function openSettings() {
+      const dlg = sheet({ title: "설정", submit: "", onSubmit() {},
+        body: `<ul class="list">
+          <li><button type="button" class="menu-btn" data-go="info">프로젝트 정보 ${icon("chev", "chev")}</button></li>
+          <li><button type="button" class="menu-btn" data-go="areas">영역 ${icon("chev", "chev")}</button></li>
+          <li><button type="button" class="menu-btn" data-go="milestones">마일스톤 ${icon("chev", "chev")}</button></li></ul>` });
+      dlg.querySelector(".sheet-head .text-btn:last-child").hidden = true;
+      dlg.querySelectorAll("[data-go]").forEach((b) => b.onclick = () => { dlg.close(); ({ info: editInfo, areas: editAreas, milestones: editMilestones })[b.dataset.go](); });
+    }
+
+    const MODULES = [["decisions", "결정"], ["lists", "목록 (후보·명단)"], ["reservations", "예약"], ["itinerary", "일정표"], ["budget", "예산·지출"]];
+    function editInfo() {
+      const p = project();
+      sheet({
+        title: "프로젝트 정보",
+        body: field("title", "이름", `<input name="title" maxlength="100" value="${esc(p.title)}">`)
+          + field("description", "설명", `<textarea name="description">${esc(p.description)}</textarea>`)
+          + `<div class="field-2">${field("starts_on", "시작일", `<input type="date" name="starts_on" value="${p.starts_on ?? ""}">`)}${field("target_on", "목표일", `<input type="date" name="target_on" value="${p.target_on ?? ""}">`)}</div>`
+          + field("status", "상태", `<select name="status">${options([["active", "진행 중"], ["completed", "완료"], ["archived", "보관"]], p.status)}</select>`)
+          + `<div class="field"><span>구성 요소</span><p class="row-meta" style="margin:0 0 var(--sp-1)">끄면 내용은 지우지 않고 숨겨요.</p><div class="opt-group">${MODULES.map(([v, l]) => `<label class="chip" style="display:inline-flex;align-items:center;gap:6px"><input type="checkbox" name="m-${v}" ${p.modules.includes(v) ? "checked" : ""}>${l}</label>`).join("")}</div></div>`,
+        onSubmit(d) {
+          const e = {};
+          if (!d.title.trim()) e.title = true;
+          if (d.starts_on && d.target_on && d.starts_on > d.target_on) e.target_on = true;
+          if (Object.keys(e).length) return e;
+          Object.assign(p, { title: d.title.trim(), description: d.description, starts_on: d.starts_on || null, target_on: d.target_on || null, status: d.status, modules: MODULES.map(([v]) => v).filter((v) => d["m-" + v]) });
+          save(); render(); toast("저장했어요");
+        },
+        danger: { label: "프로젝트 삭제", confirm: `'${p.title}' 프로젝트를 삭제할까요? 할 일·결정·예약·지출이 모두 지워져요.`, run: () => { db().projects = db().projects.filter((x) => x !== p); save(); location.href = "projects.html"; } },
+      });
+    }
+
+    function editAreas() {
+      const draft = db().areas.map((a) => ({ ...a }));
+      const dlg = sheet({ title: "영역", body: `<ul class="list" id="area-list"></ul><button type="button" class="text-btn" id="area-add" style="min-height:var(--hit)">영역 추가</button><p class="row-meta">영역을 지우면 그 안의 할 일은 ‘영역 없음’으로 옮겨져요.</p>`,
+        onSubmit(_, form) {
+          const names = [...form.querySelectorAll("[data-area]")].map((i) => i.value.trim());
+          if (names.some((n) => !n)) return Object.fromEntries(names.flatMap((n, i) => (n ? [] : [["area-" + i, true]])));
+          draft.forEach((a, i) => (a.name = names[i]));
+          const removed = db().areas.filter((a) => !draft.some((x) => x.id === a.id)).map((a) => a.id);
+          db().tasks.forEach((t) => removed.includes(t.area_id) && (t.area_id = null));
+          db().areas = draft; save(); render(); toast("영역을 저장했어요");
+        } });
+      const paint = () => {
+        dlg.querySelector("#area-list").innerHTML = draft.map((a, i) => `<li class="ms-edit">
+          <label class="field" style="margin:0;flex:1" data-name="area-${i}"><span class="sr-only">영역 이름</span><input data-area value="${esc(a.name)}" maxlength="100"></label>
+          <button type="button" class="glass-btn icon" aria-label="위로" data-up="${i}" ${i ? "" : "disabled"}>↑</button>
+          <button type="button" class="text-btn sm quiet" data-del="${i}">삭제</button></li>`).join("");
+        dlg.querySelectorAll("[data-up]").forEach((b) => b.onclick = () => { const i = +b.dataset.up; sync(); [draft[i - 1], draft[i]] = [draft[i], draft[i - 1]]; paint(); });
+        dlg.querySelectorAll("[data-del]").forEach((b) => b.onclick = () => { sync(); draft.splice(+b.dataset.del, 1); paint(); });
+      };
+      const sync = () => dlg.querySelectorAll("[data-area]").forEach((i, k) => (draft[k].name = i.value));
+      dlg.querySelector("#area-add").onclick = () => { sync(); draft.push({ id: "a" + K.id(), name: "" }); paint(); [...dlg.querySelectorAll("[data-area]")].at(-1)?.focus(); };
+      paint();
+    }
+
+    function editMilestones() {
+      sheet({ title: "마일스톤 추가",
+        body: `<ul class="list">${db().milestones.map((m) => `<li class="row"><div class="row-main"><p class="row-title">${esc(m.title)}</p><p class="row-meta">${m.is_tentative ? "날짜 미정" : K.period(m.starts_on, m.ends_on)}</p></div></li>`).join("")}</ul>`
+          + `<p class="group-label">새 마일스톤</p>` + field("title", "제목", `<input name="title" maxlength="100">`)
+          + `<div class="field-2">${field("starts_on", "시작일", `<input type="date" name="starts_on">`)}${field("ends_on", "종료일", `<input type="date" name="ends_on">`)}</div>`
+          + `<label class="row"><input type="checkbox" name="is_tentative"> 날짜 미정</label>`,
+        submit: "추가",
+        onSubmit(d) {
+          const e = {}, tent = Boolean(d.is_tentative);
+          if (!d.title.trim()) e.title = true;
+          if (!tent && !d.starts_on) e.starts_on = true;
+          if (d.starts_on && d.ends_on && d.ends_on < d.starts_on) e.ends_on = true;
+          if (Object.keys(e).length) return e;
+          db().milestones.push({ id: "m" + K.id(), title: d.title.trim(), area_id: null, starts_on: tent ? null : d.starts_on, ends_on: tent ? null : d.ends_on || null, is_tentative: tent });
+          save(); render(); toast("마일스톤을 추가했어요");
+        } });
+    }
+    render();
+  </script>
+</body>
+</html>

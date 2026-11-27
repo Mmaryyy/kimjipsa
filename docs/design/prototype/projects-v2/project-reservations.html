@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>예약 · 결혼 준비 · 김집사</title>
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/app.css" />
+  <style>
+    .rv { display: block; width: 100%; text-align: left; padding: var(--sp-3) 0; }
+    .rv { padding: var(--sp-4) 0; }
+    .rv + .rv { border-top: 1px solid var(--separator); }
+    .rv-top { display: flex; align-items: flex-start; gap: var(--sp-3); }
+    .rv-top .row-main { min-width: 0; }
+    .kind-label { font-size: var(--type-caption-sm-size); font-weight: var(--fw-medium); color: var(--label-secondary); }
+    .pay { display: flex; align-items: center; gap: var(--sp-3); margin-top: var(--sp-2); font-size: var(--type-caption-size); font-variant-numeric: tabular-nums; }
+    .pay .bar { flex: 1; max-width: 120px; }
+    .pay b { font-weight: var(--fw-semibold); }
+    /* 결제 진행: 위 줄 '결제 N원 … 총액 N원', 가운데 막대(결제액/총액), 아래 '남은 금액 · %' */
+    .paybox { margin-top: var(--sp-2); font-size: var(--type-caption-size); font-variant-numeric: tabular-nums; }
+    .pay-top { display: flex; justify-content: space-between; gap: var(--sp-3); }
+    .pay-top b { font-weight: var(--fw-semibold); color: var(--label); }
+    .pay-bar { margin-top: var(--sp-1); height: 6px; }
+    .pay-sub { margin-top: var(--sp-1); color: var(--label-secondary); }
+    .pay-sub b { color: var(--label); font-weight: var(--fw-semibold); }
+    .dl { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3); margin-top: var(--sp-2); font-size: var(--type-caption-size); color: var(--label-secondary); }
+    .dl .warn { color: var(--label); font-weight: var(--fw-medium); }
+    .dl .warn::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: var(--r-round); background: var(--warning); vertical-align: middle; }
+    .overlap .badge { --b-text: var(--label); } /* 경고는 주황 점 + 기본 글자색 */
+  </style>
+</head>
+<body>
+  <div class="app">
+    <main class="page" data-od-id="prj-reservations">
+      <aside class="od-diff" aria-label="원래 OD 시안과 달라진 점"><b>원래 OD 시안과 달라진 점</b><ul><li>상태는 캡슐 대신 점 + 색 글자</li><li>금액은 ‘결제 N원 … 총액 N원’ + 결제 진행 막대 + ‘남은 금액 · %’로 뜻을 붙임</li><li>겹침 경고는 배너 대신 행 안 주황 점 + 글자, 행 사이 옅은 구분선</li></ul></aside>
+      <header class="ph">
+        <a class="ph-back" href="project.html" aria-label="프로젝트 개요"></a>
+        <div style="flex:1;min-width:0"><h1 class="t-title-lg" data-od-id="prj-reservations-title">예약</h1><p class="ph-sub t-caption">결혼 준비</p></div>
+        <div class="ph-actions"><button class="glass-btn glass-surface" id="add" data-od-id="prj-reservation-add">추가</button></div>
+      </header>
+      <div id="body"></div>
+    </main>
+  </div>
+  <script src="js/app.js"></script>
+  <script>
+    const K = KJ, { db, save, esc, md, days, won, period, ddayChip, icon, sheet, toast, field, options, areaName } = K;
+    K.shell();
+    document.querySelector(".ph-back").innerHTML = icon("back");
+    const KIND = [["lodging", "숙소"], ["transport", "교통"], ["restaurant", "식당"], ["activity", "체험"], ["other", "기타"]];
+    const STATUS = [["reviewing", "검토 중"], ["planned", "예약 예정"], ["booked", "예약 완료"], ["cancelled", "취소"]];
+    const SV = { reviewing: "neutral", planned: "info", booked: "success", cancelled: "neutral" };
+    const label = (list, v) => list.find(([k]) => k === v)?.[1] ?? "";
+
+    function card(r, over) {
+      const left = (r.total_amount ?? 0) - (r.paid_amount ?? 0);
+      const pct = r.total_amount ? Math.round(((r.paid_amount ?? 0) / r.total_amount) * 100) : 0;
+      const dl = (lbl, iso) => iso ? `<span class="${days(iso) >= 0 && days(iso) <= 14 ? "warn" : ""}">${lbl} ${md(iso)}${days(iso) >= 0 && days(iso) <= 14 ? ` · D-${days(iso)}` : ""}</span>` : "";
+      return `<button class="rv" data-edit="${r.id}" data-od-id="prj-reservation-${r.id}">
+        <div class="rv-top">
+          <div class="row-main">
+            <p class="kind-label">${label(KIND, r.kind)} · ${esc(areaName(r.area_id))}</p>
+            <p class="row-title strong${r.status === "cancelled" ? " done-tone" : ""}">${esc(r.title)}</p>
+            <p class="row-meta num">${period(r.starts_on, r.ends_on)}${r.reference_no ? `<span class="sep"></span>예약 번호 ${esc(r.reference_no)}` : ""}</p>
+          </div>
+          <span class="badge" data-v="${SV[r.status]}">${label(STATUS, r.status)}</span>
+        </div>
+        ${over ? `<p class="row-meta overlap"><span class="badge" data-v="warning">같은 기간에 다른 ${label(KIND, r.kind)} 예약이 있어요</span></p>` : ""}
+        ${r.status !== "cancelled" && r.total_amount != null ? `<div class="paybox">
+            <div class="pay-top"><span>결제 <b>${won(r.paid_amount ?? 0)}</b></span><span class="muted">총액 ${won(r.total_amount)}</span></div>
+            <div class="bar pay-bar" role="img" aria-label="총액 ${won(r.total_amount)} 중 ${won(r.paid_amount ?? 0)} 결제, ${pct}%"><i style="width:${pct}%"></i></div>
+            <p class="pay-sub">${left > 0 ? `남은 금액 <b>${won(left)}</b> · ${pct}% 결제` : "모두 결제함"}</p>
+          </div>` : r.status !== "cancelled" ? `<p class="pay muted">금액 미정</p>` : ""}
+        ${r.status !== "cancelled" ? `<div class="dl">${dl("무료 취소", r.cancel_deadline)}${left > 0 ? dl("결제 마감", r.payment_deadline) : ""}</div>` : ""}
+      </button>`;
+    }
+
+    function render() {
+      const all = db().reservations, over = K.overlaps(all);
+      const live = all.filter((r) => r.status !== "cancelled");
+      const left = live.reduce((s, r) => s + Math.max(0, (r.total_amount ?? 0) - (r.paid_amount ?? 0)), 0);
+      const next = live.flatMap((r) => [["무료 취소", r.cancel_deadline, r], ["결제 마감", (r.paid_amount ?? 0) < (r.total_amount ?? 0) ? r.payment_deadline : null, r]])
+        .filter(([, d]) => d && days(d) >= 0).sort((a, b) => a[1].localeCompare(b[1]))[0];
+      const groups = [["planned", "예약 예정"], ["reviewing", "검토 중"], ["booked", "예약 완료"]].map(([s, l]) => [l, all.filter((r) => r.status === s).sort((a, b) => (a.starts_on ?? "9").localeCompare(b.starts_on ?? "9"))]).filter(([, rs]) => rs.length);
+      const cancelled = all.filter((r) => r.status === "cancelled");
+      document.getElementById("body").innerHTML = `
+        <section class="summary" aria-label="결제 요약" data-od-id="prj-reservation-summary">
+          <p class="t-caption-sm muted">결제 남은 금액</p>
+          <div class="kpi"><span class="kpi-num">${left.toLocaleString("ko-KR")}</span><span class="kpi-unit">원</span></div>
+          ${next ? `<p class="row-meta" style="margin-top:var(--sp-2)">다음 마감 <b class="num" style="color:var(--label)">${md(next[1])} ${next[0]}</b> · ${esc(next[2].title)} ${ddayChip(next[1])}</p>` : ""}
+        </section>
+        ${groups.map(([l, rs], i) => `<section class="sec" data-od-id="prj-reservation-group-${i}"><div class="sec-head"><h2>${l} <span class="num muted">${rs.length}</span></h2></div>${rs.map((r) => card(r, over.has(r.id))).join("")}</section>`).join("")}
+        ${cancelled.length ? `<details class="fold sec"><summary>${icon("chev")} 취소 <span class="num">${cancelled.length}</span></summary>${cancelled.map((r) => card(r)).join("")}</details>` : ""}`;
+      document.querySelectorAll("[data-edit]").forEach((b) => b.onclick = () => edit(all.find((r) => r.id === b.dataset.edit)));
+    }
+
+    function edit(src) {
+      const r = src || { title: "", area_id: null, kind: "lodging", status: "reviewing", starts_on: null, ends_on: null, reference_no: "", links: [], cancel_deadline: null, payment_deadline: null, total_amount: null, paid_amount: null, memo: "" };
+      const date = (n, l) => field(n, l, `<input type="date" name="${n}" value="${r[n] ?? ""}">`);
+      sheet({ title: src ? "예약" : "새 예약",
+        body: field("title", "제목", `<input name="title" maxlength="100" value="${esc(r.title)}">`)
+          + `<div class="field-2">${field("kind", "종류", `<select name="kind">${options(KIND, r.kind)}</select>`)}${field("status", "상태", `<select name="status">${options(STATUS, r.status)}</select>`)}</div>`
+          + field("area_id", "영역", `<select name="area_id"><option value="">영역 없음</option>${options(db().areas.map((a) => [a.id, a.name]), r.area_id)}</select>`)
+          + `<div class="field-2">${date("starts_on", "이용 시작")}${date("ends_on", "이용 종료")}</div>`
+          + `<div class="field-2">${date("cancel_deadline", "무료 취소 마감")}${date("payment_deadline", "결제 마감")}</div>`
+          + `<div class="field-2">${field("total_amount", "총액 (원)", `<input inputmode="numeric" name="total_amount" value="${r.total_amount ?? ""}">`)}${field("paid_amount", "결제액 (원)", `<input inputmode="numeric" name="paid_amount" value="${r.paid_amount ?? ""}">`)}</div>`
+          + field("reference_no", "예약 번호", `<input name="reference_no" maxlength="100" value="${esc(r.reference_no)}">`)
+          + field("links", "링크", `<input type="url" name="links" value="${esc(r.links.join(" "))}" placeholder="https://">`)
+          + field("memo", "메모", `<textarea name="memo">${esc(r.memo)}</textarea>`)
+          + (src && r.starts_on ? `<button type="button" class="text-btn" style="min-height:var(--hit)" id="to-cal">일정에 추가</button>` : ""),
+        onSubmit(d) {
+          const e = {}, num = (v) => (v.trim() === "" ? null : Number(v.replaceAll(",", "")));
+          const total = num(d.total_amount), paid = num(d.paid_amount);
+          if (!d.title.trim()) e.title = true;
+          if (d.ends_on && (!d.starts_on || d.ends_on < d.starts_on)) e.ends_on = true;
+          if (total != null && (isNaN(total) || total < 0)) e.total_amount = true;
+          if (paid != null && (isNaN(paid) || total == null || paid > total)) e.paid_amount = true;
+          const links = d.links.split(/\s+/).filter(Boolean);
+          if (links.some((l) => !/^https?:\/\/\S+$/i.test(l))) e.links = true;
+          if (Object.keys(e).length) return e;
+          Object.assign(r, { title: d.title.trim(), kind: d.kind, status: d.status, area_id: d.area_id || null, starts_on: d.starts_on || null, ends_on: d.ends_on || null, cancel_deadline: d.cancel_deadline || null, payment_deadline: d.payment_deadline || null, total_amount: total, paid_amount: paid, reference_no: d.reference_no.trim(), links, memo: d.memo.trim() });
+          if (!src) db().reservations.push({ id: "r" + K.id(), ...r });
+          save(); render(); toast(src ? "저장했어요" : "예약을 추가했어요");
+        },
+        danger: src && { label: "예약 삭제", confirm: `'${r.title}' 예약을 삭제할까요?`, run: () => { db().reservations = db().reservations.filter((x) => x !== src); save(); render(); } } });
+      document.getElementById("to-cal")?.addEventListener("click", () => toast(`'${r.title}'을 공유 일정에 추가했어요`));
+    }
+    document.getElementById("add").onclick = () => edit();
+    render();
+  </script>
+</body>
+</html>

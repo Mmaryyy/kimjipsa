@@ -114,8 +114,11 @@ vi.mock("@/entities/inventory-item", async (original) => ({
         { id: "dairy", name: "유제품·계란" },
         { id: "other", name: "기타" },
       ],
-      locations: [],
-      units: [{ id: "pack", name: "팩" }],
+      locations: [{ id: "fridge", name: "냉장실", enabled: true }],
+      units: [
+        { id: "piece", name: "개" },
+        { id: "pack", name: "팩" },
+      ],
     },
     isError: false,
   }),
@@ -228,27 +231,60 @@ const receipt: Receipt = {
     },
   ],
 };
-describe("BOT-08 SCN-BOT-6 영수증 확인 응답", () => {
-  it("반영 후 만료 시각이 지나도 품목과 눌린 확인만 남아요", () => {
-    const { rerender } = render(<ReceiptCard receipt={receipt} now={now} />);
-    rerender(
+const excludedItem = {
+  ...receipt.items[0],
+  name: "사과",
+  selected: false,
+};
+const review = () => screen.getByRole("button", { name: "재고에 반영하기" });
+const milkRow = () => screen.getByRole("button", { name: /^우유 ·/ });
+
+it("INV-17 SCN-BOT-6 재고 변경은 바로 반영하고 품목과 눌린 확인을 남겨요", () => {
+  const change = {
+    ...receipt,
+    kind: "proposal" as const,
+    items: [{ ...receipt.items[0], unit_id: "pack" }, excludedItem],
+  };
+  const view = render(<ReceiptCard receipt={change} now={now} />);
+  fireEvent.click(review());
+  expect(mutate).toHaveBeenCalledExactlyOnceWith({
+    id: change.id,
+    version: change.version,
+    items: change.items,
+  });
+
+  view.rerender(
+    <ReceiptCard receipt={{ ...change, status: "applied" }} now={now} />,
+  );
+  expect(screen.getByRole("heading", { name: "재고 변경 확인" })).toBeVisible();
+  const name = screen.getByRole("textbox", { name: "품목 1 이름" });
+  expect(name).toHaveValue("우유");
+  expect(name).toBeDisabled();
+  expect(
+    screen.getByRole("button", { name: "확인", pressed: true }),
+  ).toBeDisabled();
+  expect(screen.queryByText(/개를 재고에 반영했어요/)).not.toBeInTheDocument();
+});
+
+describe("INV-17 SCN-BOT-6 영수증 확인 응답", () => {
+  it("반영 후에는 완료 문구와 체크했던 품목만 남아요", () => {
+    render(
       <ReceiptCard
-        receipt={{ ...receipt, status: "applied" }}
+        receipt={{
+          ...receipt,
+          status: "applied",
+          items: [{ ...receipt.items[0], unit_id: "pack" }, excludedItem],
+        }}
         now={now + 3600000}
       />,
     );
-    expect(screen.getByRole("textbox", { name: "품목 1 이름" })).toHaveValue(
-      "우유",
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "1개를 재고에 반영했어요",
     );
-    expect(screen.getByRole("textbox", { name: "품목 1 이름" })).toBeDisabled();
-    expect(screen.getByRole("spinbutton", { name: "품목 1 수량" })).toHaveValue(
-      2,
-    );
-    expect(screen.getByRole("checkbox")).toBeDisabled();
-    expect(screen.getAllByRole("button")).toHaveLength(1);
-    expect(
-      screen.getByRole("button", { name: "확인", pressed: true }),
-    ).toBeDisabled();
+    expect(screen.getByText("우유 · 2 팩 · 새 품목")).toBeInTheDocument();
+    expect(screen.queryByText(/사과/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
   });
   it("취소 후 품목을 숨기고 요청 처리 취소 문구만 남아요", () => {
     render(
@@ -261,15 +297,129 @@ describe("BOT-08 SCN-BOT-6 영수증 확인 응답", () => {
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
-  it("확인 전에는 기존 편집과 반영·취소 버튼을 유지해요", () => {
-    render(<ReceiptCard receipt={receipt} now={now} />);
-    expect(screen.getByRole("textbox", { name: "품목 1 이름" })).toBeEnabled();
-    expect(
-      screen.getAllByRole("button").map((button) => button.textContent),
-    ).toEqual(["재고에 반영하기", "취소하기"]);
+  it("품목 정보를 순서대로 요약하고 수정 칸을 각각 열고 닫아요", () => {
+    const item = {
+      ...receipt.items[0],
+      unit_id: "pack",
+      category_id: "dairy",
+      location_id: "fridge",
+      expires_on: "2026-11-30",
+    };
+    render(
+      <ReceiptCard
+        receipt={{
+          ...receipt,
+          items: [item, { ...excludedItem, reason: "사과를 확인해 주세요." }],
+        }}
+        now={now}
+      />,
+    );
+    expect(milkRow()).toHaveTextContent(
+      "우유 · 2 팩 · 2026-11-30 유제품·계란 | 냉장실 | 새 품목",
+    );
+    expect(milkRow()).toHaveAccessibleName(
+      /^우유 · 2 팩 · 2026-11-30 집사 코멘트: 영수증 품목 유제품·계란 냉장실 새 품목/,
+    );
+    const appleRow = screen.getByRole("button", { name: /^사과 ·/ });
+    const milkCheckbox = screen.getByRole("checkbox", {
+      name: "품목 1 우유 반영",
+    });
+    expect(milkRow()).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    fireEvent.click(milkCheckbox);
+    expect(milkRow()).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(milkRow());
+    fireEvent.click(appleRow);
+    expect(screen.getByRole("textbox", { name: "품목 1 이름" })).toHaveValue(
+      "우유",
+    );
+    expect(screen.getByRole("textbox", { name: "품목 2 이름" })).toBeVisible();
+    expect(screen.getByRole("combobox", { name: "품목 1 단위" })).toHaveValue(
+      "pack",
+    );
+    expect(screen.getByText("영수증 품목")).toBeVisible();
+    expect(screen.getByText("사과를 확인해 주세요.")).toBeVisible();
+    fireEvent.click(milkRow());
+    expect(milkRow()).toHaveAttribute("aria-expanded", "false");
+    expect(appleRow).toHaveAttribute("aria-expanded", "true");
+    expect(milkCheckbox).not.toBeChecked();
   });
-  it("INV-17 수정한 수량과 연결할 재고는 확인한 뒤 반영 요청에 포함돼요", () => {
-    render(<ReceiptCard receipt={receipt} now={now} />);
+
+  it("체크한 품목의 빠진 단위를 알리고 단위를 고르면 반영할 수 있어요", () => {
+    const item = { ...receipt.items[0], selected: false };
+    render(<ReceiptCard receipt={{ ...receipt, items: [item] }} now={now} />);
+    expect(
+      screen.queryByRole("img", { name: "확인 필요: 단위 필요" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: "집사 코멘트: 영수증 품목" }),
+    ).toBeVisible();
+    expect(screen.queryByText("단위 필요")).not.toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("checkbox", { name: "품목 1 우유 반영" }));
+    expect(
+      screen.getByRole("img", { name: "확인 필요: 단위 필요" }),
+    ).toBeVisible();
+    expect(review()).toBeDisabled();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "단위가 빠진 품목 1개를 확인해 주세요.",
+    );
+    expect(screen.queryByText("단위 필요")).not.toBeInTheDocument();
+
+    fireEvent.click(milkRow());
+    const unit = screen.getByRole("combobox", { name: "품목 1 단위" });
+    expect(unit).toBeInvalid();
+    expect(unit).toHaveAccessibleDescription("단위 필요");
+    fireEvent.change(unit, { target: { value: "pack" } });
+    expect(unit).not.toBeInvalid();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.queryByText("단위 필요")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("img", { name: /확인 필요/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: "집사 코멘트: 영수증 품목" }),
+    ).toBeVisible();
+    expect(review()).toBeEnabled();
+  });
+
+  it("이름과 수량의 오류를 함께 알리고 두 값을 고치면 반영할 수 있어요", () => {
+    const item = { ...receipt.items[0], unit_id: "pack", reason: "" };
+    render(<ReceiptCard receipt={{ ...receipt, items: [item] }} now={now} />);
+    fireEvent.click(milkRow());
+    const name = screen.getByRole("textbox", { name: "품목 1 이름" });
+    const quantity = screen.getByRole("spinbutton", { name: "품목 1 수량" });
+    fireEvent.change(name, { target: { value: " " } });
+    fireEvent.change(quantity, { target: { value: "" } });
+    expect(name).toBeInvalid();
+    expect(quantity).toBeInvalid();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "이름이 빠진 품목 1개 · 수량이 올바르지 않은 품목 1개를 확인해 주세요.",
+    );
+    expect(review()).toBeDisabled();
+
+    fireEvent.change(name, { target: { value: "우유" } });
+    fireEvent.change(quantity, { target: { value: "1" } });
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(review()).toBeEnabled();
+  });
+
+  it("체크한 품목만 확인하고 돌아가도 선택과 수정값을 유지해요", () => {
+    render(
+      <ReceiptCard
+        receipt={{ ...receipt, items: [...receipt.items, excludedItem] }}
+        now={now}
+      />,
+    );
+    expect(screen.getByText("2개 중 1개 선택")).toBeVisible();
+    fireEvent.click(screen.getByRole("checkbox", { name: "품목 2 사과 반영" }));
+    expect(screen.getByText("2개 중 2개 선택")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: /^사과 ·/ }));
+    fireEvent.change(screen.getByRole("textbox", { name: "품목 2 이름" }), {
+      target: { value: "" },
+    });
+    fireEvent.click(screen.getByRole("checkbox", { name: /품목 2/ }));
+    fireEvent.click(milkRow());
     fireEvent.change(screen.getByRole("spinbutton", { name: "품목 1 수량" }), {
       target: { value: "3" },
     });
@@ -280,8 +430,27 @@ describe("BOT-08 SCN-BOT-6 영수증 확인 응답", () => {
       screen.getByRole("combobox", { name: "품목 1 기존 재고 연결" }),
       { target: { value: "milk" } },
     );
+    fireEvent.click(review());
     expect(mutate).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "재고에 반영하기" }));
+    expect(
+      screen.getByRole("heading", { name: "1개를 재고에 반영할게요" }),
+    ).toBeVisible();
+    expect(screen.getAllByRole("listitem")).toHaveLength(1);
+    expect(screen.getByText("우유 · 3 팩 · 기존 품목 서울우유")).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "돌아가기" }));
+    expect(screen.getByText("2개 중 1개 선택")).toBeVisible();
+    expect(
+      screen.getByRole("checkbox", { name: "품목 1 우유 반영" }),
+    ).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /품목 2/ })).not.toBeChecked();
+    expect(milkRow()).toHaveAccessibleName(/^우유 · 3 팩/);
+    expect(milkRow()).toHaveTextContent("기존 품목");
+    expect(milkRow()).not.toHaveTextContent("서울우유");
+    expect(review()).toHaveFocus();
+    fireEvent.click(review());
+    expect(mutate).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "반영하기" }));
     expect(mutate).toHaveBeenCalledExactlyOnceWith({
       id: receipt.id,
       version: receipt.version,
