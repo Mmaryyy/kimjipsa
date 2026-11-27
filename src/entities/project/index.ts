@@ -1,4 +1,9 @@
-export { useProject, useProjects, useProjectWrite } from "./model/use-project";
+export {
+  useProject,
+  useHomeDeadlines,
+  useProjects,
+  useProjectWrite,
+} from "./model/use-project";
 export {
   projectOverdue,
   projectProgress,

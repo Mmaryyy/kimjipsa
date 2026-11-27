@@ -1,4 +1,5 @@
 import "server-only";
+import { addDays, format, parseISO } from "date-fns";
 import { z } from "zod";
 import {
   projectListCommand,
@@ -53,6 +54,8 @@ import {
   projectPhotoRow,
   taskRow,
   expenseRow,
+  homeDeadlineRow,
+  type HomeDeadline,
   type ProjectDetail,
   type ProjectList,
 } from "./type";
@@ -171,6 +174,93 @@ async function readList() {
     projects: projectRow.array().parse(projects),
     tasks: summaryTask.array().parse(tasks),
   };
+}
+
+export async function readHomeDeadlines(): Promise<HomeDeadline[]> {
+  const mock = await mockContext();
+  if (!mock) {
+    const { client } = await projectContext();
+    const { data, error } = await client.rpc("home_project_deadlines");
+    throwDatabaseError(error, projectWriteErrors);
+    return z.array(homeDeadlineRow).parse(data);
+  }
+
+  const { members } = await mockJson("family");
+  const store = projectMock(mock.values, members);
+  const today = projectToday();
+  const end = format(addDays(parseISO(today), 6), "yyyy-MM-dd");
+  const rows: HomeDeadline[] = [];
+  for (const project of store.projects) {
+    if (project.status !== "active") continue;
+    const push = (
+      id: string,
+      title: string,
+      kind: HomeDeadline["kind"],
+      date: string | null,
+      assigneeKind: HomeDeadline["assigneeKind"] = null,
+      assigneeId: string | null = null,
+    ) => {
+      if (date && date >= today && date <= end)
+        rows.push({
+          id,
+          projectId: project.id,
+          projectTitle: project.title,
+          title,
+          kind,
+          date,
+          assigneeKind,
+          assigneeId,
+        });
+    };
+    for (const task of store.tasks) {
+      if (task.project_id === project.id && task.status !== "done")
+        push(
+          task.id,
+          task.title,
+          "task",
+          task.due_on,
+          task.assignee_kind,
+          task.assignee_id,
+        );
+    }
+    for (const decision of store.decisions) {
+      if (
+        project.modules.includes("decisions") &&
+        decision.project_id === project.id &&
+        decision.status === "discussing"
+      )
+        push(decision.id, decision.question, "decision", decision.due_on);
+    }
+    for (const reservation of store.reservations) {
+      if (
+        !project.modules.includes("reservations") ||
+        reservation.project_id !== project.id ||
+        reservation.status === "cancelled"
+      )
+        continue;
+      push(
+        reservation.id,
+        reservation.title,
+        "reservation_cancel",
+        reservation.cancel_deadline,
+      );
+      if ((reservation.total_amount ?? 0) > (reservation.paid_amount ?? 0))
+        push(
+          reservation.id,
+          reservation.title,
+          "reservation_payment",
+          reservation.payment_deadline,
+        );
+    }
+  }
+  return rows
+    .sort(
+      (a, b) =>
+        a.date.localeCompare(b.date) ||
+        a.kind.localeCompare(b.kind) ||
+        a.id.localeCompare(b.id),
+    )
+    .slice(0, 5);
 }
 
 export async function readProject(rawId: string): Promise<ProjectDetail> {

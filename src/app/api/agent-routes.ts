@@ -112,6 +112,8 @@ export function agentCompletePOST(request: Request) {
     const raw = await readJson(request);
     const lease = leaseSchema.parse(raw);
     const result = agentResultSchema.parse(raw);
+    if (result.kind === "projects")
+      throw new ApiError("invalid_chat", "프로젝트 조회에 실패했어요.", 400);
     if (["actions", "add", "proposal"].includes(result.kind))
       throw new ApiError(
         "confirmation_required",

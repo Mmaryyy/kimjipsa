@@ -15,7 +15,7 @@ export const searchSourceSchema = z.object({
     }),
 });
 export const agentActionSchema = z.object({
-  domain: z.enum(["event", "cart", "inventory"]),
+  domain: z.enum(["event", "cart", "inventory", "project"]),
   label: z.string().trim().min(1).max(300),
   payload: z.record(z.string(), z.json()),
   expected: z
@@ -84,6 +84,7 @@ export const agentResultSchema = z
       "action_proposal",
       "search",
       "calendar",
+      "projects",
     ]),
     text: z.string().trim().min(1).max(20000),
     choices: choicesSchema,
@@ -94,6 +95,7 @@ export const agentResultSchema = z
     actions: z.array(agentActionSchema).max(20).default([]),
     query: z.string().trim().max(500).default(""),
     range: z.object({ start: z.iso.date(), end: z.iso.date() }).optional(),
+    projectId: z.uuid().optional(),
     sources: z.array(searchSourceSchema).max(5).default([]),
   })
   .overwrite((result) => ({

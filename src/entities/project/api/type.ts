@@ -142,3 +142,20 @@ export type ProjectDetail = {
   candidateVotes: CandidateVote[];
   expenses: ProjectExpense[];
 };
+
+export const homeDeadlineRow = z.object({
+  id: projectId,
+  projectId,
+  projectTitle: z.string(),
+  title: z.string(),
+  kind: z.enum([
+    "task",
+    "decision",
+    "reservation_cancel",
+    "reservation_payment",
+  ]),
+  date: z.iso.date(),
+  assigneeKind: z.enum(["unassigned", "together", "member"]).nullable(),
+  assigneeId: projectId.nullable(),
+});
+export type HomeDeadline = z.infer<typeof homeDeadlineRow>;

@@ -18,6 +18,7 @@ import { cn } from "@/shared/lib";
 import { CalendarView } from "@/widgets/calendar-view";
 import CelebrationCardList from "../celebration-card-list";
 import { NotificationBell } from "@/entities/notification";
+import ProjectDeadlines from "../project-deadlines";
 import UpcomingEvents from "../upcoming-events";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -106,6 +107,9 @@ const HomeSchedule = () => {
                 count={homeSettings.upcomingCount}
               />
             ))}
+          {settings.data?.projectDeadlinesEnabled && (
+            <ProjectDeadlines today={today} ownerNames={ownerNames} />
+          )}
         </div>
         <div
           className={cn(

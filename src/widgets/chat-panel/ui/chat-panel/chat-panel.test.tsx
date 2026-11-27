@@ -38,7 +38,7 @@ it("BOT-03 인사·기능 목록은 기존 대화 맨 앞에 있고 FAQ는 로�
     "separator",
   );
   expect(within(greeting.closest("li")!).getAllByRole("listitem")).toHaveLength(
-    3,
+    4,
   );
   fireEvent.click(screen.getByRole("button", { name: chatFaqs[0].title }));
   fireEvent.click(screen.getByRole("button", { name: chatFaqs[1].title }));

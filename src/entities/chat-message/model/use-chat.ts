@@ -41,6 +41,7 @@ export function useChat(familyId: string | undefined, userId?: string | null) {
       void queryClient.invalidateQueries({ queryKey: ["inventory"] });
       void queryClient.invalidateQueries({ queryKey: ["events"] });
       void queryClient.invalidateQueries({ queryKey: ["cart"] });
+      void queryClient.invalidateQueries({ queryKey: ["projects"] });
     };
     const channel = client
       .channel(`family:${familyId}:chat`, { config: { private: true } })
@@ -81,6 +82,7 @@ export function useChatActions() {
     await client.invalidateQueries({ queryKey: ["inventory"] });
     await client.invalidateQueries({ queryKey: ["events"] });
     await client.invalidateQueries({ queryKey: ["cart"] });
+    await client.invalidateQueries({ queryKey: ["projects"] });
   };
   return {
     retry: useMutation({

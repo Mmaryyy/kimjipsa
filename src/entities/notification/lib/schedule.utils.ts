@@ -1,12 +1,37 @@
 import { z } from "zod";
-import { format } from "date-fns";
+import { addDays, format, parseISO } from "date-fns";
 import { tz } from "@date-fns/tz";
+
+import {
+  projectDeadlineKind,
+  type Notification,
+} from "../model/notification.schema";
+
+const reminderKinds = {
+  task: "project_task_due",
+  decision: "project_decision_due",
+  reservation_cancel: "project_reservation_due",
+  reservation_payment: "project_reservation_due",
+} as const;
 
 export const scheduleSnapshotSchema = z.object({
   now: z.string(),
   users: z.array(
     z.object({ id: z.uuid(), familyId: z.uuid(), morningTime: z.string() }),
   ),
+  deadlines: z
+    .array(
+      z.object({
+        id: z.uuid(),
+        familyId: z.uuid(),
+        projectId: z.uuid(),
+        kind: projectDeadlineKind,
+        date: z.iso.date(),
+        assigneeKind: z.enum(["unassigned", "together", "member"]).nullable(),
+        assigneeId: z.uuid().nullable(),
+      }),
+    )
+    .optional(),
   events: z.array(
     z.object({
       id: z.uuid(),
@@ -48,18 +73,11 @@ export type ScheduledNotification = {
   key: string;
   userId: string;
   familyId: string;
-  kind: "event_reminder" | "morning_summary";
-  payload: {
-    eventId?: string;
-    occurrenceDate?: string;
-    occurrences?: { eventId: string; originalDate: string }[];
-    date: string;
-    eventTitle?: string;
-    startTime?: string;
-    times?: string[];
-    count?: number;
-    eventIds?: string[];
-  };
+  kind:
+    | "event_reminder"
+    | "morning_summary"
+    | (typeof reminderKinds)[keyof typeof reminderKinds];
+  payload: Notification["payload"] & { date: string };
 };
 export const scheduleLookbackMs = 5 * 60000;
 function inScheduleWindow(instant: number, now: number) {
@@ -106,6 +124,13 @@ export function scheduledNotifications(
           },
         });
     }
+    const deadlines = (snapshot.deadlines ?? []).filter(
+      (item) =>
+        item.familyId === user.familyId &&
+        (item.kind !== "task" ||
+          item.assigneeKind === "together" ||
+          (item.assigneeKind === "member" && item.assigneeId === user.id)),
+    );
     for (const today of dates) {
       const todaysEvents = visible.filter(
         (event) => event.startDate <= today && event.endDate >= today,
@@ -113,7 +138,27 @@ export function scheduledNotifications(
       const morningDue = Date.parse(
         `${today}T${user.morningTime.slice(0, 5)}:00+09:00`,
       );
-      if (inScheduleWindow(morningDue, now.getTime()) && todaysEvents.length) {
+      if (!inScheduleWindow(morningDue, now.getTime())) continue;
+      const tomorrow = format(addDays(parseISO(today), 1), "yyyy-MM-dd");
+      for (const item of deadlines) {
+        if (item.date !== tomorrow) continue;
+        notifications.push({
+          key: `project:${user.id}:${item.kind}:${item.id}:${item.date}`,
+          userId: user.id,
+          familyId: user.familyId,
+          kind: reminderKinds[item.kind],
+          payload: {
+            date: item.date,
+            projectId: item.projectId,
+            projectItemId: item.id,
+            deadlineKind: item.kind,
+          },
+        });
+      }
+      if (
+        todaysEvents.length ||
+        deadlines.some((item) => item.date === today)
+      ) {
         const times = todaysEvents
           .map((event) => {
             if (event.isAllDay || event.startDate < today) return "종일";

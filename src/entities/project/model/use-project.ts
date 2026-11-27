@@ -4,7 +4,12 @@ import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createBrowserSupabaseClient } from "@/shared/api";
 import { isMockDataEnabled } from "@/shared/config";
-import { fetchProject, fetchProjects, writeProject } from "../api/api";
+import {
+  fetchHomeDeadlines,
+  fetchProject,
+  fetchProjects,
+  writeProject,
+} from "../api/api";
 import type { ProjectDetail } from "../api/type";
 
 const key = ["projects"] as const;
@@ -72,6 +77,14 @@ export function useProjects() {
   });
   useProjectChanges(query.data?.familyId);
   return query;
+}
+
+export function useHomeDeadlines(today: string) {
+  return useQuery({
+    queryKey: [...key, "home-deadlines", today],
+    queryFn: ({ signal }) => fetchHomeDeadlines(signal),
+    refetchInterval: recoveryInterval,
+  });
 }
 
 export function useProject(id: string) {

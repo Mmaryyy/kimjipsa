@@ -2,7 +2,11 @@
 import { createServer } from "node:http";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { readToolRequest } from "./read-tool.mts";
-import { requiresIsolatedRuntime, type AgentContext } from "./hermes.mts";
+import {
+  projectSnapshotSchema,
+  requiresIsolatedRuntime,
+  type AgentContext,
+} from "./hermes.mts";
 
 const reader = vi.fn(async () => ({ items: [{ name: "우유", quantity: 2 }] }));
 const server = createServer((request, response) => {
@@ -88,4 +92,21 @@ describe("BOT-10/12 자체 기억의 입력 범위", () => {
     expect(requiresIsolatedRuntime(shared, true, false)).toBe(true);
     expect(requiresIsolatedRuntime(shared, false, true)).toBe(true);
   });
+});
+
+it("PRJ-14 프로젝트 목록의 마감 요약과 상세의 구성원 의견을 집사에게 전달해요", () => {
+  const summary = {
+    projects: [{ title: "결혼 준비" }, { title: "이사" }],
+    deadlines: [
+      { projectTitle: "결혼 준비", title: "견적 비교", date: "2026-11-27" },
+      { projectTitle: "이사", title: "계약금 결제", date: "2026-11-28" },
+    ],
+  };
+  const detail = {
+    project: { id: "00000000-0000-4000-8000-000000000000" },
+    tasks: [],
+    decisions: [{ opinions: [{ name: "민호", opinion: "금요일이 좋아요" }] }],
+  };
+  expect(projectSnapshotSchema.parse(summary)).toEqual(summary);
+  expect(projectSnapshotSchema.parse(detail)).toEqual(detail);
 });

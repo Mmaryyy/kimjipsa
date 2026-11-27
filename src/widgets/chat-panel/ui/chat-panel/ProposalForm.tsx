@@ -11,8 +11,13 @@ import {
   inventoryStatusOptions,
   useInventoryMeta,
 } from "@/entities/inventory-item";
+import {
+  taskAssignees,
+  taskStatusLabels,
+  useProject,
+} from "@/entities/project";
 import { cn } from "@/shared/lib";
-import { Button, Input, QuantityStepper, Text } from "@/shared/ui";
+import { Button, Input, QuantityStepper, Select, Text } from "@/shared/ui";
 import { DateTimeInput } from "@/shared/ui/date-time-input";
 import { chatProposalChoiceStyles } from "./chat-panel.variants";
 
@@ -302,6 +307,215 @@ const ProposalFields = ({ fields, event = false, onChange }: FieldsProps) => {
     </div>
   );
 };
+
+const ProjectProposalFields = ({
+  payload,
+  fields,
+  onChange,
+}: FieldsProps & { payload: Fields }) => {
+  const inputId = useId();
+  const project = useProject(textValue(payload.projectId));
+  const expense = payload.action === "save_expense";
+  const update = (key: string, value: Value) =>
+    onChange({ ...fields, [key]: value });
+  const dates = expense
+    ? [
+        ["planned_on", "예상 결제일"],
+        ["paid_on", "실제 결제일"],
+      ]
+    : [
+        ["starts_on", "시작일"],
+        ["due_on", "마감일"],
+      ];
+  const members = project.data?.members ?? [];
+  const assignee =
+    fields.assignee_kind === "member"
+      ? textValue(fields.assignee_id)
+      : textValue(fields.assignee_kind);
+
+  return (
+    <div className="space-y-3">
+      <label className="block space-y-1 text-caption">
+        제목
+        <Input
+          required
+          maxLength={100}
+          value={textValue(fields.title)}
+          onChange={(event) => update("title", event.target.value)}
+        />
+      </label>
+      {project.isError && (
+        <Text variant="caption" role="alert">
+          프로젝트 선택 목록을 불러오지 못했어요.{" "}
+          <Button
+            type="button"
+            size="sm"
+            variant="gray"
+            onClick={() => void project.refetch()}
+          >
+            다시 시도
+          </Button>
+        </Text>
+      )}
+      {project.data && (
+        <>
+          <label className="block space-y-1 text-caption">
+            영역
+            <Select
+              value={textValue(fields.area_id)}
+              onChange={(event) =>
+                update("area_id", event.target.value || null)
+              }
+            >
+              <option value="">영역 없음</option>
+              {project.data.areas.map(({ id, name }) => (
+                <option key={id} value={id}>
+                  {name}
+                </option>
+              ))}
+            </Select>
+          </label>
+          {expense ? (
+            <label className="block space-y-1 text-caption">
+              결제자
+              <Select
+                value={textValue(fields.payer_id)}
+                onChange={(event) =>
+                  update("payer_id", event.target.value || null)
+                }
+              >
+                <option value="">선택 안 함</option>
+                {members.map(({ user_id, display_name }) => (
+                  <option key={user_id} value={user_id}>
+                    {display_name}
+                  </option>
+                ))}
+              </Select>
+            </label>
+          ) : (
+            <label className="block space-y-1 text-caption">
+              담당
+              <Select
+                value={assignee}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  const member = members.some(
+                    ({ user_id }) => user_id === value,
+                  );
+                  onChange({
+                    ...fields,
+                    assignee_kind: member ? "member" : value,
+                    assignee_id: member ? value : null,
+                  });
+                }}
+              >
+                {taskAssignees(members).map(({ value, label }) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </Select>
+            </label>
+          )}
+        </>
+      )}
+      {dates.map(([key, label]) => {
+        const date = textValue(fields[key]);
+        return (
+          <div className="space-y-1" key={key}>
+            <Text as="p" variant="caption">
+              {label}
+            </Text>
+            <DateTimeInput
+              label={label}
+              controlProps={{ id: `${inputId}-${key}` }}
+              range={{
+                startDate: date,
+                endDate: date,
+                startTime: "",
+                endTime: "",
+              }}
+              dateOnly
+              singleDate
+              onConfirm={(next) => update(key, next.startDate)}
+            />
+            {date && (
+              <Button
+                type="button"
+                variant="gray"
+                size="sm"
+                onClick={() => update(key, null)}
+              >
+                날짜 비우기
+              </Button>
+            )}
+          </div>
+        );
+      })}
+      {expense ? (
+        [
+          ["estimated_amount", "예상 금액"],
+          ["actual_amount", "실제 금액"],
+        ].map(([key, label]) => {
+          const value = fields[key];
+          return (
+            <label className="block space-y-1 text-caption" key={key}>
+              {label}
+              <Input
+                type="number"
+                min={0}
+                max={Number.MAX_SAFE_INTEGER}
+                step={1}
+                value={typeof value === "number" ? value : ""}
+                onChange={(event) =>
+                  update(
+                    key,
+                    event.target.value === ""
+                      ? null
+                      : event.target.valueAsNumber,
+                  )
+                }
+              />
+            </label>
+          );
+        })
+      ) : (
+        <>
+          <label className="block space-y-1 text-caption">
+            상태
+            <Select
+              value={textValue(fields.status)}
+              onChange={(event) => update("status", event.target.value)}
+            >
+              {(["todo", "in_progress", "on_hold"] as const).map((value) => (
+                <option key={value} value={value}>
+                  {taskStatusLabels[value]}
+                </option>
+              ))}
+            </Select>
+          </label>
+          <label className="block space-y-1 text-caption">
+            선행 조건
+            <Input
+              maxLength={1000}
+              value={textValue(fields.depends_note)}
+              onChange={(event) => update("depends_note", event.target.value)}
+            />
+          </label>
+        </>
+      )}
+      <label className="block space-y-1 text-caption">
+        메모
+        <Input
+          maxLength={1000}
+          value={textValue(fields.memo)}
+          onChange={(event) => update("memo", event.target.value)}
+        />
+      </label>
+    </div>
+  );
+};
+
 interface Props {
   actions: AgentAction[];
   pending: boolean;
@@ -336,6 +550,26 @@ const ChatProposalForm = ({
         {draft.map((action, index) => {
           const nestedKey = action.domain === "event" ? "event" : "item";
           const nested = objectFields(action.payload[nestedKey]);
+          if (action.domain === "project") {
+            return (
+              <fieldset key={index} className="min-w-0 space-y-3">
+                <legend className="mb-2 text-label">{action.label}</legend>
+                {nested ? (
+                  <ProjectProposalFields
+                    payload={action.payload}
+                    fields={nested}
+                    onChange={(item) =>
+                      update(index, { ...action.payload, item })
+                    }
+                  />
+                ) : (
+                  <Text variant="caption">
+                    완료할 항목을 바꾸려면 취소하고 다시 요청해 주세요.
+                  </Text>
+                )}
+              </fieldset>
+            );
+          }
           const entries = action.payload.entries;
           return (
             <fieldset key={index} className="min-w-0 space-y-3">

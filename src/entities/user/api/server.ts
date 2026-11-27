@@ -265,20 +265,25 @@ export async function getHomeSettings() {
     if (!account?.userId)
       throw new ApiError("unauthorized", "로그인이 필요해요.", 401);
     const settings = await mockJson("home-settings");
-    return homeSettingsSchema.parse(
-      context.values.get(`home:${account.userId}`) ?? settings,
-    );
+    const saved = context.values.get(`home:${account.userId}`);
+    return homeSettingsSchema.parse({
+      ...settings,
+      ...(typeof saved === "object" && saved),
+    });
   }
   const { client, user } = await authenticatedClient();
   const { data, error } = await client
     .from("users")
-    .select("home_view, upcoming_enabled, upcoming_count")
+    .select(
+      "home_view, upcoming_enabled, upcoming_count, project_deadlines_enabled",
+    )
     .eq("id", user.id)
     .single();
   throwDatabaseError(error);
   return homeSettingsSchema.parse({
     homeView: data?.home_view,
     upcomingEnabled: data?.upcoming_enabled,
+    projectDeadlinesEnabled: data?.project_deadlines_enabled,
     upcomingCount: data?.upcoming_count,
   });
 }
@@ -296,6 +301,7 @@ export async function saveHomeSettings(input: unknown) {
   const { error } = await client.rpc("save_home_settings", {
     home_view: settings.homeView,
     upcoming_enabled: settings.upcomingEnabled,
+    project_deadlines_enabled: settings.projectDeadlinesEnabled,
     upcoming_count: settings.upcomingCount,
   });
   throwDatabaseError(error);

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { eventSchema } from "@/entities/event/index.server";
 import { cartCommandSchema } from "@/entities/cart-item/index.server";
 import { inventoryInputSchema } from "@/entities/inventory-item/index.server";
+import { expenseFields, taskInput } from "@/entities/project/index.server";
 import {
   agentActionSchema,
   type AgentAction,
@@ -60,6 +61,34 @@ const eventCommand = z.object({
     };
   }, eventSchema),
 });
+const projectCommand = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("save_task"),
+    projectId: z.uuid(),
+    item: taskInput.refine(({ status }) => status !== "done"),
+  }),
+  z.object({
+    action: z.literal("set_task_done"),
+    projectId: z.uuid(),
+    id: z.uuid(),
+    done: z.literal(true),
+  }),
+  z.object({
+    action: z.literal("save_expense"),
+    projectId: z.uuid(),
+    item: expenseFields
+      .refine(
+        ({ actual_amount, paid_on, payer_id }) =>
+          actual_amount === null || (paid_on !== null && payer_id !== null),
+        "실제 결제일과 결제자를 확인해 주세요.",
+      )
+      .refine(
+        ({ actual_amount, estimated_amount }) =>
+          actual_amount !== null || estimated_amount !== null,
+        "실제 금액이나 예상 금액을 입력해 주세요.",
+      ),
+  }),
+]);
 export function parseAgentActions(raw: unknown): AgentAction[] {
   return z
     .array(agentActionSchema)
@@ -83,6 +112,8 @@ export function parseAgentActions(raw: unknown): AgentAction[] {
               : eventCommand.parse(action.payload);
         else if (action.domain === "inventory")
           payload = inventoryCommand.parse(action.payload);
+        else if (action.domain === "project")
+          payload = projectCommand.parse(action.payload);
         else {
           payload = allowedCartCommand.parse(action.payload);
         }
